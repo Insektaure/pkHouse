@@ -1,0 +1,493 @@
+#include "ui.h"
+#include "species_converter.h"
+#include <cstdio>
+#include <cstring>
+
+#ifdef __SWITCH__
+#include <switch.h>
+#endif
+
+bool UI::init() {
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER) < 0)
+        return false;
+
+    if (TTF_Init() < 0) {
+        SDL_Quit();
+        return false;
+    }
+
+    if (IMG_Init(IMG_INIT_PNG) == 0) {
+        TTF_Quit();
+        SDL_Quit();
+        return false;
+    }
+
+    window_ = SDL_CreateWindow("pkHouse",
+        SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+        SCREEN_W, SCREEN_H, SDL_WINDOW_SHOWN);
+    if (!window_) {
+        IMG_Quit();
+        TTF_Quit();
+        SDL_Quit();
+        return false;
+    }
+
+    renderer_ = SDL_CreateRenderer(window_, -1,
+        SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    if (!renderer_) {
+        SDL_DestroyWindow(window_);
+        IMG_Quit();
+        TTF_Quit();
+        SDL_Quit();
+        return false;
+    }
+
+    SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_BLEND);
+
+    // Load font
+#ifdef __SWITCH__
+    PlFontData fontData;
+    plInitialize(PlServiceType_System);
+    plGetSharedFontByType(&fontData, PlSharedFontType_Standard);
+    SDL_RWops* rw = SDL_RWFromMem(fontData.address, fontData.size);
+    font_ = TTF_OpenFontRW(rw, 0, 18);
+    fontSmall_ = TTF_OpenFontRW(SDL_RWFromMem(fontData.address, fontData.size), 0, 14);
+#else
+    font_ = TTF_OpenFont("romfs/fonts/default.ttf", 18);
+    fontSmall_ = TTF_OpenFont("romfs/fonts/default.ttf", 14);
+#endif
+
+    if (!font_ || !fontSmall_) {
+        if (!font_)
+            font_ = TTF_OpenFont("romfs:/fonts/default.ttf", 18);
+        if (!fontSmall_)
+            fontSmall_ = TTF_OpenFont("romfs:/fonts/default.ttf", 14);
+    }
+
+    // Open game controller
+    for (int i = 0; i < SDL_NumJoysticks(); i++) {
+        if (SDL_IsGameController(i)) {
+            pad_ = SDL_GameControllerOpen(i);
+            break;
+        }
+    }
+
+    return true;
+}
+
+void UI::shutdown() {
+    freeSprites();
+    if (fontSmall_) TTF_CloseFont(fontSmall_);
+    if (font_) TTF_CloseFont(font_);
+    if (pad_) SDL_GameControllerClose(pad_);
+    if (renderer_) SDL_DestroyRenderer(renderer_);
+    if (window_) SDL_DestroyWindow(window_);
+    IMG_Quit();
+    TTF_Quit();
+    SDL_Quit();
+#ifdef __SWITCH__
+    plExit();
+#endif
+}
+
+bool UI::run(SaveFile& save, Bank& bank) {
+    bool running = true;
+    bool shouldSave = true;
+    while (running) {
+        handleInput(save, bank, running, shouldSave);
+        drawFrame(save, bank);
+        SDL_RenderPresent(renderer_);
+        SDL_Delay(16);
+    }
+    return shouldSave;
+}
+
+// --- Sprites ---
+
+SDL_Texture* UI::getSprite(uint16_t nationalId) {
+    // Check cache
+    auto it = spriteCache_.find(nationalId);
+    if (it != spriteCache_.end())
+        return it->second;
+
+    // Build path: sprites are named 001.png to 1025.png
+    char filename[64];
+    std::snprintf(filename, sizeof(filename), "%03d.png", nationalId);
+
+    std::string path;
+#ifdef __SWITCH__
+    path = std::string("romfs:/sprites/") + filename;
+#else
+    path = std::string("romfs/sprites/") + filename;
+#endif
+
+    SDL_Surface* surf = IMG_Load(path.c_str());
+    if (!surf) {
+        // Cache nullptr so we don't retry
+        spriteCache_[nationalId] = nullptr;
+        return nullptr;
+    }
+
+    SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer_, surf);
+    SDL_FreeSurface(surf);
+
+    spriteCache_[nationalId] = tex;
+    return tex;
+}
+
+void UI::freeSprites() {
+    for (auto& [id, tex] : spriteCache_) {
+        if (tex)
+            SDL_DestroyTexture(tex);
+    }
+    spriteCache_.clear();
+    if (eggSprite_) {
+        SDL_DestroyTexture(eggSprite_);
+        eggSprite_ = nullptr;
+    }
+}
+
+// --- Rendering ---
+
+void UI::drawRect(int x, int y, int w, int h, SDL_Color color) {
+    SDL_SetRenderDrawColor(renderer_, color.r, color.g, color.b, color.a);
+    SDL_Rect r = {x, y, w, h};
+    SDL_RenderFillRect(renderer_, &r);
+}
+
+void UI::drawRectOutline(int x, int y, int w, int h, SDL_Color color, int thickness) {
+    SDL_SetRenderDrawColor(renderer_, color.r, color.g, color.b, color.a);
+    for (int t = 0; t < thickness; t++) {
+        SDL_Rect r = {x + t, y + t, w - 2*t, h - 2*t};
+        SDL_RenderDrawRect(renderer_, &r);
+    }
+}
+
+void UI::drawText(const std::string& text, int x, int y, SDL_Color color, TTF_Font* f) {
+    if (!f || text.empty()) return;
+    SDL_Surface* surf = TTF_RenderUTF8_Blended(f, text.c_str(), color);
+    if (!surf) return;
+    SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer_, surf);
+    SDL_Rect dst = {x, y, surf->w, surf->h};
+    SDL_RenderCopy(renderer_, tex, nullptr, &dst);
+    SDL_DestroyTexture(tex);
+    SDL_FreeSurface(surf);
+}
+
+void UI::drawTextCentered(const std::string& text, int cx, int cy, SDL_Color color, TTF_Font* f) {
+    if (!f || text.empty()) return;
+    int tw, th;
+    TTF_SizeUTF8(f, text.c_str(), &tw, &th);
+    drawText(text, cx - tw/2, cy - th/2, color, f);
+}
+
+void UI::drawStatusBar(const std::string& msg) {
+    drawRect(0, SCREEN_H - 35, SCREEN_W, 35, {20, 20, 30, 255});
+    drawText(msg, 15, SCREEN_H - 30, COLOR_STATUS, fontSmall_);
+}
+
+void UI::drawSlot(int x, int y, const Pokemon& pkm, bool isCursor) {
+    SDL_Color bgColor;
+    if (pkm.isEmpty()) {
+        bgColor = COLOR_SLOT_EMPTY;
+    } else if (pkm.isEgg()) {
+        bgColor = COLOR_SLOT_EGG;
+    } else {
+        bgColor = COLOR_SLOT_FULL;
+    }
+
+    // Slot background
+    drawRect(x, y, CELL_W, CELL_H, bgColor);
+
+    // Cursor highlight
+    if (isCursor)
+        drawRectOutline(x, y, CELL_W, CELL_H, COLOR_CURSOR, 3);
+
+    if (!pkm.isEmpty()) {
+        uint16_t species = pkm.species();
+
+        // Draw sprite centered in top portion of cell
+        SDL_Texture* sprite = nullptr;
+        if (pkm.isEgg()) {
+            // Use species 0 sprite for egg, or fallback
+            sprite = getSprite(0);
+        } else {
+            sprite = getSprite(species);
+        }
+
+        if (sprite) {
+            int sprX = x + (CELL_W - SPRITE_SIZE) / 2;
+            int sprY = y + 4;
+            SDL_Rect dst = {sprX, sprY, SPRITE_SIZE, SPRITE_SIZE};
+            SDL_RenderCopy(renderer_, sprite, nullptr, &dst);
+        }
+
+        // Species name below sprite
+        std::string name = pkm.displayName();
+        if (name.length() > 10)
+            name = name.substr(0, 9) + ".";
+
+        SDL_Color nameColor = pkm.isShiny() ? COLOR_SHINY : COLOR_TEXT;
+        drawTextCentered(name, x + CELL_W / 2, y + SPRITE_SIZE + 10, nameColor, fontSmall_);
+
+        // Level at the bottom
+        if (!pkm.isEgg()) {
+            std::string lvlStr = "Lv." + std::to_string(pkm.level());
+            drawTextCentered(lvlStr, x + CELL_W / 2, y + CELL_H - 12, COLOR_TEXT_DIM, fontSmall_);
+        }
+
+        // Gender indicator (top-right corner)
+        uint8_t g = pkm.gender();
+        if (g == 0)
+            drawText("\xe2\x99\x82", x + CELL_W - 16, y + 2, {100, 150, 255, 255}, fontSmall_);
+        else if (g == 1)
+            drawText("\xe2\x99\x80", x + CELL_W - 16, y + 2, {255, 130, 150, 255}, fontSmall_);
+    }
+}
+
+void UI::drawPanel(int panelX, const std::string& boxName, int boxIdx,
+                   int totalBoxes, bool isActive, SaveFile* save, Bank* bank, int box) {
+    // Panel background
+    drawRect(panelX, 0, PANEL_W, SCREEN_H - 35, COLOR_PANEL_BG);
+
+    // Box name header with arrows
+    SDL_Color hdrColor = isActive ? COLOR_BOX_NAME : COLOR_TEXT_DIM;
+    drawTextCentered("<", panelX + 20, BOX_HDR_Y + BOX_HDR_H / 2, COLOR_ARROW, font_);
+    drawTextCentered(boxName + " (" + std::to_string(boxIdx + 1) + "/" + std::to_string(totalBoxes) + ")",
+                     panelX + PANEL_W / 2, BOX_HDR_Y + BOX_HDR_H / 2, hdrColor, font_);
+    drawTextCentered(">", panelX + PANEL_W - 20, BOX_HDR_Y + BOX_HDR_H / 2, COLOR_ARROW, font_);
+
+    // Grid: 6 columns x 5 rows
+    int gridStartX = panelX + (PANEL_W - (6 * (CELL_W + CELL_PAD) - CELL_PAD)) / 2;
+    int gridStartY = GRID_Y;
+
+    for (int row = 0; row < 5; row++) {
+        for (int col = 0; col < 6; col++) {
+            int slot = row * 6 + col;
+            int cellX = gridStartX + col * (CELL_W + CELL_PAD);
+            int cellY = gridStartY + row * (CELL_H + CELL_PAD);
+
+            Pokemon pkm;
+            if (save)
+                pkm = save->getBoxSlot(box, slot);
+            else if (bank)
+                pkm = bank->getSlot(box, slot);
+
+            bool isCursor = isActive && cursor_.col == col && cursor_.row == row;
+            drawSlot(cellX, cellY, pkm, isCursor);
+        }
+    }
+}
+
+void UI::drawFrame(SaveFile& save, Bank& bank) {
+    // Clear screen
+    SDL_SetRenderDrawColor(renderer_, COLOR_BG.r, COLOR_BG.g, COLOR_BG.b, 255);
+    SDL_RenderClear(renderer_);
+
+    // Sync cursor box to the active panel
+    if (cursor_.panel == Panel::Game)
+        gameBox_ = cursor_.box;
+    else
+        bankBox_ = cursor_.box;
+
+    // Left panel: Game boxes
+    bool leftActive = (cursor_.panel == Panel::Game);
+    std::string gameBoxName = save.getBoxName(gameBox_);
+    drawPanel(PANEL_X_L, gameBoxName, gameBox_, SaveFile::BOX_COUNT,
+              leftActive, &save, nullptr, gameBox_);
+
+    // Right panel: Bank boxes
+    bool rightActive = (cursor_.panel == Panel::Bank);
+    std::string bankBoxName = bank.getBoxName(bankBox_);
+    drawPanel(PANEL_X_R, bankBoxName, bankBox_, Bank::BOX_COUNT,
+              rightActive, nullptr, &bank, bankBox_);
+
+    // Status bar
+    std::string statusMsg = "D-Pad:Move  L/R:Box  A:Pick/Place  B:Cancel  +:Save&Exit  -:Quit";
+    if (holding_) {
+        std::string heldName = heldPkm_.displayName();
+        if (!heldName.empty()) {
+            statusMsg = "Holding: " + heldName + " Lv." + std::to_string(heldPkm_.level()) +
+                        "  |  A:Place  B:Return";
+        }
+    }
+    drawStatusBar(statusMsg);
+}
+
+// --- Input ---
+
+void UI::handleInput(SaveFile& save, Bank& bank, bool& running, bool& shouldSave) {
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
+        if (event.type == SDL_QUIT) {
+            running = false;
+            shouldSave = false;
+            return;
+        }
+
+        if (event.type == SDL_CONTROLLERBUTTONDOWN) {
+            switch (event.cbutton.button) {
+                case SDL_CONTROLLER_BUTTON_A:
+                    actionSelect(save, bank);
+                    break;
+                case SDL_CONTROLLER_BUTTON_B:
+                    actionCancel(save, bank);
+                    break;
+                case SDL_CONTROLLER_BUTTON_START: // + (save & exit)
+                    running = false;
+                    shouldSave = true;
+                    break;
+                case SDL_CONTROLLER_BUTTON_BACK: // - (quit without saving)
+                    running = false;
+                    shouldSave = false;
+                    break;
+                case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
+                    switchBox(-1);
+                    break;
+                case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:
+                    switchBox(+1);
+                    break;
+                case SDL_CONTROLLER_BUTTON_DPAD_UP:
+                    moveCursor(0, -1);
+                    break;
+                case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+                    moveCursor(0, +1);
+                    break;
+                case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
+                    moveCursor(-1, 0);
+                    break;
+                case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
+                    moveCursor(+1, 0);
+                    break;
+            }
+        }
+
+        // Keyboard for PC testing
+        if (event.type == SDL_KEYDOWN) {
+            switch (event.key.keysym.sym) {
+                case SDLK_UP:     moveCursor(0, -1); break;
+                case SDLK_DOWN:   moveCursor(0, +1); break;
+                case SDLK_LEFT:   moveCursor(-1, 0); break;
+                case SDLK_RIGHT:  moveCursor(+1, 0); break;
+                case SDLK_a:
+                case SDLK_RETURN: actionSelect(save, bank); break;
+                case SDLK_b:
+                case SDLK_ESCAPE: actionCancel(save, bank); break;
+                case SDLK_q:      switchBox(-1); break;
+                case SDLK_e:      switchBox(+1); break;
+                case SDLK_PLUS:
+                    running = false;
+                    shouldSave = true;
+                    break;
+                case SDLK_MINUS:
+                    running = false;
+                    shouldSave = false;
+                    break;
+            }
+        }
+    }
+}
+
+void UI::moveCursor(int dx, int dy) {
+    cursor_.col += dx;
+    cursor_.row += dy;
+
+    // Wrap row
+    if (cursor_.row < 0) cursor_.row = 4;
+    if (cursor_.row > 4) cursor_.row = 0;
+
+    // Horizontal: crossing panel boundary
+    if (cursor_.col < 0) {
+        if (cursor_.panel == Panel::Bank) {
+            cursor_.panel = Panel::Game;
+            cursor_.col = 5;
+            cursor_.box = gameBox_;
+        } else {
+            cursor_.col = 0;
+        }
+    }
+    if (cursor_.col > 5) {
+        if (cursor_.panel == Panel::Game) {
+            cursor_.panel = Panel::Bank;
+            cursor_.col = 0;
+            cursor_.box = bankBox_;
+        } else {
+            cursor_.col = 5;
+        }
+    }
+}
+
+void UI::switchBox(int direction) {
+    int maxBox = (cursor_.panel == Panel::Game) ? SaveFile::BOX_COUNT : Bank::BOX_COUNT;
+    cursor_.box += direction;
+    if (cursor_.box < 0) cursor_.box = maxBox - 1;
+    if (cursor_.box >= maxBox) cursor_.box = 0;
+
+    if (cursor_.panel == Panel::Game)
+        gameBox_ = cursor_.box;
+    else
+        bankBox_ = cursor_.box;
+}
+
+Pokemon UI::getPokemonAt(int box, int slot, Panel panel, SaveFile& save, Bank& bank) const {
+    if (panel == Panel::Game)
+        return save.getBoxSlot(box, slot);
+    else
+        return bank.getSlot(box, slot);
+}
+
+void UI::setPokemonAt(int box, int slot, Panel panel, const Pokemon& pkm, SaveFile& save, Bank& bank) {
+    if (panel == Panel::Game)
+        save.setBoxSlot(box, slot, pkm);
+    else
+        bank.setSlot(box, slot, pkm);
+}
+
+void UI::clearPokemonAt(int box, int slot, Panel panel, SaveFile& save, Bank& bank) {
+    if (panel == Panel::Game)
+        save.clearBoxSlot(box, slot);
+    else
+        bank.clearSlot(box, slot);
+}
+
+void UI::actionSelect(SaveFile& save, Bank& bank) {
+    int box = cursor_.box;
+    int slot = cursor_.slot();
+
+    if (!holding_) {
+        Pokemon pkm = getPokemonAt(box, slot, cursor_.panel, save, bank);
+        if (pkm.isEmpty())
+            return;
+
+        heldPkm_ = pkm;
+        heldSource_ = cursor_.panel;
+        heldBox_ = box;
+        heldSlot_ = slot;
+        holding_ = true;
+
+        clearPokemonAt(box, slot, cursor_.panel, save, bank);
+    } else {
+        Pokemon target = getPokemonAt(box, slot, cursor_.panel, save, bank);
+
+        if (target.isEmpty()) {
+            setPokemonAt(box, slot, cursor_.panel, heldPkm_, save, bank);
+            holding_ = false;
+            heldPkm_ = Pokemon{};
+        } else {
+            setPokemonAt(box, slot, cursor_.panel, heldPkm_, save, bank);
+            heldPkm_ = target;
+            heldSource_ = cursor_.panel;
+            heldBox_ = box;
+            heldSlot_ = slot;
+        }
+    }
+}
+
+void UI::actionCancel(SaveFile& save, Bank& bank) {
+    if (!holding_)
+        return;
+
+    setPokemonAt(heldBox_, heldSlot_, heldSource_, heldPkm_, save, bank);
+    holding_ = false;
+    heldPkm_ = Pokemon{};
+}

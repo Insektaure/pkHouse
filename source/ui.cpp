@@ -146,6 +146,38 @@ void UI::showSplash() {
     SDL_DestroyTexture(tex);
 }
 
+void UI::showMessageAndWait(const std::string& title, const std::string& body) {
+    if (!renderer_) return;
+
+    bool waiting = true;
+    while (waiting) {
+        SDL_Event event;
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                waiting = false;
+            }
+            if (event.type == SDL_CONTROLLERBUTTONDOWN) {
+                if (event.cbutton.button == SDL_CONTROLLER_BUTTON_A) // Switch B
+                    waiting = false;
+            }
+            if (event.type == SDL_KEYDOWN) {
+                if (event.key.keysym.sym == SDLK_b || event.key.keysym.sym == SDLK_ESCAPE)
+                    waiting = false;
+            }
+        }
+
+        SDL_SetRenderDrawColor(renderer_, COLOR_BG.r, COLOR_BG.g, COLOR_BG.b, 255);
+        SDL_RenderClear(renderer_);
+
+        drawTextCentered(title, SCREEN_W / 2, SCREEN_H / 2 - 30, COLOR_RED, font_);
+        drawTextCentered(body, SCREEN_W / 2, SCREEN_H / 2 + 10, COLOR_TEXT_DIM, font_);
+        drawTextCentered("Press B to quit", SCREEN_W / 2, SCREEN_H / 2 + 60, COLOR_TEXT_DIM, fontSmall_);
+
+        SDL_RenderPresent(renderer_);
+        SDL_Delay(16);
+    }
+}
+
 void UI::run(SaveFile& save, BankManager& bankManager, const std::string& savePath) {
     bankManager_ = &bankManager;
     savePath_ = savePath;

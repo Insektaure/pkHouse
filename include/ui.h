@@ -33,6 +33,7 @@ public:
     bool init();
     void shutdown();
     void showSplash();
+    void showMessageAndWait(const std::string& title, const std::string& body);
     void run(SaveFile& save, BankManager& bankManager, const std::string& savePath);
 
 private:

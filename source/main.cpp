@@ -72,7 +72,7 @@ int main(int argc, char* argv[]) {
     bank.load(bankPath);
 
     // Run main loop - returns true if user chose save & exit
-    bool shouldSave = ui.run(save, bank);
+    bool shouldSave = ui.run(save, bank, savePath, bankPath);
 
     // Save changes only if user chose to
     if (shouldSave) {

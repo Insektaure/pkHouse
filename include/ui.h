@@ -26,7 +26,8 @@ public:
     // Returns true if user chose "save & exit", false for "quit without saving".
     bool init();
     void shutdown();
-    bool run(SaveFile& save, Bank& bank);
+    bool run(SaveFile& save, Bank& bank,
+             const std::string& savePath, const std::string& bankPath);
 
 private:
     SDL_Window*          window_    = nullptr;
@@ -86,6 +87,9 @@ private:
     int    gameBox_ = 0;
     int    bankBox_ = 0;
     bool   showDetail_ = false;
+    bool   showMenu_   = false;
+    int    menuSelection_ = 0;
+    bool   saveNow_    = false;
     bool   holding_    = false;
     Pokemon heldPkm_;
     Panel   heldSource_ = Panel::Game;
@@ -99,6 +103,7 @@ private:
     // Rendering helpers
     void drawFrame(SaveFile& save, Bank& bank);
     void drawDetailPopup(const Pokemon& pkm);
+    void drawMenuPopup();
     void drawPanel(int panelX, const std::string& boxName, int boxIdx,
                    int totalBoxes, bool isActive, SaveFile* save, Bank* bank, int box);
     void drawSlot(int x, int y, const Pokemon& pkm, bool isCursor);

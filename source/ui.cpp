@@ -111,11 +111,18 @@ void UI::shutdown() {
 #endif
 }
 
-bool UI::run(SaveFile& save, Bank& bank) {
+bool UI::run(SaveFile& save, Bank& bank,
+             const std::string& savePath, const std::string& bankPath) {
     bool running = true;
     bool shouldSave = true;
     while (running) {
         handleInput(save, bank, running, shouldSave);
+        if (saveNow_) {
+            if (save.isLoaded())
+                save.save(savePath);
+            bank.save(bankPath);
+            saveNow_ = false;
+        }
         drawFrame(save, bank);
         SDL_RenderPresent(renderer_);
         SDL_Delay(16);
@@ -355,7 +362,7 @@ void UI::drawFrame(SaveFile& save, Bank& bank) {
               rightActive, nullptr, &bank, bankBox_);
 
     // Status bar
-    std::string statusMsg = "D-Pad:Move  L/R:Box  A:Pick/Place  B:Cancel  Y:Detail  +:Save&Exit  -:Quit";
+    std::string statusMsg = "D-Pad:Move  L/R:Box  A:Pick/Place  B:Cancel  Y:Detail  +:Menu  -:Quit";
     if (holding_) {
         std::string heldName = heldPkm_.displayName();
         if (!heldName.empty()) {
@@ -373,6 +380,11 @@ void UI::drawFrame(SaveFile& save, Bank& bank) {
         } else {
             drawDetailPopup(pkm);
         }
+    }
+
+    // Menu popup overlay
+    if (showMenu_) {
+        drawMenuPopup();
     }
 }
 
@@ -523,6 +535,40 @@ void UI::drawDetailPopup(const Pokemon& pkm) {
     drawTextCentered("B / Y: Close", popX + POP_W / 2, popY + POP_H - 20, COLOR_TEXT_DIM, fontSmall_);
 }
 
+void UI::drawMenuPopup() {
+    // Semi-transparent dark overlay
+    drawRect(0, 0, SCREEN_W, SCREEN_H, {0, 0, 0, 160});
+
+    // Popup rect centered
+    constexpr int POP_W = 350;
+    constexpr int POP_H = 220;
+    int popX = (SCREEN_W - POP_W) / 2;
+    int popY = (SCREEN_H - POP_H) / 2;
+
+    drawRect(popX, popY, POP_W, POP_H, COLOR_PANEL_BG);
+    drawRectOutline(popX, popY, POP_W, POP_H, COLOR_CURSOR, 2);
+
+    // Title
+    drawTextCentered("Menu", popX + POP_W / 2, popY + 22, COLOR_TEXT, font_);
+
+    // Menu options
+    const char* labels[] = {"Save", "Save & Quit", "Quit Without Saving"};
+    int rowH = 36;
+    int startY = popY + 50;
+
+    for (int i = 0; i < 3; i++) {
+        int rowY = startY + i * rowH;
+        if (i == menuSelection_) {
+            drawRect(popX + 20, rowY, POP_W - 40, rowH - 4, {60, 60, 80, 255});
+            drawRectOutline(popX + 20, rowY, POP_W - 40, rowH - 4, COLOR_CURSOR, 2);
+        }
+        drawTextCentered(labels[i], popX + POP_W / 2, rowY + (rowH - 4) / 2, COLOR_TEXT, font_);
+    }
+
+    // Hint at bottom
+    drawTextCentered("A:Confirm  B:Cancel", popX + POP_W / 2, popY + POP_H - 18, COLOR_TEXT_DIM, fontSmall_);
+}
+
 // --- Input ---
 
 void UI::handleInput(SaveFile& save, Bank& bank, bool& running, bool& shouldSave) {
@@ -532,6 +578,63 @@ void UI::handleInput(SaveFile& save, Bank& bank, bool& running, bool& shouldSave
             running = false;
             shouldSave = false;
             return;
+        }
+
+        // While menu is open, handle menu input only
+        if (showMenu_) {
+            if (event.type == SDL_CONTROLLERBUTTONDOWN) {
+                switch (event.cbutton.button) {
+                    case SDL_CONTROLLER_BUTTON_DPAD_UP:
+                        menuSelection_ = (menuSelection_ + 2) % 3;
+                        break;
+                    case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+                        menuSelection_ = (menuSelection_ + 1) % 3;
+                        break;
+                    case SDL_CONTROLLER_BUTTON_B: // Switch A = confirm
+                        if (menuSelection_ == 0) {
+                            saveNow_ = true;
+                            showMenu_ = false;
+                        } else if (menuSelection_ == 1) {
+                            shouldSave = true;
+                            running = false;
+                        } else {
+                            shouldSave = false;
+                            running = false;
+                        }
+                        break;
+                    case SDL_CONTROLLER_BUTTON_A: // Switch B = cancel
+                        showMenu_ = false;
+                        break;
+                }
+            }
+            if (event.type == SDL_KEYDOWN) {
+                switch (event.key.keysym.sym) {
+                    case SDLK_UP:
+                        menuSelection_ = (menuSelection_ + 2) % 3;
+                        break;
+                    case SDLK_DOWN:
+                        menuSelection_ = (menuSelection_ + 1) % 3;
+                        break;
+                    case SDLK_a:
+                    case SDLK_RETURN:
+                        if (menuSelection_ == 0) {
+                            saveNow_ = true;
+                            showMenu_ = false;
+                        } else if (menuSelection_ == 1) {
+                            shouldSave = true;
+                            running = false;
+                        } else {
+                            shouldSave = false;
+                            running = false;
+                        }
+                        break;
+                    case SDLK_b:
+                    case SDLK_ESCAPE:
+                        showMenu_ = false;
+                        break;
+                }
+            }
+            continue;
         }
 
         // While detail popup is open, only allow closing it
@@ -571,9 +674,9 @@ void UI::handleInput(SaveFile& save, Bank& bank, bool& running, bool& shouldSave
                         showDetail_ = true;
                     break;
                 }
-                case SDL_CONTROLLER_BUTTON_START: // + (save & exit)
-                    running = false;
-                    shouldSave = true;
+                case SDL_CONTROLLER_BUTTON_START: // + (open menu)
+                    showMenu_ = true;
+                    menuSelection_ = 0;
                     break;
                 case SDL_CONTROLLER_BUTTON_BACK: // - (quit without saving)
                     running = false;
@@ -621,8 +724,8 @@ void UI::handleInput(SaveFile& save, Bank& bank, bool& running, bool& shouldSave
                 case SDLK_q:      switchBox(-1); break;
                 case SDLK_e:      switchBox(+1); break;
                 case SDLK_PLUS:
-                    running = false;
-                    shouldSave = true;
+                    showMenu_ = true;
+                    menuSelection_ = 0;
                     break;
                 case SDLK_MINUS:
                     running = false;

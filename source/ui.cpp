@@ -924,6 +924,11 @@ void UI::drawDetailPopup(const Pokemon& pkm) {
 
     infoY += 30;
 
+    // National dex ID
+    std::string idStr = "National #" + std::to_string(pkm.species());
+    drawText(idStr, infoX, infoY, COLOR_TEXT_DIM, fontSmall_);
+    infoY += 22;
+
     // OT + TID
     std::string otStr = "OT: " + pkm.otName() + " | TID: " + std::to_string(pkm.tid());
     drawText(otStr, infoX, infoY, COLOR_TEXT_DIM, fontSmall_);

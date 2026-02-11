@@ -59,6 +59,9 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    // Show splash screen while loading
+    ui.showSplash();
+
     // Load save file
     SaveFile save;
     if (!save.load(savePath)) {

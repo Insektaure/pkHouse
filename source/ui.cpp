@@ -111,6 +111,41 @@ void UI::shutdown() {
 #endif
 }
 
+void UI::showSplash() {
+    if (!renderer_) return;
+
+#ifdef __SWITCH__
+    const char* splashPath = "romfs:/splash.png";
+#else
+    const char* splashPath = "romfs/splash.png";
+#endif
+
+    SDL_Surface* surf = IMG_Load(splashPath);
+    if (!surf) return;
+
+    SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer_, surf);
+    SDL_FreeSurface(surf);
+    if (!tex) return;
+
+    int texW, texH;
+    SDL_QueryTexture(tex, nullptr, nullptr, &texW, &texH);
+
+    // Scale to fit screen while preserving aspect ratio
+    float scale = std::min(static_cast<float>(SCREEN_W) / texW,
+                           static_cast<float>(SCREEN_H) / texH);
+    int dstW = static_cast<int>(texW * scale);
+    int dstH = static_cast<int>(texH * scale);
+
+    SDL_SetRenderDrawColor(renderer_, 0, 0, 0, 255);
+    SDL_RenderClear(renderer_);
+
+    SDL_Rect dst = {(SCREEN_W - dstW) / 2, (SCREEN_H - dstH) / 2, dstW, dstH};
+    SDL_RenderCopy(renderer_, tex, nullptr, &dst);
+    SDL_RenderPresent(renderer_);
+
+    SDL_DestroyTexture(tex);
+}
+
 void UI::run(SaveFile& save, BankManager& bankManager, const std::string& savePath) {
     bankManager_ = &bankManager;
     savePath_ = savePath;

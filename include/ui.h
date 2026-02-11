@@ -32,6 +32,7 @@ class UI {
 public:
     bool init();
     void shutdown();
+    void showSplash();
     void run(SaveFile& save, BankManager& bankManager, const std::string& savePath);
 
 private:

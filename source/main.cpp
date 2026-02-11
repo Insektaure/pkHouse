@@ -1,6 +1,6 @@
 #include "ui.h"
 #include "save_file.h"
-#include "bank.h"
+#include "bank_manager.h"
 #include "species_converter.h"
 
 #ifdef __SWITCH__
@@ -17,7 +17,7 @@ int main(int argc, char* argv[]) {
 
     // Determine base path
     // On Switch, the NRO runs from sdmc:/switch/pkHouse/
-    // Save file "main" and bank file are in the same directory
+    // Save file "main" and bank files are in the same directory
     std::string basePath;
 #ifdef __SWITCH__
     // Get the path of the NRO itself
@@ -36,7 +36,6 @@ int main(int argc, char* argv[]) {
 #endif
 
     std::string savePath = basePath + "main";
-    std::string bankPath = basePath + "bank.bin";
 
     // Load text data
 #ifdef __SWITCH__
@@ -67,19 +66,12 @@ int main(int argc, char* argv[]) {
         // In production, show error and exit
     }
 
-    // Load or create bank
-    Bank bank;
-    bank.load(bankPath);
+    // Initialize bank manager (creates banks/ dir, migrates legacy bank.bin)
+    BankManager bankManager;
+    bankManager.init(basePath);
 
-    // Run main loop - returns true if user chose save & exit
-    bool shouldSave = ui.run(save, bank, savePath, bankPath);
-
-    // Save changes only if user chose to
-    if (shouldSave) {
-        if (save.isLoaded())
-            save.save(savePath);
-        bank.save(bankPath);
-    }
+    // Run main loop — saving handled inside run()
+    ui.run(save, bankManager, savePath);
 
     // Cleanup
     ui.shutdown();

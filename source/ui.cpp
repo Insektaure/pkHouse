@@ -111,23 +111,446 @@ void UI::shutdown() {
 #endif
 }
 
-bool UI::run(SaveFile& save, Bank& bank,
-             const std::string& savePath, const std::string& bankPath) {
+void UI::run(SaveFile& save, BankManager& bankManager, const std::string& savePath) {
+    bankManager_ = &bankManager;
+    savePath_ = savePath;
+    screen_ = AppScreen::BankSelector;
     bool running = true;
-    bool shouldSave = true;
+
     while (running) {
-        handleInput(save, bank, running, shouldSave);
-        if (saveNow_) {
-            if (save.isLoaded())
-                save.save(savePath);
-            bank.save(bankPath);
-            saveNow_ = false;
+        if (screen_ == AppScreen::BankSelector) {
+            handleBankSelectorInput(running);
+            drawBankSelectorFrame();
+        } else {
+            handleInput(save, running);
+            if (saveNow_) {
+                if (save.isLoaded())
+                    save.save(savePath_);
+                if (!activeBankPath_.empty())
+                    bank_.save(activeBankPath_);
+                saveNow_ = false;
+            }
+            drawFrame(save);
         }
-        drawFrame(save, bank);
         SDL_RenderPresent(renderer_);
         SDL_Delay(16);
     }
-    return shouldSave;
+}
+
+// --- Bank Selector ---
+
+void UI::drawBankSelectorFrame() {
+    SDL_SetRenderDrawColor(renderer_, COLOR_BG.r, COLOR_BG.g, COLOR_BG.b, 255);
+    SDL_RenderClear(renderer_);
+
+    // Title
+    drawTextCentered("Select Bank", SCREEN_W / 2, 40, COLOR_TEXT, font_);
+
+    const auto& banks = bankManager_->list();
+
+    if (banks.empty()) {
+        drawTextCentered("No banks found. Press X to create one.",
+                         SCREEN_W / 2, SCREEN_H / 2, COLOR_TEXT_DIM, font_);
+    } else {
+        // List area: centered 800px wide, y=80..580, rows 50px tall
+        constexpr int LIST_W = 800;
+        constexpr int LIST_X = (SCREEN_W - LIST_W) / 2;
+        constexpr int LIST_Y = 80;
+        constexpr int LIST_BOTTOM = 580;
+        constexpr int ROW_H = 50;
+        int visibleRows = (LIST_BOTTOM - LIST_Y) / ROW_H;
+
+        // Clamp scroll
+        int maxScroll = std::max(0, (int)banks.size() - visibleRows);
+        if (bankSelScroll_ > maxScroll) bankSelScroll_ = maxScroll;
+        if (bankSelScroll_ < 0) bankSelScroll_ = 0;
+
+        // Scroll arrows
+        if (bankSelScroll_ > 0) {
+            drawTextCentered("^", SCREEN_W / 2, LIST_Y - 12, COLOR_ARROW, font_);
+        }
+        if (bankSelScroll_ + visibleRows < (int)banks.size()) {
+            drawTextCentered("v", SCREEN_W / 2, LIST_BOTTOM + 4, COLOR_ARROW, font_);
+        }
+
+        for (int i = 0; i < visibleRows && (bankSelScroll_ + i) < (int)banks.size(); i++) {
+            int idx = bankSelScroll_ + i;
+            int rowY = LIST_Y + i * ROW_H;
+
+            // Highlighted row
+            if (idx == bankSelCursor_) {
+                drawRect(LIST_X, rowY, LIST_W, ROW_H - 4, {60, 60, 80, 255});
+                drawRectOutline(LIST_X, rowY, LIST_W, ROW_H - 4, COLOR_CURSOR, 2);
+            }
+
+            // Bank name (left-aligned)
+            drawText(banks[idx].name, LIST_X + 20, rowY + (ROW_H - 4) / 2 - 9,
+                     COLOR_TEXT, font_);
+
+            // Slot count (right-aligned)
+            std::string slotStr = std::to_string(banks[idx].occupiedSlots) + "/960";
+            int tw = 0, th = 0;
+            TTF_SizeUTF8(font_, slotStr.c_str(), &tw, &th);
+            drawText(slotStr, LIST_X + LIST_W - 20 - tw, rowY + (ROW_H - 4) / 2 - 9,
+                     COLOR_TEXT_DIM, font_);
+        }
+    }
+
+    // Status bar
+    drawStatusBar("A:Open  X:New  Y:Rename  -:Delete  +:Quit");
+
+    // Delete confirmation overlay
+    if (showDeleteConfirm_) {
+        drawDeleteConfirmPopup();
+    }
+
+    // Text input overlay
+    if (showTextInput_) {
+        drawTextInputPopup();
+    }
+}
+
+void UI::handleBankSelectorInput(bool& running) {
+    const auto& banks = bankManager_->list();
+    int bankCount = (int)banks.size();
+
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
+        if (event.type == SDL_QUIT) {
+            running = false;
+            return;
+        }
+
+        // Text input popup takes priority
+        if (showTextInput_) {
+            handleTextInputEvent(event);
+            continue;
+        }
+
+        // Delete confirmation takes priority
+        if (showDeleteConfirm_) {
+            handleDeleteConfirmEvent(event);
+            continue;
+        }
+
+        if (event.type == SDL_CONTROLLERBUTTONDOWN) {
+            switch (event.cbutton.button) {
+                case SDL_CONTROLLER_BUTTON_DPAD_UP:
+                    if (bankCount > 0) {
+                        bankSelCursor_ = (bankSelCursor_ - 1 + bankCount) % bankCount;
+                        // Adjust scroll to keep cursor visible
+                        if (bankSelCursor_ < bankSelScroll_)
+                            bankSelScroll_ = bankSelCursor_;
+                    }
+                    break;
+                case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+                    if (bankCount > 0) {
+                        bankSelCursor_ = (bankSelCursor_ + 1) % bankCount;
+                        int visibleRows = (580 - 80) / 50;
+                        if (bankSelCursor_ >= bankSelScroll_ + visibleRows)
+                            bankSelScroll_ = bankSelCursor_ - visibleRows + 1;
+                    }
+                    break;
+                case SDL_CONTROLLER_BUTTON_B: // Switch A = open
+                    if (bankCount > 0)
+                        openSelectedBank();
+                    break;
+                case SDL_CONTROLLER_BUTTON_Y: // Switch X = new
+                    beginTextInput(TextInputPurpose::CreateBank);
+                    break;
+                case SDL_CONTROLLER_BUTTON_X: // Switch Y = rename
+                    if (bankCount > 0)
+                        beginTextInput(TextInputPurpose::RenameBank);
+                    break;
+                case SDL_CONTROLLER_BUTTON_BACK: // - = delete
+                    if (bankCount > 0)
+                        showDeleteConfirm_ = true;
+                    break;
+                case SDL_CONTROLLER_BUTTON_START: // + = quit
+                    running = false;
+                    break;
+            }
+        }
+
+        if (event.type == SDL_KEYDOWN) {
+            switch (event.key.keysym.sym) {
+                case SDLK_UP:
+                    if (bankCount > 0) {
+                        bankSelCursor_ = (bankSelCursor_ - 1 + bankCount) % bankCount;
+                        if (bankSelCursor_ < bankSelScroll_)
+                            bankSelScroll_ = bankSelCursor_;
+                    }
+                    break;
+                case SDLK_DOWN:
+                    if (bankCount > 0) {
+                        bankSelCursor_ = (bankSelCursor_ + 1) % bankCount;
+                        int visibleRows = (580 - 80) / 50;
+                        if (bankSelCursor_ >= bankSelScroll_ + visibleRows)
+                            bankSelScroll_ = bankSelCursor_ - visibleRows + 1;
+                    }
+                    break;
+                case SDLK_a:
+                case SDLK_RETURN:
+                    if (bankCount > 0)
+                        openSelectedBank();
+                    break;
+                case SDLK_x:
+                    beginTextInput(TextInputPurpose::CreateBank);
+                    break;
+                case SDLK_y:
+                    if (bankCount > 0)
+                        beginTextInput(TextInputPurpose::RenameBank);
+                    break;
+                case SDLK_DELETE:
+                    if (bankCount > 0)
+                        showDeleteConfirm_ = true;
+                    break;
+                case SDLK_ESCAPE:
+                    running = false;
+                    break;
+            }
+        }
+    }
+}
+
+void UI::openSelectedBank() {
+    const auto& banks = bankManager_->list();
+    if (bankSelCursor_ < 0 || bankSelCursor_ >= (int)banks.size())
+        return;
+
+    const std::string& name = banks[bankSelCursor_].name;
+    activeBankPath_ = bankManager_->loadBank(name, bank_);
+    activeBankName_ = name;
+    screen_ = AppScreen::MainView;
+
+    // Reset main view state
+    cursor_ = Cursor{};
+    gameBox_ = 0;
+    bankBox_ = 0;
+    showDetail_ = false;
+    showMenu_ = false;
+    holding_ = false;
+    heldPkm_ = Pokemon{};
+}
+
+// --- Delete Confirmation ---
+
+void UI::drawDeleteConfirmPopup() {
+    drawRect(0, 0, SCREEN_W, SCREEN_H, {0, 0, 0, 160});
+
+    constexpr int POP_W = 500;
+    constexpr int POP_H = 180;
+    int popX = (SCREEN_W - POP_W) / 2;
+    int popY = (SCREEN_H - POP_H) / 2;
+
+    drawRect(popX, popY, POP_W, POP_H, COLOR_PANEL_BG);
+    drawRectOutline(popX, popY, POP_W, POP_H, COLOR_RED, 2);
+
+    const auto& banks = bankManager_->list();
+    std::string bankName = (bankSelCursor_ >= 0 && bankSelCursor_ < (int)banks.size())
+        ? banks[bankSelCursor_].name : "";
+
+    drawTextCentered("Delete \"" + bankName + "\"?",
+                     popX + POP_W / 2, popY + 50, COLOR_TEXT, font_);
+    drawTextCentered("This cannot be undone!",
+                     popX + POP_W / 2, popY + 85, COLOR_RED, fontSmall_);
+    drawTextCentered("A:Confirm  B:Cancel",
+                     popX + POP_W / 2, popY + POP_H - 25, COLOR_TEXT_DIM, fontSmall_);
+}
+
+void UI::handleDeleteConfirmEvent(const SDL_Event& event) {
+    if (event.type == SDL_CONTROLLERBUTTONDOWN) {
+        switch (event.cbutton.button) {
+            case SDL_CONTROLLER_BUTTON_B: { // Switch A = confirm
+                const auto& banks = bankManager_->list();
+                if (bankSelCursor_ >= 0 && bankSelCursor_ < (int)banks.size()) {
+                    bankManager_->deleteBank(banks[bankSelCursor_].name);
+                    int newCount = (int)bankManager_->list().size();
+                    if (bankSelCursor_ >= newCount && newCount > 0)
+                        bankSelCursor_ = newCount - 1;
+                }
+                showDeleteConfirm_ = false;
+                break;
+            }
+            case SDL_CONTROLLER_BUTTON_A: // Switch B = cancel
+                showDeleteConfirm_ = false;
+                break;
+        }
+    }
+    if (event.type == SDL_KEYDOWN) {
+        switch (event.key.keysym.sym) {
+            case SDLK_a:
+            case SDLK_RETURN: {
+                const auto& banks = bankManager_->list();
+                if (bankSelCursor_ >= 0 && bankSelCursor_ < (int)banks.size()) {
+                    bankManager_->deleteBank(banks[bankSelCursor_].name);
+                    int newCount = (int)bankManager_->list().size();
+                    if (bankSelCursor_ >= newCount && newCount > 0)
+                        bankSelCursor_ = newCount - 1;
+                }
+                showDeleteConfirm_ = false;
+                break;
+            }
+            case SDLK_b:
+            case SDLK_ESCAPE:
+                showDeleteConfirm_ = false;
+                break;
+        }
+    }
+}
+
+// --- Text Input ---
+
+void UI::beginTextInput(TextInputPurpose purpose) {
+    textInputPurpose_ = purpose;
+    textInputBuffer_.clear();
+    textInputCursorPos_ = 0;
+
+    if (purpose == TextInputPurpose::RenameBank) {
+        const auto& banks = bankManager_->list();
+        if (bankSelCursor_ >= 0 && bankSelCursor_ < (int)banks.size()) {
+            renamingBankName_ = banks[bankSelCursor_].name;
+            textInputBuffer_ = renamingBankName_;
+            textInputCursorPos_ = (int)textInputBuffer_.size();
+        }
+    }
+
+#ifdef __SWITCH__
+    SwkbdConfig kbd;
+    swkbdCreate(&kbd, 0);
+    swkbdConfigMakePresetDefault(&kbd);
+    swkbdConfigSetStringLenMax(&kbd, 32);
+    if (purpose == TextInputPurpose::CreateBank)
+        swkbdConfigSetHeaderText(&kbd, "Enter bank name");
+    else
+        swkbdConfigSetHeaderText(&kbd, "Rename bank");
+    if (purpose == TextInputPurpose::RenameBank && !renamingBankName_.empty())
+        swkbdConfigSetInitialText(&kbd, renamingBankName_.c_str());
+    char result[64] = {};
+    Result rc = swkbdShow(&kbd, result, sizeof(result));
+    swkbdClose(&kbd);
+    if (R_SUCCEEDED(rc) && result[0])
+        commitTextInput(result);
+#else
+    showTextInput_ = true;
+    SDL_StartTextInput();
+#endif
+}
+
+void UI::drawTextInputPopup() {
+    drawRect(0, 0, SCREEN_W, SCREEN_H, {0, 0, 0, 160});
+
+    constexpr int POP_W = 500;
+    constexpr int POP_H = 180;
+    int popX = (SCREEN_W - POP_W) / 2;
+    int popY = (SCREEN_H - POP_H) / 2;
+
+    drawRect(popX, popY, POP_W, POP_H, COLOR_PANEL_BG);
+    drawRectOutline(popX, popY, POP_W, POP_H, COLOR_CURSOR, 2);
+
+    const char* title = (textInputPurpose_ == TextInputPurpose::CreateBank)
+        ? "New Bank Name" : "Rename Bank";
+    drawTextCentered(title, popX + POP_W / 2, popY + 30, COLOR_TEXT, font_);
+
+    // Text field background
+    int fieldX = popX + 40;
+    int fieldY = popY + 60;
+    int fieldW = POP_W - 80;
+    int fieldH = 36;
+    drawRect(fieldX, fieldY, fieldW, fieldH, {30, 30, 40, 255});
+    drawRectOutline(fieldX, fieldY, fieldW, fieldH, COLOR_TEXT_DIM, 1);
+
+    // Text content
+    if (!textInputBuffer_.empty()) {
+        drawText(textInputBuffer_, fieldX + 8, fieldY + 8, COLOR_TEXT, font_);
+    }
+
+    // Blinking cursor
+    int cursorX = fieldX + 8;
+    if (!textInputBuffer_.empty() && textInputCursorPos_ > 0) {
+        std::string beforeCursor = textInputBuffer_.substr(0, textInputCursorPos_);
+        int tw = 0, th = 0;
+        TTF_SizeUTF8(font_, beforeCursor.c_str(), &tw, &th);
+        cursorX += tw;
+    }
+    // Blink every 500ms
+    if ((SDL_GetTicks() / 500) % 2 == 0) {
+        drawRect(cursorX, fieldY + 6, 2, fieldH - 12, COLOR_TEXT);
+    }
+
+    drawTextCentered("Enter:Confirm  Escape:Cancel",
+                     popX + POP_W / 2, popY + POP_H - 25, COLOR_TEXT_DIM, fontSmall_);
+}
+
+void UI::handleTextInputEvent(const SDL_Event& event) {
+    if (event.type == SDL_TEXTINPUT) {
+        if ((int)textInputBuffer_.size() < 32) {
+            std::string input = event.text.text;
+            textInputBuffer_.insert(textInputCursorPos_, input);
+            textInputCursorPos_ += (int)input.size();
+        }
+        return;
+    }
+
+    if (event.type == SDL_KEYDOWN) {
+        switch (event.key.keysym.sym) {
+            case SDLK_RETURN:
+                SDL_StopTextInput();
+                showTextInput_ = false;
+                if (!textInputBuffer_.empty())
+                    commitTextInput(textInputBuffer_);
+                break;
+            case SDLK_ESCAPE:
+                SDL_StopTextInput();
+                showTextInput_ = false;
+                break;
+            case SDLK_BACKSPACE:
+                if (textInputCursorPos_ > 0) {
+                    textInputBuffer_.erase(textInputCursorPos_ - 1, 1);
+                    textInputCursorPos_--;
+                }
+                break;
+            case SDLK_DELETE:
+                if (textInputCursorPos_ < (int)textInputBuffer_.size()) {
+                    textInputBuffer_.erase(textInputCursorPos_, 1);
+                }
+                break;
+            case SDLK_LEFT:
+                if (textInputCursorPos_ > 0)
+                    textInputCursorPos_--;
+                break;
+            case SDLK_RIGHT:
+                if (textInputCursorPos_ < (int)textInputBuffer_.size())
+                    textInputCursorPos_++;
+                break;
+        }
+    }
+}
+
+void UI::commitTextInput(const std::string& text) {
+    if (textInputPurpose_ == TextInputPurpose::CreateBank) {
+        if (bankManager_->createBank(text)) {
+            // Select the newly created bank
+            const auto& banks = bankManager_->list();
+            for (int i = 0; i < (int)banks.size(); i++) {
+                if (banks[i].name == text) {
+                    bankSelCursor_ = i;
+                    break;
+                }
+            }
+        }
+    } else if (textInputPurpose_ == TextInputPurpose::RenameBank) {
+        if (bankManager_->renameBank(renamingBankName_, text)) {
+            // Select the renamed bank
+            const auto& banks = bankManager_->list();
+            for (int i = 0; i < (int)banks.size(); i++) {
+                if (banks[i].name == text) {
+                    bankSelCursor_ = i;
+                    break;
+                }
+            }
+        }
+    }
 }
 
 // --- Sprites ---
@@ -338,7 +761,7 @@ void UI::drawPanel(int panelX, const std::string& boxName, int boxIdx,
     }
 }
 
-void UI::drawFrame(SaveFile& save, Bank& bank) {
+void UI::drawFrame(SaveFile& save) {
     // Clear screen
     SDL_SetRenderDrawColor(renderer_, COLOR_BG.r, COLOR_BG.g, COLOR_BG.b, 255);
     SDL_RenderClear(renderer_);
@@ -355,11 +778,11 @@ void UI::drawFrame(SaveFile& save, Bank& bank) {
     drawPanel(PANEL_X_L, gameBoxName, gameBox_, SaveFile::BOX_COUNT,
               leftActive, &save, nullptr, gameBox_);
 
-    // Right panel: Bank boxes
+    // Right panel: Bank boxes — include active bank name in header
     bool rightActive = (cursor_.panel == Panel::Bank);
-    std::string bankBoxName = bank.getBoxName(bankBox_);
+    std::string bankBoxName = activeBankName_ + " - " + bank_.getBoxName(bankBox_);
     drawPanel(PANEL_X_R, bankBoxName, bankBox_, Bank::BOX_COUNT,
-              rightActive, nullptr, &bank, bankBox_);
+              rightActive, nullptr, &bank_, bankBox_);
 
     // Status bar
     std::string statusMsg = "D-Pad:Move  L/R:Box  A:Pick/Place  B:Cancel  Y:Detail  +:Menu  -:Quit";
@@ -374,7 +797,7 @@ void UI::drawFrame(SaveFile& save, Bank& bank) {
 
     // Detail popup overlay
     if (showDetail_) {
-        Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(), cursor_.panel, save, bank);
+        Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(), cursor_.panel, save);
         if (pkm.isEmpty()) {
             showDetail_ = false;
         } else {
@@ -541,7 +964,7 @@ void UI::drawMenuPopup() {
 
     // Popup rect centered
     constexpr int POP_W = 350;
-    constexpr int POP_H = 220;
+    constexpr int POP_H = 260;
     int popX = (SCREEN_W - POP_W) / 2;
     int popY = (SCREEN_H - POP_H) / 2;
 
@@ -551,12 +974,12 @@ void UI::drawMenuPopup() {
     // Title
     drawTextCentered("Menu", popX + POP_W / 2, popY + 22, COLOR_TEXT, font_);
 
-    // Menu options
-    const char* labels[] = {"Save", "Save & Quit", "Quit Without Saving"};
+    // Menu options (4 items now)
+    const char* labels[] = {"Save", "Switch Bank", "Save & Quit", "Quit Without Saving"};
     int rowH = 36;
     int startY = popY + 50;
 
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 4; i++) {
         int rowY = startY + i * rowH;
         if (i == menuSelection_) {
             drawRect(popX + 20, rowY, POP_W - 40, rowH - 4, {60, 60, 80, 255});
@@ -571,12 +994,11 @@ void UI::drawMenuPopup() {
 
 // --- Input ---
 
-void UI::handleInput(SaveFile& save, Bank& bank, bool& running, bool& shouldSave) {
+void UI::handleInput(SaveFile& save, bool& running) {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
         if (event.type == SDL_QUIT) {
             running = false;
-            shouldSave = false;
             return;
         }
 
@@ -585,20 +1007,31 @@ void UI::handleInput(SaveFile& save, Bank& bank, bool& running, bool& shouldSave
             if (event.type == SDL_CONTROLLERBUTTONDOWN) {
                 switch (event.cbutton.button) {
                     case SDL_CONTROLLER_BUTTON_DPAD_UP:
-                        menuSelection_ = (menuSelection_ + 2) % 3;
+                        menuSelection_ = (menuSelection_ + 3) % 4;
                         break;
                     case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
-                        menuSelection_ = (menuSelection_ + 1) % 3;
+                        menuSelection_ = (menuSelection_ + 1) % 4;
                         break;
                     case SDL_CONTROLLER_BUTTON_B: // Switch A = confirm
                         if (menuSelection_ == 0) {
+                            // Save
                             saveNow_ = true;
                             showMenu_ = false;
                         } else if (menuSelection_ == 1) {
-                            shouldSave = true;
+                            // Switch Bank — save current bank, go to selector
+                            if (!activeBankPath_.empty())
+                                bank_.save(activeBankPath_);
+                            if (save.isLoaded())
+                                save.save(savePath_);
+                            bankManager_->refresh();
+                            screen_ = AppScreen::BankSelector;
+                            showMenu_ = false;
+                        } else if (menuSelection_ == 2) {
+                            // Save & Quit
+                            saveNow_ = true;
                             running = false;
                         } else {
-                            shouldSave = false;
+                            // Quit Without Saving
                             running = false;
                         }
                         break;
@@ -610,10 +1043,10 @@ void UI::handleInput(SaveFile& save, Bank& bank, bool& running, bool& shouldSave
             if (event.type == SDL_KEYDOWN) {
                 switch (event.key.keysym.sym) {
                     case SDLK_UP:
-                        menuSelection_ = (menuSelection_ + 2) % 3;
+                        menuSelection_ = (menuSelection_ + 3) % 4;
                         break;
                     case SDLK_DOWN:
-                        menuSelection_ = (menuSelection_ + 1) % 3;
+                        menuSelection_ = (menuSelection_ + 1) % 4;
                         break;
                     case SDLK_a:
                     case SDLK_RETURN:
@@ -621,10 +1054,17 @@ void UI::handleInput(SaveFile& save, Bank& bank, bool& running, bool& shouldSave
                             saveNow_ = true;
                             showMenu_ = false;
                         } else if (menuSelection_ == 1) {
-                            shouldSave = true;
+                            if (!activeBankPath_.empty())
+                                bank_.save(activeBankPath_);
+                            if (save.isLoaded())
+                                save.save(savePath_);
+                            bankManager_->refresh();
+                            screen_ = AppScreen::BankSelector;
+                            showMenu_ = false;
+                        } else if (menuSelection_ == 2) {
+                            saveNow_ = true;
                             running = false;
                         } else {
-                            shouldSave = false;
                             running = false;
                         }
                         break;
@@ -662,14 +1102,14 @@ void UI::handleInput(SaveFile& save, Bank& bank, bool& running, bool& shouldSave
         if (event.type == SDL_CONTROLLERBUTTONDOWN) {
             switch (event.cbutton.button) {
                 case SDL_CONTROLLER_BUTTON_B: // Switch A (right) = SDL B
-                    actionSelect(save, bank);
+                    actionSelect(save);
                     break;
                 case SDL_CONTROLLER_BUTTON_A: // Switch B (bottom) = SDL A
-                    actionCancel(save, bank);
+                    actionCancel(save);
                     break;
                 case SDL_CONTROLLER_BUTTON_X: // Switch Y (left) = SDL X
                 {
-                    Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(), cursor_.panel, save, bank);
+                    Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(), cursor_.panel, save);
                     if (!pkm.isEmpty())
                         showDetail_ = true;
                     break;
@@ -680,7 +1120,6 @@ void UI::handleInput(SaveFile& save, Bank& bank, bool& running, bool& shouldSave
                     break;
                 case SDL_CONTROLLER_BUTTON_BACK: // - (quit without saving)
                     running = false;
-                    shouldSave = false;
                     break;
                 case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
                     switchBox(-1);
@@ -711,12 +1150,12 @@ void UI::handleInput(SaveFile& save, Bank& bank, bool& running, bool& shouldSave
                 case SDLK_LEFT:   moveCursor(-1, 0); break;
                 case SDLK_RIGHT:  moveCursor(+1, 0); break;
                 case SDLK_a:
-                case SDLK_RETURN: actionSelect(save, bank); break;
+                case SDLK_RETURN: actionSelect(save); break;
                 case SDLK_b:
-                case SDLK_ESCAPE: actionCancel(save, bank); break;
+                case SDLK_ESCAPE: actionCancel(save); break;
                 case SDLK_y:
                 {
-                    Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(), cursor_.panel, save, bank);
+                    Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(), cursor_.panel, save);
                     if (!pkm.isEmpty())
                         showDetail_ = true;
                     break;
@@ -729,7 +1168,6 @@ void UI::handleInput(SaveFile& save, Bank& bank, bool& running, bool& shouldSave
                     break;
                 case SDLK_MINUS:
                     running = false;
-                    shouldSave = false;
                     break;
             }
         }
@@ -777,33 +1215,33 @@ void UI::switchBox(int direction) {
         bankBox_ = cursor_.box;
 }
 
-Pokemon UI::getPokemonAt(int box, int slot, Panel panel, SaveFile& save, Bank& bank) const {
+Pokemon UI::getPokemonAt(int box, int slot, Panel panel, SaveFile& save) const {
     if (panel == Panel::Game)
         return save.getBoxSlot(box, slot);
     else
-        return bank.getSlot(box, slot);
+        return bank_.getSlot(box, slot);
 }
 
-void UI::setPokemonAt(int box, int slot, Panel panel, const Pokemon& pkm, SaveFile& save, Bank& bank) {
+void UI::setPokemonAt(int box, int slot, Panel panel, const Pokemon& pkm, SaveFile& save) {
     if (panel == Panel::Game)
         save.setBoxSlot(box, slot, pkm);
     else
-        bank.setSlot(box, slot, pkm);
+        bank_.setSlot(box, slot, pkm);
 }
 
-void UI::clearPokemonAt(int box, int slot, Panel panel, SaveFile& save, Bank& bank) {
+void UI::clearPokemonAt(int box, int slot, Panel panel, SaveFile& save) {
     if (panel == Panel::Game)
         save.clearBoxSlot(box, slot);
     else
-        bank.clearSlot(box, slot);
+        bank_.clearSlot(box, slot);
 }
 
-void UI::actionSelect(SaveFile& save, Bank& bank) {
+void UI::actionSelect(SaveFile& save) {
     int box = cursor_.box;
     int slot = cursor_.slot();
 
     if (!holding_) {
-        Pokemon pkm = getPokemonAt(box, slot, cursor_.panel, save, bank);
+        Pokemon pkm = getPokemonAt(box, slot, cursor_.panel, save);
         if (pkm.isEmpty())
             return;
 
@@ -813,16 +1251,16 @@ void UI::actionSelect(SaveFile& save, Bank& bank) {
         heldSlot_ = slot;
         holding_ = true;
 
-        clearPokemonAt(box, slot, cursor_.panel, save, bank);
+        clearPokemonAt(box, slot, cursor_.panel, save);
     } else {
-        Pokemon target = getPokemonAt(box, slot, cursor_.panel, save, bank);
+        Pokemon target = getPokemonAt(box, slot, cursor_.panel, save);
 
         if (target.isEmpty()) {
-            setPokemonAt(box, slot, cursor_.panel, heldPkm_, save, bank);
+            setPokemonAt(box, slot, cursor_.panel, heldPkm_, save);
             holding_ = false;
             heldPkm_ = Pokemon{};
         } else {
-            setPokemonAt(box, slot, cursor_.panel, heldPkm_, save, bank);
+            setPokemonAt(box, slot, cursor_.panel, heldPkm_, save);
             heldPkm_ = target;
             heldSource_ = cursor_.panel;
             heldBox_ = box;
@@ -831,11 +1269,11 @@ void UI::actionSelect(SaveFile& save, Bank& bank) {
     }
 }
 
-void UI::actionCancel(SaveFile& save, Bank& bank) {
+void UI::actionCancel(SaveFile& save) {
     if (!holding_)
         return;
 
-    setPokemonAt(heldBox_, heldSlot_, heldSource_, heldPkm_, save, bank);
+    setPokemonAt(heldBox_, heldSlot_, heldSource_, heldPkm_, save);
     holding_ = false;
     heldPkm_ = Pokemon{};
 }

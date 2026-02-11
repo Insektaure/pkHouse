@@ -1,6 +1,7 @@
 #pragma once
 #include "save_file.h"
 #include "bank.h"
+#include "bank_manager.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_image.h>
@@ -9,6 +10,12 @@
 
 // Which panel the cursor is on
 enum class Panel { Game, Bank };
+
+// App-level screen state
+enum class AppScreen { BankSelector, MainView };
+
+// Purpose of text input popup
+enum class TextInputPurpose { CreateBank, RenameBank };
 
 // Cursor position within the two-panel display
 struct Cursor {
@@ -23,11 +30,9 @@ struct Cursor {
 // Main UI class - manages rendering and input for the two-panel box viewer.
 class UI {
 public:
-    // Returns true if user chose "save & exit", false for "quit without saving".
     bool init();
     void shutdown();
-    bool run(SaveFile& save, Bank& bank,
-             const std::string& savePath, const std::string& bankPath);
+    void run(SaveFile& save, BankManager& bankManager, const std::string& savePath);
 
 private:
     SDL_Window*          window_    = nullptr;
@@ -81,8 +86,29 @@ private:
     static constexpr SDL_Color COLOR_BOX_NAME    = {200, 200, 220, 255};
     static constexpr SDL_Color COLOR_ARROW       = {180, 180, 200, 255};
     static constexpr SDL_Color COLOR_STATUS      = {140, 200, 140, 255};
+    static constexpr SDL_Color COLOR_RED         = {220, 60, 60, 255};
 
-    // State
+    // App screen state
+    AppScreen screen_ = AppScreen::BankSelector;
+    BankManager* bankManager_ = nullptr;
+    Bank bank_;                          // active bank (owned)
+    std::string activeBankName_;
+    std::string activeBankPath_;
+    std::string savePath_;
+
+    // Bank selector state
+    int  bankSelCursor_ = 0;
+    int  bankSelScroll_ = 0;
+    bool showDeleteConfirm_ = false;
+
+    // Text input (PC only; Switch uses swkbd)
+    bool showTextInput_ = false;
+    TextInputPurpose textInputPurpose_;
+    std::string textInputBuffer_;
+    int textInputCursorPos_ = 0;
+    std::string renamingBankName_;
+
+    // Main view state
     Cursor cursor_;
     int    gameBox_ = 0;
     int    bankBox_ = 0;
@@ -100,8 +126,19 @@ private:
     SDL_Texture* getSprite(uint16_t nationalId);
     void freeSprites();
 
+    // Bank selector
+    void drawBankSelectorFrame();
+    void handleBankSelectorInput(bool& running);
+    void openSelectedBank();
+    void drawDeleteConfirmPopup();
+    void handleDeleteConfirmEvent(const SDL_Event& event);
+    void drawTextInputPopup();
+    void handleTextInputEvent(const SDL_Event& event);
+    void beginTextInput(TextInputPurpose purpose);
+    void commitTextInput(const std::string& text);
+
     // Rendering helpers
-    void drawFrame(SaveFile& save, Bank& bank);
+    void drawFrame(SaveFile& save);
     void drawDetailPopup(const Pokemon& pkm);
     void drawMenuPopup();
     void drawPanel(int panelX, const std::string& boxName, int boxIdx,
@@ -114,14 +151,14 @@ private:
     void drawStatusBar(const std::string& msg);
 
     // Input handling
-    void handleInput(SaveFile& save, Bank& bank, bool& running, bool& shouldSave);
+    void handleInput(SaveFile& save, bool& running);
     void moveCursor(int dx, int dy);
     void switchBox(int direction);
-    void actionSelect(SaveFile& save, Bank& bank);
-    void actionCancel(SaveFile& save, Bank& bank);
+    void actionSelect(SaveFile& save);
+    void actionCancel(SaveFile& save);
 
     // Get pokemon at cursor from the appropriate source
-    Pokemon getPokemonAt(int box, int slot, Panel panel, SaveFile& save, Bank& bank) const;
-    void setPokemonAt(int box, int slot, Panel panel, const Pokemon& pkm, SaveFile& save, Bank& bank);
-    void clearPokemonAt(int box, int slot, Panel panel, SaveFile& save, Bank& bank);
+    Pokemon getPokemonAt(int box, int slot, Panel panel, SaveFile& save) const;
+    void setPokemonAt(int box, int slot, Panel panel, const Pokemon& pkm, SaveFile& save);
+    void clearPokemonAt(int box, int slot, Panel panel, SaveFile& save);
 };

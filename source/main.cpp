@@ -1,6 +1,4 @@
 #include "ui.h"
-#include "save_file.h"
-#include "bank_manager.h"
 #include "species_converter.h"
 
 #ifdef __SWITCH__
@@ -74,19 +72,8 @@ int main(int argc, char* argv[]) {
     }
 #endif
 
-    // Load save file
-    SaveFile save;
-    if (!save.load(savePath)) {
-        // Could not load save - still start with empty state for testing
-        // In production, show error and exit
-    }
-
-    // Initialize bank manager (creates banks/ dir, migrates legacy bank.bin)
-    BankManager bankManager;
-    bankManager.init(basePath);
-
-    // Run main loop — saving handled inside run()
-    ui.run(save, bankManager, savePath);
+    // Run main loop — game selection, bank selection, and save loading all handled inside
+    ui.run(basePath, savePath);
 
     // Cleanup
     ui.shutdown();

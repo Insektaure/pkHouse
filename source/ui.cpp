@@ -178,30 +178,148 @@ void UI::showMessageAndWait(const std::string& title, const std::string& body) {
     }
 }
 
-void UI::run(SaveFile& save, BankManager& bankManager, const std::string& savePath) {
-    bankManager_ = &bankManager;
+void UI::run(const std::string& basePath, const std::string& savePath) {
+    basePath_ = basePath;
     savePath_ = savePath;
-    screen_ = AppScreen::BankSelector;
+    screen_ = AppScreen::GameSelector;
     bool running = true;
 
     while (running) {
-        if (screen_ == AppScreen::BankSelector) {
+        if (screen_ == AppScreen::GameSelector) {
+            handleGameSelectorInput(running);
+            drawGameSelectorFrame();
+        } else if (screen_ == AppScreen::BankSelector) {
             handleBankSelectorInput(running);
             drawBankSelectorFrame();
         } else {
-            handleInput(save, running);
+            handleInput(running);
             if (saveNow_) {
-                if (save.isLoaded())
-                    save.save(savePath_);
+                if (save_.isLoaded())
+                    save_.save(savePath_);
                 if (!activeBankPath_.empty())
                     bank_.save(activeBankPath_);
                 saveNow_ = false;
             }
-            drawFrame(save);
+            drawFrame();
         }
         SDL_RenderPresent(renderer_);
         SDL_Delay(16);
     }
+}
+
+// --- Game Selector ---
+
+void UI::drawGameSelectorFrame() {
+    SDL_SetRenderDrawColor(renderer_, COLOR_BG.r, COLOR_BG.g, COLOR_BG.b, 255);
+    SDL_RenderClear(renderer_);
+
+    // Title
+    drawTextCentered("Select Game", SCREEN_W / 2, 40, COLOR_TEXT, font_);
+
+    // Four rows centered
+    constexpr int ROW_W = 500;
+    constexpr int ROW_H = 60;
+    constexpr int ROW_GAP = 20;
+    constexpr int NUM_GAMES = 4;
+    int startX = (SCREEN_W - ROW_W) / 2;
+    int startY = (SCREEN_H - ROW_H * NUM_GAMES - ROW_GAP * (NUM_GAMES - 1)) / 2;
+
+    const char* labels[] = {
+        "Pokemon Legends: Z-A",
+        "Pokemon Scarlet / Violet",
+        "Pokemon Sword / Shield",
+        "Pokemon Brilliant Diamond / Shining Pearl",
+    };
+
+    for (int i = 0; i < NUM_GAMES; i++) {
+        int rowY = startY + i * (ROW_H + ROW_GAP);
+
+        if (i == gameSelCursor_) {
+            drawRect(startX, rowY, ROW_W, ROW_H, {60, 60, 80, 255});
+            drawRectOutline(startX, rowY, ROW_W, ROW_H, COLOR_CURSOR, 2);
+        } else {
+            drawRect(startX, rowY, ROW_W, ROW_H, COLOR_PANEL_BG);
+        }
+
+        drawTextCentered(labels[i], SCREEN_W / 2, rowY + ROW_H / 2, COLOR_TEXT, font_);
+    }
+
+    // Status bar
+    drawStatusBar("A:Select  +:Quit");
+}
+
+void UI::handleGameSelectorInput(bool& running) {
+    constexpr int NUM_GAMES = 4;
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
+        if (event.type == SDL_QUIT) {
+            running = false;
+            return;
+        }
+
+        if (event.type == SDL_CONTROLLERBUTTONDOWN) {
+            switch (event.cbutton.button) {
+                case SDL_CONTROLLER_BUTTON_DPAD_UP:
+                    gameSelCursor_ = (gameSelCursor_ + NUM_GAMES - 1) % NUM_GAMES;
+                    break;
+                case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+                    gameSelCursor_ = (gameSelCursor_ + 1) % NUM_GAMES;
+                    break;
+                case SDL_CONTROLLER_BUTTON_B: { // Switch A = select
+                    constexpr GameType games[] = {GameType::ZA, GameType::SV, GameType::SwSh, GameType::BDSP};
+                    selectGame(games[gameSelCursor_]);
+                    break;
+                }
+                case SDL_CONTROLLER_BUTTON_START: // + = quit
+                    running = false;
+                    break;
+            }
+        }
+
+        if (event.type == SDL_KEYDOWN) {
+            switch (event.key.keysym.sym) {
+                case SDLK_UP:
+                    gameSelCursor_ = (gameSelCursor_ + NUM_GAMES - 1) % NUM_GAMES;
+                    break;
+                case SDLK_DOWN:
+                    gameSelCursor_ = (gameSelCursor_ + 1) % NUM_GAMES;
+                    break;
+                case SDLK_a:
+                case SDLK_RETURN: {
+                    constexpr GameType games[] = {GameType::ZA, GameType::SV, GameType::SwSh, GameType::BDSP};
+                    selectGame(games[gameSelCursor_]);
+                    break;
+                }
+                case SDLK_ESCAPE:
+                    running = false;
+                    break;
+            }
+        }
+    }
+}
+
+void UI::selectGame(GameType game) {
+    selectedGame_ = game;
+    save_.setGameType(game);
+
+    // Different save file names for testing; in production all are "main"
+    if (game == GameType::SV)
+        savePath_ = basePath_ + "main_sv";
+    else if (game == GameType::SwSh)
+        savePath_ = basePath_ + "main_swsh";
+    else if (game == GameType::BDSP)
+        savePath_ = basePath_ + "main_bdsp";
+    else
+        savePath_ = basePath_ + "main";
+
+    save_.load(savePath_);
+    bankManager_.init(basePath_, game);
+
+    // Reset bank selector state
+    bankSelCursor_ = 0;
+    bankSelScroll_ = 0;
+
+    screen_ = AppScreen::BankSelector;
 }
 
 // --- Bank Selector ---
@@ -213,7 +331,7 @@ void UI::drawBankSelectorFrame() {
     // Title
     drawTextCentered("Select Bank", SCREEN_W / 2, 40, COLOR_TEXT, font_);
 
-    const auto& banks = bankManager_->list();
+    const auto& banks = bankManager_.list();
 
     if (banks.empty()) {
         drawTextCentered("No banks found. Press X to create one.",
@@ -255,7 +373,8 @@ void UI::drawBankSelectorFrame() {
                      COLOR_TEXT, font_);
 
             // Slot count (right-aligned)
-            std::string slotStr = std::to_string(banks[idx].occupiedSlots) + "/960";
+            int maxSlots = (selectedGame_ == GameType::BDSP) ? 1200 : 960;
+            std::string slotStr = std::to_string(banks[idx].occupiedSlots) + "/" + std::to_string(maxSlots);
             int tw = 0, th = 0;
             TTF_SizeUTF8(font_, slotStr.c_str(), &tw, &th);
             drawText(slotStr, LIST_X + LIST_W - 20 - tw, rowY + (ROW_H - 4) / 2 - 9,
@@ -264,7 +383,7 @@ void UI::drawBankSelectorFrame() {
     }
 
     // Status bar
-    drawStatusBar("A:Open  X:New  Y:Rename  -:Delete  +:Quit");
+    drawStatusBar("A:Open  X:New  Y:Rename  -:Delete  B:Back  +:Quit");
 
     // Delete confirmation overlay
     if (showDeleteConfirm_) {
@@ -278,7 +397,7 @@ void UI::drawBankSelectorFrame() {
 }
 
 void UI::handleBankSelectorInput(bool& running) {
-    const auto& banks = bankManager_->list();
+    const auto& banks = bankManager_.list();
     int bankCount = (int)banks.size();
 
     SDL_Event event;
@@ -321,6 +440,9 @@ void UI::handleBankSelectorInput(bool& running) {
                 case SDL_CONTROLLER_BUTTON_B: // Switch A = open
                     if (bankCount > 0)
                         openSelectedBank();
+                    break;
+                case SDL_CONTROLLER_BUTTON_A: // Switch B = back to game selector
+                    screen_ = AppScreen::GameSelector;
                     break;
                 case SDL_CONTROLLER_BUTTON_Y: // Switch X = new
                     beginTextInput(TextInputPurpose::CreateBank);
@@ -372,8 +494,9 @@ void UI::handleBankSelectorInput(bool& running) {
                     if (bankCount > 0)
                         showDeleteConfirm_ = true;
                     break;
+                case SDLK_b:
                 case SDLK_ESCAPE:
-                    running = false;
+                    screen_ = AppScreen::GameSelector;
                     break;
             }
         }
@@ -381,12 +504,13 @@ void UI::handleBankSelectorInput(bool& running) {
 }
 
 void UI::openSelectedBank() {
-    const auto& banks = bankManager_->list();
+    const auto& banks = bankManager_.list();
     if (bankSelCursor_ < 0 || bankSelCursor_ >= (int)banks.size())
         return;
 
     const std::string& name = banks[bankSelCursor_].name;
-    activeBankPath_ = bankManager_->loadBank(name, bank_);
+    activeBankPath_ = bankManager_.loadBank(name, bank_);
+    bank_.setGameType(selectedGame_);
     activeBankName_ = name;
     screen_ = AppScreen::MainView;
 
@@ -413,7 +537,7 @@ void UI::drawDeleteConfirmPopup() {
     drawRect(popX, popY, POP_W, POP_H, COLOR_PANEL_BG);
     drawRectOutline(popX, popY, POP_W, POP_H, COLOR_RED, 2);
 
-    const auto& banks = bankManager_->list();
+    const auto& banks = bankManager_.list();
     std::string bankName = (bankSelCursor_ >= 0 && bankSelCursor_ < (int)banks.size())
         ? banks[bankSelCursor_].name : "";
 
@@ -429,10 +553,10 @@ void UI::handleDeleteConfirmEvent(const SDL_Event& event) {
     if (event.type == SDL_CONTROLLERBUTTONDOWN) {
         switch (event.cbutton.button) {
             case SDL_CONTROLLER_BUTTON_B: { // Switch A = confirm
-                const auto& banks = bankManager_->list();
+                const auto& banks = bankManager_.list();
                 if (bankSelCursor_ >= 0 && bankSelCursor_ < (int)banks.size()) {
-                    bankManager_->deleteBank(banks[bankSelCursor_].name);
-                    int newCount = (int)bankManager_->list().size();
+                    bankManager_.deleteBank(banks[bankSelCursor_].name);
+                    int newCount = (int)bankManager_.list().size();
                     if (bankSelCursor_ >= newCount && newCount > 0)
                         bankSelCursor_ = newCount - 1;
                 }
@@ -448,10 +572,10 @@ void UI::handleDeleteConfirmEvent(const SDL_Event& event) {
         switch (event.key.keysym.sym) {
             case SDLK_a:
             case SDLK_RETURN: {
-                const auto& banks = bankManager_->list();
+                const auto& banks = bankManager_.list();
                 if (bankSelCursor_ >= 0 && bankSelCursor_ < (int)banks.size()) {
-                    bankManager_->deleteBank(banks[bankSelCursor_].name);
-                    int newCount = (int)bankManager_->list().size();
+                    bankManager_.deleteBank(banks[bankSelCursor_].name);
+                    int newCount = (int)bankManager_.list().size();
                     if (bankSelCursor_ >= newCount && newCount > 0)
                         bankSelCursor_ = newCount - 1;
                 }
@@ -474,7 +598,7 @@ void UI::beginTextInput(TextInputPurpose purpose) {
     textInputCursorPos_ = 0;
 
     if (purpose == TextInputPurpose::RenameBank) {
-        const auto& banks = bankManager_->list();
+        const auto& banks = bankManager_.list();
         if (bankSelCursor_ >= 0 && bankSelCursor_ < (int)banks.size()) {
             renamingBankName_ = banks[bankSelCursor_].name;
             textInputBuffer_ = renamingBankName_;
@@ -596,9 +720,9 @@ void UI::handleTextInputEvent(const SDL_Event& event) {
 
 void UI::commitTextInput(const std::string& text) {
     if (textInputPurpose_ == TextInputPurpose::CreateBank) {
-        if (bankManager_->createBank(text)) {
+        if (bankManager_.createBank(text)) {
             // Select the newly created bank
-            const auto& banks = bankManager_->list();
+            const auto& banks = bankManager_.list();
             for (int i = 0; i < (int)banks.size(); i++) {
                 if (banks[i].name == text) {
                     bankSelCursor_ = i;
@@ -607,9 +731,9 @@ void UI::commitTextInput(const std::string& text) {
             }
         }
     } else if (textInputPurpose_ == TextInputPurpose::RenameBank) {
-        if (bankManager_->renameBank(renamingBankName_, text)) {
+        if (bankManager_.renameBank(renamingBankName_, text)) {
             // Select the renamed bank
-            const auto& banks = bankManager_->list();
+            const auto& banks = bankManager_.list();
             for (int i = 0; i < (int)banks.size(); i++) {
                 if (banks[i].name == text) {
                     bankSelCursor_ = i;
@@ -828,7 +952,7 @@ void UI::drawPanel(int panelX, const std::string& boxName, int boxIdx,
     }
 }
 
-void UI::drawFrame(SaveFile& save) {
+void UI::drawFrame() {
     // Clear screen
     SDL_SetRenderDrawColor(renderer_, COLOR_BG.r, COLOR_BG.g, COLOR_BG.b, 255);
     SDL_RenderClear(renderer_);
@@ -841,14 +965,14 @@ void UI::drawFrame(SaveFile& save) {
 
     // Left panel: Game boxes
     bool leftActive = (cursor_.panel == Panel::Game);
-    std::string gameBoxName = save.getBoxName(gameBox_);
-    drawPanel(PANEL_X_L, gameBoxName, gameBox_, SaveFile::BOX_COUNT,
-              leftActive, &save, nullptr, gameBox_);
+    std::string gameBoxName = save_.getBoxName(gameBox_);
+    drawPanel(PANEL_X_L, gameBoxName, gameBox_, save_.boxCount(),
+              leftActive, &save_, nullptr, gameBox_);
 
     // Right panel: Bank boxes — include active bank name in header
     bool rightActive = (cursor_.panel == Panel::Bank);
     std::string bankBoxName = activeBankName_ + " - " + bank_.getBoxName(bankBox_);
-    drawPanel(PANEL_X_R, bankBoxName, bankBox_, Bank::BOX_COUNT,
+    drawPanel(PANEL_X_R, bankBoxName, bankBox_, bank_.boxCount(),
               rightActive, nullptr, &bank_, bankBox_);
 
     // Status bar
@@ -864,7 +988,7 @@ void UI::drawFrame(SaveFile& save) {
 
     // Detail popup overlay
     if (showDetail_) {
-        Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(), cursor_.panel, save);
+        Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(), cursor_.panel);
         if (pkm.isEmpty()) {
             showDetail_ = false;
         } else {
@@ -1066,7 +1190,7 @@ void UI::drawMenuPopup() {
 
 // --- Input ---
 
-void UI::handleInput(SaveFile& save, bool& running) {
+void UI::handleInput(bool& running) {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
         if (event.type == SDL_QUIT) {
@@ -1093,14 +1217,14 @@ void UI::handleInput(SaveFile& save, bool& running) {
                             // Switch Bank — save current bank, go to selector
                             if (!activeBankPath_.empty())
                                 bank_.save(activeBankPath_);
-                            if (save.isLoaded())
-                                save.save(savePath_);
-                            bankManager_->refresh();
+                            if (save_.isLoaded())
+                                save_.save(savePath_);
+                            bankManager_.refresh();
                             screen_ = AppScreen::BankSelector;
                             showMenu_ = false;
                         } else if (menuSelection_ == 2) {
                             // Switch Bank (No Save) — go to selector without saving
-                            bankManager_->refresh();
+                            bankManager_.refresh();
                             screen_ = AppScreen::BankSelector;
                             showMenu_ = false;
                         } else if (menuSelection_ == 3) {
@@ -1133,13 +1257,13 @@ void UI::handleInput(SaveFile& save, bool& running) {
                         } else if (menuSelection_ == 1) {
                             if (!activeBankPath_.empty())
                                 bank_.save(activeBankPath_);
-                            if (save.isLoaded())
-                                save.save(savePath_);
-                            bankManager_->refresh();
+                            if (save_.isLoaded())
+                                save_.save(savePath_);
+                            bankManager_.refresh();
                             screen_ = AppScreen::BankSelector;
                             showMenu_ = false;
                         } else if (menuSelection_ == 2) {
-                            bankManager_->refresh();
+                            bankManager_.refresh();
                             screen_ = AppScreen::BankSelector;
                             showMenu_ = false;
                         } else if (menuSelection_ == 3) {
@@ -1183,14 +1307,14 @@ void UI::handleInput(SaveFile& save, bool& running) {
         if (event.type == SDL_CONTROLLERBUTTONDOWN) {
             switch (event.cbutton.button) {
                 case SDL_CONTROLLER_BUTTON_B: // Switch A (right) = SDL B
-                    actionSelect(save);
+                    actionSelect();
                     break;
                 case SDL_CONTROLLER_BUTTON_A: // Switch B (bottom) = SDL A
-                    actionCancel(save);
+                    actionCancel();
                     break;
                 case SDL_CONTROLLER_BUTTON_X: // Switch Y (left) = SDL X
                 {
-                    Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(), cursor_.panel, save);
+                    Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(), cursor_.panel);
                     if (!pkm.isEmpty())
                         showDetail_ = true;
                     break;
@@ -1231,12 +1355,12 @@ void UI::handleInput(SaveFile& save, bool& running) {
                 case SDLK_LEFT:   moveCursor(-1, 0); break;
                 case SDLK_RIGHT:  moveCursor(+1, 0); break;
                 case SDLK_a:
-                case SDLK_RETURN: actionSelect(save); break;
+                case SDLK_RETURN: actionSelect(); break;
                 case SDLK_b:
-                case SDLK_ESCAPE: actionCancel(save); break;
+                case SDLK_ESCAPE: actionCancel(); break;
                 case SDLK_y:
                 {
-                    Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(), cursor_.panel, save);
+                    Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(), cursor_.panel);
                     if (!pkm.isEmpty())
                         showDetail_ = true;
                     break;
@@ -1285,7 +1409,7 @@ void UI::moveCursor(int dx, int dy) {
 }
 
 void UI::switchBox(int direction) {
-    int maxBox = (cursor_.panel == Panel::Game) ? SaveFile::BOX_COUNT : Bank::BOX_COUNT;
+    int maxBox = (cursor_.panel == Panel::Game) ? save_.boxCount() : bank_.boxCount();
     cursor_.box += direction;
     if (cursor_.box < 0) cursor_.box = maxBox - 1;
     if (cursor_.box >= maxBox) cursor_.box = 0;
@@ -1296,33 +1420,33 @@ void UI::switchBox(int direction) {
         bankBox_ = cursor_.box;
 }
 
-Pokemon UI::getPokemonAt(int box, int slot, Panel panel, SaveFile& save) const {
+Pokemon UI::getPokemonAt(int box, int slot, Panel panel) const {
     if (panel == Panel::Game)
-        return save.getBoxSlot(box, slot);
+        return save_.getBoxSlot(box, slot);
     else
         return bank_.getSlot(box, slot);
 }
 
-void UI::setPokemonAt(int box, int slot, Panel panel, const Pokemon& pkm, SaveFile& save) {
+void UI::setPokemonAt(int box, int slot, Panel panel, const Pokemon& pkm) {
     if (panel == Panel::Game)
-        save.setBoxSlot(box, slot, pkm);
+        save_.setBoxSlot(box, slot, pkm);
     else
         bank_.setSlot(box, slot, pkm);
 }
 
-void UI::clearPokemonAt(int box, int slot, Panel panel, SaveFile& save) {
+void UI::clearPokemonAt(int box, int slot, Panel panel) {
     if (panel == Panel::Game)
-        save.clearBoxSlot(box, slot);
+        save_.clearBoxSlot(box, slot);
     else
         bank_.clearSlot(box, slot);
 }
 
-void UI::actionSelect(SaveFile& save) {
+void UI::actionSelect() {
     int box = cursor_.box;
     int slot = cursor_.slot();
 
     if (!holding_) {
-        Pokemon pkm = getPokemonAt(box, slot, cursor_.panel, save);
+        Pokemon pkm = getPokemonAt(box, slot, cursor_.panel);
         if (pkm.isEmpty())
             return;
 
@@ -1332,16 +1456,16 @@ void UI::actionSelect(SaveFile& save) {
         heldSlot_ = slot;
         holding_ = true;
 
-        clearPokemonAt(box, slot, cursor_.panel, save);
+        clearPokemonAt(box, slot, cursor_.panel);
     } else {
-        Pokemon target = getPokemonAt(box, slot, cursor_.panel, save);
+        Pokemon target = getPokemonAt(box, slot, cursor_.panel);
 
         if (target.isEmpty()) {
-            setPokemonAt(box, slot, cursor_.panel, heldPkm_, save);
+            setPokemonAt(box, slot, cursor_.panel, heldPkm_);
             holding_ = false;
             heldPkm_ = Pokemon{};
         } else {
-            setPokemonAt(box, slot, cursor_.panel, heldPkm_, save);
+            setPokemonAt(box, slot, cursor_.panel, heldPkm_);
             heldPkm_ = target;
             heldSource_ = cursor_.panel;
             heldBox_ = box;
@@ -1350,11 +1474,11 @@ void UI::actionSelect(SaveFile& save) {
     }
 }
 
-void UI::actionCancel(SaveFile& save) {
+void UI::actionCancel() {
     if (!holding_)
         return;
 
-    setPokemonAt(heldBox_, heldSlot_, heldSource_, heldPkm_, save);
+    setPokemonAt(heldBox_, heldSlot_, heldSource_, heldPkm_);
     holding_ = false;
     heldPkm_ = Pokemon{};
 }

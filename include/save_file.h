@@ -1,23 +1,19 @@
 #pragma once
 #include "swish_crypto.h"
 #include "pokemon.h"
+#include "game_type.h"
 #include <vector>
 #include <string>
 
-// SaveFile - manages a Pokemon ZA save file.
-// Decrypts/encrypts via SwishCrypto, provides box access.
-// Ported from PKHeX.Core/Saves/SAV9ZA.cs
+// SaveFile - manages Pokemon save files (Gen8/Gen9).
+// SCBlock-based for ZA/SV/SwSh, flat binary for BDSP.
 class SaveFile {
 public:
-    static constexpr int BOX_COUNT     = 32;
     static constexpr int SLOTS_PER_BOX = 30;
     static constexpr int COLS_PER_BOX  = 6;
     static constexpr int ROWS_PER_BOX  = 5;
 
-    // SIZE_BOXSLOT = SIZE_9PARTY (0x158) + GapBoxSlot (0x40) = 0x198
-    // From SAV9ZA.cs line 132,172
-    static constexpr int GAP_BOX_SLOT  = 0x40;
-    static constexpr int SIZE_BOXSLOT  = PokeCrypto::SIZE_9PARTY + GAP_BOX_SLOT;
+    void setGameType(GameType game);  // must call before load()
 
     bool load(const std::string& path);
     bool save(const std::string& path);
@@ -30,10 +26,13 @@ public:
 
     bool isLoaded() const { return loaded_; }
 
+    // Dynamic box count: 40 for BDSP, 32 for others
+    int boxCount() const { return boxCount_; }
+
 private:
     std::vector<SCBlock> blocks_;
 
-    // Cached pointers into block data
+    // Cached pointers into block data (SCBlock) or raw data (BDSP)
     uint8_t* boxData_       = nullptr;
     size_t   boxDataLen_    = 0;
     uint8_t* boxLayoutData_ = nullptr;
@@ -42,14 +41,38 @@ private:
     std::string filePath_;
     bool loaded_ = false;
 
-    // Block keys from SaveBlockAccessor9ZA.cs
+    // Game-specific parameters
+    GameType gameType_  = GameType::ZA;
+    int boxCount_       = 32;
+    int gapBoxSlot_     = 0x40;
+    int sizeBoxSlot_    = PokeCrypto::SIZE_9PARTY + 0x40;
+
+    // SCBlock keys (ZA/SV/SwSh)
     static constexpr uint32_t KBOX        = 0x0d66012c;
     static constexpr uint32_t KBOX_LAYOUT = 0x19722c89;
 
+    // BDSP save format constants
+    static constexpr int BDSP_BOX_COUNT       = 40;
+    static constexpr int BDSP_BOX_OFFSET      = 0x14EF4;
+    static constexpr int BDSP_LAYOUT_OFFSET   = 0x148AA;
+    static constexpr int BDSP_LAYOUT_SIZE     = 0x64A;
+    static constexpr int BDSP_HASH_OFFSET     = 0xE9818;
+    static constexpr int BDSP_HASH_SIZE       = 16;
+
+    // BDSP raw save data (flat binary, no SCBlocks)
+    std::vector<uint8_t> rawData_;
+
+    bool loadSCBlock(const std::string& path);
+    bool saveSCBlock(const std::string& path);
+    bool loadBDSP(const std::string& path);
+    bool saveBDSP(const std::string& path);
+
+    static bool isBDSPSize(size_t size);
+
     int getBoxOffset(int box) const {
-        return SIZE_BOXSLOT * box * SLOTS_PER_BOX;
+        return sizeBoxSlot_ * box * SLOTS_PER_BOX;
     }
     int getBoxSlotOffset(int box, int slot) const {
-        return getBoxOffset(box) + slot * SIZE_BOXSLOT;
+        return getBoxOffset(box) + slot * sizeBoxSlot_;
     }
 };

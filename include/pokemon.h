@@ -1,14 +1,16 @@
 #pragma once
 #include "poke_crypto.h"
+#include "game_type.h"
 #include <cstdint>
 #include <cstring>
 #include <string>
 #include <array>
 
-// Pokemon PA9 data structure for Gen9 (Pokemon ZA).
-// Ported from PKHeX.Core/PKM/PA9.cs
+// Pokemon data structure for Gen8/Gen9 (PK8/PA9).
+// Ported from PKHeX.Core/PKM/PA9.cs and G8PKM.cs
 struct Pokemon {
     std::array<uint8_t, PokeCrypto::SIZE_9PARTY> data{};
+    GameType gameType_ = GameType::ZA;
 
     // --- Helpers ---
     uint16_t readU16(int ofs) const {
@@ -48,9 +50,13 @@ struct Pokemon {
     // 0x20: Nature
     uint8_t nature() const { return data[0x20]; }
 
-    // 0x22: FatefulEncounter (bit 0), Gender (bits 1-2)
+    // 0x22: FatefulEncounter (bit 0), Gender (PK8: bits 2-3, PA9: bits 1-2)
     bool fatefulEncounter() const { return (data[0x22] & 1) != 0; }
-    uint8_t gender() const { return (data[0x22] >> 1) & 0x3; } // 0=M, 1=F, 2=genderless
+    uint8_t gender() const {
+        if (gameType_ == GameType::SwSh || gameType_ == GameType::BDSP)
+            return (data[0x22] >> 2) & 0x3; // PK8/PB8: bits 2-3
+        return (data[0x22] >> 1) & 0x3;     // PA9: bits 1-2
+    }
 
     // 0x24: Form
     uint8_t form() const { return data[0x24]; }
@@ -120,8 +126,12 @@ struct Pokemon {
     // Write encrypted data to buffer
     void getEncrypted(uint8_t* outBuf) const;
 
-    // Is this an alpha Pokemon? (offset 0x23 per PKHeX PA9)
-    bool isAlpha() const { return data[0x23] != 0; }
+    // Is this an alpha Pokemon? (offset 0x23 per PKHeX PA9, not applicable to PK8)
+    bool isAlpha() const {
+        if (gameType_ == GameType::SwSh || gameType_ == GameType::BDSP)
+            return false;
+        return data[0x23] != 0;
+    }
 
     // Is this a shiny Pokemon?
     bool isShiny() const {

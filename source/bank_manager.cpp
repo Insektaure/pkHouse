@@ -5,15 +5,29 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
-bool BankManager::init(const std::string& basePath) {
+bool BankManager::init(const std::string& basePath, GameType game) {
     basePath_ = basePath;
-    banksDir_ = basePath + "banks/";
+    game_ = game;
 
-    // Create banks/ directory if it doesn't exist
+    // Create banks/ parent directory
+    std::string banksParent = basePath + "banks/";
+    mkdir(banksParent.c_str(), 0755);
+
+    // Game-specific subdirectory
+    if (game == GameType::SV)
+        banksDir_ = banksParent + "sv/";
+    else if (game == GameType::SwSh)
+        banksDir_ = banksParent + "swsh/";
+    else if (game == GameType::BDSP)
+        banksDir_ = banksParent + "bdsp/";
+    else
+        banksDir_ = banksParent + "za/";
+
     mkdir(banksDir_.c_str(), 0755);
 
-    // Migrate legacy bank.bin if it exists
-    migrateLegacy();
+    // Migrate legacy bank.bin only for ZA
+    if (game == GameType::ZA)
+        migrateLegacy();
 
     refresh();
     return true;
@@ -81,7 +95,7 @@ int BankManager::countOccupied(const std::string& filePath) {
         return 0;
 
     int count = 0;
-    for (int box = 0; box < Bank::BOX_COUNT; box++) {
+    for (int box = 0; box < temp.boxCount(); box++) {
         for (int slot = 0; slot < Bank::SLOTS_PER_BOX; slot++) {
             if (!temp.getSlot(box, slot).isEmpty())
                 count++;

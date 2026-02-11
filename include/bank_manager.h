@@ -1,5 +1,6 @@
 #pragma once
 #include "bank.h"
+#include "save_file.h"  // for GameType
 #include <string>
 #include <vector>
 
@@ -11,21 +12,22 @@ struct BankInfo {
 
 class BankManager {
 public:
-    bool init(const std::string& basePath);   // creates banks/ dir, migrates legacy bank.bin
-    void refresh();                            // rescan banks/ dir, rebuild list with slot counts
+    bool init(const std::string& basePath, GameType game);
+    void refresh();
     const std::vector<BankInfo>& list() const;
 
     bool createBank(const std::string& name);
     bool deleteBank(const std::string& name);
     bool renameBank(const std::string& oldName, const std::string& newName);
-    std::string loadBank(const std::string& name, Bank& bank);   // returns full path
+    std::string loadBank(const std::string& name, Bank& bank);
     std::string pathFor(const std::string& name) const;
     static int countOccupied(const std::string& filePath);
 
 private:
-    std::string banksDir_;   // basePath + "banks/"
+    std::string banksDir_;   // basePath + "banks/sv/" or "banks/za/"
     std::string basePath_;
+    GameType game_ = GameType::ZA;
     std::vector<BankInfo> bankList_;
     static std::string sanitizeName(const std::string& raw);
-    bool migrateLegacy();    // move basePath/bank.bin -> banks/Default.bin if exists
+    bool migrateLegacy();    // move basePath/bank.bin -> banks/za/Default.bin (ZA only)
 };

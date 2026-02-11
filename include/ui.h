@@ -12,7 +12,7 @@
 enum class Panel { Game, Bank };
 
 // App-level screen state
-enum class AppScreen { BankSelector, MainView };
+enum class AppScreen { GameSelector, BankSelector, MainView };
 
 // Purpose of text input popup
 enum class TextInputPurpose { CreateBank, RenameBank };
@@ -34,7 +34,7 @@ public:
     void shutdown();
     void showSplash();
     void showMessageAndWait(const std::string& title, const std::string& body);
-    void run(SaveFile& save, BankManager& bankManager, const std::string& savePath);
+    void run(const std::string& basePath, const std::string& savePath);
 
 private:
     SDL_Window*          window_    = nullptr;
@@ -91,12 +91,20 @@ private:
     static constexpr SDL_Color COLOR_RED         = {220, 60, 60, 255};
 
     // App screen state
-    AppScreen screen_ = AppScreen::BankSelector;
-    BankManager* bankManager_ = nullptr;
-    Bank bank_;                          // active bank (owned)
+    AppScreen screen_ = AppScreen::GameSelector;
+    std::string basePath_;
+    std::string savePath_;
+
+    // Game selector state
+    GameType selectedGame_ = GameType::ZA;
+    int gameSelCursor_ = 0;
+
+    // Owned save + bank manager (initialized after game selection)
+    SaveFile save_;
+    BankManager bankManager_;
+    Bank bank_;
     std::string activeBankName_;
     std::string activeBankPath_;
-    std::string savePath_;
 
     // Bank selector state
     int  bankSelCursor_ = 0;
@@ -128,6 +136,11 @@ private:
     SDL_Texture* getSprite(uint16_t nationalId);
     void freeSprites();
 
+    // Game selector
+    void drawGameSelectorFrame();
+    void handleGameSelectorInput(bool& running);
+    void selectGame(GameType game);
+
     // Bank selector
     void drawBankSelectorFrame();
     void handleBankSelectorInput(bool& running);
@@ -140,7 +153,7 @@ private:
     void commitTextInput(const std::string& text);
 
     // Rendering helpers
-    void drawFrame(SaveFile& save);
+    void drawFrame();
     void drawDetailPopup(const Pokemon& pkm);
     void drawMenuPopup();
     void drawPanel(int panelX, const std::string& boxName, int boxIdx,
@@ -153,14 +166,14 @@ private:
     void drawStatusBar(const std::string& msg);
 
     // Input handling
-    void handleInput(SaveFile& save, bool& running);
+    void handleInput(bool& running);
     void moveCursor(int dx, int dy);
     void switchBox(int direction);
-    void actionSelect(SaveFile& save);
-    void actionCancel(SaveFile& save);
+    void actionSelect();
+    void actionCancel();
 
     // Get pokemon at cursor from the appropriate source
-    Pokemon getPokemonAt(int box, int slot, Panel panel, SaveFile& save) const;
-    void setPokemonAt(int box, int slot, Panel panel, const Pokemon& pkm, SaveFile& save);
-    void clearPokemonAt(int box, int slot, Panel panel, SaveFile& save);
+    Pokemon getPokemonAt(int box, int slot, Panel panel) const;
+    void setPokemonAt(int box, int slot, Panel panel, const Pokemon& pkm);
+    void clearPokemonAt(int box, int slot, Panel panel);
 };

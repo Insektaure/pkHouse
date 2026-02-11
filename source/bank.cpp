@@ -3,7 +3,16 @@
 #include <cstring>
 
 Bank::Bank() {
-    // All slots initialized to empty (zeroed data)
+    slots_.resize(boxCount_ * SLOTS_PER_BOX);
+}
+
+void Bank::setGameType(GameType g) {
+    gameType_ = g;
+    int newBoxCount = (g == GameType::BDSP) ? 40 : 32;
+    if (newBoxCount != boxCount_) {
+        boxCount_ = newBoxCount;
+        slots_.resize(boxCount_ * SLOTS_PER_BOX);
+    }
 }
 
 bool Bank::load(const std::string& path) {
@@ -22,15 +31,25 @@ bool Bank::load(const std::string& path) {
 
     uint32_t version = 0;
     file.read(reinterpret_cast<char*>(&version), 4);
-    if (version != VERSION) {
+
+    int fileBoxCount;
+    if (version == VERSION_40BOX)
+        fileBoxCount = 40;
+    else if (version == VERSION_32BOX)
+        fileBoxCount = 32;
+    else
         return false; // Unsupported version
-    }
+
+    // Use the file's box count (it may differ from the current gameType setting)
+    boxCount_ = fileBoxCount;
+    slots_.resize(boxCount_ * SLOTS_PER_BOX);
 
     // Skip reserved
     file.seekg(HEADER_SIZE);
 
-    // Read all slots (decrypted PA9 party data)
-    for (int i = 0; i < TOTAL_SLOTS; i++) {
+    // Read all slots (decrypted party data)
+    int total = totalSlots();
+    for (int i = 0; i < total; i++) {
         file.read(reinterpret_cast<char*>(slots_[i].data.data()), SLOT_SIZE);
     }
 
@@ -44,12 +63,14 @@ bool Bank::save(const std::string& path) {
 
     // Write header
     file.write(MAGIC, 8);
-    file.write(reinterpret_cast<const char*>(&VERSION), 4);
+    uint32_t ver = fileVersion();
+    file.write(reinterpret_cast<const char*>(&ver), 4);
     uint32_t reserved = 0;
     file.write(reinterpret_cast<const char*>(&reserved), 4);
 
     // Write all slots
-    for (int i = 0; i < TOTAL_SLOTS; i++) {
+    int total = totalSlots();
+    for (int i = 0; i < total; i++) {
         file.write(reinterpret_cast<const char*>(slots_[i].data.data()), SLOT_SIZE);
     }
 
@@ -58,21 +79,23 @@ bool Bank::save(const std::string& path) {
 
 Pokemon Bank::getSlot(int box, int slot) const {
     int idx = slotIndex(box, slot);
-    if (idx < 0 || idx >= TOTAL_SLOTS)
+    if (idx < 0 || idx >= totalSlots())
         return Pokemon{};
-    return slots_[idx];
+    Pokemon pkm = slots_[idx];
+    pkm.gameType_ = gameType_;
+    return pkm;
 }
 
 void Bank::setSlot(int box, int slot, const Pokemon& pkm) {
     int idx = slotIndex(box, slot);
-    if (idx < 0 || idx >= TOTAL_SLOTS)
+    if (idx < 0 || idx >= totalSlots())
         return;
     slots_[idx] = pkm;
 }
 
 void Bank::clearSlot(int box, int slot) {
     int idx = slotIndex(box, slot);
-    if (idx < 0 || idx >= TOTAL_SLOTS)
+    if (idx < 0 || idx >= totalSlots())
         return;
     slots_[idx] = Pokemon{};
 }

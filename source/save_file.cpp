@@ -1,11 +1,54 @@
 #include "save_file.h"
+#include "md5.h"
 #include <fstream>
 #include <cstring>
 
+void SaveFile::setGameType(GameType game) {
+    gameType_ = game;
+    if (game == GameType::ZA) {
+        gapBoxSlot_  = 0x40;
+        sizeBoxSlot_ = PokeCrypto::SIZE_9PARTY + 0x40;
+        boxCount_    = 32;
+    } else if (game == GameType::BDSP) {
+        gapBoxSlot_  = 0;
+        sizeBoxSlot_ = PokeCrypto::SIZE_9PARTY;
+        boxCount_    = BDSP_BOX_COUNT;
+    } else {
+        // SV and SwSh: no gap, 32 boxes
+        gapBoxSlot_  = 0;
+        sizeBoxSlot_ = PokeCrypto::SIZE_9PARTY;
+        boxCount_    = 32;
+    }
+}
+
+bool SaveFile::isBDSPSize(size_t size) {
+    return size == 0xE9828  // v1.0
+        || size == 0xEDC20  // v1.1
+        || size == 0xEED8C  // v1.2
+        || size == 0xEF0A4; // v1.3
+}
+
 bool SaveFile::load(const std::string& path) {
     filePath_ = path;
+    loaded_ = false;
+    boxData_ = nullptr;
+    boxLayoutData_ = nullptr;
 
-    // Read entire file
+    if (gameType_ == GameType::BDSP)
+        return loadBDSP(path);
+    return loadSCBlock(path);
+}
+
+bool SaveFile::save(const std::string& path) {
+    if (!loaded_)
+        return false;
+
+    if (gameType_ == GameType::BDSP)
+        return saveBDSP(path);
+    return saveSCBlock(path);
+}
+
+bool SaveFile::loadSCBlock(const std::string& path) {
     std::ifstream file(path, std::ios::binary | std::ios::ate);
     if (!file.is_open())
         return false;
@@ -38,10 +81,7 @@ bool SaveFile::load(const std::string& path) {
     return true;
 }
 
-bool SaveFile::save(const std::string& path) {
-    if (!loaded_)
-        return false;
-
+bool SaveFile::saveSCBlock(const std::string& path) {
     std::vector<uint8_t> encrypted = SwishCrypto::encrypt(blocks_);
 
     std::ofstream file(path, std::ios::binary);
@@ -49,6 +89,58 @@ bool SaveFile::save(const std::string& path) {
         return false;
 
     file.write(reinterpret_cast<const char*>(encrypted.data()), encrypted.size());
+    return file.good();
+}
+
+bool SaveFile::loadBDSP(const std::string& path) {
+    std::ifstream file(path, std::ios::binary | std::ios::ate);
+    if (!file.is_open())
+        return false;
+
+    auto fileSize = static_cast<size_t>(file.tellg());
+    if (!isBDSPSize(fileSize))
+        return false;
+
+    file.seekg(0);
+    rawData_.resize(fileSize);
+    file.read(reinterpret_cast<char*>(rawData_.data()), fileSize);
+    file.close();
+
+    // Box data at fixed offset (party format, 0x158 per slot, 40 boxes * 30 slots)
+    size_t boxDataEnd = BDSP_BOX_OFFSET +
+        static_cast<size_t>(BDSP_BOX_COUNT) * SLOTS_PER_BOX * PokeCrypto::SIZE_9PARTY;
+    if (boxDataEnd > rawData_.size())
+        return false;
+
+    boxData_ = rawData_.data() + BDSP_BOX_OFFSET;
+    boxDataLen_ = boxDataEnd - BDSP_BOX_OFFSET;
+
+    // Box layout at fixed offset
+    if (BDSP_LAYOUT_OFFSET + BDSP_LAYOUT_SIZE <= static_cast<int>(rawData_.size())) {
+        boxLayoutData_ = rawData_.data() + BDSP_LAYOUT_OFFSET;
+        boxLayoutLen_ = BDSP_LAYOUT_SIZE;
+    }
+
+    loaded_ = true;
+    return true;
+}
+
+bool SaveFile::saveBDSP(const std::string& path) {
+    if (rawData_.empty())
+        return false;
+
+    // Recalculate MD5 checksum
+    // Clear existing hash, compute MD5 of entire save, write hash back
+    if (rawData_.size() >= static_cast<size_t>(BDSP_HASH_OFFSET + BDSP_HASH_SIZE)) {
+        std::memset(rawData_.data() + BDSP_HASH_OFFSET, 0, BDSP_HASH_SIZE);
+        MD5::hash(rawData_.data(), rawData_.size(), rawData_.data() + BDSP_HASH_OFFSET);
+    }
+
+    std::ofstream file(path, std::ios::binary);
+    if (!file.is_open())
+        return false;
+
+    file.write(reinterpret_cast<const char*>(rawData_.data()), rawData_.size());
     return file.good();
 }
 
@@ -63,6 +155,7 @@ Pokemon SaveFile::getBoxSlot(int box, int slot) const {
 
     // Box data stores Pokemon in party format, encrypted
     pkm.loadFromEncrypted(boxData_ + offset, PokeCrypto::SIZE_9PARTY);
+    pkm.gameType_ = gameType_;
     return pkm;
 }
 
@@ -71,13 +164,14 @@ void SaveFile::setBoxSlot(int box, int slot, const Pokemon& pkm) {
         return;
 
     int offset = getBoxSlotOffset(box, slot);
-    if (offset + SIZE_BOXSLOT > static_cast<int>(boxDataLen_))
+    if (offset + sizeBoxSlot_ > static_cast<int>(boxDataLen_))
         return;
 
     // Encrypt and write party data
     pkm.getEncrypted(boxData_ + offset);
-    // Zero the gap bytes
-    std::memset(boxData_ + offset + PokeCrypto::SIZE_9PARTY, 0, GAP_BOX_SLOT);
+    // Zero the gap bytes (if any)
+    if (gapBoxSlot_ > 0)
+        std::memset(boxData_ + offset + PokeCrypto::SIZE_9PARTY, 0, gapBoxSlot_);
 }
 
 void SaveFile::clearBoxSlot(int box, int slot) {
@@ -85,19 +179,18 @@ void SaveFile::clearBoxSlot(int box, int slot) {
         return;
 
     int offset = getBoxSlotOffset(box, slot);
-    if (offset + SIZE_BOXSLOT > static_cast<int>(boxDataLen_))
+    if (offset + sizeBoxSlot_ > static_cast<int>(boxDataLen_))
         return;
 
-    std::memset(boxData_ + offset, 0, SIZE_BOXSLOT);
+    std::memset(boxData_ + offset, 0, sizeBoxSlot_);
 }
 
 std::string SaveFile::getBoxName(int box) const {
-    if (!boxLayoutData_ || box < 0 || box >= BOX_COUNT) {
+    if (!boxLayoutData_ || box < 0 || box >= boxCount_) {
         return "Box " + std::to_string(box + 1);
     }
 
     // Box names are stored as UTF-16LE, 0x22 bytes per name
-    // From BoxLayout9a.cs: SAV6.LongStringLength = 0x22
     constexpr int NAME_SIZE = 0x22;
     int nameOfs = box * NAME_SIZE;
     if (nameOfs + NAME_SIZE > static_cast<int>(boxLayoutLen_)) {

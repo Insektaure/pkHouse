@@ -39,6 +39,11 @@ private:
     std::unordered_map<uint16_t, SDL_Texture*> spriteCache_;
     SDL_Texture* eggSprite_ = nullptr;
 
+    // Status icons
+    SDL_Texture* iconShiny_      = nullptr;
+    SDL_Texture* iconAlpha_      = nullptr;
+    SDL_Texture* iconShinyAlpha_ = nullptr;
+
     // Screen dimensions (Switch: 1280x720)
     static constexpr int SCREEN_W = 1280;
     static constexpr int SCREEN_H = 720;

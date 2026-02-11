@@ -92,6 +92,9 @@ struct Pokemon {
     // Write encrypted data to buffer
     void getEncrypted(uint8_t* outBuf) const;
 
+    // Is this an alpha Pokemon? (offset 0x23 per PKHeX PA9)
+    bool isAlpha() const { return data[0x23] != 0; }
+
     // Is this a shiny Pokemon?
     bool isShiny() const {
         uint32_t p = pid();

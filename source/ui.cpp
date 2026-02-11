@@ -1,5 +1,6 @@
 #include "ui.h"
 #include "species_converter.h"
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
 
@@ -62,6 +63,26 @@ bool UI::init() {
             font_ = TTF_OpenFont("romfs:/fonts/default.ttf", 18);
         if (!fontSmall_)
             fontSmall_ = TTF_OpenFont("romfs:/fonts/default.ttf", 14);
+    }
+
+    // Load status icons
+    {
+#ifdef __SWITCH__
+        const char* iconDir = "romfs:/icons/";
+#else
+        const char* iconDir = "romfs/icons/";
+#endif
+        auto loadIcon = [&](const char* name) -> SDL_Texture* {
+            std::string path = std::string(iconDir) + name;
+            SDL_Surface* s = IMG_Load(path.c_str());
+            if (!s) return nullptr;
+            SDL_Texture* t = SDL_CreateTextureFromSurface(renderer_, s);
+            SDL_FreeSurface(s);
+            return t;
+        };
+        iconShiny_      = loadIcon("shiny.png");
+        iconAlpha_      = loadIcon("alpha.png");
+        iconShinyAlpha_ = loadIcon("shiny_alpha.png");
     }
 
     // Open game controller
@@ -145,6 +166,9 @@ void UI::freeSprites() {
         SDL_DestroyTexture(eggSprite_);
         eggSprite_ = nullptr;
     }
+    if (iconShiny_)      { SDL_DestroyTexture(iconShiny_);      iconShiny_ = nullptr; }
+    if (iconAlpha_)      { SDL_DestroyTexture(iconAlpha_);      iconAlpha_ = nullptr; }
+    if (iconShinyAlpha_) { SDL_DestroyTexture(iconShinyAlpha_); iconShinyAlpha_ = nullptr; }
 }
 
 // --- Rendering ---
@@ -216,9 +240,23 @@ void UI::drawSlot(int x, int y, const Pokemon& pkm, bool isCursor) {
         }
 
         if (sprite) {
-            int sprX = x + (CELL_W - SPRITE_SIZE) / 2;
-            int sprY = y + 4;
-            SDL_Rect dst = {sprX, sprY, SPRITE_SIZE, SPRITE_SIZE};
+            int texW, texH;
+            SDL_QueryTexture(sprite, nullptr, nullptr, &texW, &texH);
+
+            int dstW, dstH;
+            if (texW > 0 && texH > 0) {
+                float scale = std::min(static_cast<float>(SPRITE_SIZE) / texW,
+                                       static_cast<float>(SPRITE_SIZE) / texH);
+                dstW = static_cast<int>(texW * scale);
+                dstH = static_cast<int>(texH * scale);
+            } else {
+                dstW = SPRITE_SIZE;
+                dstH = SPRITE_SIZE;
+            }
+
+            int sprX = x + (CELL_W - dstW) / 2;
+            int sprY = y + 4 + (SPRITE_SIZE - dstH) / 2;
+            SDL_Rect dst = {sprX, sprY, dstW, dstH};
             SDL_RenderCopy(renderer_, sprite, nullptr, &dst);
         }
 
@@ -242,6 +280,20 @@ void UI::drawSlot(int x, int y, const Pokemon& pkm, bool isCursor) {
             drawText("\xe2\x99\x82", x + CELL_W - 16, y + 2, {100, 150, 255, 255}, fontSmall_);
         else if (g == 1)
             drawText("\xe2\x99\x80", x + CELL_W - 16, y + 2, {255, 130, 150, 255}, fontSmall_);
+
+        // Shiny / Alpha icon (top-left corner)
+        SDL_Texture* statusIcon = nullptr;
+        if (pkm.isShiny() && pkm.isAlpha())
+            statusIcon = iconShinyAlpha_;
+        else if (pkm.isShiny())
+            statusIcon = iconShiny_;
+        else if (pkm.isAlpha())
+            statusIcon = iconAlpha_;
+
+        if (statusIcon) {
+            SDL_Rect iconDst = {x + 2, y + 2, 14, 14};
+            SDL_RenderCopy(renderer_, statusIcon, nullptr, &iconDst);
+        }
     }
 }
 
@@ -327,10 +379,10 @@ void UI::handleInput(SaveFile& save, Bank& bank, bool& running, bool& shouldSave
 
         if (event.type == SDL_CONTROLLERBUTTONDOWN) {
             switch (event.cbutton.button) {
-                case SDL_CONTROLLER_BUTTON_A:
+                case SDL_CONTROLLER_BUTTON_B: // Switch A (right) = SDL B
                     actionSelect(save, bank);
                     break;
-                case SDL_CONTROLLER_BUTTON_B:
+                case SDL_CONTROLLER_BUTTON_A: // Switch B (bottom) = SDL A
                     actionCancel(save, bank);
                     break;
                 case SDL_CONTROLLER_BUTTON_START: // + (save & exit)

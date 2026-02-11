@@ -27,6 +27,26 @@ std::string Pokemon::nickname() const {
     return result;
 }
 
+std::string Pokemon::otName() const {
+    std::string result;
+    for (int i = 0; i < 13; i++) {
+        uint16_t ch = readU16(0xF8 + i * 2);
+        if (ch == 0)
+            break;
+        if (ch < 0x80) {
+            result += static_cast<char>(ch);
+        } else if (ch < 0x800) {
+            result += static_cast<char>(0xC0 | (ch >> 6));
+            result += static_cast<char>(0x80 | (ch & 0x3F));
+        } else {
+            result += static_cast<char>(0xE0 | (ch >> 12));
+            result += static_cast<char>(0x80 | ((ch >> 6) & 0x3F));
+            result += static_cast<char>(0x80 | (ch & 0x3F));
+        }
+    }
+    return result;
+}
+
 std::string Pokemon::displayName() const {
     if (isEmpty())
         return "";

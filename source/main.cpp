@@ -38,11 +38,17 @@ int main(int argc, char* argv[]) {
     std::string savePath = basePath + "main";
     std::string bankPath = basePath + "bank.bin";
 
-    // Load species names
+    // Load text data
 #ifdef __SWITCH__
     SpeciesName::load("romfs:/data/species_en.txt");
+    MoveName::load("romfs:/data/moves_en.txt");
+    NatureName::load("romfs:/data/natures_en.txt");
+    AbilityName::load("romfs:/data/abilities_en.txt");
 #else
     SpeciesName::load("romfs/data/species_en.txt");
+    MoveName::load("romfs/data/moves_en.txt");
+    NatureName::load("romfs/data/natures_en.txt");
+    AbilityName::load("romfs/data/abilities_en.txt");
 #endif
 
     // Initialize UI first so we can show errors

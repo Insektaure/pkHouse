@@ -66,15 +66,43 @@ struct Pokemon {
     uint16_t move3() const { return readU16(0x76); }
     uint16_t move4() const { return readU16(0x78); }
 
+    // 0x14: Ability
+    uint16_t ability() const { return readU16(0x14); }
+
+    // EVs (offsets 0x26-0x2B)
+    uint8_t evHp()  const { return data[0x26]; }
+    uint8_t evAtk() const { return data[0x27]; }
+    uint8_t evDef() const { return data[0x28]; }
+    uint8_t evSpe() const { return data[0x29]; }
+    uint8_t evSpA() const { return data[0x2A]; }
+    uint8_t evSpD() const { return data[0x2B]; }
+
     // 0x8C: IV32
     uint32_t iv32() const { return readU32(0x8C); }
     bool isEgg() const { return ((iv32() >> 30) & 1) == 1; }
     bool isNicknamed() const { return ((iv32() >> 31) & 1) == 1; }
 
+    // IVs (from iv32 bit-packed)
+    int ivHp()  const { return (iv32() >>  0) & 0x1F; }
+    int ivAtk() const { return (iv32() >>  5) & 0x1F; }
+    int ivDef() const { return (iv32() >> 10) & 0x1F; }
+    int ivSpe() const { return (iv32() >> 15) & 0x1F; }
+    int ivSpA() const { return (iv32() >> 20) & 0x1F; }
+    int ivSpD() const { return (iv32() >> 25) & 0x1F; }
+
     // --- Party Stats (0x148 - 0x157) ---
 
     // 0x148: Level (party format only)
     uint8_t level() const { return data[0x148]; }
+
+    // --- Block C (0xA8 - 0xF7) ---
+
+    // TID/SID (offsets 0x0C, 0x0E)
+    uint16_t tid() const { return readU16(0x0C); }
+    uint16_t sid() const { return readU16(0x0E); }
+
+    // OT Name (offset 0xF8, 13 UTF-16LE chars)
+    std::string otName() const;
 
     // --- Utility ---
 

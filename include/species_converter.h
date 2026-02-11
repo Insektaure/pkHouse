@@ -25,3 +25,21 @@ namespace SpeciesName {
     const std::string& get(uint16_t nationalId);
 
 } // namespace SpeciesName
+
+// Move name lookup (loaded from romfs text file).
+namespace MoveName {
+    void load(const std::string& path);
+    const std::string& get(uint16_t moveId);
+} // namespace MoveName
+
+// Nature name lookup (loaded from romfs text file).
+namespace NatureName {
+    void load(const std::string& path);
+    const std::string& get(uint8_t natureId);
+} // namespace NatureName
+
+// Ability name lookup (loaded from romfs text file).
+namespace AbilityName {
+    void load(const std::string& path);
+    const std::string& get(uint16_t abilityId);
+} // namespace AbilityName

@@ -75,3 +75,66 @@ const std::string& SpeciesName::get(uint16_t nationalId) {
         return s_names[nationalId];
     return s_unknown;
 }
+
+// Move name data
+static std::vector<std::string> s_moveNames;
+
+void MoveName::load(const std::string& path) {
+    std::ifstream file(path);
+    if (!file.is_open())
+        return;
+    std::string line;
+    while (std::getline(file, line)) {
+        if (!line.empty() && line.back() == '\r')
+            line.pop_back();
+        s_moveNames.push_back(std::move(line));
+    }
+}
+
+const std::string& MoveName::get(uint16_t moveId) {
+    if (moveId < s_moveNames.size())
+        return s_moveNames[moveId];
+    return s_unknown;
+}
+
+// Nature name data
+static std::vector<std::string> s_natureNames;
+
+void NatureName::load(const std::string& path) {
+    std::ifstream file(path);
+    if (!file.is_open())
+        return;
+    std::string line;
+    while (std::getline(file, line)) {
+        if (!line.empty() && line.back() == '\r')
+            line.pop_back();
+        s_natureNames.push_back(std::move(line));
+    }
+}
+
+const std::string& NatureName::get(uint8_t natureId) {
+    if (natureId < s_natureNames.size())
+        return s_natureNames[natureId];
+    return s_unknown;
+}
+
+// Ability name data
+static std::vector<std::string> s_abilityNames;
+
+void AbilityName::load(const std::string& path) {
+    std::ifstream file(path);
+    if (!file.is_open())
+        return;
+    std::string line;
+    while (std::getline(file, line)) {
+        if (!line.empty() && line.back() == '\r')
+            line.pop_back();
+        s_abilityNames.push_back(std::move(line));
+    }
+}
+
+const std::string& AbilityName::get(uint16_t abilityId) {
+    if (abilityId < s_abilityNames.size())
+        return s_abilityNames[abilityId];
+    return s_unknown;
+}

@@ -85,6 +85,7 @@ private:
     Cursor cursor_;
     int    gameBox_ = 0;
     int    bankBox_ = 0;
+    bool   showDetail_ = false;
     bool   holding_    = false;
     Pokemon heldPkm_;
     Panel   heldSource_ = Panel::Game;
@@ -97,6 +98,7 @@ private:
 
     // Rendering helpers
     void drawFrame(SaveFile& save, Bank& bank);
+    void drawDetailPopup(const Pokemon& pkm);
     void drawPanel(int panelX, const std::string& boxName, int boxIdx,
                    int totalBoxes, bool isActive, SaveFile* save, Bank* bank, int box);
     void drawSlot(int x, int y, const Pokemon& pkm, bool isCursor);

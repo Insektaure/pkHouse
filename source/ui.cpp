@@ -355,7 +355,7 @@ void UI::drawFrame(SaveFile& save, Bank& bank) {
               rightActive, nullptr, &bank, bankBox_);
 
     // Status bar
-    std::string statusMsg = "D-Pad:Move  L/R:Box  A:Pick/Place  B:Cancel  +:Save&Exit  -:Quit";
+    std::string statusMsg = "D-Pad:Move  L/R:Box  A:Pick/Place  B:Cancel  Y:Detail  +:Save&Exit  -:Quit";
     if (holding_) {
         std::string heldName = heldPkm_.displayName();
         if (!heldName.empty()) {
@@ -364,6 +364,163 @@ void UI::drawFrame(SaveFile& save, Bank& bank) {
         }
     }
     drawStatusBar(statusMsg);
+
+    // Detail popup overlay
+    if (showDetail_) {
+        Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(), cursor_.panel, save, bank);
+        if (pkm.isEmpty()) {
+            showDetail_ = false;
+        } else {
+            drawDetailPopup(pkm);
+        }
+    }
+}
+
+void UI::drawDetailPopup(const Pokemon& pkm) {
+    // Semi-transparent dark overlay
+    drawRect(0, 0, SCREEN_W, SCREEN_H, {0, 0, 0, 160});
+
+    // Popup rect centered
+    constexpr int POP_W = 900;
+    constexpr int POP_H = 550;
+    int popX = (SCREEN_W - POP_W) / 2;
+    int popY = (SCREEN_H - POP_H) / 2;
+
+    drawRect(popX, popY, POP_W, POP_H, COLOR_PANEL_BG);
+    drawRectOutline(popX, popY, POP_W, POP_H, COLOR_CURSOR, 2);
+
+    // Large sprite (128x128) top-left
+    constexpr int LARGE_SPRITE = 128;
+    int sprX = popX + 20;
+    int sprY = popY + 20;
+
+    SDL_Texture* sprite = getSprite(pkm.isEgg() ? 0 : pkm.species());
+    if (sprite) {
+        int texW, texH;
+        SDL_QueryTexture(sprite, nullptr, nullptr, &texW, &texH);
+        int dstW, dstH;
+        if (texW > 0 && texH > 0) {
+            float scale = std::min(static_cast<float>(LARGE_SPRITE) / texW,
+                                   static_cast<float>(LARGE_SPRITE) / texH);
+            dstW = static_cast<int>(texW * scale);
+            dstH = static_cast<int>(texH * scale);
+        } else {
+            dstW = LARGE_SPRITE;
+            dstH = LARGE_SPRITE;
+        }
+        int dx = sprX + (LARGE_SPRITE - dstW) / 2;
+        int dy = sprY + (LARGE_SPRITE - dstH) / 2;
+        SDL_Rect dst = {dx, dy, dstW, dstH};
+        SDL_RenderCopy(renderer_, sprite, nullptr, &dst);
+    }
+
+    // Shiny/Alpha icon next to sprite
+    SDL_Texture* statusIcon = nullptr;
+    if (pkm.isShiny() && pkm.isAlpha())
+        statusIcon = iconShinyAlpha_;
+    else if (pkm.isShiny())
+        statusIcon = iconShiny_;
+    else if (pkm.isAlpha())
+        statusIcon = iconAlpha_;
+    if (statusIcon) {
+        SDL_Rect iconDst = {sprX + LARGE_SPRITE + 4, sprY, 20, 20};
+        SDL_RenderCopy(renderer_, statusIcon, nullptr, &iconDst);
+    }
+
+    // --- Left column info (next to sprite) ---
+    int infoX = sprX + LARGE_SPRITE + 30;
+    int infoY = sprY + 4;
+
+    // Species name + level + gender
+    std::string specName = SpeciesName::get(pkm.species());
+    SDL_Color nameColor = pkm.isShiny() ? COLOR_SHINY : COLOR_TEXT;
+    drawText(specName, infoX, infoY, nameColor, font_);
+
+    std::string lvlStr = "  Lv." + std::to_string(pkm.level());
+    int nameW = 0, nameH = 0;
+    TTF_SizeUTF8(font_, specName.c_str(), &nameW, &nameH);
+    drawText(lvlStr, infoX + nameW, infoY, COLOR_TEXT, font_);
+
+    // Gender symbol
+    uint8_t g = pkm.gender();
+    int afterLvl = infoX + nameW;
+    int lvlW = 0;
+    TTF_SizeUTF8(font_, lvlStr.c_str(), &lvlW, nullptr);
+    afterLvl += lvlW + 4;
+    if (g == 0)
+        drawText("\xe2\x99\x82", afterLvl, infoY, {100, 150, 255, 255}, font_);
+    else if (g == 1)
+        drawText("\xe2\x99\x80", afterLvl, infoY, {255, 130, 150, 255}, font_);
+
+    infoY += 30;
+
+    // OT + TID
+    std::string otStr = "OT: " + pkm.otName() + " | TID: " + std::to_string(pkm.tid());
+    drawText(otStr, infoX, infoY, COLOR_TEXT_DIM, fontSmall_);
+    infoY += 22;
+
+    // Nature
+    std::string natureStr = "Nature: " + NatureName::get(pkm.nature());
+    drawText(natureStr, infoX, infoY, COLOR_TEXT_DIM, fontSmall_);
+    infoY += 22;
+
+    // Ability
+    std::string abilityStr = "Ability: " + AbilityName::get(pkm.ability());
+    drawText(abilityStr, infoX, infoY, COLOR_TEXT_DIM, fontSmall_);
+
+    // --- Below sprite: Moves ---
+    int movesX = popX + 30;
+    int movesY = sprY + LARGE_SPRITE + 20;
+
+    drawText("Moves", movesX, movesY, COLOR_TEXT, font_);
+    movesY += 26;
+
+    uint16_t moves[4] = {pkm.move1(), pkm.move2(), pkm.move3(), pkm.move4()};
+    for (int i = 0; i < 4; i++) {
+        if (moves[i] != 0) {
+            std::string moveStr = "- " + MoveName::get(moves[i]);
+            drawText(moveStr, movesX + 10, movesY, COLOR_TEXT_DIM, fontSmall_);
+        } else {
+            drawText("- ---", movesX + 10, movesY, COLOR_TEXT_DIM, fontSmall_);
+        }
+        movesY += 20;
+    }
+
+    // --- Right column: IVs and EVs ---
+    int statsX = popX + POP_W / 2 + 20;
+    int statsY = popY + 20;
+
+    // IVs header
+    drawText("IVs", statsX, statsY, COLOR_TEXT, font_);
+    statsY += 26;
+
+    const char* statLabels[] = {"HP", "Atk", "Def", "SpA", "SpD", "Spe"};
+    int ivs[] = {pkm.ivHp(), pkm.ivAtk(), pkm.ivDef(), pkm.ivSpA(), pkm.ivSpD(), pkm.ivSpe()};
+
+    for (int i = 0; i < 6; i++) {
+        std::string line = std::string(statLabels[i]) + ": " + std::to_string(ivs[i]);
+        SDL_Color ivColor = (ivs[i] == 31) ? COLOR_SHINY : COLOR_TEXT_DIM;
+        drawText(line, statsX + 10, statsY, ivColor, fontSmall_);
+        statsY += 20;
+    }
+
+    statsY += 10;
+
+    // EVs header
+    drawText("EVs", statsX, statsY, COLOR_TEXT, font_);
+    statsY += 26;
+
+    int evs[] = {pkm.evHp(), pkm.evAtk(), pkm.evDef(), pkm.evSpA(), pkm.evSpD(), pkm.evSpe()};
+
+    for (int i = 0; i < 6; i++) {
+        std::string line = std::string(statLabels[i]) + ": " + std::to_string(evs[i]);
+        SDL_Color evColor = (evs[i] > 0) ? COLOR_TEXT : COLOR_TEXT_DIM;
+        drawText(line, statsX + 10, statsY, evColor, fontSmall_);
+        statsY += 20;
+    }
+
+    // Close hint at bottom
+    drawTextCentered("B / Y: Close", popX + POP_W / 2, popY + POP_H - 20, COLOR_TEXT_DIM, fontSmall_);
 }
 
 // --- Input ---
@@ -377,6 +534,28 @@ void UI::handleInput(SaveFile& save, Bank& bank, bool& running, bool& shouldSave
             return;
         }
 
+        // While detail popup is open, only allow closing it
+        if (showDetail_) {
+            if (event.type == SDL_CONTROLLERBUTTONDOWN) {
+                switch (event.cbutton.button) {
+                    case SDL_CONTROLLER_BUTTON_A: // Switch B
+                    case SDL_CONTROLLER_BUTTON_X: // Switch Y
+                        showDetail_ = false;
+                        break;
+                }
+            }
+            if (event.type == SDL_KEYDOWN) {
+                switch (event.key.keysym.sym) {
+                    case SDLK_b:
+                    case SDLK_ESCAPE:
+                    case SDLK_y:
+                        showDetail_ = false;
+                        break;
+                }
+            }
+            continue;
+        }
+
         if (event.type == SDL_CONTROLLERBUTTONDOWN) {
             switch (event.cbutton.button) {
                 case SDL_CONTROLLER_BUTTON_B: // Switch A (right) = SDL B
@@ -385,6 +564,13 @@ void UI::handleInput(SaveFile& save, Bank& bank, bool& running, bool& shouldSave
                 case SDL_CONTROLLER_BUTTON_A: // Switch B (bottom) = SDL A
                     actionCancel(save, bank);
                     break;
+                case SDL_CONTROLLER_BUTTON_X: // Switch Y (left) = SDL X
+                {
+                    Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(), cursor_.panel, save, bank);
+                    if (!pkm.isEmpty())
+                        showDetail_ = true;
+                    break;
+                }
                 case SDL_CONTROLLER_BUTTON_START: // + (save & exit)
                     running = false;
                     shouldSave = true;
@@ -425,6 +611,13 @@ void UI::handleInput(SaveFile& save, Bank& bank, bool& running, bool& shouldSave
                 case SDLK_RETURN: actionSelect(save, bank); break;
                 case SDLK_b:
                 case SDLK_ESCAPE: actionCancel(save, bank); break;
+                case SDLK_y:
+                {
+                    Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(), cursor_.panel, save, bank);
+                    if (!pkm.isEmpty())
+                        showDetail_ = true;
+                    break;
+                }
                 case SDLK_q:      switchBox(-1); break;
                 case SDLK_e:      switchBox(+1); break;
                 case SDLK_PLUS:

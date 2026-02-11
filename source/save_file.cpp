@@ -5,11 +5,12 @@
 
 void SaveFile::setGameType(GameType game) {
     gameType_ = game;
+    kbox_ = 0x0d66012c; // Reset to default; LA overrides below
     if (game == GameType::ZA) {
         gapBoxSlot_  = 0x40;
         sizeBoxSlot_ = PokeCrypto::SIZE_9PARTY + 0x40;
         boxCount_    = 32;
-    } else if (game == GameType::BDSP) {
+    } else if (isBDSP(game)) {
         gapBoxSlot_  = 0;
         sizeBoxSlot_ = PokeCrypto::SIZE_9PARTY;
         boxCount_    = BDSP_BOX_COUNT;
@@ -39,7 +40,7 @@ bool SaveFile::load(const std::string& path) {
     boxData_ = nullptr;
     boxLayoutData_ = nullptr;
 
-    if (gameType_ == GameType::BDSP)
+    if (isBDSP(gameType_))
         return loadBDSP(path);
     return loadSCBlock(path);
 }
@@ -48,7 +49,7 @@ bool SaveFile::save(const std::string& path) {
     if (!loaded_)
         return false;
 
-    if (gameType_ == GameType::BDSP)
+    if (isBDSP(gameType_))
         return saveBDSP(path);
     return saveSCBlock(path);
 }

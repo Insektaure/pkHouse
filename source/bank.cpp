@@ -8,7 +8,7 @@ Bank::Bank() {
 
 void Bank::setGameType(GameType g) {
     gameType_ = g;
-    int newBoxCount = (g == GameType::BDSP) ? 40 : 32;
+    int newBoxCount = isBDSP(g) ? 40 : 32;
     slotSize_ = (g == GameType::LA) ? PokeCrypto::SIZE_8APARTY : PokeCrypto::SIZE_9PARTY;
     if (newBoxCount != boxCount_) {
         boxCount_ = newBoxCount;

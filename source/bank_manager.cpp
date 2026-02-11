@@ -14,11 +14,11 @@ bool BankManager::init(const std::string& basePath, GameType game) {
     mkdir(banksParent.c_str(), 0755);
 
     // Game-specific subdirectory
-    if (game == GameType::SV)
+    if (isSV(game))
         banksDir_ = banksParent + "sv/";
-    else if (game == GameType::SwSh)
+    else if (isSwSh(game))
         banksDir_ = banksParent + "swsh/";
-    else if (game == GameType::BDSP)
+    else if (isBDSP(game))
         banksDir_ = banksParent + "bdsp/";
     else if (game == GameType::LA)
         banksDir_ = banksParent + "la/";

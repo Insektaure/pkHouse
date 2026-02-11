@@ -53,7 +53,7 @@ struct Pokemon {
     // 0x22: Gender (PK8/PB8/PA8: bits 2-3, PA9: bits 1-2)
     bool fatefulEncounter() const { return (data[0x22] & 1) != 0; }
     uint8_t gender() const {
-        if (gameType_ == GameType::SwSh || gameType_ == GameType::BDSP || gameType_ == GameType::LA)
+        if (isSwSh(gameType_) || isBDSP(gameType_) || gameType_ == GameType::LA)
             return (data[0x22] >> 2) & 0x3; // PK8/PB8/PA8: bits 2-3
         return (data[0x22] >> 1) & 0x3;     // PA9: bits 1-2
     }
@@ -121,7 +121,7 @@ struct Pokemon {
     bool isAlpha() const {
         if (gameType_ == GameType::LA)
             return (data[0x16] >> 5) & 1;
-        if (gameType_ == GameType::SwSh || gameType_ == GameType::BDSP)
+        if (isSwSh(gameType_) || isBDSP(gameType_))
             return false;
         return data[0x23] != 0; // PA9 (ZA/SV)
     }

@@ -217,18 +217,21 @@ void UI::drawGameSelectorFrame() {
     drawTextCentered("Select Game", SCREEN_W / 2, 40, COLOR_TEXT, font_);
 
     constexpr int ROW_W = 500;
-    constexpr int ROW_H = 60;
-    constexpr int ROW_GAP = 20;
-    constexpr int NUM_GAMES = 5;
+    constexpr int ROW_H = 50;
+    constexpr int ROW_GAP = 12;
+    constexpr int NUM_GAMES = 8;
     int startX = (SCREEN_W - ROW_W) / 2;
     int startY = (SCREEN_H - ROW_H * NUM_GAMES - ROW_GAP * (NUM_GAMES - 1)) / 2;
 
     const char* labels[] = {
-        "Pokemon Legends: Z-A",
-        "Pokemon Scarlet / Violet",
-        "Pokemon Sword / Shield",
-        "Pokemon Brilliant Diamond / Shining Pearl",
+        "Pokemon Sword",
+        "Pokemon Shield",
+        "Pokemon Brilliant Diamond",
+        "Pokemon Shining Pearl",
         "Pokemon Legends: Arceus",
+        "Pokemon Scarlet",
+        "Pokemon Violet",
+        "Pokemon Legends: Z-A",
     };
 
     for (int i = 0; i < NUM_GAMES; i++) {
@@ -249,7 +252,7 @@ void UI::drawGameSelectorFrame() {
 }
 
 void UI::handleGameSelectorInput(bool& running) {
-    constexpr int NUM_GAMES = 5;
+    constexpr int NUM_GAMES = 8;
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
         if (event.type == SDL_QUIT) {
@@ -266,7 +269,7 @@ void UI::handleGameSelectorInput(bool& running) {
                     gameSelCursor_ = (gameSelCursor_ + 1) % NUM_GAMES;
                     break;
                 case SDL_CONTROLLER_BUTTON_B: { // Switch A = select
-                    constexpr GameType games[] = {GameType::ZA, GameType::SV, GameType::SwSh, GameType::BDSP, GameType::LA};
+                    constexpr GameType games[] = {GameType::Sw, GameType::Sh, GameType::BD, GameType::SP, GameType::LA, GameType::S, GameType::V, GameType::ZA};
                     selectGame(games[gameSelCursor_]);
                     break;
                 }
@@ -286,7 +289,7 @@ void UI::handleGameSelectorInput(bool& running) {
                     break;
                 case SDLK_a:
                 case SDLK_RETURN: {
-                    constexpr GameType games[] = {GameType::ZA, GameType::SV, GameType::SwSh, GameType::BDSP, GameType::LA};
+                    constexpr GameType games[] = {GameType::Sw, GameType::Sh, GameType::BD, GameType::SP, GameType::LA, GameType::S, GameType::V, GameType::ZA};
                     selectGame(games[gameSelCursor_]);
                     break;
                 }
@@ -303,11 +306,11 @@ void UI::selectGame(GameType game) {
     save_.setGameType(game);
 
     // Different save file names for testing; in production all are "main"
-    if (game == GameType::SV)
+    if (isSV(game))
         savePath_ = basePath_ + "main_sv";
-    else if (game == GameType::SwSh)
+    else if (isSwSh(game))
         savePath_ = basePath_ + "main_swsh";
-    else if (game == GameType::BDSP)
+    else if (isBDSP(game))
         savePath_ = basePath_ + "main_bdsp";
     else if (game == GameType::LA)
         savePath_ = basePath_ + "main_la";
@@ -375,7 +378,7 @@ void UI::drawBankSelectorFrame() {
                      COLOR_TEXT, font_);
 
             // Slot count (right-aligned)
-            int maxSlots = (selectedGame_ == GameType::BDSP) ? 1200 : 960;
+            int maxSlots = isBDSP(selectedGame_) ? 1200 : 960;
             std::string slotStr = std::to_string(banks[idx].occupiedSlots) + "/" + std::to_string(maxSlots);
             int tw = 0, th = 0;
             TTF_SizeUTF8(font_, slotStr.c_str(), &tw, &th);
@@ -386,6 +389,24 @@ void UI::drawBankSelectorFrame() {
 
     // Status bar
     drawStatusBar("A:Open  X:New  Y:Rename  -:Delete  B:Back  +:Quit");
+
+    // Game name (bottom right, gold)
+    {
+        const char* gameName = "";
+        switch (selectedGame_) {
+            case GameType::ZA: gameName = "Legends: Z-A"; break;
+            case GameType::S:  gameName = "Scarlet"; break;
+            case GameType::V:  gameName = "Violet"; break;
+            case GameType::Sw: gameName = "Sword"; break;
+            case GameType::Sh: gameName = "Shield"; break;
+            case GameType::BD: gameName = "Brilliant Diamond"; break;
+            case GameType::SP: gameName = "Shining Pearl"; break;
+            case GameType::LA: gameName = "Legends: Arceus"; break;
+        }
+        int tw = 0, th = 0;
+        TTF_SizeUTF8(fontSmall_, gameName, &tw, &th);
+        drawText(gameName, SCREEN_W - tw - 15, SCREEN_H - 30, {255, 215, 0, 255}, fontSmall_);
+    }
 
     // Delete confirmation overlay
     if (showDeleteConfirm_) {
@@ -988,6 +1009,24 @@ void UI::drawFrame() {
     }
     drawStatusBar(statusMsg);
 
+    // Game name (bottom right, gold)
+    {
+        const char* gameName = "";
+        switch (selectedGame_) {
+            case GameType::ZA: gameName = "Legends: Z-A"; break;
+            case GameType::S:  gameName = "Scarlet"; break;
+            case GameType::V:  gameName = "Violet"; break;
+            case GameType::Sw: gameName = "Sword"; break;
+            case GameType::Sh: gameName = "Shield"; break;
+            case GameType::BD: gameName = "Brilliant Diamond"; break;
+            case GameType::SP: gameName = "Shining Pearl"; break;
+            case GameType::LA: gameName = "Legends: Arceus"; break;
+        }
+        int tw = 0, th = 0;
+        TTF_SizeUTF8(fontSmall_, gameName, &tw, &th);
+        drawText(gameName, SCREEN_W - tw - 15, SCREEN_H - 30, {255, 215, 0, 255}, fontSmall_);
+    }
+
     // Detail popup overlay
     if (showDetail_) {
         Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(), cursor_.panel);
@@ -1162,7 +1201,7 @@ void UI::drawMenuPopup() {
 
     // Popup rect centered
     constexpr int POP_W = 350;
-    constexpr int POP_H = 296;
+    constexpr int POP_H = 260;
     int popX = (SCREEN_W - POP_W) / 2;
     int popY = (SCREEN_H - POP_H) / 2;
 
@@ -1172,12 +1211,12 @@ void UI::drawMenuPopup() {
     // Title
     drawTextCentered("Menu", popX + POP_W / 2, popY + 22, COLOR_TEXT, font_);
 
-    // Menu options (5 items)
-    const char* labels[] = {"Save (Game & Bank)", "Switch Bank (With saving)", "Switch Bank (Without saving)", "Save & Quit", "Quit Without Saving"};
+    // Menu options (4 items)
+    const char* labels[] = {"Switch Bank (With saving)", "Switch Bank (Without saving)", "Save & Quit", "Quit Without Saving"};
     int rowH = 36;
     int startY = popY + 50;
 
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 4; i++) {
         int rowY = startY + i * rowH;
         if (i == menuSelection_) {
             drawRect(popX + 20, rowY, POP_W - 40, rowH - 4, {60, 60, 80, 255});
@@ -1205,17 +1244,13 @@ void UI::handleInput(bool& running) {
             if (event.type == SDL_CONTROLLERBUTTONDOWN) {
                 switch (event.cbutton.button) {
                     case SDL_CONTROLLER_BUTTON_DPAD_UP:
-                        menuSelection_ = (menuSelection_ + 4) % 5;
+                        menuSelection_ = (menuSelection_ + 3) % 4;
                         break;
                     case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
-                        menuSelection_ = (menuSelection_ + 1) % 5;
+                        menuSelection_ = (menuSelection_ + 1) % 4;
                         break;
                     case SDL_CONTROLLER_BUTTON_B: // Switch A = confirm
                         if (menuSelection_ == 0) {
-                            // Save
-                            saveNow_ = true;
-                            showMenu_ = false;
-                        } else if (menuSelection_ == 1) {
                             // Switch Bank — save current bank, go to selector
                             if (!activeBankPath_.empty())
                                 bank_.save(activeBankPath_);
@@ -1224,12 +1259,12 @@ void UI::handleInput(bool& running) {
                             bankManager_.refresh();
                             screen_ = AppScreen::BankSelector;
                             showMenu_ = false;
-                        } else if (menuSelection_ == 2) {
+                        } else if (menuSelection_ == 1) {
                             // Switch Bank (No Save) — go to selector without saving
                             bankManager_.refresh();
                             screen_ = AppScreen::BankSelector;
                             showMenu_ = false;
-                        } else if (menuSelection_ == 3) {
+                        } else if (menuSelection_ == 2) {
                             // Save & Quit
                             saveNow_ = true;
                             running = false;
@@ -1246,17 +1281,14 @@ void UI::handleInput(bool& running) {
             if (event.type == SDL_KEYDOWN) {
                 switch (event.key.keysym.sym) {
                     case SDLK_UP:
-                        menuSelection_ = (menuSelection_ + 4) % 5;
+                        menuSelection_ = (menuSelection_ + 3) % 4;
                         break;
                     case SDLK_DOWN:
-                        menuSelection_ = (menuSelection_ + 1) % 5;
+                        menuSelection_ = (menuSelection_ + 1) % 4;
                         break;
                     case SDLK_a:
                     case SDLK_RETURN:
                         if (menuSelection_ == 0) {
-                            saveNow_ = true;
-                            showMenu_ = false;
-                        } else if (menuSelection_ == 1) {
                             if (!activeBankPath_.empty())
                                 bank_.save(activeBankPath_);
                             if (save_.isLoaded())
@@ -1264,11 +1296,11 @@ void UI::handleInput(bool& running) {
                             bankManager_.refresh();
                             screen_ = AppScreen::BankSelector;
                             showMenu_ = false;
-                        } else if (menuSelection_ == 2) {
+                        } else if (menuSelection_ == 1) {
                             bankManager_.refresh();
                             screen_ = AppScreen::BankSelector;
                             showMenu_ = false;
-                        } else if (menuSelection_ == 3) {
+                        } else if (menuSelection_ == 2) {
                             saveNow_ = true;
                             running = false;
                         } else {

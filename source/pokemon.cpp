@@ -2,7 +2,7 @@
 #include "species_converter.h"
 
 uint16_t Pokemon::species() const {
-    if (gameType_ == GameType::SwSh || gameType_ == GameType::BDSP || gameType_ == GameType::LA)
+    if (isSwSh(gameType_) || isBDSP(gameType_) || gameType_ == GameType::LA)
         return speciesInternal(); // PK8/PB8/PA8 stores national dex ID directly
     return SpeciesConverter::getNational9(speciesInternal());
 }

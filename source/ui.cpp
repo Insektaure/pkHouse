@@ -999,7 +999,7 @@ void UI::drawMenuPopup() {
 
     // Popup rect centered
     constexpr int POP_W = 350;
-    constexpr int POP_H = 260;
+    constexpr int POP_H = 296;
     int popX = (SCREEN_W - POP_W) / 2;
     int popY = (SCREEN_H - POP_H) / 2;
 
@@ -1009,12 +1009,12 @@ void UI::drawMenuPopup() {
     // Title
     drawTextCentered("Menu", popX + POP_W / 2, popY + 22, COLOR_TEXT, font_);
 
-    // Menu options (4 items now)
-    const char* labels[] = {"Save", "Switch Bank", "Save & Quit", "Quit Without Saving"};
+    // Menu options (5 items)
+    const char* labels[] = {"Save (Game & Bank)", "Switch Bank (With saving)", "Switch Bank (Without saving)", "Save & Quit", "Quit Without Saving"};
     int rowH = 36;
     int startY = popY + 50;
 
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 5; i++) {
         int rowY = startY + i * rowH;
         if (i == menuSelection_) {
             drawRect(popX + 20, rowY, POP_W - 40, rowH - 4, {60, 60, 80, 255});
@@ -1042,10 +1042,10 @@ void UI::handleInput(SaveFile& save, bool& running) {
             if (event.type == SDL_CONTROLLERBUTTONDOWN) {
                 switch (event.cbutton.button) {
                     case SDL_CONTROLLER_BUTTON_DPAD_UP:
-                        menuSelection_ = (menuSelection_ + 3) % 4;
+                        menuSelection_ = (menuSelection_ + 4) % 5;
                         break;
                     case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
-                        menuSelection_ = (menuSelection_ + 1) % 4;
+                        menuSelection_ = (menuSelection_ + 1) % 5;
                         break;
                     case SDL_CONTROLLER_BUTTON_B: // Switch A = confirm
                         if (menuSelection_ == 0) {
@@ -1062,6 +1062,11 @@ void UI::handleInput(SaveFile& save, bool& running) {
                             screen_ = AppScreen::BankSelector;
                             showMenu_ = false;
                         } else if (menuSelection_ == 2) {
+                            // Switch Bank (No Save) — go to selector without saving
+                            bankManager_->refresh();
+                            screen_ = AppScreen::BankSelector;
+                            showMenu_ = false;
+                        } else if (menuSelection_ == 3) {
                             // Save & Quit
                             saveNow_ = true;
                             running = false;
@@ -1078,10 +1083,10 @@ void UI::handleInput(SaveFile& save, bool& running) {
             if (event.type == SDL_KEYDOWN) {
                 switch (event.key.keysym.sym) {
                     case SDLK_UP:
-                        menuSelection_ = (menuSelection_ + 3) % 4;
+                        menuSelection_ = (menuSelection_ + 4) % 5;
                         break;
                     case SDLK_DOWN:
-                        menuSelection_ = (menuSelection_ + 1) % 4;
+                        menuSelection_ = (menuSelection_ + 1) % 5;
                         break;
                     case SDLK_a:
                     case SDLK_RETURN:
@@ -1097,6 +1102,10 @@ void UI::handleInput(SaveFile& save, bool& running) {
                             screen_ = AppScreen::BankSelector;
                             showMenu_ = false;
                         } else if (menuSelection_ == 2) {
+                            bankManager_->refresh();
+                            screen_ = AppScreen::BankSelector;
+                            showMenu_ = false;
+                        } else if (menuSelection_ == 3) {
                             saveNow_ = true;
                             running = false;
                         } else {

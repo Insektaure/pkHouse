@@ -2,19 +2,19 @@
 #include "species_converter.h"
 
 uint16_t Pokemon::species() const {
-    if (gameType_ == GameType::SwSh || gameType_ == GameType::BDSP)
-        return speciesInternal(); // PK8/PB8 stores national dex ID directly
+    if (gameType_ == GameType::SwSh || gameType_ == GameType::BDSP || gameType_ == GameType::LA)
+        return speciesInternal(); // PK8/PB8/PA8 stores national dex ID directly
     return SpeciesConverter::getNational9(speciesInternal());
 }
 
-std::string Pokemon::nickname() const {
+// Helper: read UTF-16LE string from given offset
+static std::string readUtf16String(const uint8_t* base, int offset, int maxChars) {
     std::string result;
-    // Read up to 13 UTF-16LE code units from offset 0x58
-    for (int i = 0; i < 13; i++) {
-        uint16_t ch = readU16(0x58 + i * 2);
+    for (int i = 0; i < maxChars; i++) {
+        uint16_t ch;
+        std::memcpy(&ch, base + offset + i * 2, 2);
         if (ch == 0)
             break;
-        // Basic UTF-16 to UTF-8 conversion
         if (ch < 0x80) {
             result += static_cast<char>(ch);
         } else if (ch < 0x800) {
@@ -29,24 +29,14 @@ std::string Pokemon::nickname() const {
     return result;
 }
 
+std::string Pokemon::nickname() const {
+    int ofs = (gameType_ == GameType::LA) ? 0x60 : 0x58;
+    return readUtf16String(data.data(), ofs, 13);
+}
+
 std::string Pokemon::otName() const {
-    std::string result;
-    for (int i = 0; i < 13; i++) {
-        uint16_t ch = readU16(0xF8 + i * 2);
-        if (ch == 0)
-            break;
-        if (ch < 0x80) {
-            result += static_cast<char>(ch);
-        } else if (ch < 0x800) {
-            result += static_cast<char>(0xC0 | (ch >> 6));
-            result += static_cast<char>(0x80 | (ch & 0x3F));
-        } else {
-            result += static_cast<char>(0xE0 | (ch >> 12));
-            result += static_cast<char>(0x80 | ((ch >> 6) & 0x3F));
-            result += static_cast<char>(0x80 | (ch & 0x3F));
-        }
-    }
-    return result;
+    int ofs = (gameType_ == GameType::LA) ? 0x110 : 0xF8;
+    return readUtf16String(data.data(), ofs, 13);
 }
 
 std::string Pokemon::displayName() const {
@@ -60,9 +50,15 @@ std::string Pokemon::displayName() const {
 }
 
 void Pokemon::loadFromEncrypted(const uint8_t* encrypted, size_t len) {
-    PokeCrypto::decryptArray9(encrypted, len, data.data());
+    if (gameType_ == GameType::LA)
+        PokeCrypto::decryptArray8A(encrypted, len, data.data());
+    else
+        PokeCrypto::decryptArray9(encrypted, len, data.data());
 }
 
 void Pokemon::getEncrypted(uint8_t* outBuf) const {
-    PokeCrypto::encryptArray9(data.data(), PokeCrypto::SIZE_9PARTY, outBuf);
+    if (gameType_ == GameType::LA)
+        PokeCrypto::encryptArray8A(data.data(), PokeCrypto::SIZE_8ASTORED, outBuf);
+    else
+        PokeCrypto::encryptArray9(data.data(), PokeCrypto::SIZE_9PARTY, outBuf);
 }

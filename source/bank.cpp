@@ -9,6 +9,7 @@ Bank::Bank() {
 void Bank::setGameType(GameType g) {
     gameType_ = g;
     int newBoxCount = (g == GameType::BDSP) ? 40 : 32;
+    slotSize_ = (g == GameType::LA) ? PokeCrypto::SIZE_8APARTY : PokeCrypto::SIZE_9PARTY;
     if (newBoxCount != boxCount_) {
         boxCount_ = newBoxCount;
         slots_.resize(boxCount_ * SLOTS_PER_BOX);
@@ -33,24 +34,32 @@ bool Bank::load(const std::string& path) {
     file.read(reinterpret_cast<char*>(&version), 4);
 
     int fileBoxCount;
-    if (version == VERSION_40BOX)
-        fileBoxCount = 40;
-    else if (version == VERSION_32BOX)
+    int fileSlotSize;
+    if (version == VERSION_LA) {
         fileBoxCount = 32;
-    else
+        fileSlotSize = PokeCrypto::SIZE_8APARTY;
+    } else if (version == VERSION_40BOX) {
+        fileBoxCount = 40;
+        fileSlotSize = PokeCrypto::SIZE_9PARTY;
+    } else if (version == VERSION_32BOX) {
+        fileBoxCount = 32;
+        fileSlotSize = PokeCrypto::SIZE_9PARTY;
+    } else {
         return false; // Unsupported version
+    }
 
-    // Use the file's box count (it may differ from the current gameType setting)
+    // Use the file's parameters
     boxCount_ = fileBoxCount;
+    slotSize_ = fileSlotSize;
     slots_.resize(boxCount_ * SLOTS_PER_BOX);
 
     // Skip reserved
     file.seekg(HEADER_SIZE);
 
-    // Read all slots (decrypted party data)
+    // Read all slots (decrypted data)
     int total = totalSlots();
     for (int i = 0; i < total; i++) {
-        file.read(reinterpret_cast<char*>(slots_[i].data.data()), SLOT_SIZE);
+        file.read(reinterpret_cast<char*>(slots_[i].data.data()), slotSize_);
     }
 
     return file.good();
@@ -71,7 +80,7 @@ bool Bank::save(const std::string& path) {
     // Write all slots
     int total = totalSlots();
     for (int i = 0; i < total; i++) {
-        file.write(reinterpret_cast<const char*>(slots_[i].data.data()), SLOT_SIZE);
+        file.write(reinterpret_cast<const char*>(slots_[i].data.data()), slotSize_);
     }
 
     return file.good();

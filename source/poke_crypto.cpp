@@ -107,3 +107,45 @@ void PokeCrypto::encryptArray9(const uint8_t* pk, size_t len, uint8_t* outBuf) {
     if (static_cast<int>(len) > end)
         cryptArray(outBuf + end, len - end, pv);
 }
+
+// --- PA8 (Legends: Arceus) — same algorithm, larger block size (0x58) ---
+
+void PokeCrypto::decryptArray8A(const uint8_t* ekm, size_t len, uint8_t* outBuf) {
+    uint8_t tmp[SIZE_8APARTY];
+    size_t sz = len > SIZE_8APARTY ? SIZE_8APARTY : len;
+    std::memcpy(tmp, ekm, sz);
+    if (sz < SIZE_8APARTY)
+        std::memset(tmp + sz, 0, SIZE_8APARTY - sz);
+
+    uint32_t pv = readU32LE(tmp);
+    uint32_t sv = (pv >> 13) & 31;
+
+    // Decrypt blocks (offset 8 to 8 + 4*88 = 360)
+    constexpr int start = 8;
+    int end = BLOCK_COUNT * SIZE_8ABLOCK + start;
+    cryptArray(tmp + start, end - start, pv);
+
+    // Decrypt party stats (if present)
+    if (static_cast<int>(sz) > end)
+        cryptArray(tmp + end, sz - end, pv);
+
+    // Unshuffle blocks
+    shuffleArray(tmp, sz, sv, SIZE_8ABLOCK, outBuf);
+}
+
+void PokeCrypto::encryptArray8A(const uint8_t* pk, size_t len, uint8_t* outBuf) {
+    uint32_t pv = readU32LE(pk);
+    uint32_t sv = (pv >> 13) & 31;
+
+    // Inverse shuffle
+    shuffleArray(pk, len, BLOCK_POSITION_INVERT[sv], SIZE_8ABLOCK, outBuf);
+
+    // Encrypt blocks
+    constexpr int start = 8;
+    int end = BLOCK_COUNT * SIZE_8ABLOCK + start;
+    cryptArray(outBuf + start, end - start, pv);
+
+    // Encrypt party stats
+    if (static_cast<int>(len) > end)
+        cryptArray(outBuf + end, len - end, pv);
+}

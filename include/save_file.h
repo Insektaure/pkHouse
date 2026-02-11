@@ -47,9 +47,9 @@ private:
     int gapBoxSlot_     = 0x40;
     int sizeBoxSlot_    = PokeCrypto::SIZE_9PARTY + 0x40;
 
-    // SCBlock keys (ZA/SV/SwSh)
-    static constexpr uint32_t KBOX        = 0x0d66012c;
-    static constexpr uint32_t KBOX_LAYOUT = 0x19722c89;
+    // SCBlock keys
+    uint32_t kbox_ = 0x0d66012c;                        // LA uses 0x47E1CEAB
+    static constexpr uint32_t KBOX_LAYOUT = 0x19722c89; // same for all games
 
     // BDSP save format constants
     static constexpr int BDSP_BOX_COUNT       = 40;

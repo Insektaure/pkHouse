@@ -6,10 +6,10 @@
 #include <string>
 #include <array>
 
-// Pokemon data structure for Gen8/Gen9 (PK8/PA9).
-// Ported from PKHeX.Core/PKM/PA9.cs and G8PKM.cs
+// Pokemon data structure for Gen8/Gen8a/Gen9 (PK8/PA8/PA9).
+// Ported from PKHeX.Core/PKM/PA9.cs, G8PKM.cs, PA8.cs
 struct Pokemon {
-    std::array<uint8_t, PokeCrypto::SIZE_9PARTY> data{};
+    std::array<uint8_t, PokeCrypto::MAX_PARTY_SIZE> data{};
     GameType gameType_ = GameType::ZA;
 
     // --- Helpers ---
@@ -30,15 +30,15 @@ struct Pokemon {
         std::memcpy(data.data() + ofs, &v, 4);
     }
 
-    // --- Block A (0x00 - 0x57) ---
+    // --- Block A (shared offsets across all formats) ---
 
     // 0x00: EncryptionConstant
     uint32_t encryptionConstant() const { return readU32(0x00); }
 
-    // 0x08: SpeciesInternal (raw Gen9 ID)
+    // 0x08: Species (national ID for Gen8/8a, internal for Gen9)
     uint16_t speciesInternal() const { return readU16(0x08); }
 
-    // National species ID (converted via SpeciesConverter)
+    // National species ID (converted via SpeciesConverter for Gen9)
     uint16_t species() const;
 
     // 0x0A: HeldItem
@@ -50,32 +50,21 @@ struct Pokemon {
     // 0x20: Nature
     uint8_t nature() const { return data[0x20]; }
 
-    // 0x22: FatefulEncounter (bit 0), Gender (PK8: bits 2-3, PA9: bits 1-2)
+    // 0x22: Gender (PK8/PB8/PA8: bits 2-3, PA9: bits 1-2)
     bool fatefulEncounter() const { return (data[0x22] & 1) != 0; }
     uint8_t gender() const {
-        if (gameType_ == GameType::SwSh || gameType_ == GameType::BDSP)
-            return (data[0x22] >> 2) & 0x3; // PK8/PB8: bits 2-3
+        if (gameType_ == GameType::SwSh || gameType_ == GameType::BDSP || gameType_ == GameType::LA)
+            return (data[0x22] >> 2) & 0x3; // PK8/PB8/PA8: bits 2-3
         return (data[0x22] >> 1) & 0x3;     // PA9: bits 1-2
     }
 
     // 0x24: Form
     uint8_t form() const { return data[0x24]; }
 
-    // --- Block B (0x58 - 0xA7) ---
-
-    // 0x58: Nickname (13 UTF-16LE chars, 26 bytes)
-    std::string nickname() const;
-
-    // 0x72-0x79: Moves (4x u16)
-    uint16_t move1() const { return readU16(0x72); }
-    uint16_t move2() const { return readU16(0x74); }
-    uint16_t move3() const { return readU16(0x76); }
-    uint16_t move4() const { return readU16(0x78); }
-
     // 0x14: Ability
     uint16_t ability() const { return readU16(0x14); }
 
-    // EVs (offsets 0x26-0x2B)
+    // EVs (offsets 0x26-0x2B — same for all formats)
     uint8_t evHp()  const { return data[0x26]; }
     uint8_t evAtk() const { return data[0x27]; }
     uint8_t evDef() const { return data[0x28]; }
@@ -83,8 +72,26 @@ struct Pokemon {
     uint8_t evSpA() const { return data[0x2A]; }
     uint8_t evSpD() const { return data[0x2B]; }
 
-    // 0x8C: IV32
-    uint32_t iv32() const { return readU32(0x8C); }
+    // TID/SID (offsets 0x0C, 0x0E — same for all formats)
+    uint16_t tid() const { return readU16(0x0C); }
+    uint16_t sid() const { return readU16(0x0E); }
+
+    // --- Fields with game-aware offsets ---
+
+    // Nickname: 0x58 (PK8/PA9), 0x60 (PA8)
+    std::string nickname() const;
+
+    // OT Name: 0xF8 (PK8/PA9), 0x110 (PA8)
+    std::string otName() const;
+
+    // Moves: 0x72-0x78 (PK8/PA9), 0x54-0x5A (PA8)
+    uint16_t move1() const { return readU16(gameType_ == GameType::LA ? 0x54 : 0x72); }
+    uint16_t move2() const { return readU16(gameType_ == GameType::LA ? 0x56 : 0x74); }
+    uint16_t move3() const { return readU16(gameType_ == GameType::LA ? 0x58 : 0x76); }
+    uint16_t move4() const { return readU16(gameType_ == GameType::LA ? 0x5A : 0x78); }
+
+    // IV32: 0x8C (PK8/PA9), 0x94 (PA8)
+    uint32_t iv32() const { return readU32(gameType_ == GameType::LA ? 0x94 : 0x8C); }
     bool isEgg() const { return ((iv32() >> 30) & 1) == 1; }
     bool isNicknamed() const { return ((iv32() >> 31) & 1) == 1; }
 
@@ -96,49 +103,34 @@ struct Pokemon {
     int ivSpA() const { return (iv32() >> 20) & 0x1F; }
     int ivSpD() const { return (iv32() >> 25) & 0x1F; }
 
-    // --- Party Stats (0x148 - 0x157) ---
-
-    // 0x148: Level (party format only)
-    uint8_t level() const { return data[0x148]; }
-
-    // --- Block C (0xA8 - 0xF7) ---
-
-    // TID/SID (offsets 0x0C, 0x0E)
-    uint16_t tid() const { return readU16(0x0C); }
-    uint16_t sid() const { return readU16(0x0E); }
-
-    // OT Name (offset 0xF8, 13 UTF-16LE chars)
-    std::string otName() const;
+    // Level: 0x148 (PK8/PA9), 0x168 (PA8 — party stats only, 0 from box data)
+    uint8_t level() const { return data[gameType_ == GameType::LA ? 0x168 : 0x148]; }
 
     // --- Utility ---
 
-    // True if the slot is empty (no pokemon)
     bool isEmpty() const {
         return encryptionConstant() == 0 && speciesInternal() == 0;
     }
 
-    // Display name for UI: species name (or nickname if nicknamed)
     std::string displayName() const;
 
-    // Load from encrypted raw data
     void loadFromEncrypted(const uint8_t* encrypted, size_t len);
-
-    // Write encrypted data to buffer
     void getEncrypted(uint8_t* outBuf) const;
 
-    // Is this an alpha Pokemon? (offset 0x23 per PKHeX PA9, not applicable to PK8)
+    // IsAlpha: PA9 → 0x23 != 0, PA8 → 0x16 bit 5, PK8/PB8 → false
     bool isAlpha() const {
+        if (gameType_ == GameType::LA)
+            return (data[0x16] >> 5) & 1;
         if (gameType_ == GameType::SwSh || gameType_ == GameType::BDSP)
             return false;
-        return data[0x23] != 0;
+        return data[0x23] != 0; // PA9 (ZA/SV)
     }
 
-    // Is this a shiny Pokemon?
     bool isShiny() const {
         uint32_t p = pid();
-        uint16_t tid = readU16(0x0C);
-        uint16_t sid = readU16(0x0E);
-        uint32_t xor_val = (p >> 16) ^ (p & 0xFFFF) ^ tid ^ sid;
+        uint16_t t = readU16(0x0C);
+        uint16_t s = readU16(0x0E);
+        uint32_t xor_val = (p >> 16) ^ (p & 0xFFFF) ^ t ^ s;
         return xor_val < 16;
     }
 };

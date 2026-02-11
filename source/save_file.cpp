@@ -13,6 +13,11 @@ void SaveFile::setGameType(GameType game) {
         gapBoxSlot_  = 0;
         sizeBoxSlot_ = PokeCrypto::SIZE_9PARTY;
         boxCount_    = BDSP_BOX_COUNT;
+    } else if (game == GameType::LA) {
+        gapBoxSlot_  = 0;
+        sizeBoxSlot_ = PokeCrypto::SIZE_8ASTORED;
+        boxCount_    = 32;
+        kbox_        = 0x47E1CEAB;
     } else {
         // SV and SwSh: no gap, 32 boxes
         gapBoxSlot_  = 0;
@@ -64,7 +69,7 @@ bool SaveFile::loadSCBlock(const std::string& path) {
     blocks_ = SwishCrypto::decrypt(fileData.data(), fileData.size());
 
     // Find box data block
-    SCBlock* boxBlock = SwishCrypto::findBlock(blocks_, KBOX);
+    SCBlock* boxBlock = SwishCrypto::findBlock(blocks_, kbox_);
     if (!boxBlock)
         return false;
     boxData_ = boxBlock->data.data();
@@ -150,12 +155,13 @@ Pokemon SaveFile::getBoxSlot(int box, int slot) const {
         return pkm;
 
     int offset = getBoxSlotOffset(box, slot);
-    if (offset + PokeCrypto::SIZE_9PARTY > static_cast<int>(boxDataLen_))
+    if (offset + sizeBoxSlot_ > static_cast<int>(boxDataLen_))
         return pkm;
 
-    // Box data stores Pokemon in party format, encrypted
-    pkm.loadFromEncrypted(boxData_ + offset, PokeCrypto::SIZE_9PARTY);
+    // gameType_ must be set before decrypt (selects correct algorithm)
     pkm.gameType_ = gameType_;
+    int dataSize = sizeBoxSlot_ - gapBoxSlot_;
+    pkm.loadFromEncrypted(boxData_ + offset, dataSize);
     return pkm;
 }
 
@@ -167,11 +173,11 @@ void SaveFile::setBoxSlot(int box, int slot, const Pokemon& pkm) {
     if (offset + sizeBoxSlot_ > static_cast<int>(boxDataLen_))
         return;
 
-    // Encrypt and write party data
+    // Encrypt and write data
     pkm.getEncrypted(boxData_ + offset);
     // Zero the gap bytes (if any)
     if (gapBoxSlot_ > 0)
-        std::memset(boxData_ + offset + PokeCrypto::SIZE_9PARTY, 0, gapBoxSlot_);
+        std::memset(boxData_ + offset + (sizeBoxSlot_ - gapBoxSlot_), 0, gapBoxSlot_);
 }
 
 void SaveFile::clearBoxSlot(int box, int slot) {

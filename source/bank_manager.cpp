@@ -20,6 +20,8 @@ bool BankManager::init(const std::string& basePath, GameType game) {
         banksDir_ = banksParent + "swsh/";
     else if (game == GameType::BDSP)
         banksDir_ = banksParent + "bdsp/";
+    else if (game == GameType::LA)
+        banksDir_ = banksParent + "la/";
     else
         banksDir_ = banksParent + "za/";
 

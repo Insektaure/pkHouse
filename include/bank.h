@@ -41,12 +41,17 @@ private:
     static constexpr char MAGIC[8] = {'P','K','H','O','U','S','E','\0'};
     static constexpr uint32_t VERSION_32BOX = 1;
     static constexpr uint32_t VERSION_40BOX = 2;
+    static constexpr uint32_t VERSION_LA    = 3;
 
     GameType gameType_ = GameType::ZA;
     int boxCount_ = 32;
+    int slotSize_ = PokeCrypto::SIZE_9PARTY;
     std::vector<Pokemon> slots_;
 
-    uint32_t fileVersion() const { return boxCount_ == 40 ? VERSION_40BOX : VERSION_32BOX; }
+    uint32_t fileVersion() const {
+        if (gameType_ == GameType::LA) return VERSION_LA;
+        return boxCount_ == 40 ? VERSION_40BOX : VERSION_32BOX;
+    }
 
     int slotIndex(int box, int slot) const {
         return box * SLOTS_PER_BOX + slot;

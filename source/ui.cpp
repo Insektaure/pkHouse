@@ -216,11 +216,10 @@ void UI::drawGameSelectorFrame() {
     // Title
     drawTextCentered("Select Game", SCREEN_W / 2, 40, COLOR_TEXT, font_);
 
-    // Four rows centered
     constexpr int ROW_W = 500;
     constexpr int ROW_H = 60;
     constexpr int ROW_GAP = 20;
-    constexpr int NUM_GAMES = 4;
+    constexpr int NUM_GAMES = 5;
     int startX = (SCREEN_W - ROW_W) / 2;
     int startY = (SCREEN_H - ROW_H * NUM_GAMES - ROW_GAP * (NUM_GAMES - 1)) / 2;
 
@@ -229,6 +228,7 @@ void UI::drawGameSelectorFrame() {
         "Pokemon Scarlet / Violet",
         "Pokemon Sword / Shield",
         "Pokemon Brilliant Diamond / Shining Pearl",
+        "Pokemon Legends: Arceus",
     };
 
     for (int i = 0; i < NUM_GAMES; i++) {
@@ -249,7 +249,7 @@ void UI::drawGameSelectorFrame() {
 }
 
 void UI::handleGameSelectorInput(bool& running) {
-    constexpr int NUM_GAMES = 4;
+    constexpr int NUM_GAMES = 5;
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
         if (event.type == SDL_QUIT) {
@@ -266,7 +266,7 @@ void UI::handleGameSelectorInput(bool& running) {
                     gameSelCursor_ = (gameSelCursor_ + 1) % NUM_GAMES;
                     break;
                 case SDL_CONTROLLER_BUTTON_B: { // Switch A = select
-                    constexpr GameType games[] = {GameType::ZA, GameType::SV, GameType::SwSh, GameType::BDSP};
+                    constexpr GameType games[] = {GameType::ZA, GameType::SV, GameType::SwSh, GameType::BDSP, GameType::LA};
                     selectGame(games[gameSelCursor_]);
                     break;
                 }
@@ -286,7 +286,7 @@ void UI::handleGameSelectorInput(bool& running) {
                     break;
                 case SDLK_a:
                 case SDLK_RETURN: {
-                    constexpr GameType games[] = {GameType::ZA, GameType::SV, GameType::SwSh, GameType::BDSP};
+                    constexpr GameType games[] = {GameType::ZA, GameType::SV, GameType::SwSh, GameType::BDSP, GameType::LA};
                     selectGame(games[gameSelCursor_]);
                     break;
                 }
@@ -309,6 +309,8 @@ void UI::selectGame(GameType game) {
         savePath_ = basePath_ + "main_swsh";
     else if (game == GameType::BDSP)
         savePath_ = basePath_ + "main_bdsp";
+    else if (game == GameType::LA)
+        savePath_ = basePath_ + "main_la";
     else
         savePath_ = basePath_ + "main";
 

@@ -22,3 +22,9 @@ inline uint64_t titleIdOf(GameType g) {
     }
     return 0;
 }
+
+// Save file name per game (for dynamic save loading)
+inline const char* saveFileNameOf(GameType g) {
+    if (isBDSP(g)) return "SaveData.bin";
+    return "main";
+}

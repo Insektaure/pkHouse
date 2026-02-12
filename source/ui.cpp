@@ -287,9 +287,9 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
 
     // All games in menu order
     constexpr GameType allGames[] = {
-        GameType::Sw, GameType::Sh, GameType::BD, GameType::SP,
-        GameType::LA, GameType::S, GameType::V, GameType::ZA,
-        GameType::GP, GameType::GE
+        GameType::GP, GameType::GE, GameType::Sw, GameType::Sh,
+        GameType::BD, GameType::SP, GameType::LA, GameType::S,
+        GameType::V, GameType::ZA
     };
 
 #ifdef __SWITCH__
@@ -508,9 +508,9 @@ void UI::selectProfile(int index) {
     // Build filtered game list: only games with save data for this profile
     availableGames_.clear();
     constexpr GameType allGames[] = {
-        GameType::Sw, GameType::Sh, GameType::BD, GameType::SP,
-        GameType::LA, GameType::S, GameType::V, GameType::ZA,
-        GameType::GP, GameType::GE
+        GameType::GP, GameType::GE, GameType::Sw, GameType::Sh,
+        GameType::BD, GameType::SP, GameType::LA, GameType::S,
+        GameType::V, GameType::ZA
     };
     for (GameType g : allGames) {
         if (account_.hasSaveData(index, g))

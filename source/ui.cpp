@@ -132,6 +132,8 @@ void UI::showSplash() {
     SDL_FreeSurface(surf);
     if (!tex) return;
 
+    SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
+
     int texW, texH;
     SDL_QueryTexture(tex, nullptr, nullptr, &texW, &texH);
 
@@ -140,13 +142,48 @@ void UI::showSplash() {
                            static_cast<float>(SCREEN_H) / texH);
     int dstW = static_cast<int>(texW * scale);
     int dstH = static_cast<int>(texH * scale);
-
-    SDL_SetRenderDrawColor(renderer_, 0, 0, 0, 255);
-    SDL_RenderClear(renderer_);
-
     SDL_Rect dst = {(SCREEN_W - dstW) / 2, (SCREEN_H - dstH) / 2, dstW, dstH};
-    SDL_RenderCopy(renderer_, tex, nullptr, &dst);
-    SDL_RenderPresent(renderer_);
+
+    // Hold splash for ~2.5 seconds
+    Uint32 holdMs = 2500;
+    Uint32 start = SDL_GetTicks();
+    while (SDL_GetTicks() - start < holdMs) {
+        SDL_Event event;
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                SDL_DestroyTexture(tex);
+                return;
+            }
+        }
+        SDL_SetRenderDrawColor(renderer_, COLOR_BG.r, COLOR_BG.g, COLOR_BG.b, 255);
+        SDL_RenderClear(renderer_);
+        SDL_RenderCopy(renderer_, tex, nullptr, &dst);
+        SDL_RenderPresent(renderer_);
+        SDL_Delay(16);
+    }
+
+    // Fade out over ~0.5 seconds
+    Uint32 fadeMs = 500;
+    start = SDL_GetTicks();
+    while (true) {
+        SDL_Event event;
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                SDL_DestroyTexture(tex);
+                return;
+            }
+        }
+        Uint32 elapsed = SDL_GetTicks() - start;
+        if (elapsed >= fadeMs)
+            break;
+        int alpha = 255 - static_cast<int>(255 * elapsed / fadeMs);
+        SDL_SetRenderDrawColor(renderer_, COLOR_BG.r, COLOR_BG.g, COLOR_BG.b, 255);
+        SDL_RenderClear(renderer_);
+        SDL_SetTextureAlphaMod(tex, static_cast<Uint8>(alpha));
+        SDL_RenderCopy(renderer_, tex, nullptr, &dst);
+        SDL_RenderPresent(renderer_);
+        SDL_Delay(16);
+    }
 
     SDL_DestroyTexture(tex);
 }
@@ -742,6 +779,7 @@ std::string UI::buildBackupDir(GameType game) const {
         profileName = account_.profiles()[selectedProfile_].pathSafeName;
 
     std::string dir = basePath_;
+    dir += "backups/";
     dir += profileName;
     dir += "/";
     dir += gamePathNameOf(game);

@@ -1,6 +1,7 @@
 #include "ui.h"
 #include "species_converter.h"
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <cstring>
 #include <ctime>
@@ -182,6 +183,62 @@ void UI::showMessageAndWait(const std::string& title, const std::string& body) {
     }
 }
 
+void UI::showWorking(const std::string& msg) {
+    if (!renderer_) return;
+
+    SDL_SetRenderDrawColor(renderer_, COLOR_BG.r, COLOR_BG.g, COLOR_BG.b, 255);
+    SDL_RenderClear(renderer_);
+
+    // Dark card behind gear + message
+    constexpr int POP_W = 400;
+    constexpr int POP_H = 160;
+    int popX = (SCREEN_W - POP_W) / 2;
+    int popY = (SCREEN_H - POP_H) / 2;
+    drawRect(popX, popY, POP_W, POP_H, COLOR_PANEL_BG);
+    drawRectOutline(popX, popY, POP_W, POP_H, COLOR_TEXT_DIM, 2);
+
+    // Draw gear icon
+    int gearCX = SCREEN_W / 2;
+    int gearCY = popY + 58;
+    constexpr int OUTER_R = 28;
+    constexpr int INNER_R = 18;
+    constexpr int HOLE_R  = 9;
+    constexpr int TEETH    = 8;
+    constexpr int TOOTH_W  = 12;
+    constexpr int TOOTH_H  = 14;
+
+    // Filled circle helper (scanline)
+    auto fillCircle = [&](int cx, int cy, int r, SDL_Color c) {
+        SDL_SetRenderDrawColor(renderer_, c.r, c.g, c.b, c.a);
+        for (int dy = -r; dy <= r; dy++) {
+            int dx = static_cast<int>(std::sqrt(r * r - dy * dy));
+            SDL_RenderDrawLine(renderer_, cx - dx, cy + dy, cx + dx, cy + dy);
+        }
+    };
+
+    // Tooth rectangles around the gear (8 teeth at 45-degree intervals)
+    SDL_Color gearColor = COLOR_ARROW;
+    SDL_SetRenderDrawColor(renderer_, gearColor.r, gearColor.g, gearColor.b, gearColor.a);
+    for (int i = 0; i < TEETH; i++) {
+        double angle = i * (3.14159265 * 2.0 / TEETH);
+        int tx = gearCX + static_cast<int>((INNER_R + TOOTH_H / 2) * std::cos(angle));
+        int ty = gearCY + static_cast<int>((INNER_R + TOOTH_H / 2) * std::sin(angle));
+        SDL_Rect tooth = {tx - TOOTH_W / 2, ty - TOOTH_W / 2, TOOTH_W, TOOTH_W};
+        SDL_RenderFillRect(renderer_, &tooth);
+    }
+
+    // Gear body circle
+    fillCircle(gearCX, gearCY, OUTER_R, gearColor);
+
+    // Center hole
+    fillCircle(gearCX, gearCY, HOLE_R, COLOR_PANEL_BG);
+
+    // Message text below gear
+    drawTextCentered(msg, SCREEN_W / 2, popY + POP_H - 32, COLOR_TEXT, font_);
+
+    SDL_RenderPresent(renderer_);
+}
+
 void UI::run(const std::string& basePath, const std::string& savePath) {
     basePath_ = basePath;
     savePath_ = savePath;
@@ -193,16 +250,19 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
     };
 
 #ifdef __SWITCH__
+    showWorking("Loading profiles...");
     if (account_.init() && account_.loadProfiles(renderer_)) {
         screen_ = AppScreen::ProfileSelector;
     } else {
         screen_ = AppScreen::GameSelector;
         availableGames_.assign(std::begin(allGames), std::end(allGames));
+        showWorking("Loading game icons...");
         loadGameIcons();
     }
 #else
     screen_ = AppScreen::GameSelector;
     availableGames_.assign(std::begin(allGames), std::end(allGames));
+    showWorking("Loading game icons...");
     loadGameIcons();
 #endif
 
@@ -221,6 +281,7 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
         } else {
             handleInput(running);
             if (saveNow_) {
+                showWorking("Saving...");
                 if (save_.isLoaded())
                     save_.save(savePath_);
                 account_.commitSave();
@@ -361,6 +422,7 @@ void UI::selectProfile(int index) {
     }
 
     gameSelCursor_ = 0;
+    showWorking("Loading game icons...");
     loadGameIcons();
     screen_ = AppScreen::GameSelector;
 }
@@ -624,6 +686,7 @@ void UI::handleGameSelectorInput(bool& running) {
 void UI::selectGame(GameType game) {
     selectedGame_ = game;
     save_.setGameType(game);
+    showWorking("Loading save data...");
 
 #ifdef __SWITCH__
     if (selectedProfile_ >= 0) {
@@ -901,6 +964,7 @@ void UI::openSelectedBank() {
     if (bankSelCursor_ < 0 || bankSelCursor_ >= (int)banks.size())
         return;
 
+    showWorking("Loading bank...");
     const std::string& name = banks[bankSelCursor_].name;
     activeBankPath_ = bankManager_.loadBank(name, bank_);
     bank_.setGameType(selectedGame_);
@@ -948,6 +1012,7 @@ void UI::handleDeleteConfirmEvent(const SDL_Event& event) {
             case SDL_CONTROLLER_BUTTON_B: { // Switch A = confirm
                 const auto& banks = bankManager_.list();
                 if (bankSelCursor_ >= 0 && bankSelCursor_ < (int)banks.size()) {
+                    showWorking("Deleting bank...");
                     bankManager_.deleteBank(banks[bankSelCursor_].name);
                     int newCount = (int)bankManager_.list().size();
                     if (bankSelCursor_ >= newCount && newCount > 0)
@@ -967,6 +1032,7 @@ void UI::handleDeleteConfirmEvent(const SDL_Event& event) {
             case SDLK_RETURN: {
                 const auto& banks = bankManager_.list();
                 if (bankSelCursor_ >= 0 && bankSelCursor_ < (int)banks.size()) {
+                    showWorking("Deleting bank...");
                     bankManager_.deleteBank(banks[bankSelCursor_].name);
                     int newCount = (int)bankManager_.list().size();
                     if (bankSelCursor_ >= newCount && newCount > 0)
@@ -1113,6 +1179,7 @@ void UI::handleTextInputEvent(const SDL_Event& event) {
 
 void UI::commitTextInput(const std::string& text) {
     if (textInputPurpose_ == TextInputPurpose::CreateBank) {
+        showWorking("Creating bank...");
         if (bankManager_.createBank(text)) {
             // Select the newly created bank
             const auto& banks = bankManager_.list();
@@ -1124,6 +1191,7 @@ void UI::commitTextInput(const std::string& text) {
             }
         }
     } else if (textInputPurpose_ == TextInputPurpose::RenameBank) {
+        showWorking("Renaming bank...");
         if (bankManager_.renameBank(renamingBankName_, text)) {
             // Select the renamed bank
             const auto& banks = bankManager_.list();
@@ -1622,6 +1690,7 @@ void UI::handleInput(bool& running) {
                     case SDL_CONTROLLER_BUTTON_B: // Switch A = confirm
                         if (menuSelection_ == 0) {
                             // Switch Bank — save current bank, go to selector
+                            showWorking("Saving...");
                             if (!activeBankPath_.empty())
                                 bank_.save(activeBankPath_);
                             if (save_.isLoaded())
@@ -1660,6 +1729,7 @@ void UI::handleInput(bool& running) {
                     case SDLK_a:
                     case SDLK_RETURN:
                         if (menuSelection_ == 0) {
+                            showWorking("Saving...");
                             if (!activeBankPath_.empty())
                                 bank_.save(activeBankPath_);
                             if (save_.isLoaded())

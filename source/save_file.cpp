@@ -217,15 +217,21 @@ void SaveFile::clearBoxSlot(int box, int slot) {
     if (offset + sizeBoxSlot_ > static_cast<int>(boxDataLen_))
         return;
 
-    // Write encrypted blank PKM (matching PKHeX behavior) instead of raw zeros.
-    // A blank PKM has all-zero decrypted data; we encrypt it so the slot
-    // contains valid PokeCrypto-encrypted "empty" data.
-    Pokemon blank;
-    blank.gameType_ = gameType_;
-    blank.getEncrypted(boxData_ + offset);
-    // Zero the gap bytes (if any)
-    if (gapBoxSlot_ > 0)
-        std::memset(boxData_ + offset + (sizeBoxSlot_ - gapBoxSlot_), 0, gapBoxSlot_);
+    if (isLGPE(gameType_)) {
+        // LGPE: empty slots are all-zero bytes (not encrypted blank).
+        // The game reads a flat list up to Count; empty = all zeros.
+        std::memset(boxData_ + offset, 0, sizeBoxSlot_);
+    } else {
+        // Write encrypted blank PKM (matching PKHeX behavior) instead of raw zeros.
+        // A blank PKM has all-zero decrypted data; we encrypt it so the slot
+        // contains valid PokeCrypto-encrypted "empty" data.
+        Pokemon blank;
+        blank.gameType_ = gameType_;
+        blank.getEncrypted(boxData_ + offset);
+        // Zero the gap bytes (if any)
+        if (gapBoxSlot_ > 0)
+            std::memset(boxData_ + offset + (sizeBoxSlot_ - gapBoxSlot_), 0, gapBoxSlot_);
+    }
 }
 
 std::string SaveFile::getBoxName(int box) const {
@@ -404,32 +410,64 @@ bool SaveFile::saveLGPE(const std::string& path) {
     if (rawData_.empty())
         return false;
 
-    // Update PokeListHeader Count: scan all 1000 slots for highest occupied index
-    int highestOccupied = -1;
+    // --- CompressStorage ---
+    // LGPE stores Pokemon as a sequential flat list; gaps are not legal.
+    // Pack all occupied slots to the beginning (matching PKHeX CompressStorage).
     int totalSlots = LGPE_BOX_COUNT * LGPE_SLOTS_PER_BOX;
+    int slotSize = PokeCrypto::SIZE_6PARTY;
+
+    // Build old→new index mapping for pointer updates
+    std::vector<int> oldToNew(totalSlots, -1);
+    int writeIdx = 0;
+
     for (int i = 0; i < totalSlots; i++) {
-        int offset = i * PokeCrypto::SIZE_6PARTY;
-        if (offset + PokeCrypto::SIZE_6PARTY > static_cast<int>(boxDataLen_))
+        int offset = i * slotSize;
+        if (offset + slotSize > static_cast<int>(boxDataLen_))
             break;
-        // Check if slot is occupied (EC != 0 or species != 0)
+
+        // EC (first 4 bytes) is unencrypted; EC==0 means empty slot
         uint32_t ec;
         std::memcpy(&ec, boxData_ + offset, 4);
-        // Decrypt first 8 bytes to check — but the data is encrypted.
-        // Use a simpler heuristic: decrypt and check species.
-        Pokemon tmp;
-        tmp.gameType_ = gameType_;
-        tmp.loadFromEncrypted(boxData_ + offset, PokeCrypto::SIZE_6PARTY);
-        if (!tmp.isEmpty())
-            highestOccupied = i;
+        if (ec == 0)
+            continue;
+
+        oldToNew[i] = writeIdx;
+        if (writeIdx != i) {
+            int dstOffset = writeIdx * slotSize;
+            std::memmove(boxData_ + dstOffset, boxData_ + offset, slotSize);
+        }
+        writeIdx++;
     }
 
-    // Count = next empty slot index (highest + 1, or 0 if all empty)
-    uint16_t count = static_cast<uint16_t>(highestOccupied + 1);
-    // PokeListHeader: 6 party pointers (u16 each) + 1 starter pointer (u16) + 1 count (u16)
-    // Count is at offset 7*2 = 14 within the header block
-    size_t countOffset = LGPE_HEADER_OFFSET + 7 * 2;
-    if (countOffset + 2 <= rawData_.size())
-        std::memcpy(rawData_.data() + countOffset, &count, 2);
+    // Zero remaining slots after the last occupied one
+    for (int i = writeIdx; i < totalSlots; i++) {
+        int offset = i * slotSize;
+        if (offset + slotSize <= static_cast<int>(boxDataLen_))
+            std::memset(boxData_ + offset, 0, slotSize);
+    }
+
+    // --- Update PokeListHeader ---
+    // Layout: 6 party pointers (u16) + 1 starter pointer (u16) + count (u16)
+    // Update party and starter pointers using the index mapping
+    for (int i = 0; i < 7; i++) {
+        size_t ptrOfs = LGPE_HEADER_OFFSET + i * 2;
+        if (ptrOfs + 2 > rawData_.size())
+            break;
+
+        uint16_t oldIdx;
+        std::memcpy(&oldIdx, rawData_.data() + ptrOfs, 2);
+
+        if (oldIdx < static_cast<uint16_t>(totalSlots) && oldToNew[oldIdx] >= 0) {
+            uint16_t newIdx = static_cast<uint16_t>(oldToNew[oldIdx]);
+            std::memcpy(rawData_.data() + ptrOfs, &newIdx, 2);
+        }
+    }
+
+    // Update count
+    uint16_t count = static_cast<uint16_t>(writeIdx);
+    size_t countOfs = LGPE_HEADER_OFFSET + 7 * 2;
+    if (countOfs + 2 <= rawData_.size())
+        std::memcpy(rawData_.data() + countOfs, &count, 2);
 
     // Recalculate CRC16NoInvert checksums for all 21 blocks
     for (int i = 0; i < LGPE_NUM_BLOCKS; i++) {

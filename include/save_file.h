@@ -71,7 +71,7 @@ private:
     static constexpr int LGPE_HEADER_OFFSET  = 0x05A00;   // PokeListHeader block
     static constexpr int LGPE_BOX_COUNT      = 40;
     static constexpr int LGPE_SLOTS_PER_BOX  = 25;
-    static constexpr int LGPE_BLOCK_INFO_OFS = 0xB8600;   // 0xB8800 - 0x200
+    static constexpr int LGPE_BLOCK_INFO_OFS = 0xB8600;   // boGG from PKHeX (block info base)
     static constexpr int LGPE_NUM_BLOCKS     = 21;
 
     struct LGPEBlock { int offset; int length; };

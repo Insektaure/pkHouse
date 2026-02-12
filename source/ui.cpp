@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstring>
 #include <ctime>
+#include <sys/stat.h>
 
 #ifdef __SWITCH__
 #include <switch.h>
@@ -369,27 +370,68 @@ void UI::selectProfile(int index) {
 void UI::loadGameIcons() {
     freeGameIcons();
 #ifdef __SWITCH__
-    nsInitialize();
+    std::string cacheDir = basePath_ + "cache/";
+    mkdir(cacheDir.c_str(), 0755);
+
+    bool needSystem = false;
     for (GameType game : availableGames_) {
-        NsApplicationControlData ctrlData;
-        std::memset(&ctrlData, 0, sizeof(ctrlData));
-        uint64_t controlSize = 0;
-        Result rc = nsGetApplicationControlData(NsApplicationControlSource_Storage,
-                        titleIdOf(game), &ctrlData, sizeof(ctrlData), &controlSize);
-        if (R_FAILED(rc))
+        // Try loading from cache first
+        char hexId[32];
+        std::snprintf(hexId, sizeof(hexId), "%016lX", titleIdOf(game));
+        std::string cachePath = cacheDir + hexId + ".jpg";
+
+        SDL_Surface* surf = IMG_Load(cachePath.c_str());
+        if (surf) {
+            SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer_, surf);
+            SDL_FreeSurface(surf);
+            if (tex)
+                gameIconCache_[game] = tex;
             continue;
-        SDL_RWops* rw = SDL_RWFromMem(ctrlData.icon, sizeof(ctrlData.icon));
-        if (!rw)
-            continue;
-        SDL_Surface* surf = IMG_Load_RW(rw, 1);
-        if (!surf)
-            continue;
-        SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer_, surf);
-        SDL_FreeSurface(surf);
-        if (tex)
-            gameIconCache_[game] = tex;
+        }
+        needSystem = true;
     }
-    nsExit();
+
+    // Fetch uncached icons from system
+    if (needSystem) {
+        nsInitialize();
+        for (GameType game : availableGames_) {
+            if (gameIconCache_.count(game))
+                continue; // already loaded from cache
+
+            NsApplicationControlData ctrlData;
+            std::memset(&ctrlData, 0, sizeof(ctrlData));
+            uint64_t controlSize = 0;
+            Result rc = nsGetApplicationControlData(NsApplicationControlSource_Storage,
+                            titleIdOf(game), &ctrlData, sizeof(ctrlData), &controlSize);
+            if (R_FAILED(rc) || controlSize <= sizeof(NacpStruct))
+                continue;
+
+            size_t iconSize = controlSize - sizeof(NacpStruct);
+
+            // Save JPEG to cache
+            char hexId[32];
+            std::snprintf(hexId, sizeof(hexId), "%016lX", titleIdOf(game));
+            std::string cachePath = cacheDir + hexId + ".jpg";
+            FILE* f = std::fopen(cachePath.c_str(), "wb");
+            if (f) {
+                std::fwrite(ctrlData.icon, 1, iconSize, f);
+                std::fclose(f);
+            }
+
+            // Decode and create texture
+            SDL_RWops* rw = SDL_RWFromMem(ctrlData.icon, iconSize);
+            if (!rw)
+                continue;
+            SDL_Surface* surf = IMG_Load_RW(rw, 1);
+            if (!surf)
+                continue;
+            SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer_, surf);
+            SDL_FreeSurface(surf);
+            if (tex)
+                gameIconCache_[game] = tex;
+        }
+        nsExit();
+    }
 #endif
 }
 

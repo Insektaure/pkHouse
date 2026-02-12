@@ -107,6 +107,9 @@ private:
     GameType selectedGame_ = GameType::ZA;
     int gameSelCursor_ = 0;
     std::vector<GameType> availableGames_;
+    std::unordered_map<GameType, SDL_Texture*> gameIconCache_;
+    void loadGameIcons();
+    void freeGameIcons();
 
     // Owned save + bank manager (initialized after game selection)
     SaveFile save_;

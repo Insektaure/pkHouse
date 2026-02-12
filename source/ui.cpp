@@ -98,6 +98,7 @@ bool UI::init() {
 }
 
 void UI::shutdown() {
+    freeGameIcons();
     account_.freeTextures();
     freeSprites();
     if (fontSmall_) TTF_CloseFont(fontSmall_);
@@ -196,10 +197,12 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
     } else {
         screen_ = AppScreen::GameSelector;
         availableGames_.assign(std::begin(allGames), std::end(allGames));
+        loadGameIcons();
     }
 #else
     screen_ = AppScreen::GameSelector;
     availableGames_.assign(std::begin(allGames), std::end(allGames));
+    loadGameIcons();
 #endif
 
     bool running = true;
@@ -357,7 +360,45 @@ void UI::selectProfile(int index) {
     }
 
     gameSelCursor_ = 0;
+    loadGameIcons();
     screen_ = AppScreen::GameSelector;
+}
+
+// --- Game Icons ---
+
+void UI::loadGameIcons() {
+    freeGameIcons();
+#ifdef __SWITCH__
+    nsInitialize();
+    for (GameType game : availableGames_) {
+        NsApplicationControlData ctrlData;
+        std::memset(&ctrlData, 0, sizeof(ctrlData));
+        uint64_t controlSize = 0;
+        Result rc = nsGetApplicationControlData(NsApplicationControlSource_Storage,
+                        titleIdOf(game), &ctrlData, sizeof(ctrlData), &controlSize);
+        if (R_FAILED(rc))
+            continue;
+        SDL_RWops* rw = SDL_RWFromMem(ctrlData.icon, sizeof(ctrlData.icon));
+        if (!rw)
+            continue;
+        SDL_Surface* surf = IMG_Load_RW(rw, 1);
+        if (!surf)
+            continue;
+        SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer_, surf);
+        SDL_FreeSurface(surf);
+        if (tex)
+            gameIconCache_[game] = tex;
+    }
+    nsExit();
+#endif
+}
+
+void UI::freeGameIcons() {
+    for (auto& [game, tex] : gameIconCache_) {
+        if (tex)
+            SDL_DestroyTexture(tex);
+    }
+    gameIconCache_.clear();
 }
 
 // --- Game Selector ---
@@ -369,24 +410,70 @@ void UI::drawGameSelectorFrame() {
     drawTextCentered("Select Game", SCREEN_W / 2, 40, COLOR_TEXT, font_);
 
     int numGames = (int)availableGames_.size();
-    constexpr int ROW_W = 500;
-    constexpr int ROW_H = 50;
-    constexpr int ROW_GAP = 12;
-    int startX = (SCREEN_W - ROW_W) / 2;
-    int startY = (SCREEN_H - ROW_H * numGames - ROW_GAP * (numGames - 1)) / 2;
+    constexpr int COLS = 4;
+    constexpr int CARD_W = 160;
+    constexpr int CARD_H = 200;
+    constexpr int CARD_GAP = 20;
+    constexpr int ICON_SIZE = 128;
+
+    int rows = (numGames + COLS - 1) / COLS;
+    int totalH = rows * CARD_H + (rows - 1) * CARD_GAP;
+    int gridStartY = (SCREEN_H - totalH) / 2;
 
     for (int i = 0; i < numGames; i++) {
-        int rowY = startY + i * (ROW_H + ROW_GAP);
+        int r = i / COLS;
+        int c = i % COLS;
 
+        // Center each row: count items in this row
+        int rowItems = std::min(COLS, numGames - r * COLS);
+        int rowW = rowItems * CARD_W + (rowItems - 1) * CARD_GAP;
+        int rowStartX = (SCREEN_W - rowW) / 2;
+
+        int cardX = rowStartX + c * (CARD_W + CARD_GAP);
+        int cardY = gridStartY + r * (CARD_H + CARD_GAP);
+
+        // Card background
         if (i == gameSelCursor_) {
-            drawRect(startX, rowY, ROW_W, ROW_H, {60, 60, 80, 255});
-            drawRectOutline(startX, rowY, ROW_W, ROW_H, COLOR_CURSOR, 2);
+            drawRect(cardX, cardY, CARD_W, CARD_H, {60, 60, 80, 255});
+            drawRectOutline(cardX, cardY, CARD_W, CARD_H, COLOR_CURSOR, 3);
         } else {
-            drawRect(startX, rowY, ROW_W, ROW_H, COLOR_PANEL_BG);
+            drawRect(cardX, cardY, CARD_W, CARD_H, COLOR_PANEL_BG);
         }
 
-        drawTextCentered(gameDisplayNameOf(availableGames_[i]),
-                         SCREEN_W / 2, rowY + ROW_H / 2, COLOR_TEXT, font_);
+        // Icon
+        int iconX = cardX + (CARD_W - ICON_SIZE) / 2;
+        int iconY = cardY + 10;
+
+        auto it = gameIconCache_.find(availableGames_[i]);
+        if (it != gameIconCache_.end() && it->second) {
+            SDL_Rect dst = {iconX, iconY, ICON_SIZE, ICON_SIZE};
+            SDL_RenderCopy(renderer_, it->second, nullptr, &dst);
+        } else {
+            // Colored placeholder with game abbreviation
+            drawRect(iconX, iconY, ICON_SIZE, ICON_SIZE, {80, 80, 120, 255});
+            const char* abbr = "";
+            switch (availableGames_[i]) {
+                case GameType::Sw: abbr = "Sw"; break;
+                case GameType::Sh: abbr = "Sh"; break;
+                case GameType::BD: abbr = "BD"; break;
+                case GameType::SP: abbr = "SP"; break;
+                case GameType::LA: abbr = "LA"; break;
+                case GameType::S:  abbr = "S";  break;
+                case GameType::V:  abbr = "V";  break;
+                case GameType::ZA: abbr = "ZA"; break;
+            }
+            drawTextCentered(abbr, iconX + ICON_SIZE / 2, iconY + ICON_SIZE / 2,
+                             COLOR_TEXT, font_);
+        }
+
+        // Game name below icon
+        std::string name = gameDisplayNameOf(availableGames_[i]);
+        // Strip "Pokemon " prefix for brevity
+        if (name.substr(0, 8) == "Pokemon ")
+            name = name.substr(8);
+        if (name.length() > 16) name = name.substr(0, 15) + ".";
+        drawTextCentered(name, cardX + CARD_W / 2, cardY + ICON_SIZE + 30,
+                         COLOR_TEXT, fontSmall_);
     }
 
     if (selectedProfile_ >= 0)
@@ -399,6 +486,32 @@ void UI::handleGameSelectorInput(bool& running) {
     int numGames = (int)availableGames_.size();
     if (numGames == 0) return;
 
+    constexpr int COLS = 4;
+
+    auto moveGrid = [&](int dx, int dy) {
+        int col = gameSelCursor_ % COLS;
+        int row = gameSelCursor_ / COLS;
+        int totalRows = (numGames + COLS - 1) / COLS;
+
+        col += dx;
+        row += dy;
+
+        // Wrap columns within the row
+        int rowItems = std::min(COLS, numGames - row * COLS);
+        if (rowItems <= 0) rowItems = COLS; // fallback for row wrap
+        if (col < 0) col = rowItems - 1;
+        if (col >= rowItems) col = 0;
+
+        // Wrap rows
+        if (row < 0) row = totalRows - 1;
+        if (row >= totalRows) row = 0;
+
+        int newCursor = row * COLS + col;
+        if (newCursor >= numGames)
+            newCursor = numGames - 1;
+        gameSelCursor_ = newCursor;
+    };
+
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
         if (event.type == SDL_QUIT) {
@@ -408,17 +521,24 @@ void UI::handleGameSelectorInput(bool& running) {
 
         if (event.type == SDL_CONTROLLERBUTTONDOWN) {
             switch (event.cbutton.button) {
+                case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
+                    moveGrid(-1, 0);
+                    break;
+                case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
+                    moveGrid(1, 0);
+                    break;
                 case SDL_CONTROLLER_BUTTON_DPAD_UP:
-                    gameSelCursor_ = (gameSelCursor_ + numGames - 1) % numGames;
+                    moveGrid(0, -1);
                     break;
                 case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
-                    gameSelCursor_ = (gameSelCursor_ + 1) % numGames;
+                    moveGrid(0, 1);
                     break;
                 case SDL_CONTROLLER_BUTTON_B: // Switch A = select
                     selectGame(availableGames_[gameSelCursor_]);
                     break;
                 case SDL_CONTROLLER_BUTTON_A: // Switch B = back
                     if (selectedProfile_ >= 0) {
+                        freeGameIcons();
                         account_.unmountSave();
                         screen_ = AppScreen::ProfileSelector;
                     }
@@ -431,11 +551,17 @@ void UI::handleGameSelectorInput(bool& running) {
 
         if (event.type == SDL_KEYDOWN) {
             switch (event.key.keysym.sym) {
+                case SDLK_LEFT:
+                    moveGrid(-1, 0);
+                    break;
+                case SDLK_RIGHT:
+                    moveGrid(1, 0);
+                    break;
                 case SDLK_UP:
-                    gameSelCursor_ = (gameSelCursor_ + numGames - 1) % numGames;
+                    moveGrid(0, -1);
                     break;
                 case SDLK_DOWN:
-                    gameSelCursor_ = (gameSelCursor_ + 1) % numGames;
+                    moveGrid(0, 1);
                     break;
                 case SDLK_a:
                 case SDLK_RETURN:

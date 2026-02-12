@@ -435,6 +435,15 @@ void UI::handleProfileSelectorInput(bool& running) {
             return;
         }
 
+        if (event.type == SDL_CONTROLLERAXISMOTION) {
+            if (event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX ||
+                event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY) {
+                int16_t lx = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTX);
+                int16_t ly = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTY);
+                updateStick(lx, ly);
+            }
+        }
+
         if (event.type == SDL_CONTROLLERBUTTONDOWN) {
             switch (event.cbutton.button) {
                 case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
@@ -474,6 +483,20 @@ void UI::handleProfileSelectorInput(bool& running) {
                     running = false;
                     break;
             }
+        }
+    }
+
+    // Joystick repeat navigation
+    if (stickDirX_ != 0 || stickDirY_ != 0) {
+        uint32_t now = SDL_GetTicks();
+        uint32_t delay = stickMoved_ ? STICK_REPEAT_DELAY : STICK_INITIAL_DELAY;
+        if (now - stickMoveTime_ >= delay) {
+            if (stickDirX_ < 0)
+                profileSelCursor_ = (profileSelCursor_ + count - 1) % count;
+            else if (stickDirX_ > 0)
+                profileSelCursor_ = (profileSelCursor_ + 1) % count;
+            stickMoveTime_ = now;
+            stickMoved_ = true;
         }
     }
 }
@@ -705,6 +728,15 @@ void UI::handleGameSelectorInput(bool& running) {
             return;
         }
 
+        if (event.type == SDL_CONTROLLERAXISMOTION) {
+            if (event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX ||
+                event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY) {
+                int16_t lx = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTX);
+                int16_t ly = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTY);
+                updateStick(lx, ly);
+            }
+        }
+
         if (event.type == SDL_CONTROLLERBUTTONDOWN) {
             switch (event.cbutton.button) {
                 case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
@@ -767,6 +799,18 @@ void UI::handleGameSelectorInput(bool& running) {
                         running = false;
                     break;
             }
+        }
+    }
+
+    // Joystick repeat navigation
+    if (stickDirX_ != 0 || stickDirY_ != 0) {
+        uint32_t now = SDL_GetTicks();
+        uint32_t delay = stickMoved_ ? STICK_REPEAT_DELAY : STICK_INITIAL_DELAY;
+        if (now - stickMoveTime_ >= delay) {
+            if (stickDirX_ != 0) moveGrid(stickDirX_, 0);
+            if (stickDirY_ != 0) moveGrid(0, stickDirY_);
+            stickMoveTime_ = now;
+            stickMoved_ = true;
         }
     }
 }
@@ -955,6 +999,15 @@ void UI::handleBankSelectorInput(bool& running) {
             continue;
         }
 
+        if (event.type == SDL_CONTROLLERAXISMOTION) {
+            if (event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX ||
+                event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY) {
+                int16_t lx = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTX);
+                int16_t ly = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTY);
+                updateStick(lx, ly);
+            }
+        }
+
         if (event.type == SDL_CONTROLLERBUTTONDOWN) {
             switch (event.cbutton.button) {
                 case SDL_CONTROLLER_BUTTON_DPAD_UP:
@@ -1041,6 +1094,26 @@ void UI::handleBankSelectorInput(bool& running) {
                     screen_ = AppScreen::GameSelector;
                     break;
             }
+        }
+    }
+
+    // Joystick repeat navigation
+    if ((stickDirY_ != 0) && bankCount > 0 && !showTextInput_ && !showDeleteConfirm_) {
+        uint32_t now = SDL_GetTicks();
+        uint32_t delay = stickMoved_ ? STICK_REPEAT_DELAY : STICK_INITIAL_DELAY;
+        if (now - stickMoveTime_ >= delay) {
+            if (stickDirY_ < 0) {
+                bankSelCursor_ = (bankSelCursor_ - 1 + bankCount) % bankCount;
+                if (bankSelCursor_ < bankSelScroll_)
+                    bankSelScroll_ = bankSelCursor_;
+            } else {
+                bankSelCursor_ = (bankSelCursor_ + 1) % bankCount;
+                int visibleRows = (580 - 80) / 50;
+                if (bankSelCursor_ >= bankSelScroll_ + visibleRows)
+                    bankSelScroll_ = bankSelCursor_ - visibleRows + 1;
+            }
+            stickMoveTime_ = now;
+            stickMoved_ = true;
         }
     }
 }
@@ -1912,6 +1985,23 @@ void UI::drawHeldOverlay() {
     }
 }
 
+// --- Joystick ---
+
+void UI::updateStick(int16_t axisX, int16_t axisY) {
+    int newDirX = 0, newDirY = 0;
+    if (axisX < -STICK_DEADZONE) newDirX = -1;
+    else if (axisX > STICK_DEADZONE) newDirX = 1;
+    if (axisY < -STICK_DEADZONE) newDirY = -1;
+    else if (axisY > STICK_DEADZONE) newDirY = 1;
+
+    if (newDirX != stickDirX_ || newDirY != stickDirY_) {
+        stickDirX_ = newDirX;
+        stickDirY_ = newDirY;
+        stickMoved_ = false;
+        stickMoveTime_ = 0;
+    }
+}
+
 // --- Input ---
 
 void UI::handleInput(bool& running) {
@@ -2025,6 +2115,15 @@ void UI::handleInput(bool& running) {
             continue;
         }
 
+        if (event.type == SDL_CONTROLLERAXISMOTION) {
+            if (event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX ||
+                event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY) {
+                int16_t lx = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTX);
+                int16_t ly = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTY);
+                updateStick(lx, ly);
+            }
+        }
+
         if (event.type == SDL_CONTROLLERBUTTONDOWN) {
             switch (event.cbutton.button) {
                 case SDL_CONTROLLER_BUTTON_B: // Switch A (right) = SDL B
@@ -2100,6 +2199,18 @@ void UI::handleInput(bool& running) {
                     showAbout_ = true;
                     break;
             }
+        }
+    }
+
+    // Joystick repeat navigation
+    if ((stickDirX_ != 0 || stickDirY_ != 0) && !showMenu_ && !showDetail_) {
+        uint32_t now = SDL_GetTicks();
+        uint32_t delay = stickMoved_ ? STICK_REPEAT_DELAY : STICK_INITIAL_DELAY;
+        if (now - stickMoveTime_ >= delay) {
+            if (stickDirX_ != 0) moveCursor(stickDirX_, 0);
+            if (stickDirY_ != 0) moveCursor(0, stickDirY_);
+            stickMoveTime_ = now;
+            stickMoved_ = true;
         }
     }
 }

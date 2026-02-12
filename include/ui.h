@@ -95,6 +95,16 @@ private:
     static constexpr SDL_Color COLOR_RED         = {220, 60, 60, 255};
     static constexpr SDL_Color COLOR_SELECTED    = {100, 200, 220, 255};
 
+    // Joystick navigation
+    static constexpr int16_t STICK_DEADZONE = 16000;
+    static constexpr uint32_t STICK_INITIAL_DELAY = 400; // ms before first repeat
+    static constexpr uint32_t STICK_REPEAT_DELAY  = 200; // ms between repeats
+    int stickDirX_ = 0;  // -1, 0, +1
+    int stickDirY_ = 0;
+    uint32_t stickMoveTime_ = 0; // last move timestamp
+    bool stickMoved_ = false;    // has initial move fired?
+    void updateStick(int16_t axisX, int16_t axisY);
+
     // App screen state
     AppScreen screen_ = AppScreen::GameSelector;
     std::string basePath_;

@@ -327,7 +327,7 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
                     bank_.save(activeBankPath_);
                 saveNow_ = false;
             }
-            drawFrame();
+            if (screen_ == screenBefore) drawFrame();
         }
         SDL_RenderPresent(renderer_);
         SDL_Delay(16);
@@ -618,10 +618,15 @@ void UI::drawGameSelectorFrame() {
                          COLOR_TEXT, fontSmall_);
     }
 
-    if (selectedProfile_ >= 0)
+    if (selectedProfile_ >= 0) {
         drawStatusBar("A:Select  B:Back  +:Quit");
-    else
+        std::string profileLabel = account_.profiles()[selectedProfile_].nickname;
+        int tw = 0, th = 0;
+        TTF_SizeUTF8(fontSmall_, profileLabel.c_str(), &tw, &th);
+        drawText(profileLabel, SCREEN_W - tw - 15, SCREEN_H - 30, {255, 215, 0, 255}, fontSmall_);
+    } else {
         drawStatusBar("A:Select  +:Quit");
+    }
 }
 
 void UI::handleGameSelectorInput(bool& running) {
@@ -860,22 +865,15 @@ void UI::drawBankSelectorFrame() {
     // Status bar
     drawStatusBar("A:Open  X:New  Y:Rename  -:Delete  B:Back  +:Quit");
 
-    // Game name (bottom right, gold)
+    // Profile | Game name (bottom right, gold)
     {
-        const char* gameName = "";
-        switch (selectedGame_) {
-            case GameType::ZA: gameName = "Legends: Z-A"; break;
-            case GameType::S:  gameName = "Scarlet"; break;
-            case GameType::V:  gameName = "Violet"; break;
-            case GameType::Sw: gameName = "Sword"; break;
-            case GameType::Sh: gameName = "Shield"; break;
-            case GameType::BD: gameName = "Brilliant Diamond"; break;
-            case GameType::SP: gameName = "Shining Pearl"; break;
-            case GameType::LA: gameName = "Legends: Arceus"; break;
-        }
+        std::string label;
+        if (selectedProfile_ >= 0 && selectedProfile_ < account_.profileCount())
+            label = account_.profiles()[selectedProfile_].nickname + " | ";
+        label += gameDisplayNameOf(selectedGame_);
         int tw = 0, th = 0;
-        TTF_SizeUTF8(fontSmall_, gameName, &tw, &th);
-        drawText(gameName, SCREEN_W - tw - 15, SCREEN_H - 30, {255, 215, 0, 255}, fontSmall_);
+        TTF_SizeUTF8(fontSmall_, label.c_str(), &tw, &th);
+        drawText(label, SCREEN_W - tw - 15, SCREEN_H - 30, {255, 215, 0, 255}, fontSmall_);
     }
 
     // Delete confirmation overlay
@@ -1486,22 +1484,15 @@ void UI::drawFrame() {
     }
     drawStatusBar(statusMsg);
 
-    // Game name (bottom right, gold)
+    // Profile | Game name (bottom right, gold)
     {
-        const char* gameName = "";
-        switch (selectedGame_) {
-            case GameType::ZA: gameName = "Legends: Z-A"; break;
-            case GameType::S:  gameName = "Scarlet"; break;
-            case GameType::V:  gameName = "Violet"; break;
-            case GameType::Sw: gameName = "Sword"; break;
-            case GameType::Sh: gameName = "Shield"; break;
-            case GameType::BD: gameName = "Brilliant Diamond"; break;
-            case GameType::SP: gameName = "Shining Pearl"; break;
-            case GameType::LA: gameName = "Legends: Arceus"; break;
-        }
+        std::string label;
+        if (selectedProfile_ >= 0 && selectedProfile_ < account_.profileCount())
+            label = account_.profiles()[selectedProfile_].nickname + " | ";
+        label += gameDisplayNameOf(selectedGame_);
         int tw = 0, th = 0;
-        TTF_SizeUTF8(fontSmall_, gameName, &tw, &th);
-        drawText(gameName, SCREEN_W - tw - 15, SCREEN_H - 30, {255, 215, 0, 255}, fontSmall_);
+        TTF_SizeUTF8(fontSmall_, label.c_str(), &tw, &th);
+        drawText(label, SCREEN_W - tw - 15, SCREEN_H - 30, {255, 215, 0, 255}, fontSmall_);
     }
 
     // Detail popup overlay

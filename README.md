@@ -1,121 +1,191 @@
 # pkHouse
 
-A Pokemon box manager for Nintendo Switch and PC. Lets you view, organize, and back up Pokemon from your save file into multiple bank files.
+A local bank system for Pokemon games on Nintendo Switch. Move Pokemon between your save files and local bank storage.
 
-## Screens
+## Supported Games
 
-### Splash Screen
+| Game | Tested Version | Save Format | Boxes |
+|------|----------------|-------------|-------|
+| Pokemon Sword | 1.3.2 | SCBlock (`main`) | 32 |
+| Pokemon Shield | 1.3.2 | SCBlock (`main`) | 32 |
+| Pokemon Brilliant Diamond | 1.3.0 | Flat binary (`SaveData.bin`) | 40 |
+| Pokemon Shining Pearl | 1.3.0 | Flat binary (`SaveData.bin`) | 40 |
+| Pokemon Legends: Arceus | 1.1.1 | SCBlock (`main`) | 32 |
+| Pokemon Scarlet | 4.0.0 | SCBlock (`main`) | 32 |
+| Pokemon Violet | 4.0.0 | SCBlock (`main`) | 32 |
+| Pokemon Legends: Z-A | 2.0.1 | SCBlock (`main`) | 32 |
 
-Displayed on startup while data loads. Shows `romfs/splash.png` centered on a black background.
+Each box holds 30 Pokemon slots.
+
+## Features
+
+### Profile Selection
+
+On Switch, pkHouse loads all user profiles from the system. Select your profile, then choose a game. The app detects which games have save data for the selected profile. Your profile name is shown alongside the game name in all views.
+
+### Two-Panel Box Viewer
+
+The main view displays your **game save** on the left and your **bank** on the right, side by side. Navigate freely between both panels to move Pokemon back and forth.
+
+### Pick & Place
+
+Press **A** on a Pokemon to pick it up, navigate to any slot (in either panel), and press **A** again to place it. Placing on an occupied slot swaps the two Pokemon. Press **B** to cancel and return the Pokemon to its original slot.
+
+### Multi-Select
+
+Toggle selection on individual Pokemon in the current box with **Y**. Selected slots display a numbered badge showing the pick-up order. Press **A** to pick up all selected Pokemon, then navigate to another box and press **A** to place them into the first available empty slots (in selection order). The destination must have enough empty slots for the entire group. Press **B** to cancel and return all Pokemon to their original positions.
+
+Selection is cleared when switching boxes or panels.
+
+### Pokemon Details
+
+Press **X** on any Pokemon to view detailed information:
+
+- Species, level, gender
+- National Pokedex number
+- Original Trainer (OT) and Trainer ID
+- Nature and Ability
+- All 4 moves
+- IVs (perfect 31s highlighted in gold)
+- EVs
+
+Shiny Pokemon names are displayed in gold. Alpha Pokemon (Legends: Arceus) show a dedicated icon.
+
+### Bank System
+
+Banks are local `.bin` files stored per game family. Paired games share the same bank folder, so you can move Pokemon between versions (e.g. Sword and Shield).
+
+| Game Family | Bank Folder |
+|-------------|-------------|
+| Sword / Shield | `banks/SwordShield/` |
+| Brilliant Diamond / Shining Pearl | `banks/BDSP/` |
+| Legends: Arceus | `banks/LegendsArceus/` |
+| Scarlet / Violet | `banks/ScarletViolet/` |
+| Legends: Z-A | `banks/LegendsZA/` |
+
+From the bank selector you can:
+
+- **Create** a new bank (up to 32-character name)
+- **Rename** an existing bank
+- **Delete** a bank (with confirmation)
+
+Each bank has the same box capacity as its game family (32 or 40 boxes). The bank list shows the number of occupied slots for each bank.
+
+You can switch between banks from the main view via the menu, with or without saving first.
+
+### Backup System
+
+When loading a game save on Switch, an automatic backup is created before any modifications:
+
+```
+backups/<profile>/<game>/<profile>_YYYY-MM-DD_HH-MM-SS/
+```
+
+This is a full copy of the mounted save directory. The backup is only created once when initially selecting a game — switching banks does not trigger additional backups.
+
+### Save Integrity
+
+- **SCBlock saves** (ZA, SV, SwSh, LA): Decrypted, modified, and re-encrypted. A round-trip verification runs on load to confirm the cycle is lossless.
+- **BDSP saves**: Flat binary with MD5 checksum, recalculated on every save.
+- All saves are written in-place to preserve the Switch filesystem journal.
+
+## Controls
+
+### Profile Selector
+
+| Button | Action |
+|--------|--------|
+| D-Pad Left/Right | Navigate profiles |
+| A | Select profile |
+| - | About |
+| + | Quit |
+
+### Game Selector
+
+| Button | Action |
+|--------|--------|
+| D-Pad | Navigate game grid |
+| A | Select game |
+| B | Back to profile selector |
+| - | About |
+| + | Quit |
 
 ### Bank Selector
 
-The first interactive screen. Lists all bank files found in the `banks/` directory. Each row shows the bank name and how many of the 960 slots are occupied (e.g. `42/960`).
+| Button | Action |
+|--------|--------|
+| D-Pad Up/Down | Navigate bank list |
+| A | Open bank |
+| Y | Create new bank |
+| X | Rename bank |
+| + | Delete bank |
+| B | Back to game selector |
+| - | About |
 
-On first launch, if a legacy `bank.bin` file exists, it is automatically migrated to `banks/Default.bin`.
+### Main View
 
-| Action | Switch | PC Keyboard |
-|---|---|---|
-| Navigate list | D-Pad Up/Down | Arrow Up/Down |
-| Open selected bank | A | A / Enter |
-| Create new bank | X | X |
-| Rename selected bank | Y | Y |
-| Delete selected bank | - (Minus) | Delete |
-| Quit app | + (Plus) | Escape |
+| Button | Action |
+|--------|--------|
+| D-Pad | Move cursor |
+| L / R | Switch box |
+| A | Pick up / Place Pokemon |
+| B | Cancel / Return held Pokemon |
+| Y | Toggle multi-select |
+| X | View Pokemon details |
+| + | Open menu |
+| - | About |
 
-- **Create / Rename**: Opens a text input dialog (Switch software keyboard or PC text popup). Bank names are limited to 32 characters. Invalid filesystem characters are stripped automatically.
-- **Delete**: Shows a confirmation popup before removing the bank file permanently.
+### Menu Options
 
-### Main View (Two-Panel Box Viewer)
-
-Left panel shows your game save boxes. Right panel shows the currently loaded bank. The bank name is shown in the right panel header (e.g. `MyBank - Bank 3 (3/32)`).
-
-| Action | Switch | PC Keyboard |
-|---|---|---|
-| Move cursor | D-Pad | Arrow keys |
-| Switch box | L / R | Q / E |
-| Pick up / Place Pokemon | A | A / Enter |
-| Cancel (return held Pokemon) | B | B / Escape |
-| View Pokemon details | Y | Y |
-| Open menu | + (Plus) | + |
-| Quit without saving | - (Minus) | - |
-
-**While holding a Pokemon:**
-- Placing on an empty slot drops the Pokemon there.
-- Placing on an occupied slot swaps the held Pokemon with the one in the slot.
-- Cancel returns the Pokemon to its original position.
-
-### Pokemon Detail Popup
-
-Shows detailed info for the selected Pokemon: species, level, gender, OT/TID, nature, ability, moves, IVs, and EVs. Shiny Pokemon names are displayed in gold. Perfect IVs (31) are highlighted.
-
-| Action | Switch | PC Keyboard |
-|---|---|---|
-| Close | B or Y | B, Y, or Escape |
-
-### Menu Popup
-
-Opened with + from the main view.
-
-| # | Option | Description |
-|---|---|---|
-| 1 | Save (Game & Bank) | Saves both the game save and the current bank file |
-| 2 | Switch Bank (With saving) | Saves game and bank, then returns to the bank selector |
-| 3 | Switch Bank (Without saving) | Returns to the bank selector without saving anything |
-| 4 | Save & Quit | Saves both files and exits the app |
-| 5 | Quit Without Saving | Exits immediately without saving |
-
-| Action | Switch | PC Keyboard |
-|---|---|---|
-| Navigate | D-Pad Up/Down | Arrow Up/Down |
-| Confirm | A | A / Enter |
-| Cancel | B | B / Escape |
-
-### Delete Confirmation Popup
-
-Shown when deleting a bank from the bank selector. Displays the bank name and a warning that deletion cannot be undone.
-
-| Action | Switch | PC Keyboard |
-|---|---|---|
-| Confirm delete | A | A / Enter |
-| Cancel | B | B / Escape |
-
-### Text Input Popup (PC only)
-
-Used for creating and renaming banks. On Switch, the system software keyboard is used instead.
-
-| Action | Key |
-|---|---|
-| Type characters | Keyboard |
-| Move cursor | Left / Right |
-| Delete character | Backspace / Delete |
-| Confirm | Enter |
-| Cancel | Escape |
-
-## File Structure
-
-```
-<app directory>/
-  main              # Game save file
-  banks/            # Bank storage directory
-    Default.bin     # Migrated from legacy bank.bin (if applicable)
-    MyBank.bin      # User-created banks
-    ...
-  romfs/
-    splash.png      # Splash screen image
-    sprites/        # Pokemon sprite PNGs (001.png - 1025.png)
-    icons/          # Status icons (shiny.png, alpha.png, shiny_alpha.png)
-    fonts/          # Font files (default.ttf)
-    data/           # Text data (species_en.txt, moves_en.txt, natures_en.txt, abilities_en.txt)
-```
+| Option | Description |
+|--------|-------------|
+| Switch Bank (With saving) | Save game and bank, return to bank selector |
+| Switch Bank (Without saving) | Return to bank selector without saving |
+| Save & Quit | Save everything and exit |
+| Quit Without Saving | Exit without saving changes |
 
 ## Building
 
-Requires [devkitPro](https://devkitpro.org/) with libnx and the following Switch portlibs: SDL2, SDL2_image, SDL2_ttf.
+### Prerequisites
+
+- [devkitPro](https://devkitpro.org/) with the devkitA64 toolchain
+- Switch portlibs: SDL2, SDL2_image, SDL2_ttf
 
 ```bash
-make        # Build .nro
-make clean  # Clean build artifacts
+dkp-pacman -S switch-sdl2 switch-sdl2_image switch-sdl2_ttf switch-freetype switch-harfbuzz
 ```
 
-The output `pkHouse.nro` goes in `sdmc:/switch/pkHouse/` on the Switch SD card alongside the `main` save file.
+### Build
+
+```bash
+export DEVKITPRO=/opt/devkitpro
+make
+```
+
+Produces `pkHouse.nro`.
+
+```bash
+make clean
+```
+
+### Running
+
+Place `pkHouse.nro` on your Switch SD card (e.g. `sdmc:/switch/pkHouse/`) and launch via a homebrew launcher in **title takeover mode**.
+
+Applet mode **is not supported** due to memory constraints.
+
+## Disclaimer
+
+This software is provided "as-is" without any warranty.\
+While the app has been tested, it may contain bugs that could corrupt or damage your save files.
+
+**Use at your own risk.**
+
+The author is not responsible for any data loss or damage to your save data. This is why the automatic backup system exists — always verify your backups before making changes.
+
+If you need to restore a backup, use a save manager such as [Checkpoint](https://github.com/FlagBrew/Checkpoint) or [JKSV](https://github.com/J-D-K/JKSV) to import the backup files back onto your Switch.
+
+## Credits
+
+- [PKHeX](https://github.com/kwsch/PKHeX) by kwsch — PokeCrypto research and save structure reference
+- Built with [libnx](https://github.com/switchbrew/libnx) and [SDL2](https://www.libsdl.org/)

@@ -18,18 +18,18 @@ If you need to restore a backup, use a save manager such as [Checkpoint](https:/
 
 ## Supported Games
 
-| Game | Tested Version | Save Format | Boxes |
-|------|----------------|-------------|-------|
-| Pokemon Sword | 1.3.2 | SCBlock (`main`) | 32 |
-| Pokemon Shield | 1.3.2 | SCBlock (`main`) | 32 |
-| Pokemon Brilliant Diamond | 1.3.0 | Flat binary (`SaveData.bin`) | 40 |
-| Pokemon Shining Pearl | 1.3.0 | Flat binary (`SaveData.bin`) | 40 |
-| Pokemon Legends: Arceus | 1.1.1 | SCBlock (`main`) | 32 |
-| Pokemon Scarlet | 4.0.0 | SCBlock (`main`) | 32 |
-| Pokemon Violet | 4.0.0 | SCBlock (`main`) | 32 |
-| Pokemon Legends: Z-A | 2.0.1 | SCBlock (`main`) | 32 |
-
-Each box holds 30 Pokemon slots.
+| Game | Tested Version | Save Format | Boxes | Slots/Box |
+|------|----------------|-------------|-------|-----------|
+| Pokemon Let's Go Pikachu | 1.0.2 | BEEF blocks (`savedata.bin`) | 40 | 25 |
+| Pokemon Let's Go Eevee | 1.0.2 | BEEF blocks (`savedata.bin`) | 40 | 25 |
+| Pokemon Sword | 1.3.2 | SCBlock (`main`) | 32 | 30 |
+| Pokemon Shield | 1.3.2 | SCBlock (`main`) | 32 | 30 |
+| Pokemon Brilliant Diamond | 1.3.0 | Flat binary (`SaveData.bin`) | 40 | 30 |
+| Pokemon Shining Pearl | 1.3.0 | Flat binary (`SaveData.bin`) | 40 | 30 |
+| Pokemon Legends: Arceus | 1.1.1 | SCBlock (`main`) | 32 | 30 |
+| Pokemon Scarlet | 4.0.0 | SCBlock (`main`) | 32 | 30 |
+| Pokemon Violet | 4.0.0 | SCBlock (`main`) | 32 | 30 |
+| Pokemon Legends: Z-A | 2.0.1 | SCBlock (`main`) | 32 | 30 |
 
 > **Note:** Moving Pokemon between different games is not supported. Banks are separated by game family because transferred Pokemon would lack the HOME Tracker ID required for cross-game compatibility.
 
@@ -82,6 +82,7 @@ Banks are local `.bin` files stored per game family. Paired games share the same
 
 | Game Family | Bank Folder |
 |-------------|-------------|
+| Let's Go Pikachu / Eevee | `banks/LetsGo/` |
 | Sword / Shield | `banks/SwordShield/` |
 | Brilliant Diamond / Shining Pearl | `banks/BDSP/` |
 | Legends: Arceus | `banks/LegendsArceus/` |
@@ -112,8 +113,9 @@ The backup is only created once when initially selecting a game — switching ba
 
 ### Save Integrity
 
-- **SCBlock saves** (ZA, SV, SwSh, LA): Decrypted, modified, and re-encrypted. A round-trip verification runs on load to confirm the cycle is lossless.
+- **SCBlock saves** (ZA, SV, SwSh, PLA): Decrypted, modified, and re-encrypted. A round-trip verification runs on load to confirm the cycle is lossless.
 - **BDSP saves**: Flat binary with MD5 checksum, recalculated on every save.
+- **LGPE saves**: BEEF block format with CRC16 checksums, recalculated on every save. Storage is compacted before writing.
 - All saves are written in-place to preserve the Switch filesystem journal.
 
 ## Controls

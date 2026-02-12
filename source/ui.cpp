@@ -1870,7 +1870,7 @@ void UI::drawAboutPopup() {
     drawRect(0, 0, SCREEN_W, SCREEN_H, {0, 0, 0, 187});
 
     constexpr int POP_W = 700;
-    constexpr int POP_H = 400;
+    constexpr int POP_H = 490;
     int px = (SCREEN_W - POP_W) / 2;
     int py = (SCREEN_H - POP_H) / 2;
 
@@ -1900,8 +1900,14 @@ void UI::drawAboutPopup() {
     y += 28;
     drawTextCentered("Move Pokemon between save files and banks.", cx, y, COLOR_TEXT, font_);
     y += 28;
-    drawTextCentered("Supports: ZA, Scarlet/Violet, Sword/Shield, BDSP, Legends Arceus, Let's Go", cx, y, COLOR_TEXT_DIM, fontSmall_);
-    y += 35;
+    drawTextCentered("Supported Games", cx, y, COLOR_SELECTED, font_);
+    y += 24;
+    drawTextCentered("Let's Go Pikachu/Eevee (1.0.2)  -  Sword/Shield (1.3.2)", cx, y, COLOR_TEXT_DIM, fontSmall_);
+    y += 20;
+    drawTextCentered("Brilliant Diamond/Shining Pearl (1.3.0)  -  Legends: Arceus (1.1.1)", cx, y, COLOR_TEXT_DIM, fontSmall_);
+    y += 20;
+    drawTextCentered("Scarlet/Violet (4.0.0)  -  Legends: Z-A (2.0.1)", cx, y, COLOR_TEXT_DIM, fontSmall_);
+    y += 30;
 
     // Divider
     SDL_SetRenderDrawColor(renderer_, 0x30, 0x30, 0x55, 255);
@@ -1910,6 +1916,8 @@ void UI::drawAboutPopup() {
 
     // Credits
     drawTextCentered("Based on PKHeX by kwsch & PokeCrypto research.", cx, y, {0x88, 0x88, 0x88, 255}, fontSmall_);
+    y += 20;
+    drawTextCentered("Save backup & write logic based on JKSV by J-D-K.", cx, y, {0x88, 0x88, 0x88, 255}, fontSmall_);
     y += 35;
 
     // Controls

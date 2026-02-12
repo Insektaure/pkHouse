@@ -154,9 +154,15 @@ private:
     bool   showAbout_  = false;
     bool   holding_    = false;
     Pokemon heldPkm_;
-    Panel   heldSource_ = Panel::Game;
-    int     heldBox_    = 0;
-    int     heldSlot_   = 0;
+
+    // Swap history for full undo on cancel
+    struct SwapRecord {
+        Pokemon pkm;
+        Panel   panel;
+        int     box;
+        int     slot;
+    };
+    std::vector<SwapRecord> swapHistory_;
 
     // Multi-select state
     std::vector<int> selectedSlots_;           // selected slot indices in selection order

@@ -2345,32 +2345,32 @@ void UI::actionSelect() {
         return;
     }
 
-    // Single pick/place (unchanged)
+    // Single pick/place
     if (!holding_) {
         Pokemon pkm = getPokemonAt(box, slot, cursor_.panel);
         if (pkm.isEmpty())
             return;
 
         heldPkm_ = pkm;
-        heldSource_ = cursor_.panel;
-        heldBox_ = box;
-        heldSlot_ = slot;
         holding_ = true;
+        swapHistory_.clear();
+        swapHistory_.push_back({pkm, cursor_.panel, box, slot});
 
         clearPokemonAt(box, slot, cursor_.panel);
     } else {
         Pokemon target = getPokemonAt(box, slot, cursor_.panel);
 
         if (target.isEmpty()) {
+            // Place on empty — commit, clear history
             setPokemonAt(box, slot, cursor_.panel, heldPkm_);
             holding_ = false;
             heldPkm_ = Pokemon{};
+            swapHistory_.clear();
         } else {
+            // Swap: record what was in the target slot, then swap
+            swapHistory_.push_back({target, cursor_.panel, box, slot});
             setPokemonAt(box, slot, cursor_.panel, heldPkm_);
             heldPkm_ = target;
-            heldSource_ = cursor_.panel;
-            heldBox_ = box;
-            heldSlot_ = slot;
         }
     }
 }
@@ -2392,11 +2392,15 @@ void UI::actionCancel() {
         return;
     }
 
-    // Single hold cancel
+    // Single hold cancel: replay swap history in reverse to restore all slots
     if (!holding_)
         return;
 
-    setPokemonAt(heldBox_, heldSlot_, heldSource_, heldPkm_);
+    for (int i = (int)swapHistory_.size() - 1; i >= 0; i--) {
+        auto& rec = swapHistory_[i];
+        setPokemonAt(rec.box, rec.slot, rec.panel, rec.pkm);
+    }
+    swapHistory_.clear();
     holding_ = false;
     heldPkm_ = Pokemon{};
 }

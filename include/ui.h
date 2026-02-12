@@ -189,6 +189,7 @@ private:
     void drawDetailPopup(const Pokemon& pkm);
     void drawMenuPopup();
     void drawAboutPopup();
+    void drawHeldOverlay();
     void drawPanel(int panelX, const std::string& boxName, int boxIdx,
                    int totalBoxes, bool isActive, SaveFile* save, Bank* bank, int box,
                    Panel panelId);

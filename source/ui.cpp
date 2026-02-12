@@ -1585,6 +1585,10 @@ void UI::drawFrame() {
         drawText(label, SCREEN_W - tw - 15, SCREEN_H - 30, {255, 215, 0, 255}, fontSmall_);
     }
 
+    // Held Pokemon overlay (draw on top of panels, under popups)
+    if (holding_)
+        drawHeldOverlay();
+
     // Detail popup overlay
     if (showDetail_) {
         Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(), cursor_.panel);
@@ -1842,6 +1846,70 @@ void UI::drawAboutPopup() {
 
     // Footer
     drawTextCentered("Press - or B to close", cx, py + POP_H - 22, COLOR_TEXT_DIM, fontSmall_);
+}
+
+void UI::drawHeldOverlay() {
+    if (!holding_)
+        return;
+
+    // Determine which Pokemon sprite to show
+    const Pokemon& pkm = heldMulti_.empty() ? heldPkm_ : heldMulti_[0];
+    uint16_t species = pkm.species();
+    if (species == 0)
+        return;
+
+    SDL_Texture* sprite = pkm.isEgg() ? eggSprite_ : getSprite(species);
+    if (!sprite)
+        return;
+
+    // Compute cursor cell screen position (same formula as drawPanel)
+    int panelX = (cursor_.panel == Panel::Game) ? PANEL_X_L : PANEL_X_R;
+    int gridStartX = panelX + (PANEL_W - (6 * (CELL_W + CELL_PAD) - CELL_PAD)) / 2;
+    int gridStartY = GRID_Y;
+    int cellX = gridStartX + cursor_.col * (CELL_W + CELL_PAD);
+    int cellY = gridStartY + cursor_.row * (CELL_H + CELL_PAD);
+
+    // Offset to create "dragging" effect
+    constexpr int DRAG_OFS = 8;
+    int baseX = cellX + DRAG_OFS;
+    int baseY = cellY + DRAG_OFS;
+
+    // Scale sprite to fit SPRITE_SIZE
+    int texW, texH;
+    SDL_QueryTexture(sprite, nullptr, nullptr, &texW, &texH);
+    int dstW = SPRITE_SIZE, dstH = SPRITE_SIZE;
+    if (texW > 0 && texH > 0) {
+        float scale = std::min(static_cast<float>(SPRITE_SIZE) / texW,
+                               static_cast<float>(SPRITE_SIZE) / texH);
+        dstW = static_cast<int>(texW * scale);
+        dstH = static_cast<int>(texH * scale);
+    }
+
+    int sprX = baseX + (CELL_W - dstW) / 2;
+    int sprY = baseY + 4 + (SPRITE_SIZE - dstH) / 2;
+
+    // Draw semi-transparent
+    SDL_SetTextureAlphaMod(sprite, 180);
+    SDL_Rect dst = {sprX, sprY, dstW, dstH};
+    SDL_RenderCopy(renderer_, sprite, nullptr, &dst);
+    SDL_SetTextureAlphaMod(sprite, 255);
+
+    // Multi-hold: draw count badge
+    if (!heldMulti_.empty() && heldMulti_.size() > 1) {
+        std::string num = std::to_string(heldMulti_.size());
+        int tw = 0, th = 0;
+        TTF_SizeUTF8(font_, num.c_str(), &tw, &th);
+        int badgeR = std::max(tw, th) / 2 + 6;
+        int cx = cellX + CELL_W / 2;
+        int cy = cellY + CELL_H / 2;
+
+        SDL_SetRenderDrawColor(renderer_, COLOR_SELECTED.r, COLOR_SELECTED.g, COLOR_SELECTED.b, 220);
+        for (int dy = -badgeR; dy <= badgeR; dy++) {
+            int dx = static_cast<int>(std::sqrt(badgeR * badgeR - dy * dy));
+            SDL_RenderDrawLine(renderer_, cx - dx, cy + dy, cx + dx, cy + dy);
+        }
+        drawTextCentered(num, cx, cy, {0, 0, 0, 255}, font_);
+    }
 }
 
 // --- Input ---

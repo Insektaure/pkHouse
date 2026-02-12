@@ -44,33 +44,42 @@ struct Pokemon {
     // 0x0A: HeldItem
     uint16_t heldItem() const { return readU16(0x0A); }
 
-    // 0x1C: PID
-    uint32_t pid() const { return readU32(0x1C); }
+    // PID: 0x18 (PB7), 0x1C (PK8/PA8/PA9)
+    uint32_t pid() const { return readU32(isLGPE(gameType_) ? 0x18 : 0x1C); }
 
-    // 0x20: Nature
-    uint8_t nature() const { return data[0x20]; }
+    // Nature: 0x1C (PB7), 0x20 (PK8/PA8/PA9)
+    uint8_t nature() const { return isLGPE(gameType_) ? data[0x1C] : data[0x20]; }
 
-    // 0x22: Gender (PK8/PB8/PA8: bits 2-3, PA9: bits 1-2)
-    bool fatefulEncounter() const { return (data[0x22] & 1) != 0; }
-    uint8_t gender() const {
-        if (isSwSh(gameType_) || isBDSP(gameType_) || gameType_ == GameType::LA)
-            return (data[0x22] >> 2) & 0x3; // PK8/PB8/PA8: bits 2-3
-        return (data[0x22] >> 1) & 0x3;     // PA9: bits 1-2
+    // FatefulEncounter: 0x1D bit 0 (PB7), 0x22 bit 0 (PK8/PA8/PA9)
+    bool fatefulEncounter() const {
+        int ofs = isLGPE(gameType_) ? 0x1D : 0x22;
+        return (data[ofs] & 1) != 0;
     }
 
-    // 0x24: Form
-    uint8_t form() const { return data[0x24]; }
+    // Gender: 0x1D bits 1-2 (PB7), 0x22 bits 2-3 (PK8/PB8/PA8), 0x22 bits 1-2 (PA9)
+    uint8_t gender() const {
+        if (isLGPE(gameType_))
+            return (data[0x1D] >> 1) & 0x3;
+        if (isSwSh(gameType_) || isBDSP(gameType_) || gameType_ == GameType::LA)
+            return (data[0x22] >> 2) & 0x3;
+        return (data[0x22] >> 1) & 0x3; // PA9
+    }
 
-    // 0x14: Ability
-    uint16_t ability() const { return readU16(0x14); }
+    // Form: 0x1D bits 3-7 (PB7), 0x24 (PK8/PA8/PA9)
+    uint8_t form() const { return isLGPE(gameType_) ? (data[0x1D] >> 3) : data[0x24]; }
 
-    // EVs (offsets 0x26-0x2B — same for all formats)
-    uint8_t evHp()  const { return data[0x26]; }
-    uint8_t evAtk() const { return data[0x27]; }
-    uint8_t evDef() const { return data[0x28]; }
-    uint8_t evSpe() const { return data[0x29]; }
-    uint8_t evSpA() const { return data[0x2A]; }
-    uint8_t evSpD() const { return data[0x2B]; }
+    // Ability: 0x14 u8 (PB7), 0x14 u16 (PK8/PA8/PA9)
+    uint16_t ability() const {
+        return isLGPE(gameType_) ? (uint16_t)data[0x14] : readU16(0x14);
+    }
+
+    // EVs: 0x1E-0x23 (PB7), 0x26-0x2B (PK8/PA8/PA9)
+    uint8_t evHp()  const { return data[isLGPE(gameType_) ? 0x1E : 0x26]; }
+    uint8_t evAtk() const { return data[isLGPE(gameType_) ? 0x1F : 0x27]; }
+    uint8_t evDef() const { return data[isLGPE(gameType_) ? 0x20 : 0x28]; }
+    uint8_t evSpe() const { return data[isLGPE(gameType_) ? 0x21 : 0x29]; }
+    uint8_t evSpA() const { return data[isLGPE(gameType_) ? 0x22 : 0x2A]; }
+    uint8_t evSpD() const { return data[isLGPE(gameType_) ? 0x23 : 0x2B]; }
 
     // TID/SID (offsets 0x0C, 0x0E — same for all formats)
     uint16_t tid() const { return readU16(0x0C); }
@@ -84,14 +93,17 @@ struct Pokemon {
     // OT Name: 0xF8 (PK8/PA9), 0x110 (PA8)
     std::string otName() const;
 
-    // Moves: 0x72-0x78 (PK8/PA9), 0x54-0x5A (PA8)
-    uint16_t move1() const { return readU16(gameType_ == GameType::LA ? 0x54 : 0x72); }
-    uint16_t move2() const { return readU16(gameType_ == GameType::LA ? 0x56 : 0x74); }
-    uint16_t move3() const { return readU16(gameType_ == GameType::LA ? 0x58 : 0x76); }
-    uint16_t move4() const { return readU16(gameType_ == GameType::LA ? 0x5A : 0x78); }
+    // Moves: 0x5A-0x60 (PB7), 0x54-0x5A (PA8), 0x72-0x78 (PK8/PA9)
+    uint16_t move1() const { return readU16(isLGPE(gameType_) ? 0x5A : gameType_ == GameType::LA ? 0x54 : 0x72); }
+    uint16_t move2() const { return readU16(isLGPE(gameType_) ? 0x5C : gameType_ == GameType::LA ? 0x56 : 0x74); }
+    uint16_t move3() const { return readU16(isLGPE(gameType_) ? 0x5E : gameType_ == GameType::LA ? 0x58 : 0x76); }
+    uint16_t move4() const { return readU16(isLGPE(gameType_) ? 0x60 : gameType_ == GameType::LA ? 0x5A : 0x78); }
 
-    // IV32: 0x8C (PK8/PA9), 0x94 (PA8)
-    uint32_t iv32() const { return readU32(gameType_ == GameType::LA ? 0x94 : 0x8C); }
+    // IV32: 0x74 (PB7), 0x94 (PA8), 0x8C (PK8/PA9)
+    uint32_t iv32() const {
+        if (isLGPE(gameType_)) return readU32(0x74);
+        return readU32(gameType_ == GameType::LA ? 0x94 : 0x8C);
+    }
     bool isEgg() const { return ((iv32() >> 30) & 1) == 1; }
     bool isNicknamed() const { return ((iv32() >> 31) & 1) == 1; }
 
@@ -118,11 +130,11 @@ struct Pokemon {
     void loadFromEncrypted(const uint8_t* encrypted, size_t len);
     void getEncrypted(uint8_t* outBuf);
 
-    // IsAlpha: PA9 → 0x23 != 0, PA8 → 0x16 bit 5, PK8/PB8 → false
+    // IsAlpha: PA9 → 0x23 != 0, PA8 → 0x16 bit 5, PK8/PB8/PB7 → false
     bool isAlpha() const {
         if (gameType_ == GameType::LA)
             return (data[0x16] >> 5) & 1;
-        if (isSwSh(gameType_) || isBDSP(gameType_))
+        if (isSwSh(gameType_) || isBDSP(gameType_) || isLGPE(gameType_))
             return false;
         return data[0x23] != 0; // PA9 (ZA/SV)
     }

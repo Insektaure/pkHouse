@@ -169,6 +169,8 @@ static uint8_t levelFromExp(uint32_t exp, uint8_t growth) {
 }
 
 uint8_t Pokemon::level() const {
+    if (isLGPE(gameType_))
+        return data[0xEC]; // PB7: Stat_Level in party stats
     if (gameType_ != GameType::LA)
         return data[0x148];
 
@@ -180,8 +182,8 @@ uint8_t Pokemon::level() const {
 }
 
 uint16_t Pokemon::species() const {
-    if (isSwSh(gameType_) || isBDSP(gameType_) || gameType_ == GameType::LA)
-        return speciesInternal(); // PK8/PB8/PA8 stores national dex ID directly
+    if (isSwSh(gameType_) || isBDSP(gameType_) || gameType_ == GameType::LA || isLGPE(gameType_))
+        return speciesInternal(); // PK8/PB8/PA8/PB7 stores national dex ID directly
     return SpeciesConverter::getNational9(speciesInternal());
 }
 
@@ -208,12 +210,18 @@ static std::string readUtf16String(const uint8_t* base, int offset, int maxChars
 }
 
 std::string Pokemon::nickname() const {
-    int ofs = (gameType_ == GameType::LA) ? 0x60 : 0x58;
+    int ofs;
+    if (isLGPE(gameType_))       ofs = 0x40;
+    else if (gameType_ == GameType::LA) ofs = 0x60;
+    else                                ofs = 0x58;
     return readUtf16String(data.data(), ofs, 13);
 }
 
 std::string Pokemon::otName() const {
-    int ofs = (gameType_ == GameType::LA) ? 0x110 : 0xF8;
+    int ofs;
+    if (isLGPE(gameType_))       ofs = 0xB0;
+    else if (gameType_ == GameType::LA) ofs = 0x110;
+    else                                ofs = 0xF8;
     return readUtf16String(data.data(), ofs, 13);
 }
 
@@ -228,7 +236,9 @@ std::string Pokemon::displayName() const {
 }
 
 void Pokemon::loadFromEncrypted(const uint8_t* encrypted, size_t len) {
-    if (gameType_ == GameType::LA)
+    if (isLGPE(gameType_))
+        PokeCrypto::decryptArray6(encrypted, len, data.data());
+    else if (gameType_ == GameType::LA)
         PokeCrypto::decryptArray8A(encrypted, len, data.data());
     else
         PokeCrypto::decryptArray9(encrypted, len, data.data());
@@ -236,7 +246,10 @@ void Pokemon::loadFromEncrypted(const uint8_t* encrypted, size_t len) {
 
 void Pokemon::refreshChecksum() {
     // Checksum = sum of all 16-bit words from byte 8 to SIZE_STORED
-    int end = (gameType_ == GameType::LA) ? PokeCrypto::SIZE_8ASTORED : PokeCrypto::SIZE_9STORED;
+    int end;
+    if (isLGPE(gameType_))       end = PokeCrypto::SIZE_6STORED;
+    else if (gameType_ == GameType::LA) end = PokeCrypto::SIZE_8ASTORED;
+    else                                end = PokeCrypto::SIZE_9STORED;
     uint16_t chk = 0;
     for (int i = 8; i < end; i += 2)
         chk += readU16(i);
@@ -245,7 +258,9 @@ void Pokemon::refreshChecksum() {
 
 void Pokemon::getEncrypted(uint8_t* outBuf) {
     refreshChecksum();
-    if (gameType_ == GameType::LA)
+    if (isLGPE(gameType_))
+        PokeCrypto::encryptArray6(data.data(), PokeCrypto::SIZE_6PARTY, outBuf);
+    else if (gameType_ == GameType::LA)
         PokeCrypto::encryptArray8A(data.data(), PokeCrypto::SIZE_8ASTORED, outBuf);
     else
         PokeCrypto::encryptArray9(data.data(), PokeCrypto::SIZE_9PARTY, outBuf);

@@ -3,17 +3,29 @@
 #include <cstring>
 
 Bank::Bank() {
-    slots_.resize(boxCount_ * SLOTS_PER_BOX);
+    slots_.resize(boxCount_ * slotsPerBox_);
 }
 
 void Bank::setGameType(GameType g) {
     gameType_ = g;
-    int newBoxCount = isBDSP(g) ? 40 : 32;
-    slotSize_ = (g == GameType::LA) ? PokeCrypto::SIZE_8APARTY : PokeCrypto::SIZE_9PARTY;
-    if (newBoxCount != boxCount_) {
-        boxCount_ = newBoxCount;
-        slots_.resize(boxCount_ * SLOTS_PER_BOX);
+    if (isLGPE(g)) {
+        boxCount_ = 40;
+        slotsPerBox_ = 25;
+        slotSize_ = PokeCrypto::SIZE_6PARTY;
+    } else if (isBDSP(g)) {
+        boxCount_ = 40;
+        slotsPerBox_ = 30;
+        slotSize_ = PokeCrypto::SIZE_9PARTY;
+    } else if (g == GameType::LA) {
+        boxCount_ = 32;
+        slotsPerBox_ = 30;
+        slotSize_ = PokeCrypto::SIZE_8APARTY;
+    } else {
+        boxCount_ = 32;
+        slotsPerBox_ = 30;
+        slotSize_ = PokeCrypto::SIZE_9PARTY;
     }
+    slots_.resize(boxCount_ * slotsPerBox_);
 }
 
 bool Bank::load(const std::string& path) {
@@ -35,15 +47,23 @@ bool Bank::load(const std::string& path) {
 
     int fileBoxCount;
     int fileSlotSize;
-    if (version == VERSION_LA) {
+    int fileSlotsPerBox;
+    if (version == VERSION_LGPE) {
+        fileBoxCount = 40;
+        fileSlotSize = PokeCrypto::SIZE_6PARTY;
+        fileSlotsPerBox = 25;
+    } else if (version == VERSION_LA) {
         fileBoxCount = 32;
         fileSlotSize = PokeCrypto::SIZE_8APARTY;
+        fileSlotsPerBox = 30;
     } else if (version == VERSION_40BOX) {
         fileBoxCount = 40;
         fileSlotSize = PokeCrypto::SIZE_9PARTY;
+        fileSlotsPerBox = 30;
     } else if (version == VERSION_32BOX) {
         fileBoxCount = 32;
         fileSlotSize = PokeCrypto::SIZE_9PARTY;
+        fileSlotsPerBox = 30;
     } else {
         return false; // Unsupported version
     }
@@ -51,7 +71,8 @@ bool Bank::load(const std::string& path) {
     // Use the file's parameters
     boxCount_ = fileBoxCount;
     slotSize_ = fileSlotSize;
-    slots_.resize(boxCount_ * SLOTS_PER_BOX);
+    slotsPerBox_ = fileSlotsPerBox;
+    slots_.resize(boxCount_ * slotsPerBox_);
 
     // Skip reserved
     file.seekg(HEADER_SIZE);

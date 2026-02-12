@@ -288,7 +288,8 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
     // All games in menu order
     constexpr GameType allGames[] = {
         GameType::Sw, GameType::Sh, GameType::BD, GameType::SP,
-        GameType::LA, GameType::S, GameType::V, GameType::ZA
+        GameType::LA, GameType::S, GameType::V, GameType::ZA,
+        GameType::GP, GameType::GE
     };
 
 #ifdef __SWITCH__
@@ -508,7 +509,8 @@ void UI::selectProfile(int index) {
     availableGames_.clear();
     constexpr GameType allGames[] = {
         GameType::Sw, GameType::Sh, GameType::BD, GameType::SP,
-        GameType::LA, GameType::S, GameType::V, GameType::ZA
+        GameType::LA, GameType::S, GameType::V, GameType::ZA,
+        GameType::GP, GameType::GE
     };
     for (GameType g : allGames) {
         if (account_.hasSaveData(index, g))
@@ -665,6 +667,8 @@ void UI::drawGameSelectorFrame() {
                 case GameType::S:  abbr = "S";  break;
                 case GameType::V:  abbr = "V";  break;
                 case GameType::ZA: abbr = "ZA"; break;
+                case GameType::GP: abbr = "GP"; break;
+                case GameType::GE: abbr = "GE"; break;
             }
             drawTextCentered(abbr, iconX + ICON_SIZE / 2, iconY + ICON_SIZE / 2,
                              COLOR_TEXT, font_);
@@ -845,6 +849,8 @@ void UI::selectGame(GameType game) {
         savePath_ = basePath_ + "main_bdsp";
     else if (game == GameType::LA)
         savePath_ = basePath_ + "main_la";
+    else if (isLGPE(game))
+        savePath_ = basePath_ + "main_lgpe";
     else
         savePath_ = basePath_ + "main";
 #endif
@@ -852,7 +858,7 @@ void UI::selectGame(GameType game) {
     save_.load(savePath_);
 
     // Debug: verify encryption round-trip (encrypt(decrypt(file)) == file)
-    if (!isBDSP(game)) {
+    if (!isBDSP(game) && !isLGPE(game)) {
         std::string rtResult = save_.verifyRoundTrip();
         if (rtResult != "OK")
             showMessageAndWait("Round-Trip Check", rtResult);
@@ -942,7 +948,7 @@ void UI::drawBankSelectorFrame() {
                      COLOR_TEXT, font_);
 
             // Slot count (right-aligned)
-            int maxSlots = isBDSP(selectedGame_) ? 1200 : 960;
+            int maxSlots = isLGPE(selectedGame_) ? 1000 : isBDSP(selectedGame_) ? 1200 : 960;
             std::string slotStr = std::to_string(banks[idx].occupiedSlots) + "/" + std::to_string(maxSlots);
             int tw = 0, th = 0;
             TTF_SizeUTF8(font_, slotStr.c_str(), &tw, &th);
@@ -1570,13 +1576,14 @@ void UI::drawPanel(int panelX, const std::string& boxName, int boxIdx,
                      panelX + PANEL_W / 2, BOX_HDR_Y + BOX_HDR_H / 2, hdrColor, font_);
     drawTextCentered(">", panelX + PANEL_W - 20, BOX_HDR_Y + BOX_HDR_H / 2, COLOR_ARROW, font_);
 
-    // Grid: 6 columns x 5 rows
-    int gridStartX = panelX + (PANEL_W - (6 * (CELL_W + CELL_PAD) - CELL_PAD)) / 2;
+    // Grid: dynamic columns x 5 rows
+    int cols = gridCols();
+    int gridStartX = panelX + (PANEL_W - (cols * (CELL_W + CELL_PAD) - CELL_PAD)) / 2;
     int gridStartY = GRID_Y;
 
     for (int row = 0; row < 5; row++) {
-        for (int col = 0; col < 6; col++) {
-            int slot = row * 6 + col;
+        for (int col = 0; col < cols; col++) {
+            int slot = row * cols + col;
             int cellX = gridStartX + col * (CELL_W + CELL_PAD);
             int cellY = gridStartY + row * (CELL_H + CELL_PAD);
 
@@ -1659,7 +1666,7 @@ void UI::drawFrame() {
 
     // Detail popup overlay
     if (showDetail_) {
-        Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(), cursor_.panel);
+        Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(gridCols()), cursor_.panel);
         if (pkm.isEmpty()) {
             showDetail_ = false;
         } else {
@@ -1893,7 +1900,7 @@ void UI::drawAboutPopup() {
     y += 28;
     drawTextCentered("Move Pokemon between save files and banks.", cx, y, COLOR_TEXT, font_);
     y += 28;
-    drawTextCentered("Supports: ZA, Scarlet/Violet, Sword/Shield, BDSP, Legends Arceus", cx, y, COLOR_TEXT_DIM, fontSmall_);
+    drawTextCentered("Supports: ZA, Scarlet/Violet, Sword/Shield, BDSP, Legends Arceus, Let's Go", cx, y, COLOR_TEXT_DIM, fontSmall_);
     y += 35;
 
     // Divider
@@ -1932,7 +1939,8 @@ void UI::drawHeldOverlay() {
 
     // Compute cursor cell screen position (same formula as drawPanel)
     int panelX = (cursor_.panel == Panel::Game) ? PANEL_X_L : PANEL_X_R;
-    int gridStartX = panelX + (PANEL_W - (6 * (CELL_W + CELL_PAD) - CELL_PAD)) / 2;
+    int cols = gridCols();
+    int gridStartX = panelX + (PANEL_W - (cols * (CELL_W + CELL_PAD) - CELL_PAD)) / 2;
     int gridStartY = GRID_Y;
     int cellX = gridStartX + cursor_.col * (CELL_W + CELL_PAD);
     int cellY = gridStartY + cursor_.row * (CELL_H + CELL_PAD);
@@ -2137,7 +2145,7 @@ void UI::handleInput(bool& running) {
                     break;
                 case SDL_CONTROLLER_BUTTON_Y: // Switch X (top) = SDL Y
                 {
-                    Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(), cursor_.panel);
+                    Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(gridCols()), cursor_.panel);
                     if (!pkm.isEmpty())
                         showDetail_ = true;
                     break;
@@ -2186,7 +2194,7 @@ void UI::handleInput(bool& running) {
                 case SDLK_ESCAPE: actionCancel(); break;
                 case SDLK_x:
                 {
-                    Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(), cursor_.panel);
+                    Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(gridCols()), cursor_.panel);
                     if (!pkm.isEmpty())
                         showDetail_ = true;
                     break;
@@ -2225,6 +2233,8 @@ void UI::handleInput(bool& running) {
 
 void UI::moveCursor(int dx, int dy) {
     Panel prevPanel = cursor_.panel;
+    int cols = gridCols();
+    int maxCol = cols - 1;
     cursor_.col += dx;
     cursor_.row += dy;
 
@@ -2236,19 +2246,19 @@ void UI::moveCursor(int dx, int dy) {
     if (cursor_.col < 0) {
         if (cursor_.panel == Panel::Bank) {
             cursor_.panel = Panel::Game;
-            cursor_.col = 5;
+            cursor_.col = maxCol;
             cursor_.box = gameBox_;
         } else {
             cursor_.col = 0;
         }
     }
-    if (cursor_.col > 5) {
+    if (cursor_.col > maxCol) {
         if (cursor_.panel == Panel::Game) {
             cursor_.panel = Panel::Bank;
             cursor_.col = 0;
             cursor_.box = bankBox_;
         } else {
-            cursor_.col = 5;
+            cursor_.col = maxCol;
         }
     }
 
@@ -2292,7 +2302,7 @@ void UI::clearPokemonAt(int box, int slot, Panel panel) {
 
 void UI::actionSelect() {
     int box = cursor_.box;
-    int slot = cursor_.slot();
+    int slot = cursor_.slot(gridCols());
 
     // Multi-select pick up
     if (!holding_ && !selectedSlots_.empty()) {
@@ -2319,8 +2329,9 @@ void UI::actionSelect() {
     // Multi-select place
     if (holding_ && !heldMulti_.empty()) {
         // Count empty slots in current box
+        int slotsInBox = maxSlots();
         int emptyCount = 0;
-        for (int s = 0; s < 30; s++) {
+        for (int s = 0; s < slotsInBox; s++) {
             if (getPokemonAt(box, s, cursor_.panel).isEmpty())
                 emptyCount++;
         }
@@ -2333,7 +2344,7 @@ void UI::actionSelect() {
 
         // Fill first empty slots
         int placed = 0;
-        for (int s = 0; s < 30 && placed < (int)heldMulti_.size(); s++) {
+        for (int s = 0; s < slotsInBox && placed < (int)heldMulti_.size(); s++) {
             if (getPokemonAt(box, s, cursor_.panel).isEmpty()) {
                 setPokemonAt(box, s, cursor_.panel, heldMulti_[placed]);
                 placed++;
@@ -2409,7 +2420,7 @@ void UI::toggleSelect() {
     if (holding_)
         return; // can't multi-select while holding
 
-    int slot = cursor_.slot();
+    int slot = cursor_.slot(gridCols());
     Pokemon pkm = getPokemonAt(cursor_.box, slot, cursor_.panel);
     if (pkm.isEmpty())
         return;

@@ -23,10 +23,10 @@ enum class TextInputPurpose { CreateBank, RenameBank };
 struct Cursor {
     Panel panel = Panel::Game;
     int box     = 0;
-    int col     = 0; // 0-5
+    int col     = 0; // 0-5 (or 0-4 for LGPE)
     int row     = 0; // 0-4
 
-    int slot() const { return row * 6 + col; }
+    int slot(int cols = 6) const { return row * cols + col; }
 };
 
 // Main UI class - manages rendering and input for the two-panel box viewer.
@@ -223,6 +223,10 @@ private:
     void actionCancel();
     void toggleSelect();
     void clearSelection();
+
+    // Dynamic grid: LGPE has 5 columns (5x5), others have 6 (6x5)
+    int gridCols() const { return isLGPE(selectedGame_) ? 5 : 6; }
+    int maxSlots() const { return gridCols() * 5; }
 
     // Get pokemon at cursor from the appropriate source
     Pokemon getPokemonAt(int box, int slot, Panel panel) const;

@@ -9,7 +9,6 @@
 // SCBlock-based for ZA/SV/SwSh, flat binary for BDSP.
 class SaveFile {
 public:
-    static constexpr int SLOTS_PER_BOX = 30;
     static constexpr int COLS_PER_BOX  = 6;
     static constexpr int ROWS_PER_BOX  = 5;
 
@@ -30,8 +29,9 @@ public:
     // Returns "OK" if round-trip matches, or a description of the mismatch.
     std::string verifyRoundTrip();
 
-    // Dynamic box count: 40 for BDSP, 32 for others
+    // Dynamic box count and slots per box
     int boxCount() const { return boxCount_; }
+    int slotsPerBox() const { return slotsPerBox_; }
 
 private:
     std::vector<SCBlock> blocks_;
@@ -48,6 +48,7 @@ private:
     // Game-specific parameters
     GameType gameType_  = GameType::ZA;
     int boxCount_       = 32;
+    int slotsPerBox_    = 30;
     int gapBoxSlot_     = 0x40;
     int sizeBoxSlot_    = PokeCrypto::SIZE_9PARTY + 0x40;
 
@@ -63,7 +64,30 @@ private:
     static constexpr int BDSP_HASH_OFFSET     = 0xE9818;
     static constexpr int BDSP_HASH_SIZE       = 16;
 
-    // BDSP raw save data (flat binary, no SCBlocks)
+    // LGPE save format constants
+    static constexpr int LGPE_SAVE_SIZE      = 0x100000;  // 1 MB
+    static constexpr int LGPE_BOX_OFFSET     = 0x05C00;   // PokeListPokemon block
+    static constexpr int LGPE_BOX_SIZE       = 0x3F7A0;   // 1000 * 260
+    static constexpr int LGPE_HEADER_OFFSET  = 0x05A00;   // PokeListHeader block
+    static constexpr int LGPE_BOX_COUNT      = 40;
+    static constexpr int LGPE_SLOTS_PER_BOX  = 25;
+    static constexpr int LGPE_BLOCK_INFO_OFS = 0xB8600;   // 0xB8800 - 0x200
+    static constexpr int LGPE_NUM_BLOCKS     = 21;
+
+    struct LGPEBlock { int offset; int length; };
+    static constexpr LGPEBlock LGPE_BLOCKS[LGPE_NUM_BLOCKS] = {
+        {0x00000, 0x00D90}, {0x00E00, 0x00200}, {0x01000, 0x00168},
+        {0x01200, 0x01800}, {0x02A00, 0x020E8}, {0x04C00, 0x00930},
+        {0x05600, 0x00004}, {0x05800, 0x00130}, {0x05A00, 0x00012},
+        {0x05C00, 0x3F7A0}, {0x45400, 0x00008}, {0x45600, 0x00E90},
+        {0x46600, 0x010A4}, {0x47800, 0x000F0}, {0x47A00, 0x06010},
+        {0x4DC00, 0x00200}, {0x4DE00, 0x00098}, {0x4E000, 0x00068},
+        {0x4E200, 0x69780}, {0xB7A00, 0x000B0}, {0xB7C00, 0x00940},
+    };
+
+    static uint16_t crc16NoInvert(const uint8_t* data, size_t len);
+
+    // BDSP and LGPE raw save data (flat binary, no SCBlocks)
     std::vector<uint8_t> rawData_;
 
     // Original file data for round-trip verification (cleared after verify)
@@ -73,11 +97,13 @@ private:
     bool saveSCBlock(const std::string& path);
     bool loadBDSP(const std::string& path);
     bool saveBDSP(const std::string& path);
+    bool loadLGPE(const std::string& path);
+    bool saveLGPE(const std::string& path);
 
     static bool isBDSPSize(size_t size);
 
     int getBoxOffset(int box) const {
-        return sizeBoxSlot_ * box * SLOTS_PER_BOX;
+        return sizeBoxSlot_ * box * slotsPerBox_;
     }
     int getBoxSlotOffset(int box, int slot) const {
         return getBoxOffset(box) + slot * sizeBoxSlot_;

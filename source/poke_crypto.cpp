@@ -149,3 +149,45 @@ void PokeCrypto::encryptArray8A(const uint8_t* pk, size_t len, uint8_t* outBuf) 
     if (static_cast<int>(len) > end)
         cryptArray(outBuf + end, len - end, pv);
 }
+
+// --- PB7 (Let's Go Pikachu/Eevee) — same algorithm, smaller block size (56) ---
+
+void PokeCrypto::decryptArray6(const uint8_t* ekm, size_t len, uint8_t* outBuf) {
+    uint8_t tmp[SIZE_6PARTY];
+    size_t sz = len > SIZE_6PARTY ? SIZE_6PARTY : len;
+    std::memcpy(tmp, ekm, sz);
+    if (sz < SIZE_6PARTY)
+        std::memset(tmp + sz, 0, SIZE_6PARTY - sz);
+
+    uint32_t pv = readU32LE(tmp);
+    uint32_t sv = (pv >> 13) & 31;
+
+    // Decrypt blocks (offset 8 to 8 + 4*56 = 232)
+    constexpr int start = 8;
+    int end = BLOCK_COUNT * SIZE_6BLOCK + start;
+    cryptArray(tmp + start, end - start, pv);
+
+    // Decrypt party stats (if present)
+    if (static_cast<int>(sz) > end)
+        cryptArray(tmp + end, sz - end, pv);
+
+    // Unshuffle blocks
+    shuffleArray(tmp, sz, sv, SIZE_6BLOCK, outBuf);
+}
+
+void PokeCrypto::encryptArray6(const uint8_t* pk, size_t len, uint8_t* outBuf) {
+    uint32_t pv = readU32LE(pk);
+    uint32_t sv = (pv >> 13) & 31;
+
+    // Inverse shuffle
+    shuffleArray(pk, len, BLOCK_POSITION_INVERT[sv], SIZE_6BLOCK, outBuf);
+
+    // Encrypt blocks
+    constexpr int start = 8;
+    int end = BLOCK_COUNT * SIZE_6BLOCK + start;
+    cryptArray(outBuf + start, end - start, pv);
+
+    // Encrypt party stats
+    if (static_cast<int>(len) > end)
+        cryptArray(outBuf + end, len - end, pv);
+}

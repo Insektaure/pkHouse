@@ -8,7 +8,6 @@
 // Stores decrypted Pokemon data in a simple binary file format.
 class Bank {
 public:
-    static constexpr int SLOTS_PER_BOX = 30;
 
     Bank();
 
@@ -27,7 +26,8 @@ public:
     std::string getBoxName(int box) const;
 
     int boxCount() const { return boxCount_; }
-    int totalSlots() const { return boxCount_ * SLOTS_PER_BOX; }
+    int slotsPerBox() const { return slotsPerBox_; }
+    int totalSlots() const { return boxCount_ * slotsPerBox_; }
 
 private:
     // File format:
@@ -42,18 +42,21 @@ private:
     static constexpr uint32_t VERSION_32BOX = 1;
     static constexpr uint32_t VERSION_40BOX = 2;
     static constexpr uint32_t VERSION_LA    = 3;
+    static constexpr uint32_t VERSION_LGPE  = 4;
 
     GameType gameType_ = GameType::ZA;
     int boxCount_ = 32;
+    int slotsPerBox_ = 30;
     int slotSize_ = PokeCrypto::SIZE_9PARTY;
     std::vector<Pokemon> slots_;
 
     uint32_t fileVersion() const {
+        if (isLGPE(gameType_)) return VERSION_LGPE;
         if (gameType_ == GameType::LA) return VERSION_LA;
         return boxCount_ == 40 ? VERSION_40BOX : VERSION_32BOX;
     }
 
     int slotIndex(int box, int slot) const {
-        return box * SLOTS_PER_BOX + slot;
+        return box * slotsPerBox_ + slot;
     }
 };

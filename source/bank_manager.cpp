@@ -89,7 +89,7 @@ int BankManager::countOccupied(const std::string& filePath) {
 
     int count = 0;
     for (int box = 0; box < temp.boxCount(); box++) {
-        for (int slot = 0; slot < Bank::SLOTS_PER_BOX; slot++) {
+        for (int slot = 0; slot < temp.slotsPerBox(); slot++) {
             if (!temp.getSlot(box, slot).isEmpty())
                 count++;
         }

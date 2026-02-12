@@ -49,7 +49,6 @@ private:
 
     // Sprite cache: national dex ID -> texture
     std::unordered_map<uint16_t, SDL_Texture*> spriteCache_;
-    SDL_Texture* eggSprite_ = nullptr;
 
     // Status icons
     SDL_Texture* iconShiny_      = nullptr;

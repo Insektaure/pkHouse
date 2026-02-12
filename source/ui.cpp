@@ -1406,10 +1406,6 @@ void UI::freeSprites() {
             SDL_DestroyTexture(tex);
     }
     spriteCache_.clear();
-    if (eggSprite_) {
-        SDL_DestroyTexture(eggSprite_);
-        eggSprite_ = nullptr;
-    }
     if (iconShiny_)      { SDL_DestroyTexture(iconShiny_);      iconShiny_ = nullptr; }
     if (iconAlpha_)      { SDL_DestroyTexture(iconAlpha_);      iconAlpha_ = nullptr; }
     if (iconShinyAlpha_) { SDL_DestroyTexture(iconShinyAlpha_); iconShinyAlpha_ = nullptr; }
@@ -1481,7 +1477,6 @@ void UI::drawSlot(int x, int y, const Pokemon& pkm, bool isCursor, int selectOrd
         // Draw sprite centered in top portion of cell
         SDL_Texture* sprite = nullptr;
         if (pkm.isEgg()) {
-            // Use species 0 sprite for egg, or fallback
             sprite = getSprite(0);
         } else {
             sprite = getSprite(species);
@@ -1931,7 +1926,7 @@ void UI::drawHeldOverlay() {
     if (species == 0)
         return;
 
-    SDL_Texture* sprite = pkm.isEgg() ? eggSprite_ : getSprite(species);
+    SDL_Texture* sprite = getSprite(pkm.isEgg() ? 0 : species);
     if (!sprite)
         return;
 

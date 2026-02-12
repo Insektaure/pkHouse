@@ -190,4 +190,5 @@ If you need to restore a backup, use a save manager such as [Checkpoint](https:/
 ## Credits
 
 - [PKHeX](https://github.com/kwsch/PKHeX) by kwsch — PokeCrypto research and save structure reference
+- [JKSV](https://github.com/J-D-K/JKSV) by J-D-K — Save backup and write logic reference
 - Built with [libnx](https://github.com/switchbrew/libnx) and [SDL2](https://www.libsdl.org/)

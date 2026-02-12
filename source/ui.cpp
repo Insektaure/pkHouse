@@ -1476,7 +1476,7 @@ void UI::drawFrame() {
               rightActive, nullptr, &bank_, bankBox_);
 
     // Status bar
-    std::string statusMsg = "D-Pad:Move  L/R:Box  A:Pick/Place  B:Cancel  Y:Detail  +:Menu  -:Quit";
+    std::string statusMsg = "D-Pad:Move  L/R:Box  A:Pick/Place  B:Cancel  X:Detail  +:Menu  -:Quit";
     if (holding_) {
         std::string heldName = heldPkm_.displayName();
         if (!heldName.empty()) {
@@ -1600,39 +1600,39 @@ void UI::drawDetailPopup(const Pokemon& pkm) {
 
     // National dex ID
     std::string idStr = "National #" + std::to_string(pkm.species());
-    drawText(idStr, infoX, infoY, COLOR_TEXT_DIM, fontSmall_);
-    infoY += 22;
+    drawText(idStr, infoX, infoY, COLOR_TEXT_DIM, font_);
+    infoY += 28;
 
     // OT + TID
     std::string otStr = "OT: " + pkm.otName() + " | TID: " + std::to_string(pkm.tid());
-    drawText(otStr, infoX, infoY, COLOR_TEXT_DIM, fontSmall_);
-    infoY += 22;
+    drawText(otStr, infoX, infoY, COLOR_TEXT_DIM, font_);
+    infoY += 28;
 
     // Nature
     std::string natureStr = "Nature: " + NatureName::get(pkm.nature());
-    drawText(natureStr, infoX, infoY, COLOR_TEXT_DIM, fontSmall_);
-    infoY += 22;
+    drawText(natureStr, infoX, infoY, COLOR_TEXT_DIM, font_);
+    infoY += 28;
 
     // Ability
     std::string abilityStr = "Ability: " + AbilityName::get(pkm.ability());
-    drawText(abilityStr, infoX, infoY, COLOR_TEXT_DIM, fontSmall_);
+    drawText(abilityStr, infoX, infoY, COLOR_TEXT_DIM, font_);
 
     // --- Below sprite: Moves ---
     int movesX = popX + 30;
     int movesY = sprY + LARGE_SPRITE + 20;
 
     drawText("Moves", movesX, movesY, COLOR_TEXT, font_);
-    movesY += 26;
+    movesY += 30;
 
     uint16_t moves[4] = {pkm.move1(), pkm.move2(), pkm.move3(), pkm.move4()};
     for (int i = 0; i < 4; i++) {
         if (moves[i] != 0) {
             std::string moveStr = "- " + MoveName::get(moves[i]);
-            drawText(moveStr, movesX + 10, movesY, COLOR_TEXT_DIM, fontSmall_);
+            drawText(moveStr, movesX + 10, movesY, COLOR_TEXT_DIM, font_);
         } else {
-            drawText("- ---", movesX + 10, movesY, COLOR_TEXT_DIM, fontSmall_);
+            drawText("- ---", movesX + 10, movesY, COLOR_TEXT_DIM, font_);
         }
-        movesY += 20;
+        movesY += 26;
     }
 
     // --- Right column: IVs and EVs ---
@@ -1641,7 +1641,7 @@ void UI::drawDetailPopup(const Pokemon& pkm) {
 
     // IVs header
     drawText("IVs", statsX, statsY, COLOR_TEXT, font_);
-    statsY += 26;
+    statsY += 30;
 
     const char* statLabels[] = {"HP", "Atk", "Def", "SpA", "SpD", "Spe"};
     int ivs[] = {pkm.ivHp(), pkm.ivAtk(), pkm.ivDef(), pkm.ivSpA(), pkm.ivSpD(), pkm.ivSpe()};
@@ -1649,27 +1649,27 @@ void UI::drawDetailPopup(const Pokemon& pkm) {
     for (int i = 0; i < 6; i++) {
         std::string line = std::string(statLabels[i]) + ": " + std::to_string(ivs[i]);
         SDL_Color ivColor = (ivs[i] == 31) ? COLOR_SHINY : COLOR_TEXT_DIM;
-        drawText(line, statsX + 10, statsY, ivColor, fontSmall_);
-        statsY += 20;
+        drawText(line, statsX + 10, statsY, ivColor, font_);
+        statsY += 26;
     }
 
     statsY += 10;
 
     // EVs header
     drawText("EVs", statsX, statsY, COLOR_TEXT, font_);
-    statsY += 26;
+    statsY += 30;
 
     int evs[] = {pkm.evHp(), pkm.evAtk(), pkm.evDef(), pkm.evSpA(), pkm.evSpD(), pkm.evSpe()};
 
     for (int i = 0; i < 6; i++) {
         std::string line = std::string(statLabels[i]) + ": " + std::to_string(evs[i]);
         SDL_Color evColor = (evs[i] > 0) ? COLOR_TEXT : COLOR_TEXT_DIM;
-        drawText(line, statsX + 10, statsY, evColor, fontSmall_);
-        statsY += 20;
+        drawText(line, statsX + 10, statsY, evColor, font_);
+        statsY += 26;
     }
 
     // Close hint at bottom
-    drawTextCentered("B / Y: Close", popX + POP_W / 2, popY + POP_H - 20, COLOR_TEXT_DIM, fontSmall_);
+    drawTextCentered("B / X: Close", popX + POP_W / 2, popY + POP_H - 20, COLOR_TEXT_DIM, fontSmall_);
 }
 
 void UI::drawMenuPopup() {
@@ -1802,7 +1802,7 @@ void UI::handleInput(bool& running) {
             if (event.type == SDL_CONTROLLERBUTTONDOWN) {
                 switch (event.cbutton.button) {
                     case SDL_CONTROLLER_BUTTON_A: // Switch B
-                    case SDL_CONTROLLER_BUTTON_X: // Switch Y
+                    case SDL_CONTROLLER_BUTTON_Y: // Switch X
                         showDetail_ = false;
                         break;
                 }
@@ -1811,7 +1811,7 @@ void UI::handleInput(bool& running) {
                 switch (event.key.keysym.sym) {
                     case SDLK_b:
                     case SDLK_ESCAPE:
-                    case SDLK_y:
+                    case SDLK_x:
                         showDetail_ = false;
                         break;
                 }
@@ -1827,7 +1827,7 @@ void UI::handleInput(bool& running) {
                 case SDL_CONTROLLER_BUTTON_A: // Switch B (bottom) = SDL A
                     actionCancel();
                     break;
-                case SDL_CONTROLLER_BUTTON_X: // Switch Y (left) = SDL X
+                case SDL_CONTROLLER_BUTTON_Y: // Switch X (top) = SDL Y
                 {
                     Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(), cursor_.panel);
                     if (!pkm.isEmpty())
@@ -1873,7 +1873,7 @@ void UI::handleInput(bool& running) {
                 case SDLK_RETURN: actionSelect(); break;
                 case SDLK_b:
                 case SDLK_ESCAPE: actionCancel(); break;
-                case SDLK_y:
+                case SDLK_x:
                 {
                     Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(), cursor_.panel);
                     if (!pkm.isEmpty())

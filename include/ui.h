@@ -8,6 +8,7 @@
 #include <SDL2/SDL_image.h>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 // Which panel the cursor is on
 enum class Panel { Game, Bank };
@@ -44,6 +45,7 @@ private:
     SDL_GameController*  pad_       = nullptr;
     TTF_Font*            font_      = nullptr;
     TTF_Font*            fontSmall_ = nullptr;
+    TTF_Font*            fontLarge_ = nullptr;
 
     // Sprite cache: national dex ID -> texture
     std::unordered_map<uint16_t, SDL_Texture*> spriteCache_;
@@ -91,6 +93,7 @@ private:
     static constexpr SDL_Color COLOR_ARROW       = {180, 180, 200, 255};
     static constexpr SDL_Color COLOR_STATUS      = {140, 200, 140, 255};
     static constexpr SDL_Color COLOR_RED         = {220, 60, 60, 255};
+    static constexpr SDL_Color COLOR_SELECTED    = {100, 200, 220, 255};
 
     // App screen state
     AppScreen screen_ = AppScreen::GameSelector;
@@ -145,6 +148,15 @@ private:
     int     heldBox_    = 0;
     int     heldSlot_   = 0;
 
+    // Multi-select state
+    std::vector<int> selectedSlots_;           // selected slot indices in selection order
+    Panel         selectedPanel_ = Panel::Game;
+    int           selectedBox_   = 0;
+    std::vector<Pokemon> heldMulti_;           // multi-held Pokemon
+    std::vector<int>     heldMultiSlots_;      // original slot indices (for cancel)
+    Panel         heldMultiSource_ = Panel::Game;
+    int           heldMultiBox_    = 0;
+
     // Sprites
     SDL_Texture* getSprite(uint16_t nationalId);
     void freeSprites();
@@ -176,8 +188,9 @@ private:
     void drawDetailPopup(const Pokemon& pkm);
     void drawMenuPopup();
     void drawPanel(int panelX, const std::string& boxName, int boxIdx,
-                   int totalBoxes, bool isActive, SaveFile* save, Bank* bank, int box);
-    void drawSlot(int x, int y, const Pokemon& pkm, bool isCursor);
+                   int totalBoxes, bool isActive, SaveFile* save, Bank* bank, int box,
+                   Panel panelId);
+    void drawSlot(int x, int y, const Pokemon& pkm, bool isCursor, int selectOrder);
     void drawText(const std::string& text, int x, int y, SDL_Color color, TTF_Font* f);
     void drawTextCentered(const std::string& text, int cx, int cy, SDL_Color color, TTF_Font* f);
     void drawRect(int x, int y, int w, int h, SDL_Color color);
@@ -190,6 +203,8 @@ private:
     void switchBox(int direction);
     void actionSelect();
     void actionCancel();
+    void toggleSelect();
+    void clearSelection();
 
     // Get pokemon at cursor from the appropriate source
     Pokemon getPokemonAt(int box, int slot, Panel panel) const;

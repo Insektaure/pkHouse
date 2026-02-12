@@ -56,9 +56,11 @@ bool UI::init() {
     SDL_RWops* rw = SDL_RWFromMem(fontData.address, fontData.size);
     font_ = TTF_OpenFontRW(rw, 0, 18);
     fontSmall_ = TTF_OpenFontRW(SDL_RWFromMem(fontData.address, fontData.size), 0, 14);
+    fontLarge_ = TTF_OpenFontRW(SDL_RWFromMem(fontData.address, fontData.size), 0, 28);
 #else
     font_ = TTF_OpenFont("romfs/fonts/default.ttf", 18);
     fontSmall_ = TTF_OpenFont("romfs/fonts/default.ttf", 14);
+    fontLarge_ = TTF_OpenFont("romfs/fonts/default.ttf", 28);
 #endif
 
     if (!font_ || !fontSmall_) {
@@ -67,6 +69,8 @@ bool UI::init() {
         if (!fontSmall_)
             fontSmall_ = TTF_OpenFont("romfs:/fonts/default.ttf", 14);
     }
+    if (!fontLarge_)
+        fontLarge_ = TTF_OpenFont("romfs:/fonts/default.ttf", 28);
 
     // Load status icons
     {
@@ -103,6 +107,7 @@ void UI::shutdown() {
     freeGameIcons();
     account_.freeTextures();
     freeSprites();
+    if (fontLarge_) TTF_CloseFont(fontLarge_);
     if (fontSmall_) TTF_CloseFont(fontSmall_);
     if (font_) TTF_CloseFont(font_);
     if (pad_) SDL_GameControllerClose(pad_);
@@ -211,9 +216,9 @@ void UI::showMessageAndWait(const std::string& title, const std::string& body) {
         SDL_SetRenderDrawColor(renderer_, COLOR_BG.r, COLOR_BG.g, COLOR_BG.b, 255);
         SDL_RenderClear(renderer_);
 
-        drawTextCentered(title, SCREEN_W / 2, SCREEN_H / 2 - 30, COLOR_RED, font_);
-        drawTextCentered(body, SCREEN_W / 2, SCREEN_H / 2 + 10, COLOR_TEXT_DIM, font_);
-        drawTextCentered("Press B to quit", SCREEN_W / 2, SCREEN_H / 2 + 60, COLOR_TEXT_DIM, fontSmall_);
+        drawTextCentered(title, SCREEN_W / 2, SCREEN_H / 2 - 40, COLOR_RED, fontLarge_);
+        drawTextCentered(body, SCREEN_W / 2, SCREEN_H / 2 + 15, COLOR_TEXT_DIM, font_);
+        drawTextCentered("Press B to dismiss", SCREEN_W / 2, SCREEN_H / 2 + 65, COLOR_TEXT_DIM, fontSmall_);
 
         SDL_RenderPresent(renderer_);
         SDL_Delay(16);
@@ -1016,6 +1021,9 @@ void UI::openSelectedBank() {
     showMenu_ = false;
     holding_ = false;
     heldPkm_ = Pokemon{};
+    selectedSlots_.clear();
+    heldMulti_.clear();
+    heldMultiSlots_.clear();
 }
 
 // --- Delete Confirmation ---
@@ -1329,7 +1337,7 @@ void UI::drawStatusBar(const std::string& msg) {
     drawText(msg, 15, SCREEN_H - 30, COLOR_STATUS, fontSmall_);
 }
 
-void UI::drawSlot(int x, int y, const Pokemon& pkm, bool isCursor) {
+void UI::drawSlot(int x, int y, const Pokemon& pkm, bool isCursor, int selectOrder) {
     SDL_Color bgColor;
     if (pkm.isEmpty()) {
         bgColor = COLOR_SLOT_EMPTY;
@@ -1341,6 +1349,10 @@ void UI::drawSlot(int x, int y, const Pokemon& pkm, bool isCursor) {
 
     // Slot background
     drawRect(x, y, CELL_W, CELL_H, bgColor);
+
+    // Selection outline (drawn before cursor so cursor overlays it)
+    if (selectOrder > 0)
+        drawRectOutline(x + 1, y + 1, CELL_W - 2, CELL_H - 2, COLOR_SELECTED, 2);
 
     // Cursor highlight
     if (isCursor)
@@ -1414,10 +1426,28 @@ void UI::drawSlot(int x, int y, const Pokemon& pkm, bool isCursor) {
             SDL_RenderCopy(renderer_, statusIcon, nullptr, &iconDst);
         }
     }
+
+    // Numbered badge on top of everything
+    if (selectOrder > 0) {
+        std::string num = std::to_string(selectOrder);
+        int tw = 0, th = 0;
+        TTF_SizeUTF8(font_, num.c_str(), &tw, &th);
+        int badgeR = std::max(tw, th) / 2 + 6;
+        int cx = x + CELL_W / 2;
+        int cy = y + CELL_H / 2;
+
+        SDL_SetRenderDrawColor(renderer_, COLOR_SELECTED.r, COLOR_SELECTED.g, COLOR_SELECTED.b, 220);
+        for (int dy2 = -badgeR; dy2 <= badgeR; dy2++) {
+            int dx2 = static_cast<int>(std::sqrt(badgeR * badgeR - dy2 * dy2));
+            SDL_RenderDrawLine(renderer_, cx - dx2, cy + dy2, cx + dx2, cy + dy2);
+        }
+        drawTextCentered(num, cx, cy, {0, 0, 0, 255}, font_);
+    }
 }
 
 void UI::drawPanel(int panelX, const std::string& boxName, int boxIdx,
-                   int totalBoxes, bool isActive, SaveFile* save, Bank* bank, int box) {
+                   int totalBoxes, bool isActive, SaveFile* save, Bank* bank, int box,
+                   Panel panelId) {
     // Panel background
     drawRect(panelX, 0, PANEL_W, SCREEN_H - 35, COLOR_PANEL_BG);
 
@@ -1445,7 +1475,17 @@ void UI::drawPanel(int panelX, const std::string& boxName, int boxIdx,
                 pkm = bank->getSlot(box, slot);
 
             bool isCursor = isActive && cursor_.col == col && cursor_.row == row;
-            drawSlot(cellX, cellY, pkm, isCursor);
+            int selOrder = 0;
+            if (!selectedSlots_.empty()
+                && panelId == selectedPanel_ && box == selectedBox_) {
+                for (int i = 0; i < (int)selectedSlots_.size(); i++) {
+                    if (selectedSlots_[i] == slot) {
+                        selOrder = i + 1;
+                        break;
+                    }
+                }
+            }
+            drawSlot(cellX, cellY, pkm, isCursor, selOrder);
         }
     }
 }
@@ -1465,22 +1505,28 @@ void UI::drawFrame() {
     bool leftActive = (cursor_.panel == Panel::Game);
     std::string gameBoxName = save_.getBoxName(gameBox_);
     drawPanel(PANEL_X_L, gameBoxName, gameBox_, save_.boxCount(),
-              leftActive, &save_, nullptr, gameBox_);
+              leftActive, &save_, nullptr, gameBox_, Panel::Game);
 
     // Right panel: Bank boxes — include active bank name in header
     bool rightActive = (cursor_.panel == Panel::Bank);
     std::string bankBoxName = activeBankName_ + " - " + bank_.getBoxName(bankBox_);
     drawPanel(PANEL_X_R, bankBoxName, bankBox_, bank_.boxCount(),
-              rightActive, nullptr, &bank_, bankBox_);
+              rightActive, nullptr, &bank_, bankBox_, Panel::Bank);
 
     // Status bar
-    std::string statusMsg = "D-Pad:Move  L/R:Box  A:Pick/Place  B:Cancel  X:Detail  +:Menu  -:Quit";
-    if (holding_) {
+    std::string statusMsg = "D-Pad:Move  L/R:Box  A:Pick/Place  Y:Select  B:Cancel  X:Detail  +:Menu";
+    if (holding_ && !heldMulti_.empty()) {
+        statusMsg = "Holding " + std::to_string(heldMulti_.size()) +
+                    " Pokemon  |  A:Place  B:Return";
+    } else if (holding_) {
         std::string heldName = heldPkm_.displayName();
         if (!heldName.empty()) {
             statusMsg = "Holding: " + heldName + " Lv." + std::to_string(heldPkm_.level()) +
                         "  |  A:Place  B:Return";
         }
+    } else if (!selectedSlots_.empty()) {
+        statusMsg = std::to_string(selectedSlots_.size()) +
+                    " selected  |  A:Pick up  Y:Toggle  B:Clear";
     }
     drawStatusBar(statusMsg);
 
@@ -1825,6 +1871,9 @@ void UI::handleInput(bool& running) {
                         showDetail_ = true;
                     break;
                 }
+                case SDL_CONTROLLER_BUTTON_X: // Switch Y (left) = SDL X
+                    toggleSelect();
+                    break;
                 case SDL_CONTROLLER_BUTTON_START: // + (open menu)
                     showMenu_ = true;
                     menuSelection_ = 0;
@@ -1871,6 +1920,7 @@ void UI::handleInput(bool& running) {
                         showDetail_ = true;
                     break;
                 }
+                case SDLK_y:      toggleSelect(); break;
                 case SDLK_q:      switchBox(-1); break;
                 case SDLK_e:      switchBox(+1); break;
                 case SDLK_PLUS:
@@ -1886,6 +1936,7 @@ void UI::handleInput(bool& running) {
 }
 
 void UI::moveCursor(int dx, int dy) {
+    Panel prevPanel = cursor_.panel;
     cursor_.col += dx;
     cursor_.row += dy;
 
@@ -1912,9 +1963,13 @@ void UI::moveCursor(int dx, int dy) {
             cursor_.col = 5;
         }
     }
+
+    if (cursor_.panel != prevPanel)
+        clearSelection();
 }
 
 void UI::switchBox(int direction) {
+    clearSelection();
     int maxBox = (cursor_.panel == Panel::Game) ? save_.boxCount() : bank_.boxCount();
     cursor_.box += direction;
     if (cursor_.box < 0) cursor_.box = maxBox - 1;
@@ -1951,6 +2006,58 @@ void UI::actionSelect() {
     int box = cursor_.box;
     int slot = cursor_.slot();
 
+    // Multi-select pick up
+    if (!holding_ && !selectedSlots_.empty()) {
+        heldMulti_.clear();
+        heldMultiSlots_.clear();
+        heldMultiSource_ = selectedPanel_;
+        heldMultiBox_ = selectedBox_;
+
+        // Collect in selection order
+        for (int s : selectedSlots_) {
+            Pokemon pkm = getPokemonAt(selectedBox_, s, selectedPanel_);
+            if (!pkm.isEmpty()) {
+                heldMulti_.push_back(pkm);
+                heldMultiSlots_.push_back(s);
+                clearPokemonAt(selectedBox_, s, selectedPanel_);
+            }
+        }
+        selectedSlots_.clear();
+        if (!heldMulti_.empty())
+            holding_ = true;
+        return;
+    }
+
+    // Multi-select place
+    if (holding_ && !heldMulti_.empty()) {
+        // Count empty slots in current box
+        int emptyCount = 0;
+        for (int s = 0; s < 30; s++) {
+            if (getPokemonAt(box, s, cursor_.panel).isEmpty())
+                emptyCount++;
+        }
+        if (emptyCount < (int)heldMulti_.size()) {
+            showMessageAndWait("Not enough space",
+                "Need " + std::to_string(heldMulti_.size()) + " empty slots, only " +
+                std::to_string(emptyCount) + " available.");
+            return;
+        }
+
+        // Fill first empty slots
+        int placed = 0;
+        for (int s = 0; s < 30 && placed < (int)heldMulti_.size(); s++) {
+            if (getPokemonAt(box, s, cursor_.panel).isEmpty()) {
+                setPokemonAt(box, s, cursor_.panel, heldMulti_[placed]);
+                placed++;
+            }
+        }
+        heldMulti_.clear();
+        heldMultiSlots_.clear();
+        holding_ = false;
+        return;
+    }
+
+    // Single pick/place (unchanged)
     if (!holding_) {
         Pokemon pkm = getPokemonAt(box, slot, cursor_.panel);
         if (pkm.isEmpty())
@@ -1981,10 +2088,56 @@ void UI::actionSelect() {
 }
 
 void UI::actionCancel() {
+    // Multi-hold cancel: return all to original positions
+    if (holding_ && !heldMulti_.empty()) {
+        for (int i = 0; i < (int)heldMulti_.size(); i++)
+            setPokemonAt(heldMultiBox_, heldMultiSlots_[i], heldMultiSource_, heldMulti_[i]);
+        heldMulti_.clear();
+        heldMultiSlots_.clear();
+        holding_ = false;
+        return;
+    }
+
+    // Clear selection (when not holding)
+    if (!holding_ && !selectedSlots_.empty()) {
+        selectedSlots_.clear();
+        return;
+    }
+
+    // Single hold cancel
     if (!holding_)
         return;
 
     setPokemonAt(heldBox_, heldSlot_, heldSource_, heldPkm_);
     holding_ = false;
     heldPkm_ = Pokemon{};
+}
+
+void UI::toggleSelect() {
+    if (holding_)
+        return; // can't multi-select while holding
+
+    int slot = cursor_.slot();
+    Pokemon pkm = getPokemonAt(cursor_.box, slot, cursor_.panel);
+    if (pkm.isEmpty())
+        return;
+
+    // If selecting in a different panel/box, start fresh
+    if (!selectedSlots_.empty() &&
+        (cursor_.panel != selectedPanel_ || cursor_.box != selectedBox_)) {
+        selectedSlots_.clear();
+    }
+
+    selectedPanel_ = cursor_.panel;
+    selectedBox_ = cursor_.box;
+
+    auto it = std::find(selectedSlots_.begin(), selectedSlots_.end(), slot);
+    if (it != selectedSlots_.end())
+        selectedSlots_.erase(it);
+    else
+        selectedSlots_.push_back(slot);
+}
+
+void UI::clearSelection() {
+    selectedSlots_.clear();
 }

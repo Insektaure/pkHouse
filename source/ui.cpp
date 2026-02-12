@@ -616,7 +616,7 @@ void UI::drawGameSelectorFrame() {
     drawTextCentered("Select Game", SCREEN_W / 2, 40, COLOR_TEXT, font_);
 
     int numGames = (int)availableGames_.size();
-    constexpr int COLS = 4;
+    constexpr int COLS = 5;
     constexpr int CARD_W = 160;
     constexpr int CARD_H = 200;
     constexpr int CARD_GAP = 20;
@@ -679,7 +679,7 @@ void UI::drawGameSelectorFrame() {
         // Strip "Pokemon " prefix for brevity
         if (name.substr(0, 8) == "Pokemon ")
             name = name.substr(8);
-        if (name.length() > 16) name = name.substr(0, 15) + ".";
+        if (name.length() > 20) name = name.substr(0, 19) + ".";
         drawTextCentered(name, cardX + CARD_W / 2, cardY + ICON_SIZE + 30,
                          COLOR_TEXT, fontSmall_);
     }
@@ -699,7 +699,7 @@ void UI::handleGameSelectorInput(bool& running) {
     int numGames = (int)availableGames_.size();
     if (numGames == 0) return;
 
-    constexpr int COLS = 4;
+    constexpr int COLS = 5;
 
     auto moveGrid = [&](int dx, int dy) {
         int col = gameSelCursor_ % COLS;

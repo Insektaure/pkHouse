@@ -311,6 +311,34 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
     bool running = true;
 
     while (running) {
+        // About popup intercepts input from any screen
+        if (showAbout_) {
+            SDL_Event event;
+            while (SDL_PollEvent(&event)) {
+                if (event.type == SDL_QUIT) { running = false; break; }
+                if (event.type == SDL_CONTROLLERBUTTONDOWN) {
+                    if (event.cbutton.button == SDL_CONTROLLER_BUTTON_BACK ||
+                        event.cbutton.button == SDL_CONTROLLER_BUTTON_A)
+                        showAbout_ = false;
+                }
+                if (event.type == SDL_KEYDOWN) {
+                    if (event.key.keysym.sym == SDLK_MINUS ||
+                        event.key.keysym.sym == SDLK_b ||
+                        event.key.keysym.sym == SDLK_ESCAPE)
+                        showAbout_ = false;
+                }
+            }
+            // Draw the underlying screen, then about popup on top
+            if (screen_ == AppScreen::ProfileSelector) drawProfileSelectorFrame();
+            else if (screen_ == AppScreen::GameSelector) drawGameSelectorFrame();
+            else if (screen_ == AppScreen::BankSelector) drawBankSelectorFrame();
+            else drawFrame();
+            drawAboutPopup();
+            SDL_RenderPresent(renderer_);
+            SDL_Delay(16);
+            continue;
+        }
+
         AppScreen screenBefore = screen_;
         if (screen_ == AppScreen::ProfileSelector) {
             handleProfileSelectorInput(running);
@@ -393,7 +421,7 @@ void UI::drawProfileSelectorFrame() {
         drawTextCentered(name, cardX + CARD_W / 2, cardY + ICON_SIZE + 24, COLOR_TEXT, fontSmall_);
     }
 
-    drawStatusBar("A:Select  +:Quit");
+    drawStatusBar("A:Select  -:About  +:Quit");
 }
 
 void UI::handleProfileSelectorInput(bool& running) {
@@ -418,6 +446,9 @@ void UI::handleProfileSelectorInput(bool& running) {
                 case SDL_CONTROLLER_BUTTON_B: // Switch A = select
                     selectProfile(profileSelCursor_);
                     break;
+                case SDL_CONTROLLER_BUTTON_BACK: // - = about
+                    showAbout_ = true;
+                    break;
                 case SDL_CONTROLLER_BUTTON_START:
                     running = false;
                     break;
@@ -435,6 +466,9 @@ void UI::handleProfileSelectorInput(bool& running) {
                 case SDLK_a:
                 case SDLK_RETURN:
                     selectProfile(profileSelCursor_);
+                    break;
+                case SDLK_MINUS:
+                    showAbout_ = true;
                     break;
                 case SDLK_ESCAPE:
                     running = false;
@@ -624,13 +658,13 @@ void UI::drawGameSelectorFrame() {
     }
 
     if (selectedProfile_ >= 0) {
-        drawStatusBar("A:Select  B:Back  +:Quit");
+        drawStatusBar("A:Select  B:Back  -:About  +:Quit");
         std::string profileLabel = account_.profiles()[selectedProfile_].nickname;
         int tw = 0, th = 0;
         TTF_SizeUTF8(fontSmall_, profileLabel.c_str(), &tw, &th);
         drawText(profileLabel, SCREEN_W - tw - 15, SCREEN_H - 30, {255, 215, 0, 255}, fontSmall_);
     } else {
-        drawStatusBar("A:Select  +:Quit");
+        drawStatusBar("A:Select  -:About  +:Quit");
     }
 }
 
@@ -695,6 +729,9 @@ void UI::handleGameSelectorInput(bool& running) {
                         screen_ = AppScreen::ProfileSelector;
                     }
                     break;
+                case SDL_CONTROLLER_BUTTON_BACK: // - = about
+                    showAbout_ = true;
+                    break;
                 case SDL_CONTROLLER_BUTTON_START:
                     running = false;
                     break;
@@ -718,6 +755,9 @@ void UI::handleGameSelectorInput(bool& running) {
                 case SDLK_a:
                 case SDLK_RETURN:
                     selectGame(availableGames_[gameSelCursor_]);
+                    break;
+                case SDLK_MINUS:
+                    showAbout_ = true;
                     break;
                 case SDLK_b:
                 case SDLK_ESCAPE:
@@ -868,7 +908,7 @@ void UI::drawBankSelectorFrame() {
     }
 
     // Status bar
-    drawStatusBar("A:Open  X:New  Y:Rename  -:Delete  B:Back  +:Quit");
+    drawStatusBar("A:Open  X:New  Y:Rename  +:Delete  B:Back  -:About");
 
     // Profile | Game name (bottom right, gold)
     {
@@ -948,12 +988,12 @@ void UI::handleBankSelectorInput(bool& running) {
                     if (bankCount > 0)
                         beginTextInput(TextInputPurpose::RenameBank);
                     break;
-                case SDL_CONTROLLER_BUTTON_BACK: // - = delete
+                case SDL_CONTROLLER_BUTTON_BACK: // - = about
+                    showAbout_ = true;
+                    break;
+                case SDL_CONTROLLER_BUTTON_START: // + = delete
                     if (bankCount > 0)
                         showDeleteConfirm_ = true;
-                    break;
-                case SDL_CONTROLLER_BUTTON_START: // + = quit
-                    running = false;
                     break;
             }
         }
@@ -988,8 +1028,12 @@ void UI::handleBankSelectorInput(bool& running) {
                         beginTextInput(TextInputPurpose::RenameBank);
                     break;
                 case SDLK_DELETE:
+                case SDLK_EQUALS: // + key
                     if (bankCount > 0)
                         showDeleteConfirm_ = true;
+                    break;
+                case SDLK_MINUS:
+                    showAbout_ = true;
                     break;
                 case SDLK_b:
                 case SDLK_ESCAPE:
@@ -1514,7 +1558,7 @@ void UI::drawFrame() {
               rightActive, nullptr, &bank_, bankBox_, Panel::Bank);
 
     // Status bar
-    std::string statusMsg = "D-Pad:Move  L/R:Box  A:Pick/Place  Y:Select  B:Cancel  X:Detail  +:Menu";
+    std::string statusMsg = "D-Pad:Move  L/R:Box  A:Pick/Place  Y:Select  B:Cancel  X:Detail  +:Menu  -:About";
     if (holding_ && !heldMulti_.empty()) {
         statusMsg = "Holding " + std::to_string(heldMulti_.size()) +
                     " Pokemon  |  A:Place  B:Return";
@@ -1743,6 +1787,63 @@ void UI::drawMenuPopup() {
     drawTextCentered("A:Confirm  B:Cancel", popX + POP_W / 2, popY + POP_H - 18, COLOR_TEXT_DIM, fontSmall_);
 }
 
+void UI::drawAboutPopup() {
+    drawRect(0, 0, SCREEN_W, SCREEN_H, {0, 0, 0, 187});
+
+    constexpr int POP_W = 700;
+    constexpr int POP_H = 400;
+    int px = (SCREEN_W - POP_W) / 2;
+    int py = (SCREEN_H - POP_H) / 2;
+
+    drawRect(px, py, POP_W, POP_H, COLOR_PANEL_BG);
+    drawRectOutline(px, py, POP_W, POP_H, {0x30, 0x30, 0x55, 255}, 2);
+
+    int cx = px + POP_W / 2;
+    int y = py + 25;
+
+    // Title
+    drawTextCentered("pkHouse - Local Bank System", cx, y, COLOR_SHINY, fontLarge_);
+    y += 38;
+
+    // Version / author
+    drawTextCentered("v" APP_VERSION " - Developed by " APP_AUTHOR, cx, y, COLOR_TEXT_DIM, fontSmall_);
+    y += 22;
+    drawTextCentered("github.com/Insektaure", cx, y, COLOR_TEXT_DIM, fontSmall_);
+    y += 30;
+
+    // Divider
+    SDL_SetRenderDrawColor(renderer_, 0x30, 0x30, 0x55, 255);
+    SDL_RenderDrawLine(renderer_, px + 30, y, px + POP_W - 30, y);
+    y += 20;
+
+    // Description
+    drawTextCentered("Pokemon Box Manager for Nintendo Switch", cx, y, COLOR_TEXT, font_);
+    y += 28;
+    drawTextCentered("Move Pokemon between save files and banks.", cx, y, COLOR_TEXT, font_);
+    y += 28;
+    drawTextCentered("Supports: ZA, Scarlet/Violet, Sword/Shield, BDSP, Legends Arceus", cx, y, COLOR_TEXT_DIM, fontSmall_);
+    y += 35;
+
+    // Divider
+    SDL_SetRenderDrawColor(renderer_, 0x30, 0x30, 0x55, 255);
+    SDL_RenderDrawLine(renderer_, px + 30, y, px + POP_W - 30, y);
+    y += 20;
+
+    // Credits
+    drawTextCentered("Based on PKHeX by kwsch & PokeCrypto research.", cx, y, {0x88, 0x88, 0x88, 255}, fontSmall_);
+    y += 35;
+
+    // Controls
+    drawTextCentered("Controls", cx, y, COLOR_SELECTED, font_);
+    y += 28;
+    drawText("A: Pick/Place    B: Cancel    X: Details    Y: Multi-select", px + 50, y, COLOR_TEXT_DIM, fontSmall_);
+    y += 20;
+    drawText("L/R: Switch Box    +: Menu    -: About", px + 50, y, COLOR_TEXT_DIM, fontSmall_);
+
+    // Footer
+    drawTextCentered("Press - or B to close", cx, py + POP_H - 22, COLOR_TEXT_DIM, fontSmall_);
+}
+
 // --- Input ---
 
 void UI::handleInput(bool& running) {
@@ -1878,8 +1979,8 @@ void UI::handleInput(bool& running) {
                     showMenu_ = true;
                     menuSelection_ = 0;
                     break;
-                case SDL_CONTROLLER_BUTTON_BACK: // - (quit without saving)
-                    running = false;
+                case SDL_CONTROLLER_BUTTON_BACK: // - (about)
+                    showAbout_ = true;
                     break;
                 case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
                     switchBox(-1);
@@ -1928,7 +2029,7 @@ void UI::handleInput(bool& running) {
                     menuSelection_ = 0;
                     break;
                 case SDLK_MINUS:
-                    running = false;
+                    showAbout_ = true;
                     break;
             }
         }

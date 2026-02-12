@@ -142,6 +142,7 @@ private:
     bool   showMenu_   = false;
     int    menuSelection_ = 0;
     bool   saveNow_    = false;
+    bool   showAbout_  = false;
     bool   holding_    = false;
     Pokemon heldPkm_;
     Panel   heldSource_ = Panel::Game;
@@ -187,6 +188,7 @@ private:
     void drawFrame();
     void drawDetailPopup(const Pokemon& pkm);
     void drawMenuPopup();
+    void drawAboutPopup();
     void drawPanel(int panelX, const std::string& boxName, int boxIdx,
                    int totalBoxes, bool isActive, SaveFile* save, Bank* bank, int box,
                    Panel panelId);

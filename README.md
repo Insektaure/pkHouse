@@ -2,6 +2,20 @@
 
 A local bank system for Pokemon games on Nintendo Switch. Move Pokemon between your save files and local bank storage.
 
+## Disclaimer
+
+This software is provided "as-is" without any warranty.\
+While the app has been tested, it may contain bugs that could corrupt or damage your save files.
+
+**Use at your own risk.**
+
+The author is not responsible for any data loss or damage to your save data.
+
+This is why the automatic backup system exists — always verify your backups before making changes.
+
+If you need to restore a backup, use a save manager such as [Checkpoint](https://github.com/FlagBrew/Checkpoint) or [JKSV](https://github.com/J-D-K/JKSV) to import the backup files back onto your Switch.
+
+
 ## Supported Games
 
 | Game | Tested Version | Save Format | Boxes |
@@ -23,19 +37,28 @@ Each box holds 30 Pokemon slots.
 
 ### Profile Selection
 
-On Switch, pkHouse loads all user profiles from the system. Select your profile, then choose a game. The app detects which games have save data for the selected profile. Your profile name is shown alongside the game name in all views.
+On Switch, pkHouse loads all user profiles from the system.\
+Select your profile, then choose a game.\
+The app detects which games have save data for the selected profile.\
+Your profile name is shown alongside the game name in all views.
 
 ### Two-Panel Box Viewer
 
-The main view displays your **game save** on the left and your **bank** on the right, side by side. Navigate freely between both panels to move Pokemon back and forth.
+The main view displays your **game save** on the left and your **bank** on the right, side by side.\
+Navigate freely between both panels to move Pokemon back and forth.
 
 ### Pick & Place
 
-Press **A** on a Pokemon to pick it up, navigate to any slot (in either panel), and press **A** again to place it. Placing on an occupied slot swaps the two Pokemon. Press **B** to cancel and return the Pokemon to its original slot.
+Press **A** on a Pokemon to pick it up, navigate to any slot (in either panel), and press **A** again to place it.\
+Placing on an occupied slot swaps the two Pokemon.\
+Press **B** to cancel and return the Pokemon to its original slot.
 
 ### Multi-Select
 
-Toggle selection on individual Pokemon in the current box with **Y**. Selected slots display a numbered badge showing the pick-up order. Press **A** to pick up all selected Pokemon, then navigate to another box and press **A** to place them into the first available empty slots (in selection order). The destination must have enough empty slots for the entire group. Press **B** to cancel and return all Pokemon to their original positions.
+Toggle selection on individual Pokemon in the current box with **Y**.\
+Selected slots display a numbered badge showing the pick-up order.\
+Press **A** to pick up all selected Pokemon, then navigate to another box and press **A** to place them into the first available empty slots (in selection order).\
+The destination must have enough empty slots for the entire group. Press **B** to cancel and return all Pokemon to their original positions.
 
 Selection is cleared when switching boxes or panels.
 
@@ -51,7 +74,7 @@ Press **X** on any Pokemon to view detailed information:
 - IVs (perfect 31s highlighted in gold)
 - EVs
 
-Shiny Pokemon names are displayed in gold. Alpha Pokemon (Legends: Arceus) show a dedicated icon.
+Shiny Pokemon names are displayed in gold. Alpha Pokemon (Legends: Arceus / Z-A) show a dedicated icon.
 
 ### Bank System
 
@@ -71,7 +94,8 @@ From the bank selector you can:
 - **Rename** an existing bank
 - **Delete** a bank (with confirmation)
 
-Each bank has the same box capacity as its game family (32 or 40 boxes). The bank list shows the number of occupied slots for each bank.
+Each bank has the same box capacity as its game family (32 or 40 boxes).\
+The bank list shows the number of occupied slots for each bank.
 
 You can switch between banks from the main view via the menu, with or without saving first.
 
@@ -83,7 +107,8 @@ When loading a game save on Switch, an automatic backup is created before any mo
 backups/<profile>/<game>/<profile>_YYYY-MM-DD_HH-MM-SS/
 ```
 
-This is a full copy of the mounted save directory. The backup is only created once when initially selecting a game — switching banks does not trigger additional backups.
+This is a full copy of the mounted save directory.\
+The backup is only created once when initially selecting a game — switching banks does not trigger additional backups.
 
 ### Save Integrity
 
@@ -172,20 +197,28 @@ make clean
 
 ### Running
 
-Place `pkHouse.nro` on your Switch SD card (e.g. `sdmc:/switch/pkHouse/`) and launch via a homebrew launcher in **title takeover mode**.
+Place `pkHouse.nro` on your Switch SD card (`sdmc:/switch/pkHouse/`) and launch via a homebrew launcher in **title takeover mode**.
 
 Applet mode **is not supported** due to memory constraints.
 
-## Disclaimer
+## Screenshots
 
-This software is provided "as-is" without any warranty.\
-While the app has been tested, it may contain bugs that could corrupt or damage your save files.
-
-**Use at your own risk.**
-
-The author is not responsible for any data loss or damage to your save data. This is why the automatic backup system exists — always verify your backups before making changes.
-
-If you need to restore a backup, use a save manager such as [Checkpoint](https://github.com/FlagBrew/Checkpoint) or [JKSV](https://github.com/J-D-K/JKSV) to import the backup files back onto your Switch.
+<div align="center">
+    <img src="screenshots/001.jpg">
+    <img src="screenshots/002.jpg">
+    <img src="screenshots/003.jpg">
+    <img src="screenshots/004.jpg">
+    <img src="screenshots/005.jpg">
+    <img src="screenshots/006.jpg">
+    <img src="screenshots/007.jpg">
+    <img src="screenshots/008.jpg">
+    <img src="screenshots/009.jpg">
+    <img src="screenshots/010.jpg">
+    <img src="screenshots/011.jpg">
+    <img src="screenshots/012.jpg">
+    <img src="screenshots/013.jpg">
+    <img src="screenshots/014.jpg">
+</div>
 
 ## Credits
 

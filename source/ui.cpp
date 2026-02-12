@@ -269,15 +269,16 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
     bool running = true;
 
     while (running) {
+        AppScreen screenBefore = screen_;
         if (screen_ == AppScreen::ProfileSelector) {
             handleProfileSelectorInput(running);
-            drawProfileSelectorFrame();
+            if (screen_ == screenBefore) drawProfileSelectorFrame();
         } else if (screen_ == AppScreen::GameSelector) {
             handleGameSelectorInput(running);
-            drawGameSelectorFrame();
+            if (screen_ == screenBefore) drawGameSelectorFrame();
         } else if (screen_ == AppScreen::BankSelector) {
             handleBankSelectorInput(running);
-            drawBankSelectorFrame();
+            if (screen_ == screenBefore) drawBankSelectorFrame();
         } else {
             handleInput(running);
             if (saveNow_) {

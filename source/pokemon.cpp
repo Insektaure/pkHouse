@@ -56,7 +56,17 @@ void Pokemon::loadFromEncrypted(const uint8_t* encrypted, size_t len) {
         PokeCrypto::decryptArray9(encrypted, len, data.data());
 }
 
-void Pokemon::getEncrypted(uint8_t* outBuf) const {
+void Pokemon::refreshChecksum() {
+    // Checksum = sum of all 16-bit words from byte 8 to SIZE_STORED
+    int end = (gameType_ == GameType::LA) ? PokeCrypto::SIZE_8ASTORED : PokeCrypto::SIZE_9STORED;
+    uint16_t chk = 0;
+    for (int i = 8; i < end; i += 2)
+        chk += readU16(i);
+    writeU16(0x06, chk);
+}
+
+void Pokemon::getEncrypted(uint8_t* outBuf) {
+    refreshChecksum();
     if (gameType_ == GameType::LA)
         PokeCrypto::encryptArray8A(data.data(), PokeCrypto::SIZE_8ASTORED, outBuf);
     else

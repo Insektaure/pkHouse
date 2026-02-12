@@ -19,12 +19,16 @@ public:
     bool save(const std::string& path);
 
     Pokemon getBoxSlot(int box, int slot) const;
-    void setBoxSlot(int box, int slot, const Pokemon& pkm);
+    void setBoxSlot(int box, int slot, Pokemon pkm);
     void clearBoxSlot(int box, int slot);
 
     std::string getBoxName(int box) const;
 
     bool isLoaded() const { return loaded_; }
+
+    // Debug: verify encrypt(decrypt(file)) == file. Call right after load().
+    // Returns "OK" if round-trip matches, or a description of the mismatch.
+    std::string verifyRoundTrip();
 
     // Dynamic box count: 40 for BDSP, 32 for others
     int boxCount() const { return boxCount_; }
@@ -61,6 +65,9 @@ private:
 
     // BDSP raw save data (flat binary, no SCBlocks)
     std::vector<uint8_t> rawData_;
+
+    // Original file data for round-trip verification (cleared after verify)
+    std::vector<uint8_t> originalFileData_;
 
     bool loadSCBlock(const std::string& path);
     bool saveSCBlock(const std::string& path);

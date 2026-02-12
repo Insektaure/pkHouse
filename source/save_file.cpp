@@ -1,6 +1,7 @@
 #include "save_file.h"
 #include "md5.h"
 #include <fstream>
+#include <cstdio>
 #include <cstring>
 
 void SaveFile::setGameType(GameType game) {
@@ -66,6 +67,9 @@ bool SaveFile::loadSCBlock(const std::string& path) {
     file.read(reinterpret_cast<char*>(fileData.data()), fileSize);
     file.close();
 
+    // Save original file data for round-trip verification (decrypt modifies in-place)
+    originalFileData_ = fileData;
+
     // Decrypt into SCBlocks
     blocks_ = SwishCrypto::decrypt(fileData.data(), fileData.size());
 
@@ -90,12 +94,20 @@ bool SaveFile::loadSCBlock(const std::string& path) {
 bool SaveFile::saveSCBlock(const std::string& path) {
     std::vector<uint8_t> encrypted = SwishCrypto::encrypt(blocks_);
 
-    std::ofstream file(path, std::ios::binary);
-    if (!file.is_open())
+    // Open for in-place writing (r+b) to avoid truncating the file.
+    // The Switch save filesystem journal can break if we truncate + rewrite.
+    // Our encrypted output is always the exact same size as the original.
+    FILE* f = std::fopen(path.c_str(), "r+b");
+    if (!f) {
+        // File doesn't exist yet — create it
+        f = std::fopen(path.c_str(), "wb");
+    }
+    if (!f)
         return false;
 
-    file.write(reinterpret_cast<const char*>(encrypted.data()), encrypted.size());
-    return file.good();
+    size_t written = std::fwrite(encrypted.data(), 1, encrypted.size(), f);
+    std::fclose(f);
+    return written == encrypted.size();
 }
 
 bool SaveFile::loadBDSP(const std::string& path) {
@@ -142,12 +154,17 @@ bool SaveFile::saveBDSP(const std::string& path) {
         MD5::hash(rawData_.data(), rawData_.size(), rawData_.data() + BDSP_HASH_OFFSET);
     }
 
-    std::ofstream file(path, std::ios::binary);
-    if (!file.is_open())
+    // Open for in-place writing to avoid truncation issues on Switch save filesystem
+    FILE* f = std::fopen(path.c_str(), "r+b");
+    if (!f) {
+        f = std::fopen(path.c_str(), "wb");
+    }
+    if (!f)
         return false;
 
-    file.write(reinterpret_cast<const char*>(rawData_.data()), rawData_.size());
-    return file.good();
+    size_t written = std::fwrite(rawData_.data(), 1, rawData_.size(), f);
+    std::fclose(f);
+    return written == rawData_.size();
 }
 
 Pokemon SaveFile::getBoxSlot(int box, int slot) const {
@@ -166,7 +183,7 @@ Pokemon SaveFile::getBoxSlot(int box, int slot) const {
     return pkm;
 }
 
-void SaveFile::setBoxSlot(int box, int slot, const Pokemon& pkm) {
+void SaveFile::setBoxSlot(int box, int slot, Pokemon pkm) {
     if (!loaded_ || !boxData_)
         return;
 
@@ -174,7 +191,8 @@ void SaveFile::setBoxSlot(int box, int slot, const Pokemon& pkm) {
     if (offset + sizeBoxSlot_ > static_cast<int>(boxDataLen_))
         return;
 
-    // Encrypt and write data
+    // Ensure correct game type, refresh checksum, encrypt and write
+    pkm.gameType_ = gameType_;
     pkm.getEncrypted(boxData_ + offset);
     // Zero the gap bytes (if any)
     if (gapBoxSlot_ > 0)
@@ -189,7 +207,15 @@ void SaveFile::clearBoxSlot(int box, int slot) {
     if (offset + sizeBoxSlot_ > static_cast<int>(boxDataLen_))
         return;
 
-    std::memset(boxData_ + offset, 0, sizeBoxSlot_);
+    // Write encrypted blank PKM (matching PKHeX behavior) instead of raw zeros.
+    // A blank PKM has all-zero decrypted data; we encrypt it so the slot
+    // contains valid PokeCrypto-encrypted "empty" data.
+    Pokemon blank;
+    blank.gameType_ = gameType_;
+    blank.getEncrypted(boxData_ + offset);
+    // Zero the gap bytes (if any)
+    if (gapBoxSlot_ > 0)
+        std::memset(boxData_ + offset + (sizeBoxSlot_ - gapBoxSlot_), 0, gapBoxSlot_);
 }
 
 std::string SaveFile::getBoxName(int box) const {
@@ -226,6 +252,64 @@ std::string SaveFile::getBoxName(int box) const {
 
     if (result.empty())
         return "Box " + std::to_string(box + 1);
+
+    return result;
+}
+
+std::string SaveFile::verifyRoundTrip() {
+    if (originalFileData_.empty())
+        return "No original data";
+
+    // Re-encrypt blocks (no modifications have been made yet)
+    std::vector<uint8_t> encrypted = SwishCrypto::encrypt(blocks_);
+
+    std::string result;
+
+    if (encrypted.size() != originalFileData_.size()) {
+        result = "SIZE MISMATCH: encrypted=" + std::to_string(encrypted.size())
+               + " original=" + std::to_string(originalFileData_.size());
+    } else {
+        // Compare byte-by-byte
+        size_t diffCount = 0;
+        size_t firstDiff = 0;
+        for (size_t i = 0; i < encrypted.size(); i++) {
+            if (encrypted[i] != originalFileData_[i]) {
+                if (diffCount == 0)
+                    firstDiff = i;
+                diffCount++;
+            }
+        }
+
+        if (diffCount == 0) {
+            result = "OK";
+        } else {
+            // Check if the difference is only in the hash (last 32 bytes)
+            size_t hashStart = originalFileData_.size() - 32;
+            bool onlyHashDiffers = true;
+            for (size_t i = 0; i < hashStart; i++) {
+                if (encrypted[i] != originalFileData_[i]) {
+                    onlyHashDiffers = false;
+                    break;
+                }
+            }
+
+            char buf[256];
+            if (onlyHashDiffers) {
+                std::snprintf(buf, sizeof(buf),
+                    "HASH ONLY: payload matches but hash differs");
+            } else {
+                std::snprintf(buf, sizeof(buf),
+                    "DIFF: %zu bytes differ, first at 0x%zX (enc=0x%02X orig=0x%02X)",
+                    diffCount, firstDiff,
+                    encrypted[firstDiff], originalFileData_[firstDiff]);
+            }
+            result = buf;
+        }
+    }
+
+    // Free the original data
+    originalFileData_.clear();
+    originalFileData_.shrink_to_fit();
 
     return result;
 }

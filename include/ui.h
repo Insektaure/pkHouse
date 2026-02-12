@@ -2,6 +2,7 @@
 #include "save_file.h"
 #include "bank.h"
 #include "bank_manager.h"
+#include "account.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_image.h>
@@ -12,7 +13,7 @@
 enum class Panel { Game, Bank };
 
 // App-level screen state
-enum class AppScreen { GameSelector, BankSelector, MainView };
+enum class AppScreen { ProfileSelector, GameSelector, BankSelector, MainView };
 
 // Purpose of text input popup
 enum class TextInputPurpose { CreateBank, RenameBank };
@@ -95,9 +96,17 @@ private:
     std::string basePath_;
     std::string savePath_;
 
+    // Account manager
+    AccountManager account_;
+
+    // Profile selector state
+    int profileSelCursor_ = 0;
+    int selectedProfile_ = -1;
+
     // Game selector state
     GameType selectedGame_ = GameType::ZA;
     int gameSelCursor_ = 0;
+    std::vector<GameType> availableGames_;
 
     // Owned save + bank manager (initialized after game selection)
     SaveFile save_;
@@ -136,10 +145,16 @@ private:
     SDL_Texture* getSprite(uint16_t nationalId);
     void freeSprites();
 
+    // Profile selector
+    void drawProfileSelectorFrame();
+    void handleProfileSelectorInput(bool& running);
+    void selectProfile(int index);
+
     // Game selector
     void drawGameSelectorFrame();
     void handleGameSelectorInput(bool& running);
     void selectGame(GameType game);
+    std::string buildBackupDir(GameType game) const;
 
     // Bank selector
     void drawBankSelectorFrame();

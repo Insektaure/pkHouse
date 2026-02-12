@@ -114,8 +114,9 @@ struct Pokemon {
 
     std::string displayName() const;
 
+    void refreshChecksum();
     void loadFromEncrypted(const uint8_t* encrypted, size_t len);
-    void getEncrypted(uint8_t* outBuf) const;
+    void getEncrypted(uint8_t* outBuf);
 
     // IsAlpha: PA9 → 0x23 != 0, PA8 → 0x16 bit 5, PK8/PB8 → false
     bool isAlpha() const {

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
+#include <ctime>
 
 #ifdef __SWITCH__
 #include <switch.h>
@@ -17,7 +18,7 @@ bool UI::init() {
         return false;
     }
 
-    if (IMG_Init(IMG_INIT_PNG) == 0) {
+    if ((IMG_Init(IMG_INIT_PNG | IMG_INIT_JPG) & IMG_INIT_PNG) == 0) {
         TTF_Quit();
         SDL_Quit();
         return false;
@@ -97,6 +98,7 @@ bool UI::init() {
 }
 
 void UI::shutdown() {
+    account_.freeTextures();
     freeSprites();
     if (fontSmall_) TTF_CloseFont(fontSmall_);
     if (font_) TTF_CloseFont(font_);
@@ -181,11 +183,32 @@ void UI::showMessageAndWait(const std::string& title, const std::string& body) {
 void UI::run(const std::string& basePath, const std::string& savePath) {
     basePath_ = basePath;
     savePath_ = savePath;
+
+    // All games in menu order
+    constexpr GameType allGames[] = {
+        GameType::Sw, GameType::Sh, GameType::BD, GameType::SP,
+        GameType::LA, GameType::S, GameType::V, GameType::ZA
+    };
+
+#ifdef __SWITCH__
+    if (account_.init() && account_.loadProfiles(renderer_)) {
+        screen_ = AppScreen::ProfileSelector;
+    } else {
+        screen_ = AppScreen::GameSelector;
+        availableGames_.assign(std::begin(allGames), std::end(allGames));
+    }
+#else
     screen_ = AppScreen::GameSelector;
+    availableGames_.assign(std::begin(allGames), std::end(allGames));
+#endif
+
     bool running = true;
 
     while (running) {
-        if (screen_ == AppScreen::GameSelector) {
+        if (screen_ == AppScreen::ProfileSelector) {
+            handleProfileSelectorInput(running);
+            drawProfileSelectorFrame();
+        } else if (screen_ == AppScreen::GameSelector) {
             handleGameSelectorInput(running);
             drawGameSelectorFrame();
         } else if (screen_ == AppScreen::BankSelector) {
@@ -196,6 +219,7 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
             if (saveNow_) {
                 if (save_.isLoaded())
                     save_.save(savePath_);
+                account_.commitSave();
                 if (!activeBankPath_.empty())
                     bank_.save(activeBankPath_);
                 saveNow_ = false;
@@ -205,6 +229,135 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
         SDL_RenderPresent(renderer_);
         SDL_Delay(16);
     }
+
+    account_.unmountSave();
+    account_.shutdown();
+}
+
+// --- Profile Selector ---
+
+void UI::drawProfileSelectorFrame() {
+    SDL_SetRenderDrawColor(renderer_, COLOR_BG.r, COLOR_BG.g, COLOR_BG.b, 255);
+    SDL_RenderClear(renderer_);
+
+    drawTextCentered("Select Profile", SCREEN_W / 2, 40, COLOR_TEXT, font_);
+
+    const auto& profiles = account_.profiles();
+    int count = (int)profiles.size();
+
+    constexpr int CARD_W = 160;
+    constexpr int CARD_H = 200;
+    constexpr int CARD_GAP = 20;
+    constexpr int ICON_SIZE = 128;
+
+    int totalW = count * CARD_W + (count - 1) * CARD_GAP;
+    int startX = (SCREEN_W - totalW) / 2;
+    int startY = (SCREEN_H - CARD_H) / 2;
+
+    for (int i = 0; i < count; i++) {
+        int cardX = startX + i * (CARD_W + CARD_GAP);
+        int cardY = startY;
+
+        if (i == profileSelCursor_) {
+            drawRect(cardX, cardY, CARD_W, CARD_H, {60, 60, 80, 255});
+            drawRectOutline(cardX, cardY, CARD_W, CARD_H, COLOR_CURSOR, 3);
+        } else {
+            drawRect(cardX, cardY, CARD_W, CARD_H, COLOR_PANEL_BG);
+        }
+
+        int iconX = cardX + (CARD_W - ICON_SIZE) / 2;
+        int iconY = cardY + 10;
+
+        if (profiles[i].iconTexture) {
+            SDL_Rect dst = {iconX, iconY, ICON_SIZE, ICON_SIZE};
+            SDL_RenderCopy(renderer_, profiles[i].iconTexture, nullptr, &dst);
+        } else {
+            drawRect(iconX, iconY, ICON_SIZE, ICON_SIZE, {80, 80, 120, 255});
+            if (!profiles[i].nickname.empty()) {
+                std::string initial(1, profiles[i].nickname[0]);
+                drawTextCentered(initial, iconX + ICON_SIZE / 2, iconY + ICON_SIZE / 2,
+                                 COLOR_TEXT, font_);
+            }
+        }
+
+        std::string name = profiles[i].nickname;
+        if (name.length() > 14) name = name.substr(0, 13) + ".";
+        drawTextCentered(name, cardX + CARD_W / 2, cardY + ICON_SIZE + 24, COLOR_TEXT, fontSmall_);
+    }
+
+    drawStatusBar("A:Select  +:Quit");
+}
+
+void UI::handleProfileSelectorInput(bool& running) {
+    int count = account_.profileCount();
+    if (count == 0) return;
+
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
+        if (event.type == SDL_QUIT) {
+            running = false;
+            return;
+        }
+
+        if (event.type == SDL_CONTROLLERBUTTONDOWN) {
+            switch (event.cbutton.button) {
+                case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
+                    profileSelCursor_ = (profileSelCursor_ + count - 1) % count;
+                    break;
+                case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
+                    profileSelCursor_ = (profileSelCursor_ + 1) % count;
+                    break;
+                case SDL_CONTROLLER_BUTTON_B: // Switch A = select
+                    selectProfile(profileSelCursor_);
+                    break;
+                case SDL_CONTROLLER_BUTTON_START:
+                    running = false;
+                    break;
+            }
+        }
+
+        if (event.type == SDL_KEYDOWN) {
+            switch (event.key.keysym.sym) {
+                case SDLK_LEFT:
+                    profileSelCursor_ = (profileSelCursor_ + count - 1) % count;
+                    break;
+                case SDLK_RIGHT:
+                    profileSelCursor_ = (profileSelCursor_ + 1) % count;
+                    break;
+                case SDLK_a:
+                case SDLK_RETURN:
+                    selectProfile(profileSelCursor_);
+                    break;
+                case SDLK_ESCAPE:
+                    running = false;
+                    break;
+            }
+        }
+    }
+}
+
+void UI::selectProfile(int index) {
+    selectedProfile_ = index;
+
+    // Build filtered game list: only games with save data for this profile
+    availableGames_.clear();
+    constexpr GameType allGames[] = {
+        GameType::Sw, GameType::Sh, GameType::BD, GameType::SP,
+        GameType::LA, GameType::S, GameType::V, GameType::ZA
+    };
+    for (GameType g : allGames) {
+        if (account_.hasSaveData(index, g))
+            availableGames_.push_back(g);
+    }
+
+    if (availableGames_.empty()) {
+        showMessageAndWait("No Save Data",
+            "No supported Pokemon save data found for this profile.");
+        return;
+    }
+
+    gameSelCursor_ = 0;
+    screen_ = AppScreen::GameSelector;
 }
 
 // --- Game Selector ---
@@ -213,28 +366,16 @@ void UI::drawGameSelectorFrame() {
     SDL_SetRenderDrawColor(renderer_, COLOR_BG.r, COLOR_BG.g, COLOR_BG.b, 255);
     SDL_RenderClear(renderer_);
 
-    // Title
     drawTextCentered("Select Game", SCREEN_W / 2, 40, COLOR_TEXT, font_);
 
+    int numGames = (int)availableGames_.size();
     constexpr int ROW_W = 500;
     constexpr int ROW_H = 50;
     constexpr int ROW_GAP = 12;
-    constexpr int NUM_GAMES = 8;
     int startX = (SCREEN_W - ROW_W) / 2;
-    int startY = (SCREEN_H - ROW_H * NUM_GAMES - ROW_GAP * (NUM_GAMES - 1)) / 2;
+    int startY = (SCREEN_H - ROW_H * numGames - ROW_GAP * (numGames - 1)) / 2;
 
-    const char* labels[] = {
-        "Pokemon Sword",
-        "Pokemon Shield",
-        "Pokemon Brilliant Diamond",
-        "Pokemon Shining Pearl",
-        "Pokemon Legends: Arceus",
-        "Pokemon Scarlet",
-        "Pokemon Violet",
-        "Pokemon Legends: Z-A",
-    };
-
-    for (int i = 0; i < NUM_GAMES; i++) {
+    for (int i = 0; i < numGames; i++) {
         int rowY = startY + i * (ROW_H + ROW_GAP);
 
         if (i == gameSelCursor_) {
@@ -244,15 +385,20 @@ void UI::drawGameSelectorFrame() {
             drawRect(startX, rowY, ROW_W, ROW_H, COLOR_PANEL_BG);
         }
 
-        drawTextCentered(labels[i], SCREEN_W / 2, rowY + ROW_H / 2, COLOR_TEXT, font_);
+        drawTextCentered(gameDisplayNameOf(availableGames_[i]),
+                         SCREEN_W / 2, rowY + ROW_H / 2, COLOR_TEXT, font_);
     }
 
-    // Status bar
-    drawStatusBar("A:Select  +:Quit");
+    if (selectedProfile_ >= 0)
+        drawStatusBar("A:Select  B:Back  +:Quit");
+    else
+        drawStatusBar("A:Select  +:Quit");
 }
 
 void UI::handleGameSelectorInput(bool& running) {
-    constexpr int NUM_GAMES = 8;
+    int numGames = (int)availableGames_.size();
+    if (numGames == 0) return;
+
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
         if (event.type == SDL_QUIT) {
@@ -263,17 +409,21 @@ void UI::handleGameSelectorInput(bool& running) {
         if (event.type == SDL_CONTROLLERBUTTONDOWN) {
             switch (event.cbutton.button) {
                 case SDL_CONTROLLER_BUTTON_DPAD_UP:
-                    gameSelCursor_ = (gameSelCursor_ + NUM_GAMES - 1) % NUM_GAMES;
+                    gameSelCursor_ = (gameSelCursor_ + numGames - 1) % numGames;
                     break;
                 case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
-                    gameSelCursor_ = (gameSelCursor_ + 1) % NUM_GAMES;
+                    gameSelCursor_ = (gameSelCursor_ + 1) % numGames;
                     break;
-                case SDL_CONTROLLER_BUTTON_B: { // Switch A = select
-                    constexpr GameType games[] = {GameType::Sw, GameType::Sh, GameType::BD, GameType::SP, GameType::LA, GameType::S, GameType::V, GameType::ZA};
-                    selectGame(games[gameSelCursor_]);
+                case SDL_CONTROLLER_BUTTON_B: // Switch A = select
+                    selectGame(availableGames_[gameSelCursor_]);
                     break;
-                }
-                case SDL_CONTROLLER_BUTTON_START: // + = quit
+                case SDL_CONTROLLER_BUTTON_A: // Switch B = back
+                    if (selectedProfile_ >= 0) {
+                        account_.unmountSave();
+                        screen_ = AppScreen::ProfileSelector;
+                    }
+                    break;
+                case SDL_CONTROLLER_BUTTON_START:
                     running = false;
                     break;
             }
@@ -282,19 +432,21 @@ void UI::handleGameSelectorInput(bool& running) {
         if (event.type == SDL_KEYDOWN) {
             switch (event.key.keysym.sym) {
                 case SDLK_UP:
-                    gameSelCursor_ = (gameSelCursor_ + NUM_GAMES - 1) % NUM_GAMES;
+                    gameSelCursor_ = (gameSelCursor_ + numGames - 1) % numGames;
                     break;
                 case SDLK_DOWN:
-                    gameSelCursor_ = (gameSelCursor_ + 1) % NUM_GAMES;
+                    gameSelCursor_ = (gameSelCursor_ + 1) % numGames;
                     break;
                 case SDLK_a:
-                case SDLK_RETURN: {
-                    constexpr GameType games[] = {GameType::Sw, GameType::Sh, GameType::BD, GameType::SP, GameType::LA, GameType::S, GameType::V, GameType::ZA};
-                    selectGame(games[gameSelCursor_]);
+                case SDLK_RETURN:
+                    selectGame(availableGames_[gameSelCursor_]);
                     break;
-                }
+                case SDLK_b:
                 case SDLK_ESCAPE:
-                    running = false;
+                    if (selectedProfile_ >= 0)
+                        screen_ = AppScreen::ProfileSelector;
+                    else
+                        running = false;
                     break;
             }
         }
@@ -305,7 +457,23 @@ void UI::selectGame(GameType game) {
     selectedGame_ = game;
     save_.setGameType(game);
 
-    // Different save file names for testing; in production all are "main"
+#ifdef __SWITCH__
+    if (selectedProfile_ >= 0) {
+        std::string mountPath = account_.mountSave(selectedProfile_, game);
+        if (mountPath.empty()) {
+            showMessageAndWait("Mount Error", "Failed to mount save data.");
+            return;
+        }
+        savePath_ = mountPath + saveFileNameOf(game);
+
+        // Backup all save files
+        std::string backupDir = buildBackupDir(game);
+        AccountManager::backupSaveDir(mountPath, backupDir);
+    } else {
+        savePath_ = basePath_ + "main";
+    }
+#else
+    // PC testing: different save file names per game
     if (isSV(game))
         savePath_ = basePath_ + "main_sv";
     else if (isSwSh(game))
@@ -316,8 +484,17 @@ void UI::selectGame(GameType game) {
         savePath_ = basePath_ + "main_la";
     else
         savePath_ = basePath_ + "main";
+#endif
 
     save_.load(savePath_);
+
+    // Debug: verify encryption round-trip (encrypt(decrypt(file)) == file)
+    if (!isBDSP(game)) {
+        std::string rtResult = save_.verifyRoundTrip();
+        if (rtResult != "OK")
+            showMessageAndWait("Round-Trip Check", rtResult);
+    }
+
     bankManager_.init(basePath_, game);
 
     // Reset bank selector state
@@ -325,6 +502,29 @@ void UI::selectGame(GameType game) {
     bankSelScroll_ = 0;
 
     screen_ = AppScreen::BankSelector;
+}
+
+std::string UI::buildBackupDir(GameType game) const {
+    std::string profileName = "Unknown";
+    if (selectedProfile_ >= 0 && selectedProfile_ < account_.profileCount())
+        profileName = account_.profiles()[selectedProfile_].pathSafeName;
+
+    std::string dir = basePath_;
+    dir += profileName;
+    dir += "/";
+    dir += gamePathNameOf(game);
+    dir += "/";
+
+    time_t now = time(nullptr);
+    struct tm* t = localtime(&now);
+    char timestamp[64];
+    std::snprintf(timestamp, sizeof(timestamp), "%s_%04d-%02d-%02d_%02d-%02d-%02d",
+                  profileName.c_str(),
+                  t->tm_year + 1900, t->tm_mon + 1, t->tm_mday,
+                  t->tm_hour, t->tm_min, t->tm_sec);
+    dir += timestamp;
+    dir += "/";
+    return dir;
 }
 
 // --- Bank Selector ---
@@ -465,6 +665,7 @@ void UI::handleBankSelectorInput(bool& running) {
                         openSelectedBank();
                     break;
                 case SDL_CONTROLLER_BUTTON_A: // Switch B = back to game selector
+                    account_.unmountSave();
                     screen_ = AppScreen::GameSelector;
                     break;
                 case SDL_CONTROLLER_BUTTON_Y: // Switch X = new
@@ -519,6 +720,7 @@ void UI::handleBankSelectorInput(bool& running) {
                     break;
                 case SDLK_b:
                 case SDLK_ESCAPE:
+                    account_.unmountSave();
                     screen_ = AppScreen::GameSelector;
                     break;
             }
@@ -1256,6 +1458,7 @@ void UI::handleInput(bool& running) {
                                 bank_.save(activeBankPath_);
                             if (save_.isLoaded())
                                 save_.save(savePath_);
+                            account_.commitSave();
                             bankManager_.refresh();
                             screen_ = AppScreen::BankSelector;
                             showMenu_ = false;
@@ -1293,6 +1496,7 @@ void UI::handleInput(bool& running) {
                                 bank_.save(activeBankPath_);
                             if (save_.isLoaded())
                                 save_.save(savePath_);
+                            account_.commitSave();
                             bankManager_.refresh();
                             screen_ = AppScreen::BankSelector;
                             showMenu_ = false;

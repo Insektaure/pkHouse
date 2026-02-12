@@ -28,3 +28,33 @@ inline const char* saveFileNameOf(GameType g) {
     if (isBDSP(g)) return "SaveData.bin";
     return "main";
 }
+
+// Display name for UI
+inline const char* gameDisplayNameOf(GameType g) {
+    switch (g) {
+        case GameType::Sw: return "Pokemon Sword";
+        case GameType::Sh: return "Pokemon Shield";
+        case GameType::BD: return "Pokemon Brilliant Diamond";
+        case GameType::SP: return "Pokemon Shining Pearl";
+        case GameType::LA: return "Pokemon Legends: Arceus";
+        case GameType::S:  return "Pokemon Scarlet";
+        case GameType::V:  return "Pokemon Violet";
+        case GameType::ZA: return "Pokemon Legends: Z-A";
+    }
+    return "";
+}
+
+// Filesystem-safe game name for backup paths
+inline const char* gamePathNameOf(GameType g) {
+    switch (g) {
+        case GameType::Sw: return "Sword";
+        case GameType::Sh: return "Shield";
+        case GameType::BD: return "BrilliantDiamond";
+        case GameType::SP: return "ShiningPearl";
+        case GameType::LA: return "LegendsArceus";
+        case GameType::S:  return "Scarlet";
+        case GameType::V:  return "Violet";
+        case GameType::ZA: return "LegendsZA";
+    }
+    return "Unknown";
+}

@@ -2014,6 +2014,14 @@ void UI::handleInput(bool& running) {
 
         // While menu is open, handle menu input only
         if (showMenu_) {
+            if (event.type == SDL_CONTROLLERAXISMOTION) {
+                if (event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX ||
+                    event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY) {
+                    int16_t lx = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTX);
+                    int16_t ly = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTY);
+                    updateStick(lx, ly);
+                }
+            }
             if (event.type == SDL_CONTROLLERBUTTONDOWN) {
                 switch (event.cbutton.button) {
                     case SDL_CONTROLLER_BUTTON_DPAD_UP:
@@ -2203,12 +2211,17 @@ void UI::handleInput(bool& running) {
     }
 
     // Joystick repeat navigation
-    if ((stickDirX_ != 0 || stickDirY_ != 0) && !showMenu_ && !showDetail_) {
+    if (stickDirX_ != 0 || stickDirY_ != 0) {
         uint32_t now = SDL_GetTicks();
         uint32_t delay = stickMoved_ ? STICK_REPEAT_DELAY : STICK_INITIAL_DELAY;
         if (now - stickMoveTime_ >= delay) {
-            if (stickDirX_ != 0) moveCursor(stickDirX_, 0);
-            if (stickDirY_ != 0) moveCursor(0, stickDirY_);
+            if (showMenu_) {
+                if (stickDirY_ != 0)
+                    menuSelection_ = (menuSelection_ + (stickDirY_ > 0 ? 1 : 3)) % 4;
+            } else if (!showDetail_) {
+                if (stickDirX_ != 0) moveCursor(stickDirX_, 0);
+                if (stickDirY_ != 0) moveCursor(0, stickDirY_);
+            }
             stickMoveTime_ = now;
             stickMoved_ = true;
         }

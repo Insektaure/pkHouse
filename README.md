@@ -159,7 +159,7 @@ dkp-pacman -S switch-sdl2 switch-sdl2_image switch-sdl2_ttf switch-freetype swit
 
 ```bash
 export DEVKITPRO=/opt/devkitpro
-make
+make all
 ```
 
 Produces `pkHouse.nro`.

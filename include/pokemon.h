@@ -103,8 +103,8 @@ struct Pokemon {
     int ivSpA() const { return (iv32() >> 20) & 0x1F; }
     int ivSpD() const { return (iv32() >> 25) & 0x1F; }
 
-    // Level: 0x148 (PK8/PA9), 0x168 (PA8 — party stats only, 0 from box data)
-    uint8_t level() const { return data[gameType_ == GameType::LA ? 0x168 : 0x148]; }
+    // Level: 0x148 (PK8/PA9), calculated from EXP for PA8 (LA box data has no level)
+    uint8_t level() const;
 
     // --- Utility ---
 

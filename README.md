@@ -17,6 +17,8 @@ A local bank system for Pokemon games on Nintendo Switch. Move Pokemon between y
 
 Each box holds 30 Pokemon slots.
 
+> **Note:** Moving Pokemon between different games is not supported. Banks are separated by game family because transferred Pokemon would lack the HOME Tracker ID required for cross-game compatibility.
+
 ## Features
 
 ### Profile Selection

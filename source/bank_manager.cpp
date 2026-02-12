@@ -13,17 +13,8 @@ bool BankManager::init(const std::string& basePath, GameType game) {
     std::string banksParent = basePath + "banks/";
     mkdir(banksParent.c_str(), 0755);
 
-    // Game-specific subdirectory
-    if (isSV(game))
-        banksDir_ = banksParent + "sv/";
-    else if (isSwSh(game))
-        banksDir_ = banksParent + "swsh/";
-    else if (isBDSP(game))
-        banksDir_ = banksParent + "bdsp/";
-    else if (game == GameType::LA)
-        banksDir_ = banksParent + "la/";
-    else
-        banksDir_ = banksParent + "za/";
+    // Game-specific subdirectory (paired games share a folder)
+    banksDir_ = banksParent + bankFolderNameOf(game) + "/";
 
     mkdir(banksDir_.c_str(), 0755);
 

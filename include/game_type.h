@@ -44,6 +44,15 @@ inline const char* gameDisplayNameOf(GameType g) {
     return "";
 }
 
+// Shared bank folder name (paired games share a folder)
+inline const char* bankFolderNameOf(GameType g) {
+    if (isSwSh(g)) return "SwordShield";
+    if (isBDSP(g)) return "BDSP";
+    if (isSV(g))   return "ScarletViolet";
+    if (g == GameType::LA) return "LegendsArceus";
+    return "LegendsZA";
+}
+
 // Filesystem-safe game name for backup paths
 inline const char* gamePathNameOf(GameType g) {
     switch (g) {

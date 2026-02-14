@@ -6,6 +6,7 @@
 #include <cstring>
 #include <ctime>
 #include <sys/stat.h>
+#include <sys/statvfs.h>
 
 #ifdef __SWITCH__
 #include <switch.h>
@@ -223,6 +224,52 @@ void UI::showMessageAndWait(const std::string& title, const std::string& body) {
         SDL_RenderPresent(renderer_);
         SDL_Delay(16);
     }
+}
+
+bool UI::showConfirm(const std::string& title, const std::string& body) {
+    if (!renderer_) return false;
+
+    bool waiting = true;
+    bool result = false;
+    while (waiting) {
+        SDL_Event event;
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                waiting = false;
+            }
+            if (event.type == SDL_CONTROLLERBUTTONDOWN) {
+                if (event.cbutton.button == SDL_CONTROLLER_BUTTON_A) { // Switch A = confirm
+                    result = true;
+                    waiting = false;
+                }
+                if (event.cbutton.button == SDL_CONTROLLER_BUTTON_B) { // Switch B = cancel
+                    result = false;
+                    waiting = false;
+                }
+            }
+            if (event.type == SDL_KEYDOWN) {
+                if (event.key.keysym.sym == SDLK_a || event.key.keysym.sym == SDLK_RETURN) {
+                    result = true;
+                    waiting = false;
+                }
+                if (event.key.keysym.sym == SDLK_b || event.key.keysym.sym == SDLK_ESCAPE) {
+                    result = false;
+                    waiting = false;
+                }
+            }
+        }
+
+        SDL_SetRenderDrawColor(renderer_, COLOR_BG.r, COLOR_BG.g, COLOR_BG.b, 255);
+        SDL_RenderClear(renderer_);
+
+        drawTextCentered(title, SCREEN_W / 2, SCREEN_H / 2 - 40, COLOR_RED, fontLarge_);
+        drawTextCentered(body, SCREEN_W / 2, SCREEN_H / 2 + 15, COLOR_TEXT_DIM, font_);
+        drawTextCentered("A = Continue without backup    B = Cancel", SCREEN_W / 2, SCREEN_H / 2 + 65, COLOR_TEXT_DIM, fontSmall_);
+
+        SDL_RenderPresent(renderer_);
+        SDL_Delay(16);
+    }
+    return result;
 }
 
 void UI::showWorking(const std::string& msg) {
@@ -833,9 +880,26 @@ void UI::selectGame(GameType game) {
         }
         savePath_ = mountPath + saveFileNameOf(game);
 
-        // Backup all save files
-        std::string backupDir = buildBackupDir(game);
-        AccountManager::backupSaveDir(mountPath, backupDir);
+        // Backup all save files if enough space on SD card
+        size_t saveSize = AccountManager::dirTotalSize(mountPath);
+        struct statvfs vfs;
+        size_t freeSpace = 0;
+        if (statvfs(basePath_.c_str(), &vfs) == 0)
+            freeSpace = (size_t)vfs.f_bavail * vfs.f_frsize;
+
+        bool doBackup = true;
+        if (saveSize > 0 && freeSpace > 0 && saveSize > freeSpace) {
+            std::string msg = "Save is " + std::to_string(saveSize / (1024 * 1024)) + " MB"
+                            + " but only " + std::to_string(freeSpace / (1024 * 1024)) + " MB free.";
+            doBackup = false;
+            if (!showConfirm("Not enough space for backup", msg))
+                return;
+        }
+
+        if (doBackup) {
+            std::string backupDir = buildBackupDir(game);
+            AccountManager::backupSaveDir(mountPath, backupDir);
+        }
     } else {
         savePath_ = basePath_ + "main";
     }

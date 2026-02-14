@@ -1633,7 +1633,7 @@ void UI::drawFrame() {
               rightActive, nullptr, &bank_, bankBox_, Panel::Bank);
 
     // Status bar
-    std::string statusMsg = "D-Pad:Move  L/R:Box  A:Pick/Place  Y:Select  B:Cancel  X:Detail  +:Menu  -:About";
+    std::string statusMsg = "D-Pad:Move  L/R:Box  ZL/ZR:Box View  A:Pick/Place  Y:Select  B:Cancel  X:Detail";
     if (holding_ && !heldMulti_.empty()) {
         statusMsg = "Holding " + std::to_string(heldMulti_.size()) +
                     " Pokemon  |  A:Place  B:Return";
@@ -1677,6 +1677,11 @@ void UI::drawFrame() {
     // Menu popup overlay
     if (showMenu_) {
         drawMenuPopup();
+    }
+
+    // Box view overlay
+    if (showBoxView_) {
+        drawBoxViewOverlay();
     }
 }
 
@@ -1925,10 +1930,159 @@ void UI::drawAboutPopup() {
     y += 28;
     drawText("A: Pick/Place    B: Cancel    X: Details    Y: Multi-select", px + 50, y, COLOR_TEXT_DIM, fontSmall_);
     y += 20;
-    drawText("L/R: Switch Box    +: Menu    -: About", px + 50, y, COLOR_TEXT_DIM, fontSmall_);
+    drawText("L/R: Switch Box    ZL/ZR: Box View    +: Menu    -: About", px + 50, y, COLOR_TEXT_DIM, fontSmall_);
 
     // Footer
     drawTextCentered("Press - or B to close", cx, py + POP_H - 22, COLOR_TEXT_DIM, fontSmall_);
+}
+
+void UI::drawBoxViewOverlay() {
+    // Full-screen dark overlay
+    drawRect(0, 0, SCREEN_W, SCREEN_H, {0, 0, 0, 160});
+
+    int totalBoxes = (boxViewPanel_ == Panel::Game) ? save_.boxCount() : bank_.boxCount();
+    int usedRows = (totalBoxes + BV_COLS - 1) / BV_COLS;
+
+    // Popup dimensions
+    int gridW = BV_COLS * BV_CELL_W + (BV_COLS - 1) * BV_CELL_PAD;
+    int gridH = usedRows * BV_CELL_H + (usedRows - 1) * BV_CELL_PAD;
+    int popW = gridW + 40;
+    int popH = gridH + 80;
+
+    int popX = (SCREEN_W - popW) / 2;
+    int popY = (SCREEN_H - popH) / 2;
+
+    // Popup background
+    drawRect(popX, popY, popW, popH, COLOR_PANEL_BG);
+    drawRectOutline(popX, popY, popW, popH, COLOR_CURSOR, 2);
+
+    // Title
+    const char* title = (boxViewPanel_ == Panel::Game) ? "Save Boxes" : "Bank Boxes";
+    drawTextCentered(title, popX + popW / 2, popY + 20, COLOR_TEXT, font_);
+
+    // Grid of box cells
+    int gridStartX = popX + 20;
+    int gridStartY = popY + 45;
+    int activeBox = (boxViewPanel_ == Panel::Game) ? gameBox_ : bankBox_;
+
+    int cursorCellX = 0, cursorCellY = 0;
+
+    for (int i = 0; i < totalBoxes; i++) {
+        int col = i % BV_COLS;
+        int row = i / BV_COLS;
+        int cellX = gridStartX + col * (BV_CELL_W + BV_CELL_PAD);
+        int cellY = gridStartY + row * (BV_CELL_H + BV_CELL_PAD);
+
+        // Cell background — highlight the currently-active box
+        SDL_Color bg = (i == activeBox) ? COLOR_SLOT_FULL : COLOR_SLOT_EMPTY;
+        drawRect(cellX, cellY, BV_CELL_W, BV_CELL_H, bg);
+
+        // Cursor outline
+        if (i == boxViewCursor_) {
+            drawRectOutline(cellX, cellY, BV_CELL_W, BV_CELL_H, COLOR_CURSOR, 2);
+            cursorCellX = cellX;
+            cursorCellY = cellY;
+        }
+
+        // Box label
+        std::string boxName;
+        if (boxViewPanel_ == Panel::Game)
+            boxName = save_.getBoxName(i);
+        else
+            boxName = bank_.getBoxName(i);
+
+        std::string label = std::to_string(i + 1) + ": " + boxName;
+        if (label.length() > 16)
+            label = label.substr(0, 15) + ".";
+
+        drawTextCentered(label, cellX + BV_CELL_W / 2, cellY + BV_CELL_H / 2,
+                         COLOR_TEXT, fontSmall_);
+    }
+
+    // Footer hint
+    drawTextCentered("A:Go to Box  B:Cancel  D-Pad:Navigate",
+                     popX + popW / 2, popY + popH - 15, COLOR_TEXT_DIM, fontSmall_);
+
+    // Box preview for cursor box (drawn last so it appears on top)
+    drawBoxPreview(boxViewCursor_, cursorCellX, cursorCellY);
+}
+
+void UI::drawBoxPreview(int boxIdx, int anchorX, int anchorY) {
+    int cols = gridCols();
+    int rows = 5;
+
+    // Preview panel dimensions
+    int previewInnerW = cols * BV_MINI_CELL + (cols - 1) * BV_MINI_PAD;
+    int previewInnerH = rows * BV_MINI_CELL + (rows - 1) * BV_MINI_PAD;
+    int previewW = previewInnerW + 2 * BV_PREVIEW_PAD;
+    int previewH = previewInnerH + 2 * BV_PREVIEW_PAD + BV_PREVIEW_HDR;
+
+    // Position: prefer below the cell
+    int prevX = anchorX;
+    int prevY = anchorY + BV_CELL_H + 6;
+
+    // Clamp to screen bounds
+    if (prevX + previewW > SCREEN_W - 4)
+        prevX = SCREEN_W - 4 - previewW;
+    if (prevX < 4)
+        prevX = 4;
+    if (prevY + previewH > SCREEN_H - 4)
+        prevY = anchorY - previewH - 6; // flip above
+    if (prevY < 4)
+        prevY = 4;
+
+    // Background
+    drawRect(prevX, prevY, previewW, previewH, {40, 40, 55, 230});
+    drawRectOutline(prevX, prevY, previewW, previewH, COLOR_TEXT_DIM, 1);
+
+    // Box name header
+    std::string boxName;
+    if (boxViewPanel_ == Panel::Game)
+        boxName = save_.getBoxName(boxIdx);
+    else
+        boxName = bank_.getBoxName(boxIdx);
+    drawTextCentered(boxName, prevX + previewW / 2,
+                     prevY + BV_PREVIEW_HDR / 2 + 2, COLOR_BOX_NAME, fontSmall_);
+
+    // Mini sprite grid
+    int gridX = prevX + BV_PREVIEW_PAD;
+    int gridY = prevY + BV_PREVIEW_HDR;
+
+    for (int r = 0; r < rows; r++) {
+        for (int c = 0; c < cols; c++) {
+            int slot = r * cols + c;
+            int sx = gridX + c * (BV_MINI_CELL + BV_MINI_PAD);
+            int sy = gridY + r * (BV_MINI_CELL + BV_MINI_PAD);
+
+            Pokemon pkm;
+            if (boxViewPanel_ == Panel::Game)
+                pkm = save_.getBoxSlot(boxIdx, slot);
+            else
+                pkm = bank_.getSlot(boxIdx, slot);
+
+            if (pkm.isEmpty()) {
+                drawRect(sx, sy, BV_MINI_CELL, BV_MINI_CELL, {55, 55, 70, 180});
+            } else {
+                drawRect(sx, sy, BV_MINI_CELL, BV_MINI_CELL, {55, 70, 90, 200});
+
+                SDL_Texture* sprite = getSprite(pkm.isEgg() ? 0 : pkm.species());
+                if (sprite) {
+                    int texW, texH;
+                    SDL_QueryTexture(sprite, nullptr, nullptr, &texW, &texH);
+                    float scale = std::min(float(BV_MINI_SPRITE) / texW,
+                                           float(BV_MINI_SPRITE) / texH);
+                    int dstW = static_cast<int>(texW * scale);
+                    int dstH = static_cast<int>(texH * scale);
+                    SDL_Rect dst = {
+                        sx + (BV_MINI_CELL - dstW) / 2,
+                        sy + (BV_MINI_CELL - dstH) / 2,
+                        dstW, dstH
+                    };
+                    SDL_RenderCopy(renderer_, sprite, nullptr, &dst);
+                }
+            }
+        }
+    }
 }
 
 void UI::drawHeldOverlay() {
@@ -2014,6 +2168,43 @@ void UI::updateStick(int16_t axisX, int16_t axisY) {
 }
 
 // --- Input ---
+
+void UI::handleBoxViewInput(const SDL_Event& event) {
+    if (event.type == SDL_CONTROLLERAXISMOTION) {
+        if (event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX ||
+            event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY) {
+            int16_t lx = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTX);
+            int16_t ly = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTY);
+            updateStick(lx, ly);
+        }
+    }
+    if (event.type == SDL_CONTROLLERBUTTONDOWN) {
+        switch (event.cbutton.button) {
+            case SDL_CONTROLLER_BUTTON_B: // Switch A = confirm
+                closeBoxView(true);
+                break;
+            case SDL_CONTROLLER_BUTTON_A: // Switch B = cancel
+                closeBoxView(false);
+                break;
+            case SDL_CONTROLLER_BUTTON_DPAD_UP:    moveBoxViewCursor(0, -1); break;
+            case SDL_CONTROLLER_BUTTON_DPAD_DOWN:   moveBoxViewCursor(0, +1); break;
+            case SDL_CONTROLLER_BUTTON_DPAD_LEFT:   moveBoxViewCursor(-1, 0); break;
+            case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:  moveBoxViewCursor(+1, 0); break;
+        }
+    }
+    if (event.type == SDL_KEYDOWN) {
+        switch (event.key.keysym.sym) {
+            case SDLK_a:
+            case SDLK_RETURN: closeBoxView(true);  break;
+            case SDLK_b:
+            case SDLK_ESCAPE: closeBoxView(false); break;
+            case SDLK_UP:     moveBoxViewCursor(0, -1); break;
+            case SDLK_DOWN:   moveBoxViewCursor(0, +1); break;
+            case SDLK_LEFT:   moveBoxViewCursor(-1, 0); break;
+            case SDLK_RIGHT:  moveBoxViewCursor(+1, 0); break;
+        }
+    }
+}
 
 void UI::handleInput(bool& running) {
     SDL_Event event;
@@ -2112,6 +2303,12 @@ void UI::handleInput(bool& running) {
             continue;
         }
 
+        // While box view is open, handle its input only
+        if (showBoxView_) {
+            handleBoxViewInput(event);
+            continue;
+        }
+
         // While detail popup is open, only allow closing it
         if (showDetail_) {
             if (event.type == SDL_CONTROLLERBUTTONDOWN) {
@@ -2140,6 +2337,18 @@ void UI::handleInput(bool& running) {
                 int16_t lx = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTX);
                 int16_t ly = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTY);
                 updateStick(lx, ly);
+            }
+            if (event.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERLEFT) {
+                bool pressed = event.caxis.value > 16000;
+                if (pressed && !zlPressed_)
+                    openBoxView(Panel::Game);
+                zlPressed_ = pressed;
+            }
+            if (event.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERRIGHT) {
+                bool pressed = event.caxis.value > 16000;
+                if (pressed && !zrPressed_)
+                    openBoxView(Panel::Bank);
+                zrPressed_ = pressed;
             }
         }
 
@@ -2217,6 +2426,8 @@ void UI::handleInput(bool& running) {
                 case SDLK_MINUS:
                     showAbout_ = true;
                     break;
+                case SDLK_z: openBoxView(Panel::Game); break;
+                case SDLK_c: openBoxView(Panel::Bank); break;
             }
         }
     }
@@ -2226,7 +2437,10 @@ void UI::handleInput(bool& running) {
         uint32_t now = SDL_GetTicks();
         uint32_t delay = stickMoved_ ? STICK_REPEAT_DELAY : STICK_INITIAL_DELAY;
         if (now - stickMoveTime_ >= delay) {
-            if (showMenu_) {
+            if (showBoxView_) {
+                if (stickDirX_ != 0) moveBoxViewCursor(stickDirX_, 0);
+                if (stickDirY_ != 0) moveBoxViewCursor(0, stickDirY_);
+            } else if (showMenu_) {
                 if (stickDirY_ != 0)
                     menuSelection_ = (menuSelection_ + (stickDirY_ > 0 ? 1 : 3)) % 4;
             } else if (!showDetail_) {
@@ -2451,4 +2665,48 @@ void UI::toggleSelect() {
 
 void UI::clearSelection() {
     selectedSlots_.clear();
+}
+
+void UI::openBoxView(Panel panel) {
+    if (showDetail_ || showMenu_ || holding_)
+        return;
+    showBoxView_ = true;
+    boxViewPanel_ = panel;
+    boxViewCursor_ = (panel == Panel::Game) ? gameBox_ : bankBox_;
+}
+
+void UI::closeBoxView(bool navigate) {
+    showBoxView_ = false;
+    if (navigate) {
+        if (boxViewPanel_ == Panel::Game) {
+            gameBox_ = boxViewCursor_;
+            if (cursor_.panel == Panel::Game)
+                cursor_.box = boxViewCursor_;
+        } else {
+            bankBox_ = boxViewCursor_;
+            if (cursor_.panel == Panel::Bank)
+                cursor_.box = boxViewCursor_;
+        }
+    }
+}
+
+void UI::moveBoxViewCursor(int dx, int dy) {
+    int totalBoxes = (boxViewPanel_ == Panel::Game) ? save_.boxCount() : bank_.boxCount();
+    int col = boxViewCursor_ % BV_COLS;
+    int row = boxViewCursor_ / BV_COLS;
+    int maxRow = (totalBoxes - 1) / BV_COLS;
+
+    col += dx;
+    row += dy;
+
+    if (col < 0) col = BV_COLS - 1;
+    if (col >= BV_COLS) col = 0;
+    if (row < 0) row = maxRow;
+    if (row > maxRow) row = 0;
+
+    int newIdx = row * BV_COLS + col;
+    if (newIdx >= totalBoxes)
+        newIdx = (dx > 0 || dy > 0) ? 0 : totalBoxes - 1;
+
+    boxViewCursor_ = newIdx;
 }

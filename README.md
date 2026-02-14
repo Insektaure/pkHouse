@@ -62,6 +62,12 @@ The destination must have enough empty slots for the entire group. Press **B** t
 
 Selection is cleared when switching boxes or panels.
 
+### Box View
+
+Press **ZL** to open a box overview of all save boxes, or **ZR** for all bank boxes.\
+Navigate the grid with the D-Pad. A semi-transparent preview of the highlighted box's contents (Pokemon sprites) appears as you move.\
+Press **A** to jump directly to that box, or **B** to cancel.
+
 ### Pokemon Details
 
 Press **X** on any Pokemon to view detailed information:
@@ -157,6 +163,7 @@ The backup is only created once when initially selecting a game — switching ba
 |--------|--------|
 | D-Pad | Move cursor |
 | L / R | Switch box |
+| ZL / ZR | Box view (save / bank) |
 | A | Pick up / Place Pokemon |
 | B | Cancel / Return held Pokemon |
 | Y | Toggle multi-select |
@@ -217,6 +224,8 @@ Applet mode **is not supported** due to memory constraints.
     <img src="screenshots/009.jpg">
     <img src="screenshots/010.jpg">
     <img src="screenshots/011.jpg">
+    <img src="screenshots/011_1.jpg">
+    <img src="screenshots/011_2.jpg">
     <img src="screenshots/012.jpg">
     <img src="screenshots/013.jpg">
     <img src="screenshots/014.jpg">

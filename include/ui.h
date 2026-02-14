@@ -78,6 +78,17 @@ private:
     // Status bar
     static constexpr int STATUS_BAR_H = 40;
 
+    // Box view overlay layout
+    static constexpr int BV_COLS         = 8;
+    static constexpr int BV_CELL_W       = 140;
+    static constexpr int BV_CELL_H       = 32;
+    static constexpr int BV_CELL_PAD     = 4;
+    static constexpr int BV_MINI_SPRITE  = 32;
+    static constexpr int BV_MINI_CELL    = 36;
+    static constexpr int BV_MINI_PAD     = 2;
+    static constexpr int BV_PREVIEW_PAD  = 8;
+    static constexpr int BV_PREVIEW_HDR  = 22;
+
     // Colors
     static constexpr SDL_Color COLOR_BG         = {30, 30, 40, 255};
     static constexpr SDL_Color COLOR_PANEL_BG   = {45, 45, 60, 255};
@@ -152,6 +163,11 @@ private:
     int    menuSelection_ = 0;
     bool   saveNow_    = false;
     bool   showAbout_  = false;
+    bool   showBoxView_   = false;
+    Panel  boxViewPanel_  = Panel::Game;
+    int    boxViewCursor_ = 0;
+    bool   zlPressed_     = false;
+    bool   zrPressed_     = false;
     bool   holding_    = false;
     Pokemon heldPkm_;
 
@@ -205,6 +221,8 @@ private:
     void drawMenuPopup();
     void drawAboutPopup();
     void drawHeldOverlay();
+    void drawBoxViewOverlay();
+    void drawBoxPreview(int boxIdx, int anchorX, int anchorY);
     void drawPanel(int panelX, const std::string& boxName, int boxIdx,
                    int totalBoxes, bool isActive, SaveFile* save, Bank* bank, int box,
                    Panel panelId);
@@ -223,6 +241,10 @@ private:
     void actionCancel();
     void toggleSelect();
     void clearSelection();
+    void handleBoxViewInput(const SDL_Event& event);
+    void moveBoxViewCursor(int dx, int dy);
+    void openBoxView(Panel panel);
+    void closeBoxView(bool navigate);
 
     // Dynamic grid: LGPE has 5 columns (5x5), others have 6 (6x5)
     int gridCols() const { return isLGPE(selectedGame_) ? 5 : 6; }

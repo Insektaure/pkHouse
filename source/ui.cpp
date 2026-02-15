@@ -621,10 +621,13 @@ void UI::drawGameSelectorFrame() {
     SDL_SetRenderDrawColor(renderer_, COLOR_BG.r, COLOR_BG.g, COLOR_BG.b, 255);
     SDL_RenderClear(renderer_);
 
-    if (appletMode_)
-        drawTextCentered("Select Game (Bank Only)", SCREEN_W / 2, 40, COLOR_TEXT, font_);
-    else
+    if (appletMode_) {
+        drawTextCentered("Select Game (Bank Only)", SCREEN_W / 2, 30, COLOR_TEXT, font_);
+        drawTextCentered("Use title override mode to transfer between save and bank",
+                         SCREEN_W / 2, 55, COLOR_TEXT_DIM, fontSmall_);
+    } else {
         drawTextCentered("Select Game", SCREEN_W / 2, 40, COLOR_TEXT, font_);
+    }
 
     int numGames = (int)availableGames_.size();
     constexpr int COLS = 5;

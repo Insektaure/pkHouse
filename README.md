@@ -56,8 +56,10 @@ Press **B** to cancel and return the Pokemon to its original slot.
 
 ### Multi-Select
 
-Toggle selection on individual Pokemon in the current box with **Y**.\
-Selected slots display a numbered badge showing the pick-up order.\
+Tap **Y** on individual Pokemon to toggle selection one by one.\
+Alternatively, **hold Y and move with the D-Pad** to draw a rectangular selection across multiple slots at once.\
+Only occupied slots within the rectangle are selected. Selected slots display a numbered badge showing the pick-up order.
+
 Press **A** to pick up all selected Pokemon, then navigate to another box and press **A** to place them into the first available empty slots (in selection order).\
 The destination must have enough empty slots for the entire group. Press **B** to cancel and return all Pokemon to their original positions.
 

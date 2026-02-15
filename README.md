@@ -44,7 +44,8 @@ Your profile name is shown alongside the game name in all views.
 
 ### Two-Panel Box Viewer
 
-The main view displays your **game save** on the left and your **bank** on the right, side by side.\
+In **title override mode**, the main view displays your **game save** on the left and your **bank** on the right, side by side.\
+In **applet mode** (bank-only), both panels show **banks**, allowing bank-to-bank transfers.\
 Navigate freely between both panels to move Pokemon back and forth.
 
 ### Pick & Place
@@ -104,7 +105,8 @@ From the bank selector you can:
 Each bank has the same box capacity as its game family (32 or 40 boxes).\
 The bank list shows the number of occupied slots for each bank.
 
-You can switch between banks from the main view via the menu, with or without saving first.
+You can switch between banks from the main view via the menu. Both the save and bank are saved together before switching to prevent data inconsistency.\
+You cannot delete a bank that is currently loaded.
 
 ### Backup System
 
@@ -154,8 +156,10 @@ The backup is only created once when initially selecting a game — switching ba
 | Y | Create new bank |
 | X | Rename bank |
 | + | Delete bank |
-| B | Back to game selector |
+| B | Back (main view if bank loaded, otherwise game selector) |
 | - | About |
+
+When switching banks, the selector appears on the side being switched while the other panel remains visible.
 
 ### Main View
 
@@ -171,14 +175,24 @@ The backup is only created once when initially selecting a game — switching ba
 | + | Open menu |
 | - | About |
 
-### Menu Options
+### Menu Options (Title Override Mode)
 
 | Option | Description |
 |--------|-------------|
-| Switch Bank (With saving) | Save game and bank, return to bank selector |
-| Switch Bank (Without saving) | Return to bank selector without saving |
+| Switch Bank | Save game and bank, return to bank selector |
+| Change Game | Save everything, return to game selector |
 | Save & Quit | Save everything and exit |
 | Quit Without Saving | Exit without saving changes |
+
+### Menu Options (Applet / Bank-Only Mode)
+
+| Option | Description |
+|--------|-------------|
+| Switch Left Bank | Save both banks, switch the left bank |
+| Switch Right Bank | Save both banks, switch the right bank |
+| Change Game | Save both banks, return to game selector |
+| Save Banks | Save both banks |
+| Quit | Exit |
 
 ## Building
 
@@ -206,9 +220,10 @@ make clean
 
 ### Running
 
-Place `pkHouse.nro` on your Switch SD card (`sdmc:/switch/pkHouse/`) and launch via a homebrew launcher in **title takeover mode**.
+Place `pkHouse.nro` on your Switch SD card (`sdmc:/switch/pkHouse/`) and launch via a homebrew launcher.
 
-Applet mode **is not supported** due to memory constraints.
+- **Title override mode**: Full access — game save on the left, bank on the right. Requires launching through a game title.
+- **Applet mode** (album/homebrew menu): Bank-only access — two banks side by side for bank-to-bank transfers. Save data is not accessible in this mode. Use title override mode to transfer Pokemon between your save and a bank.
 
 ## Screenshots
 

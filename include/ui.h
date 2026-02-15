@@ -197,6 +197,14 @@ private:
     Panel         heldMultiSource_ = Panel::Game;
     int           heldMultiBox_    = 0;
 
+    // Rectangle drag-select state
+    bool   yHeld_         = false;
+    bool   yDragActive_   = false;
+    int    dragAnchorCol_  = 0;
+    int    dragAnchorRow_  = 0;
+    Panel  dragPanel_      = Panel::Game;
+    int    dragBox_         = 0;
+
     // Sprites
     SDL_Texture* getSprite(uint16_t nationalId);
     void freeSprites();
@@ -249,6 +257,9 @@ private:
     void actionCancel();
     void toggleSelect();
     void clearSelection();
+    void beginYPress();
+    void endYPress();
+    void updateDragSelection();
     void handleBoxViewInput(const SDL_Event& event);
     void moveBoxViewCursor(int dx, int dy);
     void openBoxView(Panel panel);

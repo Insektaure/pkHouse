@@ -1791,7 +1791,7 @@ void UI::drawFrame() {
     }
 
     // Status bar
-    std::string statusMsg = "D-Pad:Move  L/R:Box  ZL/ZR:Box View  A:Pick/Place  Y:Select  B:Cancel  X:Detail";
+    std::string statusMsg = "D-Pad:Move  L/R:Box  ZL/ZR:Box View  A:Pick/Place  Y:Select/Drag  B:Cancel  X:Detail";
     if (holding_ && !heldMulti_.empty()) {
         statusMsg = "Holding " + std::to_string(heldMulti_.size()) +
                     " Pokemon  |  A:Place  B:Return";
@@ -1801,9 +1801,12 @@ void UI::drawFrame() {
             statusMsg = "Holding: " + heldName + " Lv." + std::to_string(heldPkm_.level()) +
                         "  |  A:Place  B:Return";
         }
+    } else if (yHeld_ && yDragActive_) {
+        statusMsg = "Drag selecting: " + std::to_string(selectedSlots_.size()) +
+                    " slots  |  Release Y to confirm";
     } else if (!selectedSlots_.empty()) {
         statusMsg = std::to_string(selectedSlots_.size()) +
-                    " selected  |  A:Pick up  Y:Toggle  B:Clear";
+                    " selected  |  A:Pick up  Y:Toggle/Drag  B:Clear";
     }
     drawStatusBar(statusMsg);
 
@@ -2598,33 +2601,37 @@ void UI::handleInput(bool& running) {
         if (event.type == SDL_CONTROLLERBUTTONDOWN) {
             switch (event.cbutton.button) {
                 case SDL_CONTROLLER_BUTTON_B: // Switch A (right) = SDL B
-                    actionSelect();
+                    if (!yHeld_) actionSelect();
                     break;
                 case SDL_CONTROLLER_BUTTON_A: // Switch B (bottom) = SDL A
-                    actionCancel();
+                    if (!yHeld_) actionCancel();
                     break;
                 case SDL_CONTROLLER_BUTTON_Y: // Switch X (top) = SDL Y
                 {
-                    Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(gridCols()), cursor_.panel);
-                    if (!pkm.isEmpty())
-                        showDetail_ = true;
+                    if (!yHeld_) {
+                        Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(gridCols()), cursor_.panel);
+                        if (!pkm.isEmpty())
+                            showDetail_ = true;
+                    }
                     break;
                 }
                 case SDL_CONTROLLER_BUTTON_X: // Switch Y (left) = SDL X
-                    toggleSelect();
+                    beginYPress();
                     break;
                 case SDL_CONTROLLER_BUTTON_START: // + (open menu)
-                    showMenu_ = true;
-                    menuSelection_ = 0;
+                    if (!yHeld_) {
+                        showMenu_ = true;
+                        menuSelection_ = 0;
+                    }
                     break;
                 case SDL_CONTROLLER_BUTTON_BACK: // - (about)
-                    showAbout_ = true;
+                    if (!yHeld_) showAbout_ = true;
                     break;
                 case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
-                    switchBox(-1);
+                    if (!yHeld_) switchBox(-1);
                     break;
                 case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:
-                    switchBox(+1);
+                    if (!yHeld_) switchBox(+1);
                     break;
                 case SDL_CONTROLLER_BUTTON_DPAD_UP:
                     moveCursor(0, -1);
@@ -2641,6 +2648,14 @@ void UI::handleInput(bool& running) {
             }
         }
 
+        if (event.type == SDL_CONTROLLERBUTTONUP) {
+            switch (event.cbutton.button) {
+                case SDL_CONTROLLER_BUTTON_X: // Switch Y released
+                    endYPress();
+                    break;
+            }
+        }
+
         // Keyboard for PC testing
         if (event.type == SDL_KEYDOWN) {
             switch (event.key.keysym.sym) {
@@ -2649,28 +2664,38 @@ void UI::handleInput(bool& running) {
                 case SDLK_LEFT:   moveCursor(-1, 0); break;
                 case SDLK_RIGHT:  moveCursor(+1, 0); break;
                 case SDLK_a:
-                case SDLK_RETURN: actionSelect(); break;
+                case SDLK_RETURN: if (!yHeld_) actionSelect(); break;
                 case SDLK_b:
-                case SDLK_ESCAPE: actionCancel(); break;
+                case SDLK_ESCAPE: if (!yHeld_) actionCancel(); break;
                 case SDLK_x:
                 {
-                    Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(gridCols()), cursor_.panel);
-                    if (!pkm.isEmpty())
-                        showDetail_ = true;
+                    if (!yHeld_) {
+                        Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(gridCols()), cursor_.panel);
+                        if (!pkm.isEmpty())
+                            showDetail_ = true;
+                    }
                     break;
                 }
-                case SDLK_y:      toggleSelect(); break;
-                case SDLK_q:      switchBox(-1); break;
-                case SDLK_e:      switchBox(+1); break;
+                case SDLK_y:      beginYPress(); break;
+                case SDLK_q:      if (!yHeld_) switchBox(-1); break;
+                case SDLK_e:      if (!yHeld_) switchBox(+1); break;
                 case SDLK_PLUS:
-                    showMenu_ = true;
-                    menuSelection_ = 0;
+                    if (!yHeld_) {
+                        showMenu_ = true;
+                        menuSelection_ = 0;
+                    }
                     break;
                 case SDLK_MINUS:
-                    showAbout_ = true;
+                    if (!yHeld_) showAbout_ = true;
                     break;
-                case SDLK_z: if (!(appletMode_ && leftBankName_.empty())) openBoxView(Panel::Game); break;
-                case SDLK_c: openBoxView(Panel::Bank); break;
+                case SDLK_z: if (!yHeld_ && !(appletMode_ && leftBankName_.empty())) openBoxView(Panel::Game); break;
+                case SDLK_c: if (!yHeld_) openBoxView(Panel::Bank); break;
+            }
+        }
+
+        if (event.type == SDL_KEYUP) {
+            switch (event.key.keysym.sym) {
+                case SDLK_y: endYPress(); break;
             }
         }
     }
@@ -2706,6 +2731,19 @@ void UI::moveCursor(int dx, int dy) {
     cursor_.col += dx;
     cursor_.row += dy;
 
+    if (yHeld_) {
+        // During drag: clamp to same panel, no wrapping
+        if (cursor_.col < 0) cursor_.col = 0;
+        if (cursor_.col > maxCol) cursor_.col = maxCol;
+        if (cursor_.row < 0) cursor_.row = 0;
+        if (cursor_.row > 4) cursor_.row = 4;
+
+        if (cursor_.col != dragAnchorCol_ || cursor_.row != dragAnchorRow_)
+            yDragActive_ = true;
+        updateDragSelection();
+        return;
+    }
+
     // Wrap row
     if (cursor_.row < 0) cursor_.row = 4;
     if (cursor_.row > 4) cursor_.row = 0;
@@ -2736,6 +2774,8 @@ void UI::moveCursor(int dx, int dy) {
 }
 
 void UI::switchBox(int direction) {
+    if (yHeld_)
+        return;
     clearSelection();
     int maxBox;
     if (cursor_.panel == Panel::Game) {
@@ -2936,10 +2976,62 @@ void UI::toggleSelect() {
 
 void UI::clearSelection() {
     selectedSlots_.clear();
+    yHeld_ = false;
+    yDragActive_ = false;
+}
+
+void UI::beginYPress() {
+    if (holding_)
+        return;
+    if (appletMode_ && cursor_.panel == Panel::Game && leftBankName_.empty())
+        return;
+
+    yHeld_ = true;
+    yDragActive_ = false;
+    dragAnchorCol_ = cursor_.col;
+    dragAnchorRow_ = cursor_.row;
+    dragPanel_ = cursor_.panel;
+    dragBox_ = cursor_.box;
+}
+
+void UI::endYPress() {
+    if (!yHeld_)
+        return;
+
+    if (!yDragActive_) {
+        // No movement while held — treat as single tap toggle
+        yHeld_ = false;
+        toggleSelect();
+    }
+
+    yHeld_ = false;
+    yDragActive_ = false;
+}
+
+void UI::updateDragSelection() {
+    int cols = gridCols();
+    int minCol = std::min(dragAnchorCol_, cursor_.col);
+    int maxCol = std::max(dragAnchorCol_, cursor_.col);
+    int minRow = std::min(dragAnchorRow_, cursor_.row);
+    int maxRow = std::max(dragAnchorRow_, cursor_.row);
+
+    selectedSlots_.clear();
+    selectedPanel_ = dragPanel_;
+    selectedBox_ = dragBox_;
+
+    // Add slots left-to-right, top-to-bottom (only non-empty)
+    for (int r = minRow; r <= maxRow; r++) {
+        for (int c = minCol; c <= maxCol; c++) {
+            int slot = r * cols + c;
+            Pokemon pkm = getPokemonAt(dragBox_, slot, dragPanel_);
+            if (!pkm.isEmpty())
+                selectedSlots_.push_back(slot);
+        }
+    }
 }
 
 void UI::openBoxView(Panel panel) {
-    if (showDetail_ || showMenu_ || holding_)
+    if (showDetail_ || showMenu_ || holding_ || yHeld_)
         return;
     showBoxView_ = true;
     boxViewPanel_ = panel;

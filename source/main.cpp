@@ -60,15 +60,12 @@ int main(int argc, char* argv[]) {
     // Show splash screen while loading
     ui.showSplash();
 
-    // Check for applet mode on Switch — require title takeover
+    // Detect applet mode on Switch — bank-only access without save data
 #ifdef __SWITCH__
-    AppletType at = appletGetAppletType();
-    if (at != AppletType_Application && at != AppletType_SystemApplication) {
-        ui.showMessageAndWait("Applet Mode Not Supported",
-                              "Please run this app in title takeover mode.");
-        ui.shutdown();
-        romfsExit();
-        return 1;
+    {
+        AppletType at = appletGetAppletType();
+        if (at != AppletType_Application && at != AppletType_SystemApplication)
+            ui.setAppletMode(true);
     }
 #endif
 

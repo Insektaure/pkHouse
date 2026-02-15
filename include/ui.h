@@ -105,6 +105,7 @@ private:
     static constexpr SDL_Color COLOR_STATUS      = {140, 200, 140, 255};
     static constexpr SDL_Color COLOR_RED         = {220, 60, 60, 255};
     static constexpr SDL_Color COLOR_SELECTED    = {100, 200, 220, 255};
+    static constexpr SDL_Color COLOR_SELECTED_POS = {120, 200, 120, 255};
 
     // Joystick navigation
     static constexpr int16_t STICK_DEADZONE = 16000;
@@ -196,14 +197,17 @@ private:
     std::vector<int>     heldMultiSlots_;      // original slot indices (for cancel)
     Panel         heldMultiSource_ = Panel::Game;
     int           heldMultiBox_    = 0;
+    bool          positionPreserve_ = false; // place at original slot positions
 
     // Rectangle drag-select state
-    bool   yHeld_         = false;
-    bool   yDragActive_   = false;
-    int    dragAnchorCol_  = 0;
-    int    dragAnchorRow_  = 0;
-    Panel  dragPanel_      = Panel::Game;
-    int    dragBox_         = 0;
+    bool     yHeld_         = false;
+    bool     yDragActive_   = false;
+    int      dragAnchorCol_  = 0;
+    int      dragAnchorRow_  = 0;
+    Panel    dragPanel_      = Panel::Game;
+    int      dragBox_         = 0;
+    uint32_t lastYTapTime_   = 0;  // for double-tap Y detection
+    static constexpr uint32_t DOUBLE_TAP_MS = 300;
 
     // Sprites
     SDL_Texture* getSprite(uint16_t nationalId);
@@ -260,6 +264,7 @@ private:
     void beginYPress();
     void endYPress();
     void updateDragSelection();
+    void selectAll();
     void handleBoxViewInput(const SDL_Event& event);
     void moveBoxViewCursor(int dx, int dy);
     void openBoxView(Panel panel);

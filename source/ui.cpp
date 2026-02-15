@@ -1606,8 +1606,10 @@ void UI::drawSlot(int x, int y, const Pokemon& pkm, bool isCursor, int selectOrd
     drawRect(x, y, CELL_W, CELL_H, bgColor);
 
     // Selection outline (drawn before cursor so cursor overlays it)
-    if (selectOrder > 0)
-        drawRectOutline(x + 1, y + 1, CELL_W - 2, CELL_H - 2, COLOR_SELECTED, 2);
+    if (selectOrder > 0) {
+        SDL_Color selColor = positionPreserve_ ? COLOR_SELECTED_POS : COLOR_SELECTED;
+        drawRectOutline(x + 1, y + 1, CELL_W - 2, CELL_H - 2, selColor, 2);
+    }
 
     // Cursor highlight
     if (isCursor)
@@ -1690,7 +1692,8 @@ void UI::drawSlot(int x, int y, const Pokemon& pkm, bool isCursor, int selectOrd
         int cx = x + CELL_W / 2;
         int cy = y + CELL_H / 2;
 
-        SDL_SetRenderDrawColor(renderer_, COLOR_SELECTED.r, COLOR_SELECTED.g, COLOR_SELECTED.b, 220);
+        SDL_Color badgeColor = positionPreserve_ ? COLOR_SELECTED_POS : COLOR_SELECTED;
+        SDL_SetRenderDrawColor(renderer_, badgeColor.r, badgeColor.g, badgeColor.b, 220);
         for (int dy2 = -badgeR; dy2 <= badgeR; dy2++) {
             int dx2 = static_cast<int>(std::sqrt(badgeR * badgeR - dy2 * dy2));
             SDL_RenderDrawLine(renderer_, cx - dx2, cy + dy2, cx + dx2, cy + dy2);
@@ -1791,10 +1794,11 @@ void UI::drawFrame() {
     }
 
     // Status bar
-    std::string statusMsg = "D-Pad:Move  L/R:Box  ZL/ZR:Box View  A:Pick/Place  Y:Select/Drag  B:Cancel  X:Detail";
+    std::string statusMsg = "D-Pad:Move  L/R:Box  A:Pick/Place  Y:Select  YY:All  B:Cancel  X:Detail";
     if (holding_ && !heldMulti_.empty()) {
         statusMsg = "Holding " + std::to_string(heldMulti_.size()) +
-                    " Pokemon  |  A:Place  B:Return";
+                    " Pokemon" + (positionPreserve_ ? " (keep positions)" : "") +
+                    "  |  A:Place  B:Return";
     } else if (holding_) {
         std::string heldName = heldPkm_.displayName();
         if (!heldName.empty()) {
@@ -1806,7 +1810,8 @@ void UI::drawFrame() {
                     " slots  |  Release Y to confirm";
     } else if (!selectedSlots_.empty()) {
         statusMsg = std::to_string(selectedSlots_.size()) +
-                    " selected  |  A:Pick up  Y:Toggle/Drag  B:Clear";
+                    " selected" + (positionPreserve_ ? " (keep positions)" : "") +
+                    "  |  A:Pick up  Y:Toggle/Drag  B:Clear";
     }
     drawStatusBar(statusMsg);
 
@@ -2677,6 +2682,7 @@ void UI::handleInput(bool& running) {
                     break;
                 }
                 case SDLK_y:      beginYPress(); break;
+                case SDLK_t:      if (!yHeld_) selectAll(); break;
                 case SDLK_q:      if (!yHeld_) switchBox(-1); break;
                 case SDLK_e:      if (!yHeld_) switchBox(+1); break;
                 case SDLK_PLUS:
@@ -2859,31 +2865,45 @@ void UI::actionSelect() {
 
     // Multi-select place
     if (holding_ && !heldMulti_.empty()) {
-        // Count empty slots in current box
-        int slotsInBox = maxSlots();
-        int emptyCount = 0;
-        for (int s = 0; s < slotsInBox; s++) {
-            if (getPokemonAt(box, s, cursor_.panel).isEmpty())
-                emptyCount++;
-        }
-        if (emptyCount < (int)heldMulti_.size()) {
-            showMessageAndWait("Not enough space",
-                "Need " + std::to_string(heldMulti_.size()) + " empty slots, only " +
-                std::to_string(emptyCount) + " available.");
-            return;
-        }
-
-        // Fill first empty slots
-        int placed = 0;
-        for (int s = 0; s < slotsInBox && placed < (int)heldMulti_.size(); s++) {
-            if (getPokemonAt(box, s, cursor_.panel).isEmpty()) {
-                setPokemonAt(box, s, cursor_.panel, heldMulti_[placed]);
-                placed++;
+        if (positionPreserve_) {
+            // Position-preserving: place each Pokemon at its original slot index
+            for (int i = 0; i < (int)heldMulti_.size(); i++) {
+                int targetSlot = heldMultiSlots_[i];
+                if (!getPokemonAt(box, targetSlot, cursor_.panel).isEmpty()) {
+                    showMessageAndWait("Slots occupied",
+                        "Target box has Pokemon in the way. Needs matching slots empty.");
+                    return;
+                }
+            }
+            for (int i = 0; i < (int)heldMulti_.size(); i++) {
+                setPokemonAt(box, heldMultiSlots_[i], cursor_.panel, heldMulti_[i]);
+            }
+        } else {
+            // First-available: fill empty slots in order
+            int slotsInBox = maxSlots();
+            int emptyCount = 0;
+            for (int s = 0; s < slotsInBox; s++) {
+                if (getPokemonAt(box, s, cursor_.panel).isEmpty())
+                    emptyCount++;
+            }
+            if (emptyCount < (int)heldMulti_.size()) {
+                showMessageAndWait("Not enough space",
+                    "Need " + std::to_string(heldMulti_.size()) + " empty slots, only " +
+                    std::to_string(emptyCount) + " available.");
+                return;
+            }
+            int placed = 0;
+            for (int s = 0; s < slotsInBox && placed < (int)heldMulti_.size(); s++) {
+                if (getPokemonAt(box, s, cursor_.panel).isEmpty()) {
+                    setPokemonAt(box, s, cursor_.panel, heldMulti_[placed]);
+                    placed++;
+                }
             }
         }
         heldMulti_.clear();
         heldMultiSlots_.clear();
         holding_ = false;
+        positionPreserve_ = false;
         return;
     }
 
@@ -2925,12 +2945,14 @@ void UI::actionCancel() {
         heldMulti_.clear();
         heldMultiSlots_.clear();
         holding_ = false;
+        positionPreserve_ = false;
         return;
     }
 
     // Clear selection (when not holding)
     if (!holding_ && !selectedSlots_.empty()) {
         selectedSlots_.clear();
+        positionPreserve_ = false;
         return;
     }
 
@@ -2966,6 +2988,7 @@ void UI::toggleSelect() {
 
     selectedPanel_ = cursor_.panel;
     selectedBox_ = cursor_.box;
+    positionPreserve_ = false; // individual toggle = first-available mode
 
     auto it = std::find(selectedSlots_.begin(), selectedSlots_.end(), slot);
     if (it != selectedSlots_.end())
@@ -2976,6 +2999,8 @@ void UI::toggleSelect() {
 
 void UI::clearSelection() {
     selectedSlots_.clear();
+    if (!holding_)
+        positionPreserve_ = false;
     yHeld_ = false;
     yDragActive_ = false;
 }
@@ -2999,13 +3024,23 @@ void UI::endYPress() {
         return;
 
     if (!yDragActive_) {
-        // No movement while held — treat as single tap toggle
+        // No movement while held — check for double-tap
+        uint32_t now = SDL_GetTicks();
+        if (now - lastYTapTime_ <= DOUBLE_TAP_MS) {
+            // Double-tap Y = select all (position-preserving)
+            yHeld_ = false;
+            lastYTapTime_ = 0;
+            selectAll();
+        } else {
+            // Single tap — toggle individual slot
+            yHeld_ = false;
+            lastYTapTime_ = now;
+            toggleSelect();
+        }
+    } else {
         yHeld_ = false;
-        toggleSelect();
+        yDragActive_ = false;
     }
-
-    yHeld_ = false;
-    yDragActive_ = false;
 }
 
 void UI::updateDragSelection() {
@@ -3018,6 +3053,7 @@ void UI::updateDragSelection() {
     selectedSlots_.clear();
     selectedPanel_ = dragPanel_;
     selectedBox_ = dragBox_;
+    positionPreserve_ = false; // drag = first-available mode
 
     // Add slots left-to-right, top-to-bottom (only non-empty)
     for (int r = minRow; r <= maxRow; r++) {
@@ -3027,6 +3063,26 @@ void UI::updateDragSelection() {
             if (!pkm.isEmpty())
                 selectedSlots_.push_back(slot);
         }
+    }
+}
+
+void UI::selectAll() {
+    if (holding_)
+        return;
+    if (appletMode_ && cursor_.panel == Panel::Game && leftBankName_.empty())
+        return;
+
+    int slots = maxSlots();
+
+    selectedSlots_.clear();
+    selectedPanel_ = cursor_.panel;
+    selectedBox_ = cursor_.box;
+    positionPreserve_ = true;
+
+    for (int s = 0; s < slots; s++) {
+        Pokemon pkm = getPokemonAt(cursor_.box, s, cursor_.panel);
+        if (!pkm.isEmpty())
+            selectedSlots_.push_back(s);
     }
 }
 

@@ -362,11 +362,18 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
             handleInput(running);
             if (saveNow_) {
                 showWorking("Saving...");
-                if (save_.isLoaded())
-                    save_.save(savePath_);
-                account_.commitSave();
-                if (!activeBankPath_.empty())
-                    bank_.save(activeBankPath_);
+                if (appletMode_) {
+                    if (!leftBankPath_.empty())
+                        bankLeft_.save(leftBankPath_);
+                    if (!activeBankPath_.empty())
+                        bank_.save(activeBankPath_);
+                } else {
+                    if (save_.isLoaded())
+                        save_.save(savePath_);
+                    account_.commitSave();
+                    if (!activeBankPath_.empty())
+                        bank_.save(activeBankPath_);
+                }
                 saveNow_ = false;
             }
             if (screen_ == screenBefore) drawFrame();
@@ -622,7 +629,7 @@ void UI::drawGameSelectorFrame() {
     SDL_RenderClear(renderer_);
 
     if (appletMode_) {
-        drawTextCentered("Select Game (Bank Only)", SCREEN_W / 2, 30, COLOR_TEXT, font_);
+        drawTextCentered("Select Game (Dual Bank)", SCREEN_W / 2, 30, COLOR_TEXT, font_);
         drawTextCentered("Use title override mode to transfer between save and bank",
                          SCREEN_W / 2, 55, COLOR_TEXT_DIM, fontSmall_);
     } else {
@@ -708,7 +715,7 @@ void UI::drawGameSelectorFrame() {
         drawStatusBar("A:Select  B:Quit  -:About");
     }
     if (appletMode_) {
-        const char* modeLabel = "Bank Only Mode";
+        const char* modeLabel = "Dual Bank Mode";
         int tw = 0, th = 0;
         TTF_SizeUTF8(fontSmall_, modeLabel, &tw, &th);
         drawText(modeLabel, SCREEN_W - tw - 15, SCREEN_H - 30, {255, 215, 0, 255}, fontSmall_);
@@ -844,6 +851,14 @@ void UI::handleGameSelectorInput(bool& running) {
 void UI::selectGame(GameType game) {
     selectedGame_ = game;
     save_.setGameType(game);
+    bankLeft_.setGameType(game);
+
+    if (appletMode_) {
+        // Reset left bank state for new game
+        leftBankName_.clear();
+        leftBankPath_.clear();
+        bankSelTarget_ = Panel::Bank;
+    }
 
     if (!appletMode_) {
         showWorking("Loading save data...");
@@ -929,7 +944,13 @@ void UI::drawBankSelectorFrame() {
     SDL_RenderClear(renderer_);
 
     // Title
-    drawTextCentered("Select Bank", SCREEN_W / 2, 40, COLOR_TEXT, font_);
+    if (appletMode_) {
+        const char* side = (bankSelTarget_ == Panel::Game) ? "Left" : "Right";
+        drawTextCentered(std::string("Select ") + side + " Bank",
+                         SCREEN_W / 2, 40, COLOR_TEXT, font_);
+    } else {
+        drawTextCentered("Select Bank", SCREEN_W / 2, 40, COLOR_TEXT, font_);
+    }
 
     const auto& banks = bankManager_.list();
 
@@ -1061,9 +1082,14 @@ void UI::handleBankSelectorInput(bool& running) {
                     if (bankCount > 0)
                         openSelectedBank();
                     break;
-                case SDL_CONTROLLER_BUTTON_A: // Switch B = back to game selector
-                    account_.unmountSave();
-                    screen_ = AppScreen::GameSelector;
+                case SDL_CONTROLLER_BUTTON_A: // Switch B = back
+                    if (appletMode_ && !activeBankName_.empty()) {
+                        // Already have a bank loaded — return to main view
+                        screen_ = AppScreen::MainView;
+                    } else {
+                        account_.unmountSave();
+                        screen_ = AppScreen::GameSelector;
+                    }
                     break;
                 case SDL_CONTROLLER_BUTTON_Y: // Switch X = new
                     beginTextInput(TextInputPurpose::CreateBank);
@@ -1121,8 +1147,12 @@ void UI::handleBankSelectorInput(bool& running) {
                     break;
                 case SDLK_b:
                 case SDLK_ESCAPE:
-                    account_.unmountSave();
-                    screen_ = AppScreen::GameSelector;
+                    if (appletMode_ && !activeBankName_.empty()) {
+                        screen_ = AppScreen::MainView;
+                    } else {
+                        account_.unmountSave();
+                        screen_ = AppScreen::GameSelector;
+                    }
                     break;
             }
         }
@@ -1154,17 +1184,39 @@ void UI::openSelectedBank() {
     if (bankSelCursor_ < 0 || bankSelCursor_ >= (int)banks.size())
         return;
 
-    showWorking("Loading bank...");
     const std::string& name = banks[bankSelCursor_].name;
-    activeBankPath_ = bankManager_.loadBank(name, bank_);
-    bank_.setGameType(selectedGame_);
-    activeBankName_ = name;
+
+    // Prevent loading same bank on both sides in applet mode
+    if (appletMode_) {
+        if (bankSelTarget_ == Panel::Game && name == activeBankName_) {
+            showMessageAndWait("Already Open",
+                "This bank is already open on the right panel.");
+            return;
+        }
+        if (bankSelTarget_ == Panel::Bank && name == leftBankName_) {
+            showMessageAndWait("Already Open",
+                "This bank is already open on the left panel.");
+            return;
+        }
+    }
+
+    showWorking("Loading bank...");
+
+    if (appletMode_ && bankSelTarget_ == Panel::Game) {
+        leftBankPath_ = bankManager_.loadBank(name, bankLeft_);
+        bankLeft_.setGameType(selectedGame_);
+        leftBankName_ = name;
+    } else {
+        activeBankPath_ = bankManager_.loadBank(name, bank_);
+        bank_.setGameType(selectedGame_);
+        activeBankName_ = name;
+    }
+
     screen_ = AppScreen::MainView;
 
     // Reset main view state
     cursor_ = Cursor{};
-    if (appletMode_)
-        cursor_.panel = Panel::Bank;
+    cursor_.panel = bankSelTarget_;
     gameBox_ = 0;
     bankBox_ = 0;
     showDetail_ = false;
@@ -1648,19 +1700,33 @@ void UI::drawFrame() {
         bankBox_ = cursor_.box;
 
     if (appletMode_) {
-        // Applet mode: bank panel only, centered
-        int panelX = (SCREEN_W - PANEL_W) / 2;
-        std::string bankBoxName = activeBankName_ + " - " + bank_.getBoxName(bankBox_);
-        drawPanel(panelX, bankBoxName, bankBox_, bank_.boxCount(),
-                  true, nullptr, &bank_, bankBox_, Panel::Bank);
+        // Dual-bank mode: two bank panels side by side
+        bool leftActive = (cursor_.panel == Panel::Game);
+        bool rightActive = (cursor_.panel == Panel::Bank);
+
+        // Left panel: left bank
+        std::string leftBoxName;
+        if (!leftBankName_.empty())
+            leftBoxName = leftBankName_ + " - " + bankLeft_.getBoxName(gameBox_);
+        else
+            leftBoxName = "(No Bank Loaded)";
+        drawPanel(PANEL_X_L, leftBoxName, gameBox_,
+                  leftBankName_.empty() ? 1 : bankLeft_.boxCount(),
+                  leftActive, nullptr,
+                  leftBankName_.empty() ? nullptr : &bankLeft_,
+                  gameBox_, Panel::Game);
+
+        // Right panel: right bank
+        std::string rightBoxName = activeBankName_ + " - " + bank_.getBoxName(bankBox_);
+        drawPanel(PANEL_X_R, rightBoxName, bankBox_, bank_.boxCount(),
+                  rightActive, nullptr, &bank_, bankBox_, Panel::Bank);
     } else {
-        // Left panel: Game boxes
+        // Normal mode: save + bank
         bool leftActive = (cursor_.panel == Panel::Game);
         std::string gameBoxName = save_.getBoxName(gameBox_);
         drawPanel(PANEL_X_L, gameBoxName, gameBox_, save_.boxCount(),
                   leftActive, &save_, nullptr, gameBox_, Panel::Game);
 
-        // Right panel: Bank boxes — include active bank name in header
         bool rightActive = (cursor_.panel == Panel::Bank);
         std::string bankBoxName = activeBankName_ + " - " + bank_.getBoxName(bankBox_);
         drawPanel(PANEL_X_R, bankBoxName, bankBox_, bank_.boxCount(),
@@ -1668,11 +1734,7 @@ void UI::drawFrame() {
     }
 
     // Status bar
-    std::string statusMsg;
-    if (appletMode_)
-        statusMsg = "D-Pad:Move  L/R:Box  ZL/ZR:Box View  A:Pick/Place  Y:Select  X:Detail";
-    else
-        statusMsg = "D-Pad:Move  L/R:Box  ZL/ZR:Box View  A:Pick/Place  Y:Select  B:Cancel  X:Detail";
+    std::string statusMsg = "D-Pad:Move  L/R:Box  ZL/ZR:Box View  A:Pick/Place  Y:Select  B:Cancel  X:Detail";
     if (holding_ && !heldMulti_.empty()) {
         statusMsg = "Holding " + std::to_string(heldMulti_.size()) +
                     " Pokemon  |  A:Place  B:Return";
@@ -1692,7 +1754,7 @@ void UI::drawFrame() {
     {
         std::string label;
         if (appletMode_)
-            label = "Bank Only | ";
+            label = "Dual Bank | ";
         else if (selectedProfile_ >= 0 && selectedProfile_ < account_.profileCount())
             label = account_.profiles()[selectedProfile_].nickname + " | ";
         label += gameDisplayNameOf(selectedGame_);
@@ -1882,23 +1944,34 @@ void UI::drawMenuPopup() {
     // Semi-transparent dark overlay
     drawRect(0, 0, SCREEN_W, SCREEN_H, {0, 0, 0, 160});
 
-    int menuCount = appletMode_ ? 3 : 4;
+    // Menu items differ by mode
+    // Applet: Switch Left Bank / Switch Right Bank / Change Game / Save Banks / Quit
+    // Normal: Switch Bank (Save) / Switch Bank (No save) / Save & Quit / Quit
+    int menuCount = appletMode_ ? 5 : 4;
 
-    // Popup rect centered
-    constexpr int POP_W = 350;
-    int POP_H = appletMode_ ? 220 : 260;
+    constexpr int POP_W = 380;
+    int POP_H = appletMode_ ? 296 : 260;
     int popX = (SCREEN_W - POP_W) / 2;
     int popY = (SCREEN_H - POP_H) / 2;
 
     drawRect(popX, popY, POP_W, POP_H, COLOR_PANEL_BG);
     drawRectOutline(popX, popY, POP_W, POP_H, COLOR_CURSOR, 2);
 
-    // Title
     drawTextCentered("Menu", popX + POP_W / 2, popY + 22, COLOR_TEXT, font_);
 
-    // Menu options
-    const char* labelsNormal[] = {"Switch Bank (With saving)", "Switch Bank (Without saving)", "Save & Quit", "Quit Without Saving"};
-    const char* labelsApplet[] = {"Switch Bank (Save)", "Switch Bank (No save)", "Quit"};
+    const char* labelsNormal[] = {
+        "Switch Bank (With saving)",
+        "Switch Bank (Without saving)",
+        "Save & Quit",
+        "Quit Without Saving"
+    };
+    const char* labelsApplet[] = {
+        "Switch Left Bank",
+        "Switch Right Bank",
+        "Change Game",
+        "Save Banks",
+        "Quit"
+    };
     const char** labels = appletMode_ ? labelsApplet : labelsNormal;
     int rowH = 36;
     int startY = popY + 50;
@@ -1912,7 +1985,6 @@ void UI::drawMenuPopup() {
         drawTextCentered(labels[i], popX + POP_W / 2, rowY + (rowH - 4) / 2, COLOR_TEXT, font_);
     }
 
-    // Hint at bottom
     drawTextCentered("A:Confirm  B:Cancel", popX + POP_W / 2, popY + POP_H - 18, COLOR_TEXT_DIM, fontSmall_);
 }
 
@@ -1985,7 +2057,11 @@ void UI::drawBoxViewOverlay() {
     // Full-screen dark overlay
     drawRect(0, 0, SCREEN_W, SCREEN_H, {0, 0, 0, 160});
 
-    int totalBoxes = (boxViewPanel_ == Panel::Game) ? save_.boxCount() : bank_.boxCount();
+    int totalBoxes;
+    if (boxViewPanel_ == Panel::Game)
+        totalBoxes = (appletMode_) ? bankLeft_.boxCount() : save_.boxCount();
+    else
+        totalBoxes = bank_.boxCount();
     int usedRows = (totalBoxes + BV_COLS - 1) / BV_COLS;
 
     // Popup dimensions
@@ -2002,7 +2078,11 @@ void UI::drawBoxViewOverlay() {
     drawRectOutline(popX, popY, popW, popH, COLOR_CURSOR, 2);
 
     // Title
-    const char* title = (boxViewPanel_ == Panel::Game) ? "Save Boxes" : "Bank Boxes";
+    const char* title;
+    if (boxViewPanel_ == Panel::Game)
+        title = appletMode_ ? "Left Bank Boxes" : "Save Boxes";
+    else
+        title = "Bank Boxes";
     drawTextCentered(title, popX + popW / 2, popY + 20, COLOR_TEXT, font_);
 
     // Grid of box cells
@@ -2032,7 +2112,7 @@ void UI::drawBoxViewOverlay() {
         // Box label
         std::string boxName;
         if (boxViewPanel_ == Panel::Game)
-            boxName = save_.getBoxName(i);
+            boxName = (appletMode_) ? bankLeft_.getBoxName(i) : save_.getBoxName(i);
         else
             boxName = bank_.getBoxName(i);
 
@@ -2083,7 +2163,7 @@ void UI::drawBoxPreview(int boxIdx, int anchorX, int anchorY) {
     // Box name header
     std::string boxName;
     if (boxViewPanel_ == Panel::Game)
-        boxName = save_.getBoxName(boxIdx);
+        boxName = (appletMode_) ? bankLeft_.getBoxName(boxIdx) : save_.getBoxName(boxIdx);
     else
         boxName = bank_.getBoxName(boxIdx);
     drawTextCentered(boxName, prevX + previewW / 2,
@@ -2101,7 +2181,8 @@ void UI::drawBoxPreview(int boxIdx, int anchorX, int anchorY) {
 
             Pokemon pkm;
             if (boxViewPanel_ == Panel::Game)
-                pkm = save_.getBoxSlot(boxIdx, slot);
+                pkm = (appletMode_) ? bankLeft_.getSlot(boxIdx, slot)
+                                    : save_.getBoxSlot(boxIdx, slot);
             else
                 pkm = bank_.getSlot(boxIdx, slot);
 
@@ -2261,20 +2342,50 @@ void UI::handleInput(bool& running) {
 
         // While menu is open, handle menu input only
         if (showMenu_) {
-            int menuCount = appletMode_ ? 3 : 4;
+            int menuCount = appletMode_ ? 5 : 4;
             auto menuConfirm = [&]() {
                 if (appletMode_) {
-                    // Applet menu: 0=Switch Bank (Save), 1=Switch Bank (No save), 2=Quit
+                    // 0=Switch Left Bank, 1=Switch Right Bank, 2=Change Game,
+                    // 3=Save Banks, 4=Quit
                     if (menuSelection_ == 0) {
-                        showWorking("Saving bank...");
+                        showWorking("Saving banks...");
+                        if (!leftBankPath_.empty())
+                            bankLeft_.save(leftBankPath_);
                         if (!activeBankPath_.empty())
                             bank_.save(activeBankPath_);
                         bankManager_.refresh();
+                        bankSelTarget_ = Panel::Game;
                         screen_ = AppScreen::BankSelector;
                         showMenu_ = false;
                     } else if (menuSelection_ == 1) {
+                        showWorking("Saving banks...");
+                        if (!leftBankPath_.empty())
+                            bankLeft_.save(leftBankPath_);
+                        if (!activeBankPath_.empty())
+                            bank_.save(activeBankPath_);
                         bankManager_.refresh();
+                        bankSelTarget_ = Panel::Bank;
                         screen_ = AppScreen::BankSelector;
+                        showMenu_ = false;
+                    } else if (menuSelection_ == 2) {
+                        // Change Game — save banks and return to game selector
+                        showWorking("Saving banks...");
+                        if (!leftBankPath_.empty())
+                            bankLeft_.save(leftBankPath_);
+                        if (!activeBankPath_.empty())
+                            bank_.save(activeBankPath_);
+                        leftBankName_.clear();
+                        leftBankPath_.clear();
+                        activeBankName_.clear();
+                        activeBankPath_.clear();
+                        screen_ = AppScreen::GameSelector;
+                        showMenu_ = false;
+                    } else if (menuSelection_ == 3) {
+                        showWorking("Saving banks...");
+                        if (!leftBankPath_.empty())
+                            bankLeft_.save(leftBankPath_);
+                        if (!activeBankPath_.empty())
+                            bank_.save(activeBankPath_);
                         showMenu_ = false;
                     } else {
                         running = false;
@@ -2384,7 +2495,8 @@ void UI::handleInput(bool& running) {
             }
             if (event.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERLEFT) {
                 bool pressed = event.caxis.value > 16000;
-                if (pressed && !zlPressed_ && !appletMode_)
+                if (pressed && !zlPressed_ &&
+                    !(appletMode_ && leftBankName_.empty()))
                     openBoxView(Panel::Game);
                 zlPressed_ = pressed;
             }
@@ -2470,7 +2582,7 @@ void UI::handleInput(bool& running) {
                 case SDLK_MINUS:
                     showAbout_ = true;
                     break;
-                case SDLK_z: if (!appletMode_) openBoxView(Panel::Game); break;
+                case SDLK_z: if (!(appletMode_ && leftBankName_.empty())) openBoxView(Panel::Game); break;
                 case SDLK_c: openBoxView(Panel::Bank); break;
             }
         }
@@ -2487,7 +2599,7 @@ void UI::handleInput(bool& running) {
             } else if (showMenu_) {
                 if (stickDirY_ != 0)
                 {
-                    int mc = appletMode_ ? 3 : 4;
+                    int mc = appletMode_ ? 5 : 4;
                     menuSelection_ = (menuSelection_ + (stickDirY_ > 0 ? 1 : mc - 1)) % mc;
                 }
             } else if (!showDetail_) {
@@ -2513,7 +2625,8 @@ void UI::moveCursor(int dx, int dy) {
 
     // Horizontal: crossing panel boundary
     if (cursor_.col < 0) {
-        if (cursor_.panel == Panel::Bank && !appletMode_) {
+        if (cursor_.panel == Panel::Bank &&
+            !(appletMode_ && leftBankName_.empty())) {
             cursor_.panel = Panel::Game;
             cursor_.col = maxCol;
             cursor_.box = gameBox_;
@@ -2522,7 +2635,7 @@ void UI::moveCursor(int dx, int dy) {
         }
     }
     if (cursor_.col > maxCol) {
-        if (cursor_.panel == Panel::Game && !appletMode_) {
+        if (cursor_.panel == Panel::Game) {
             cursor_.panel = Panel::Bank;
             cursor_.col = 0;
             cursor_.box = bankBox_;
@@ -2537,7 +2650,15 @@ void UI::moveCursor(int dx, int dy) {
 
 void UI::switchBox(int direction) {
     clearSelection();
-    int maxBox = (cursor_.panel == Panel::Game) ? save_.boxCount() : bank_.boxCount();
+    int maxBox;
+    if (cursor_.panel == Panel::Game) {
+        if (appletMode_)
+            maxBox = leftBankName_.empty() ? 1 : bankLeft_.boxCount();
+        else
+            maxBox = save_.boxCount();
+    } else {
+        maxBox = bank_.boxCount();
+    }
     cursor_.box += direction;
     if (cursor_.box < 0) cursor_.box = maxBox - 1;
     if (cursor_.box >= maxBox) cursor_.box = 0;
@@ -2549,27 +2670,41 @@ void UI::switchBox(int direction) {
 }
 
 Pokemon UI::getPokemonAt(int box, int slot, Panel panel) const {
-    if (panel == Panel::Game)
+    if (panel == Panel::Game) {
+        if (appletMode_)
+            return bankLeft_.getSlot(box, slot);
         return save_.getBoxSlot(box, slot);
-    else
-        return bank_.getSlot(box, slot);
+    }
+    return bank_.getSlot(box, slot);
 }
 
 void UI::setPokemonAt(int box, int slot, Panel panel, const Pokemon& pkm) {
-    if (panel == Panel::Game)
-        save_.setBoxSlot(box, slot, pkm);
-    else
+    if (panel == Panel::Game) {
+        if (appletMode_)
+            bankLeft_.setSlot(box, slot, pkm);
+        else
+            save_.setBoxSlot(box, slot, pkm);
+    } else {
         bank_.setSlot(box, slot, pkm);
+    }
 }
 
 void UI::clearPokemonAt(int box, int slot, Panel panel) {
-    if (panel == Panel::Game)
-        save_.clearBoxSlot(box, slot);
-    else
+    if (panel == Panel::Game) {
+        if (appletMode_)
+            bankLeft_.clearSlot(box, slot);
+        else
+            save_.clearBoxSlot(box, slot);
+    } else {
         bank_.clearSlot(box, slot);
+    }
 }
 
 void UI::actionSelect() {
+    // Block interaction on empty left panel in applet mode
+    if (appletMode_ && cursor_.panel == Panel::Game && leftBankName_.empty())
+        return;
+
     int box = cursor_.box;
     int slot = cursor_.slot(gridCols());
 
@@ -2688,6 +2823,8 @@ void UI::actionCancel() {
 void UI::toggleSelect() {
     if (holding_)
         return; // can't multi-select while holding
+    if (appletMode_ && cursor_.panel == Panel::Game && leftBankName_.empty())
+        return;
 
     int slot = cursor_.slot(gridCols());
     Pokemon pkm = getPokemonAt(cursor_.box, slot, cursor_.panel);
@@ -2738,7 +2875,12 @@ void UI::closeBoxView(bool navigate) {
 }
 
 void UI::moveBoxViewCursor(int dx, int dy) {
-    int totalBoxes = (boxViewPanel_ == Panel::Game) ? save_.boxCount() : bank_.boxCount();
+    int totalBoxes;
+    if (boxViewPanel_ == Panel::Game) {
+        totalBoxes = (appletMode_) ? bankLeft_.boxCount() : save_.boxCount();
+    } else {
+        totalBoxes = bank_.boxCount();
+    }
     int col = boxViewCursor_ % BV_COLS;
     int row = boxViewCursor_ / BV_COLS;
     int maxRow = (totalBoxes - 1) / BV_COLS;

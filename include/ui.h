@@ -144,6 +144,12 @@ private:
     std::string activeBankName_;
     std::string activeBankPath_;
 
+    // Dual-bank state (applet mode: left panel shows bankLeft_ instead of save_)
+    Bank bankLeft_;
+    std::string leftBankName_;
+    std::string leftBankPath_;
+    Panel bankSelTarget_ = Panel::Bank;
+
     // Bank selector state
     int  bankSelCursor_ = 0;
     int  bankSelScroll_ = 0;

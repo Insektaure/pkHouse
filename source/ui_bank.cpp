@@ -200,6 +200,10 @@ void UI::handleBankSelectorInput(bool& running) {
                     if (!activeBankName_.empty()) {
                         // Already have a bank loaded — return to main view
                         screen_ = AppScreen::MainView;
+                        if (appletMode_ && leftBankName_.empty()) {
+                            cursor_ = Cursor{};
+                            cursor_.panel = Panel::Bank;
+                        }
                     } else {
                         account_.unmountSave();
                         screen_ = AppScreen::GameSelector;
@@ -263,6 +267,10 @@ void UI::handleBankSelectorInput(bool& running) {
                 case SDLK_ESCAPE:
                     if (!activeBankName_.empty()) {
                         screen_ = AppScreen::MainView;
+                        if (appletMode_ && leftBankName_.empty()) {
+                            cursor_ = Cursor{};
+                            cursor_.panel = Panel::Bank;
+                        }
                     } else {
                         account_.unmountSave();
                         screen_ = AppScreen::GameSelector;

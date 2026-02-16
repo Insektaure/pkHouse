@@ -224,6 +224,7 @@ private:
     void handleGameSelectorInput(bool& running);
     void selectGame(GameType game);
     std::string buildBackupDir(GameType game) const;
+    bool saveBankFiles();
 
     // Bank selector
     void drawBankSelectorFrame();

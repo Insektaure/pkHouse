@@ -28,6 +28,7 @@ public:
     int boxCount() const { return boxCount_; }
     int slotsPerBox() const { return slotsPerBox_; }
     int totalSlots() const { return boxCount_ * slotsPerBox_; }
+    size_t fileSize() const { return HEADER_SIZE + (size_t)totalSlots() * slotSize_; }
 
 private:
     // File format:

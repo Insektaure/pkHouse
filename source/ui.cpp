@@ -12,6 +12,12 @@
 #include <switch.h>
 #endif
 
+static std::string formatSize(size_t bytes) {
+    if (bytes >= 1024 * 1024)
+        return std::to_string(bytes / (1024 * 1024)) + " MB";
+    return std::to_string(bytes / 1024) + " KB";
+}
+
 bool UI::init() {
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER) < 0)
         return false;
@@ -399,20 +405,18 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
         } else {
             handleInput(running);
             if (saveNow_) {
-                showWorking("Saving...");
-                if (appletMode_) {
-                    if (!leftBankPath_.empty())
-                        bankLeft_.save(leftBankPath_);
-                    if (!activeBankPath_.empty())
-                        bank_.save(activeBankPath_);
+                if (!saveBankFiles()) {
+                    saveNow_ = false;
+                    running = true;
                 } else {
-                    if (save_.isLoaded())
-                        save_.save(savePath_);
-                    account_.commitSave();
-                    if (!activeBankPath_.empty())
-                        bank_.save(activeBankPath_);
+                    if (!appletMode_) {
+                        showWorking("Saving...");
+                        if (save_.isLoaded())
+                            save_.save(savePath_);
+                        account_.commitSave();
+                    }
+                    saveNow_ = false;
                 }
-                saveNow_ = false;
             }
             if (screen_ == screenBefore) drawFrame();
         }
@@ -918,13 +922,8 @@ void UI::selectGame(GameType game) {
             if (statvfs("sdmc:/", &vfs) == 0) {
                 size_t freeSpace = (size_t)vfs.f_bavail * vfs.f_bsize;
                 if (freeSpace < saveSize * 2) {
-                    auto fmt = [](size_t bytes) -> std::string {
-                        if (bytes >= 1024 * 1024)
-                            return std::to_string(bytes / (1024 * 1024)) + " MB";
-                        return std::to_string(bytes / 1024) + " KB";
-                    };
-                    std::string msg = "Free: " + fmt(freeSpace) +
-                        ", Need: " + fmt(saveSize) +
+                    std::string msg = "Free: " + formatSize(freeSpace) +
+                        ", Need: " + formatSize(saveSize) +
                         ".  Continue without backup?";
                     if (!showConfirmDialog("Low Storage", msg)) {
                         account_.unmountSave();
@@ -1005,6 +1004,17 @@ std::string UI::buildBackupDir(GameType game) const {
     dir += timestamp;
     dir += "/";
     return dir;
+}
+
+bool UI::saveBankFiles() {
+    showWorking("Saving...");
+    if (appletMode_) {
+        if (!leftBankPath_.empty()) bankLeft_.save(leftBankPath_);
+        if (!activeBankPath_.empty()) bank_.save(activeBankPath_);
+    } else {
+        if (!activeBankPath_.empty()) bank_.save(activeBankPath_);
+    }
+    return true;
 }
 
 // --- Bank Selector ---
@@ -1553,6 +1563,23 @@ void UI::handleTextInputEvent(const SDL_Event& event) {
 
 void UI::commitTextInput(const std::string& text) {
     if (textInputPurpose_ == TextInputPurpose::CreateBank) {
+#ifdef __SWITCH__
+        {
+            Bank temp;
+            temp.setGameType(selectedGame_);
+            size_t needed = temp.fileSize();
+            struct statvfs vfs;
+            if (statvfs("sdmc:/", &vfs) == 0) {
+                size_t freeSpace = (size_t)vfs.f_bavail * vfs.f_bsize;
+                if (freeSpace < needed) {
+                    showMessageAndWait("Not Enough Space",
+                        "Free: " + formatSize(freeSpace) +
+                        ", Need: " + formatSize(needed));
+                    return;
+                }
+            }
+        }
+#endif
         showWorking("Creating bank...");
         if (bankManager_.createBank(text)) {
             // Select the newly created bank
@@ -2493,11 +2520,7 @@ void UI::handleInput(bool& running) {
                                 "Create another bank first.");
                             return;
                         }
-                        showWorking("Saving banks...");
-                        if (!leftBankPath_.empty())
-                            bankLeft_.save(leftBankPath_);
-                        if (!activeBankPath_.empty())
-                            bank_.save(activeBankPath_);
+                        if (!saveBankFiles()) { showMenu_ = false; return; }
                         bankManager_.refresh();
                         bankSelTarget_ = Panel::Game;
                         screen_ = AppScreen::BankSelector;
@@ -2513,22 +2536,14 @@ void UI::handleInput(bool& running) {
                                 "Create another bank first.");
                             return;
                         }
-                        showWorking("Saving banks...");
-                        if (!leftBankPath_.empty())
-                            bankLeft_.save(leftBankPath_);
-                        if (!activeBankPath_.empty())
-                            bank_.save(activeBankPath_);
+                        if (!saveBankFiles()) { showMenu_ = false; return; }
                         bankManager_.refresh();
                         bankSelTarget_ = Panel::Bank;
                         screen_ = AppScreen::BankSelector;
                         showMenu_ = false;
                     } else if (menuSelection_ == 2) {
                         // Change Game — save banks and return to game selector
-                        showWorking("Saving banks...");
-                        if (!leftBankPath_.empty())
-                            bankLeft_.save(leftBankPath_);
-                        if (!activeBankPath_.empty())
-                            bank_.save(activeBankPath_);
+                        if (!saveBankFiles()) { showMenu_ = false; return; }
                         leftBankName_.clear();
                         leftBankPath_.clear();
                         activeBankName_.clear();
@@ -2536,11 +2551,7 @@ void UI::handleInput(bool& running) {
                         screen_ = AppScreen::GameSelector;
                         showMenu_ = false;
                     } else if (menuSelection_ == 3) {
-                        showWorking("Saving banks...");
-                        if (!leftBankPath_.empty())
-                            bankLeft_.save(leftBankPath_);
-                        if (!activeBankPath_.empty())
-                            bank_.save(activeBankPath_);
+                        saveBankFiles();
                         showMenu_ = false;
                     } else {
                         running = false;
@@ -2548,9 +2559,8 @@ void UI::handleInput(bool& running) {
                 } else {
                     // 0=Switch Bank, 1=Change Game, 2=Save & Quit, 3=Quit Without Saving
                     if (menuSelection_ == 0) {
+                        if (!saveBankFiles()) { showMenu_ = false; return; }
                         showWorking("Saving...");
-                        if (!activeBankPath_.empty())
-                            bank_.save(activeBankPath_);
                         if (save_.isLoaded())
                             save_.save(savePath_);
                         account_.commitSave();
@@ -2559,9 +2569,8 @@ void UI::handleInput(bool& running) {
                         showMenu_ = false;
                     } else if (menuSelection_ == 1) {
                         // Change Game — save everything, unmount, go to game selector
+                        if (!saveBankFiles()) { showMenu_ = false; return; }
                         showWorking("Saving...");
-                        if (!activeBankPath_.empty())
-                            bank_.save(activeBankPath_);
                         if (save_.isLoaded())
                             save_.save(savePath_);
                         account_.commitSave();

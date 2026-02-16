@@ -39,6 +39,9 @@ public:
     // Copy all files from a save directory to a backup directory.
     static bool backupSaveDir(const std::string& srcDir, const std::string& dstDir);
 
+    // Recursively calculate total size of all files in a directory.
+    static size_t calculateDirSize(const std::string& dir);
+
     const std::vector<UserProfile>& profiles() const { return users_; }
     int profileCount() const { return (int)users_.size(); }
 

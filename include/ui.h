@@ -36,6 +36,7 @@ public:
     void shutdown();
     void showSplash();
     void showMessageAndWait(const std::string& title, const std::string& body);
+    bool showConfirmDialog(const std::string& title, const std::string& body);
     void showWorking(const std::string& msg);
     void setAppletMode(bool mode) { appletMode_ = mode; }
     void run(const std::string& basePath, const std::string& savePath);

@@ -6,6 +6,7 @@
 #include <cstring>
 #include <ctime>
 #include <sys/stat.h>
+#include <sys/statvfs.h>
 
 #ifdef __SWITCH__
 #include <switch.h>
@@ -223,6 +224,43 @@ void UI::showMessageAndWait(const std::string& title, const std::string& body) {
         SDL_RenderPresent(renderer_);
         SDL_Delay(16);
     }
+}
+
+bool UI::showConfirmDialog(const std::string& title, const std::string& body) {
+    if (!renderer_) return false;
+
+    int result = -1; // -1 = undecided
+    while (result < 0) {
+        SDL_Event event;
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                result = 0;
+            }
+            if (event.type == SDL_CONTROLLERBUTTONDOWN) {
+                if (event.cbutton.button == SDL_CONTROLLER_BUTTON_B) // Switch A = confirm
+                    result = 1;
+                if (event.cbutton.button == SDL_CONTROLLER_BUTTON_A) // Switch B = cancel
+                    result = 0;
+            }
+            if (event.type == SDL_KEYDOWN) {
+                if (event.key.keysym.sym == SDLK_a || event.key.keysym.sym == SDLK_RETURN)
+                    result = 1;
+                if (event.key.keysym.sym == SDLK_b || event.key.keysym.sym == SDLK_ESCAPE)
+                    result = 0;
+            }
+        }
+
+        SDL_SetRenderDrawColor(renderer_, COLOR_BG.r, COLOR_BG.g, COLOR_BG.b, 255);
+        SDL_RenderClear(renderer_);
+
+        drawTextCentered(title, SCREEN_W / 2, SCREEN_H / 2 - 40, COLOR_RED, fontLarge_);
+        drawTextCentered(body, SCREEN_W / 2, SCREEN_H / 2 + 15, COLOR_TEXT_DIM, font_);
+        drawTextCentered("A: Continue   B: Cancel", SCREEN_W / 2, SCREEN_H / 2 + 65, COLOR_TEXT_DIM, fontSmall_);
+
+        SDL_RenderPresent(renderer_);
+        SDL_Delay(16);
+    }
+    return result == 1;
 }
 
 void UI::showWorking(const std::string& msg) {
@@ -872,9 +910,41 @@ void UI::selectGame(GameType game) {
             }
             savePath_ = mountPath + saveFileNameOf(game);
 
-            // Backup all save files
-            std::string backupDir = buildBackupDir(game);
-            AccountManager::backupSaveDir(mountPath, backupDir);
+            // Check space and backup save files
+            size_t saveSize = AccountManager::calculateDirSize(mountPath);
+            bool doBackup = true;
+
+            struct statvfs vfs;
+            if (statvfs("sdmc:/", &vfs) == 0) {
+                size_t freeSpace = (size_t)vfs.f_bavail * vfs.f_bsize;
+                if (freeSpace < saveSize * 2) {
+                    auto fmt = [](size_t bytes) -> std::string {
+                        if (bytes >= 1024 * 1024)
+                            return std::to_string(bytes / (1024 * 1024)) + " MB";
+                        return std::to_string(bytes / 1024) + " KB";
+                    };
+                    std::string msg = "Free: " + fmt(freeSpace) +
+                        ", Need: " + fmt(saveSize) +
+                        ".  Continue without backup?";
+                    if (!showConfirmDialog("Low Storage", msg)) {
+                        account_.unmountSave();
+                        return;
+                    }
+                    doBackup = false;
+                }
+            }
+
+            if (doBackup) {
+                std::string backupDir = buildBackupDir(game);
+                bool ok = AccountManager::backupSaveDir(mountPath, backupDir);
+                if (!ok) {
+                    if (!showConfirmDialog("Backup Failed",
+                            "Could not back up save data.\nContinue without backup?")) {
+                        account_.unmountSave();
+                        return;
+                    }
+                }
+            }
         } else {
             savePath_ = basePath_ + "main";
         }

@@ -106,7 +106,7 @@ Banks are local `.bin` files stored per game family. Paired games share the same
 
 From the bank selector you can:
 
-- **Create** a new bank (up to 32-character name)
+- **Create** a new bank (up to 32-character name). On Switch, available SD card space is checked before creating — if there isn't enough room, an error is shown.
 - **Rename** an existing bank
 - **Delete** a bank (with confirmation)
 
@@ -126,6 +126,8 @@ backups/<profile>/<game>/<profile>_YYYY-MM-DD_HH-MM-SS/
 
 This is a full copy of the mounted save directory.\
 The backup is only created once when initially selecting a game — switching banks does not trigger additional backups.
+
+Before backing up, the app checks available SD card space. If there isn't enough free space (2x the save size), a warning is shown with the option to continue without a backup or cancel. If the backup itself fails, you'll see a similar prompt before proceeding.
 
 ### Save Integrity
 

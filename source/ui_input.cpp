@@ -80,8 +80,13 @@ void UI::handleInput(bool& running) {
                             if (b.name != activeBankName_) avail++;
                         if (avail == 0) {
                             showMenu_ = false;
-                            showMessageAndWait("No Banks Available",
-                                "Create another bank first.");
+                            if (!showConfirmDialog("No Banks Available",
+                                    "Create a new bank?")) return;
+                            if (!saveBankFiles()) return;
+                            bankManager_.refresh();
+                            bankSelTarget_ = Panel::Game;
+                            screen_ = AppScreen::BankSelector;
+                            beginTextInput(TextInputPurpose::CreateBank);
                             return;
                         }
                         if (!saveBankFiles()) { showMenu_ = false; return; }
@@ -96,8 +101,13 @@ void UI::handleInput(bool& running) {
                             if (b.name != leftBankName_) avail++;
                         if (avail == 0) {
                             showMenu_ = false;
-                            showMessageAndWait("No Banks Available",
-                                "Create another bank first.");
+                            if (!showConfirmDialog("No Banks Available",
+                                    "Create a new bank?")) return;
+                            if (!saveBankFiles()) return;
+                            bankManager_.refresh();
+                            bankSelTarget_ = Panel::Bank;
+                            screen_ = AppScreen::BankSelector;
+                            beginTextInput(TextInputPurpose::CreateBank);
                             return;
                         }
                         if (!saveBankFiles()) { showMenu_ = false; return; }

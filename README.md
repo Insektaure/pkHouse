@@ -114,6 +114,7 @@ Each bank has the same box capacity as its game family (32 or 40 boxes).\
 The bank list shows the number of occupied slots for each bank.
 
 You can switch between banks from the main view via the menu. Both the save and bank are saved together before switching to prevent data inconsistency.\
+If no other bank is available when switching, the app offers to create a new one directly.\
 You cannot delete a bank that is currently loaded.
 
 ### Backup System

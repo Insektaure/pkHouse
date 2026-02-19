@@ -3,6 +3,7 @@
 #include "bank.h"
 #include "bank_manager.h"
 #include "account.h"
+#include "theme.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_image.h>
@@ -91,22 +92,14 @@ private:
     static constexpr int BV_PREVIEW_PAD  = 8;
     static constexpr int BV_PREVIEW_HDR  = 22;
 
-    // Colors
-    static constexpr SDL_Color COLOR_BG         = {30, 30, 40, 255};
-    static constexpr SDL_Color COLOR_PANEL_BG   = {45, 45, 60, 255};
-    static constexpr SDL_Color COLOR_SLOT_EMPTY  = {60, 60, 80, 255};
-    static constexpr SDL_Color COLOR_SLOT_FULL   = {70, 90, 120, 255};
-    static constexpr SDL_Color COLOR_SLOT_EGG    = {90, 80, 70, 255};
-    static constexpr SDL_Color COLOR_CURSOR      = {255, 220, 50, 255};
-    static constexpr SDL_Color COLOR_TEXT        = {240, 240, 240, 255};
-    static constexpr SDL_Color COLOR_TEXT_DIM    = {160, 160, 170, 255};
-    static constexpr SDL_Color COLOR_SHINY       = {255, 215, 0, 255};
-    static constexpr SDL_Color COLOR_BOX_NAME    = {200, 200, 220, 255};
-    static constexpr SDL_Color COLOR_ARROW       = {180, 180, 200, 255};
-    static constexpr SDL_Color COLOR_STATUS      = {140, 200, 140, 255};
-    static constexpr SDL_Color COLOR_RED         = {220, 60, 60, 255};
-    static constexpr SDL_Color COLOR_SELECTED    = {100, 200, 220, 255};
-    static constexpr SDL_Color COLOR_SELECTED_POS = {120, 200, 120, 255};
+    // Theme
+    int themeIndex_ = 0;
+    const Theme* theme_ = nullptr;
+    const Theme& T() const { return *theme_; }
+
+    // Theme selector state
+    bool showThemeSelector_ = false;
+    int  themeSelCursor_    = 0;
 
     // Joystick navigation
     static constexpr int16_t STICK_DEADZONE = 16000;
@@ -242,6 +235,7 @@ private:
     void drawDetailPopup(const Pokemon& pkm);
     void drawMenuPopup();
     void drawAboutPopup();
+    void drawThemeSelectorPopup();
     void drawHeldOverlay();
     void drawBoxViewOverlay();
     void drawBoxPreview(int boxIdx, int anchorX, int anchorY);

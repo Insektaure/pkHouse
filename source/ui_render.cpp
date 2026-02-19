@@ -82,18 +82,18 @@ void UI::drawTextCentered(const std::string& text, int cx, int cy, SDL_Color col
 }
 
 void UI::drawStatusBar(const std::string& msg) {
-    drawRect(0, SCREEN_H - 35, SCREEN_W, 35, {20, 20, 30, 255});
-    drawText(msg, 15, SCREEN_H - 30, COLOR_STATUS, fontSmall_);
+    drawRect(0, SCREEN_H - 35, SCREEN_W, 35, T().statusBarBg);
+    drawText(msg, 15, SCREEN_H - 30, T().statusText, fontSmall_);
 }
 
 void UI::drawSlot(int x, int y, const Pokemon& pkm, bool isCursor, int selectOrder) {
     SDL_Color bgColor;
     if (pkm.isEmpty()) {
-        bgColor = COLOR_SLOT_EMPTY;
+        bgColor = T().slotEmpty;
     } else if (pkm.isEgg()) {
-        bgColor = COLOR_SLOT_EGG;
+        bgColor = T().slotEgg;
     } else {
-        bgColor = COLOR_SLOT_FULL;
+        bgColor = T().slotFull;
     }
 
     // Slot background
@@ -101,13 +101,13 @@ void UI::drawSlot(int x, int y, const Pokemon& pkm, bool isCursor, int selectOrd
 
     // Selection outline (drawn before cursor so cursor overlays it)
     if (selectOrder > 0) {
-        SDL_Color selColor = positionPreserve_ ? COLOR_SELECTED_POS : COLOR_SELECTED;
+        SDL_Color selColor = positionPreserve_ ? T().selectedPos : T().selected;
         drawRectOutline(x + 1, y + 1, CELL_W - 2, CELL_H - 2, selColor, 2);
     }
 
     // Cursor highlight
     if (isCursor)
-        drawRectOutline(x, y, CELL_W, CELL_H, COLOR_CURSOR, 3);
+        drawRectOutline(x, y, CELL_W, CELL_H, T().cursor, 3);
 
     if (!pkm.isEmpty()) {
         uint16_t species = pkm.species();
@@ -146,21 +146,21 @@ void UI::drawSlot(int x, int y, const Pokemon& pkm, bool isCursor, int selectOrd
         if (name.length() > 10)
             name = name.substr(0, 9) + ".";
 
-        SDL_Color nameColor = pkm.isShiny() ? COLOR_SHINY : COLOR_TEXT;
+        SDL_Color nameColor = pkm.isShiny() ? T().shiny : T().text;
         drawTextCentered(name, x + CELL_W / 2, y + SPRITE_SIZE + 10, nameColor, fontSmall_);
 
         // Level at the bottom
         if (!pkm.isEgg()) {
             std::string lvlStr = "Lv." + std::to_string(pkm.level());
-            drawTextCentered(lvlStr, x + CELL_W / 2, y + CELL_H - 12, COLOR_TEXT_DIM, fontSmall_);
+            drawTextCentered(lvlStr, x + CELL_W / 2, y + CELL_H - 12, T().textDim, fontSmall_);
         }
 
         // Gender indicator (top-right corner)
         uint8_t g = pkm.gender();
         if (g == 0)
-            drawText("\xe2\x99\x82", x + CELL_W - 16, y + 2, {100, 150, 255, 255}, fontSmall_);
+            drawText("\xe2\x99\x82", x + CELL_W - 16, y + 2, T().genderMale, fontSmall_);
         else if (g == 1)
-            drawText("\xe2\x99\x80", x + CELL_W - 16, y + 2, {255, 130, 150, 255}, fontSmall_);
+            drawText("\xe2\x99\x80", x + CELL_W - 16, y + 2, T().genderFemale, fontSmall_);
 
         // Shiny / Alpha icon (top-left corner)
         SDL_Texture* statusIcon = nullptr;
@@ -186,13 +186,13 @@ void UI::drawSlot(int x, int y, const Pokemon& pkm, bool isCursor, int selectOrd
         int cx = x + CELL_W / 2;
         int cy = y + CELL_H / 2;
 
-        SDL_Color badgeColor = positionPreserve_ ? COLOR_SELECTED_POS : COLOR_SELECTED;
+        SDL_Color badgeColor = positionPreserve_ ? T().selectedPos : T().selected;
         SDL_SetRenderDrawColor(renderer_, badgeColor.r, badgeColor.g, badgeColor.b, 220);
         for (int dy2 = -badgeR; dy2 <= badgeR; dy2++) {
             int dx2 = static_cast<int>(std::sqrt(badgeR * badgeR - dy2 * dy2));
             SDL_RenderDrawLine(renderer_, cx - dx2, cy + dy2, cx + dx2, cy + dy2);
         }
-        drawTextCentered(num, cx, cy, {0, 0, 0, 255}, font_);
+        drawTextCentered(num, cx, cy, T().textOnBadge, font_);
     }
 }
 
@@ -200,14 +200,14 @@ void UI::drawPanel(int panelX, const std::string& boxName, int boxIdx,
                    int totalBoxes, bool isActive, SaveFile* save, Bank* bank, int box,
                    Panel panelId) {
     // Panel background
-    drawRect(panelX, 0, PANEL_W, SCREEN_H - 35, COLOR_PANEL_BG);
+    drawRect(panelX, 0, PANEL_W, SCREEN_H - 35, T().panelBg);
 
     // Box name header with arrows
-    SDL_Color hdrColor = isActive ? COLOR_BOX_NAME : COLOR_TEXT_DIM;
-    drawTextCentered("<", panelX + 20, BOX_HDR_Y + BOX_HDR_H / 2, COLOR_ARROW, font_);
+    SDL_Color hdrColor = isActive ? T().boxName : T().textDim;
+    drawTextCentered("<", panelX + 20, BOX_HDR_Y + BOX_HDR_H / 2, T().arrow, font_);
     drawTextCentered(boxName + " (" + std::to_string(boxIdx + 1) + "/" + std::to_string(totalBoxes) + ")",
                      panelX + PANEL_W / 2, BOX_HDR_Y + BOX_HDR_H / 2, hdrColor, font_);
-    drawTextCentered(">", panelX + PANEL_W - 20, BOX_HDR_Y + BOX_HDR_H / 2, COLOR_ARROW, font_);
+    drawTextCentered(">", panelX + PANEL_W - 20, BOX_HDR_Y + BOX_HDR_H / 2, T().arrow, font_);
 
     // Grid: dynamic columns x 5 rows
     int cols = gridCols();
@@ -244,7 +244,7 @@ void UI::drawPanel(int panelX, const std::string& boxName, int boxIdx,
 
 void UI::drawFrame() {
     // Clear screen
-    SDL_SetRenderDrawColor(renderer_, COLOR_BG.r, COLOR_BG.g, COLOR_BG.b, 255);
+    SDL_SetRenderDrawColor(renderer_, T().bg.r, T().bg.g, T().bg.b, 255);
     SDL_RenderClear(renderer_);
 
     // Sync cursor box to the active panel
@@ -319,7 +319,7 @@ void UI::drawFrame() {
         label += gameDisplayNameOf(selectedGame_);
         int tw = 0, th = 0;
         TTF_SizeUTF8(fontSmall_, label.c_str(), &tw, &th);
-        drawText(label, SCREEN_W - tw - 15, SCREEN_H - 30, {255, 215, 0, 255}, fontSmall_);
+        drawText(label, SCREEN_W - tw - 15, SCREEN_H - 30, T().goldLabel, fontSmall_);
     }
 
     // Held Pokemon overlay (draw on top of panels, under popups)
@@ -349,7 +349,7 @@ void UI::drawFrame() {
 
 void UI::drawDetailPopup(const Pokemon& pkm) {
     // Semi-transparent dark overlay
-    drawRect(0, 0, SCREEN_W, SCREEN_H, {0, 0, 0, 160});
+    drawRect(0, 0, SCREEN_W, SCREEN_H, T().overlay);
 
     // Popup rect centered
     constexpr int POP_W = 900;
@@ -357,8 +357,8 @@ void UI::drawDetailPopup(const Pokemon& pkm) {
     int popX = (SCREEN_W - POP_W) / 2;
     int popY = (SCREEN_H - POP_H) / 2;
 
-    drawRect(popX, popY, POP_W, POP_H, COLOR_PANEL_BG);
-    drawRectOutline(popX, popY, POP_W, POP_H, COLOR_CURSOR, 2);
+    drawRect(popX, popY, POP_W, POP_H, T().panelBg);
+    drawRectOutline(popX, popY, POP_W, POP_H, T().cursor, 2);
 
     // Large sprite (128x128) top-left
     constexpr int LARGE_SPRITE = 128;
@@ -404,13 +404,13 @@ void UI::drawDetailPopup(const Pokemon& pkm) {
 
     // Species name + level + gender
     std::string specName = SpeciesName::get(pkm.species());
-    SDL_Color nameColor = pkm.isShiny() ? COLOR_SHINY : COLOR_TEXT;
+    SDL_Color nameColor = pkm.isShiny() ? T().shiny : T().text;
     drawText(specName, infoX, infoY, nameColor, font_);
 
     std::string lvlStr = "  Lv." + std::to_string(pkm.level());
     int nameW = 0, nameH = 0;
     TTF_SizeUTF8(font_, specName.c_str(), &nameW, &nameH);
-    drawText(lvlStr, infoX + nameW, infoY, COLOR_TEXT, font_);
+    drawText(lvlStr, infoX + nameW, infoY, T().text, font_);
 
     // Gender symbol
     uint8_t g = pkm.gender();
@@ -419,45 +419,45 @@ void UI::drawDetailPopup(const Pokemon& pkm) {
     TTF_SizeUTF8(font_, lvlStr.c_str(), &lvlW, nullptr);
     afterLvl += lvlW + 4;
     if (g == 0)
-        drawText("\xe2\x99\x82", afterLvl, infoY, {100, 150, 255, 255}, font_);
+        drawText("\xe2\x99\x82", afterLvl, infoY, T().genderMale, font_);
     else if (g == 1)
-        drawText("\xe2\x99\x80", afterLvl, infoY, {255, 130, 150, 255}, font_);
+        drawText("\xe2\x99\x80", afterLvl, infoY, T().genderFemale, font_);
 
     infoY += 30;
 
     // National dex ID
     std::string idStr = "National #" + std::to_string(pkm.species());
-    drawText(idStr, infoX, infoY, COLOR_TEXT_DIM, font_);
+    drawText(idStr, infoX, infoY, T().textDim, font_);
     infoY += 28;
 
     // OT + TID
     std::string otStr = "OT: " + pkm.otName() + " | TID: " + std::to_string(pkm.tid());
-    drawText(otStr, infoX, infoY, COLOR_TEXT_DIM, font_);
+    drawText(otStr, infoX, infoY, T().textDim, font_);
     infoY += 28;
 
     // Nature
     std::string natureStr = "Nature: " + NatureName::get(pkm.nature());
-    drawText(natureStr, infoX, infoY, COLOR_TEXT_DIM, font_);
+    drawText(natureStr, infoX, infoY, T().textDim, font_);
     infoY += 28;
 
     // Ability
     std::string abilityStr = "Ability: " + AbilityName::get(pkm.ability());
-    drawText(abilityStr, infoX, infoY, COLOR_TEXT_DIM, font_);
+    drawText(abilityStr, infoX, infoY, T().textDim, font_);
 
     // --- Below sprite: Moves ---
     int movesX = popX + 30;
     int movesY = sprY + LARGE_SPRITE + 20;
 
-    drawText("Moves", movesX, movesY, COLOR_TEXT, font_);
+    drawText("Moves", movesX, movesY, T().text, font_);
     movesY += 30;
 
     uint16_t moves[4] = {pkm.move1(), pkm.move2(), pkm.move3(), pkm.move4()};
     for (int i = 0; i < 4; i++) {
         if (moves[i] != 0) {
             std::string moveStr = "- " + MoveName::get(moves[i]);
-            drawText(moveStr, movesX + 10, movesY, COLOR_TEXT_DIM, font_);
+            drawText(moveStr, movesX + 10, movesY, T().textDim, font_);
         } else {
-            drawText("- ---", movesX + 10, movesY, COLOR_TEXT_DIM, font_);
+            drawText("- ---", movesX + 10, movesY, T().textDim, font_);
         }
         movesY += 26;
     }
@@ -467,7 +467,7 @@ void UI::drawDetailPopup(const Pokemon& pkm) {
     int statsY = popY + 20;
 
     // IVs header
-    drawText("IVs", statsX, statsY, COLOR_TEXT, font_);
+    drawText("IVs", statsX, statsY, T().text, font_);
     statsY += 30;
 
     const char* statLabels[] = {"HP", "Atk", "Def", "SpA", "SpD", "Spe"};
@@ -475,7 +475,7 @@ void UI::drawDetailPopup(const Pokemon& pkm) {
 
     for (int i = 0; i < 6; i++) {
         std::string line = std::string(statLabels[i]) + ": " + std::to_string(ivs[i]);
-        SDL_Color ivColor = (ivs[i] == 31) ? COLOR_SHINY : COLOR_TEXT_DIM;
+        SDL_Color ivColor = (ivs[i] == 31) ? T().shiny : T().textDim;
         drawText(line, statsX + 10, statsY, ivColor, font_);
         statsY += 26;
     }
@@ -483,48 +483,50 @@ void UI::drawDetailPopup(const Pokemon& pkm) {
     statsY += 10;
 
     // EVs header
-    drawText("EVs", statsX, statsY, COLOR_TEXT, font_);
+    drawText("EVs", statsX, statsY, T().text, font_);
     statsY += 30;
 
     int evs[] = {pkm.evHp(), pkm.evAtk(), pkm.evDef(), pkm.evSpA(), pkm.evSpD(), pkm.evSpe()};
 
     for (int i = 0; i < 6; i++) {
         std::string line = std::string(statLabels[i]) + ": " + std::to_string(evs[i]);
-        SDL_Color evColor = (evs[i] > 0) ? COLOR_TEXT : COLOR_TEXT_DIM;
+        SDL_Color evColor = (evs[i] > 0) ? T().text : T().textDim;
         drawText(line, statsX + 10, statsY, evColor, font_);
         statsY += 26;
     }
 
     // Close hint at bottom
-    drawTextCentered("B / X: Close", popX + POP_W / 2, popY + POP_H - 20, COLOR_TEXT_DIM, fontSmall_);
+    drawTextCentered("B / X: Close", popX + POP_W / 2, popY + POP_H - 20, T().textDim, fontSmall_);
 }
 
 void UI::drawMenuPopup() {
     // Semi-transparent dark overlay
-    drawRect(0, 0, SCREEN_W, SCREEN_H, {0, 0, 0, 160});
+    drawRect(0, 0, SCREEN_W, SCREEN_H, T().overlay);
 
     // Menu items differ by mode
-    // Applet: Switch Left Bank / Switch Right Bank / Change Game / Save Banks / Quit
-    // Normal: Switch Bank / Change Game / Save & Quit / Quit Without Saving
-    int menuCount = appletMode_ ? 5 : 4;
+    // Applet: Theme / Switch Left Bank / Switch Right Bank / Change Game / Save Banks / Quit
+    // Normal: Theme / Switch Bank / Change Game / Save & Quit / Quit Without Saving
+    int menuCount = appletMode_ ? 6 : 5;
 
     constexpr int POP_W = 380;
-    int POP_H = appletMode_ ? 296 : 256;
+    int POP_H = appletMode_ ? 332 : 292;
     int popX = (SCREEN_W - POP_W) / 2;
     int popY = (SCREEN_H - POP_H) / 2;
 
-    drawRect(popX, popY, POP_W, POP_H, COLOR_PANEL_BG);
-    drawRectOutline(popX, popY, POP_W, POP_H, COLOR_CURSOR, 2);
+    drawRect(popX, popY, POP_W, POP_H, T().panelBg);
+    drawRectOutline(popX, popY, POP_W, POP_H, T().cursor, 2);
 
-    drawTextCentered("Menu", popX + POP_W / 2, popY + 22, COLOR_TEXT, font_);
+    drawTextCentered("Menu", popX + POP_W / 2, popY + 22, T().text, font_);
 
     const char* labelsNormal[] = {
+        "Theme",
         "Switch Bank",
         "Change Game",
         "Save & Quit",
         "Quit Without Saving"
     };
     const char* labelsApplet[] = {
+        "Theme",
         "Switch Left Bank",
         "Switch Right Bank",
         "Change Game",
@@ -538,83 +540,113 @@ void UI::drawMenuPopup() {
     for (int i = 0; i < menuCount; i++) {
         int rowY = startY + i * rowH;
         if (i == menuSelection_) {
-            drawRect(popX + 20, rowY, POP_W - 40, rowH - 4, {60, 60, 80, 255});
-            drawRectOutline(popX + 20, rowY, POP_W - 40, rowH - 4, COLOR_CURSOR, 2);
+            drawRect(popX + 20, rowY, POP_W - 40, rowH - 4, T().menuHighlight);
+            drawRectOutline(popX + 20, rowY, POP_W - 40, rowH - 4, T().cursor, 2);
         }
-        drawTextCentered(labels[i], popX + POP_W / 2, rowY + (rowH - 4) / 2, COLOR_TEXT, font_);
+        drawTextCentered(labels[i], popX + POP_W / 2, rowY + (rowH - 4) / 2, T().text, font_);
     }
 
-    drawTextCentered("A:Confirm  B:Cancel", popX + POP_W / 2, popY + POP_H - 18, COLOR_TEXT_DIM, fontSmall_);
+    drawTextCentered("A:Confirm  B:Cancel", popX + POP_W / 2, popY + POP_H - 18, T().textDim, fontSmall_);
+}
+
+void UI::drawThemeSelectorPopup() {
+    drawRect(0, 0, SCREEN_W, SCREEN_H, T().overlay);
+
+    constexpr int POP_W = 380;
+    int POP_H = 50 + THEME_COUNT * 36 + 30;
+    int popX = (SCREEN_W - POP_W) / 2;
+    int popY = (SCREEN_H - POP_H) / 2;
+
+    drawRect(popX, popY, POP_W, POP_H, T().panelBg);
+    drawRectOutline(popX, popY, POP_W, POP_H, T().cursor, 2);
+
+    drawTextCentered("Select Theme", popX + POP_W / 2, popY + 22, T().text, font_);
+
+    int rowH = 36;
+    int startY = popY + 50;
+
+    for (int i = 0; i < THEME_COUNT; i++) {
+        int rowY = startY + i * rowH;
+        if (i == themeSelCursor_) {
+            drawRect(popX + 20, rowY, POP_W - 40, rowH - 4, T().menuHighlight);
+            drawRectOutline(popX + 20, rowY, POP_W - 40, rowH - 4, T().cursor, 2);
+        }
+        std::string label = getThemeName(i);
+        if (i == themeIndex_) label = "* " + label + " *";
+        drawTextCentered(label, popX + POP_W / 2, rowY + (rowH - 4) / 2, T().text, font_);
+    }
+
+    drawTextCentered("A:Select  B:Cancel", popX + POP_W / 2, popY + POP_H - 18, T().textDim, fontSmall_);
 }
 
 void UI::drawAboutPopup() {
-    drawRect(0, 0, SCREEN_W, SCREEN_H, {0, 0, 0, 187});
+    drawRect(0, 0, SCREEN_W, SCREEN_H, T().overlayDark);
 
     constexpr int POP_W = 700;
     constexpr int POP_H = 490;
     int px = (SCREEN_W - POP_W) / 2;
     int py = (SCREEN_H - POP_H) / 2;
 
-    drawRect(px, py, POP_W, POP_H, COLOR_PANEL_BG);
-    drawRectOutline(px, py, POP_W, POP_H, {0x30, 0x30, 0x55, 255}, 2);
+    drawRect(px, py, POP_W, POP_H, T().panelBg);
+    drawRectOutline(px, py, POP_W, POP_H, T().popupBorder, 2);
 
     int cx = px + POP_W / 2;
     int y = py + 25;
 
     // Title
-    drawTextCentered("pkHouse - Local Bank System", cx, y, COLOR_SHINY, fontLarge_);
+    drawTextCentered("pkHouse - Local Bank System", cx, y, T().shiny, fontLarge_);
     y += 38;
 
     // Version / author
-    drawTextCentered("v" APP_VERSION " - Developed by " APP_AUTHOR, cx, y, COLOR_TEXT_DIM, fontSmall_);
+    drawTextCentered("v" APP_VERSION " - Developed by " APP_AUTHOR, cx, y, T().textDim, fontSmall_);
     y += 22;
-    drawTextCentered("github.com/Insektaure", cx, y, COLOR_TEXT_DIM, fontSmall_);
+    drawTextCentered("github.com/Insektaure", cx, y, T().textDim, fontSmall_);
     y += 30;
 
     // Divider
-    SDL_SetRenderDrawColor(renderer_, 0x30, 0x30, 0x55, 255);
+    SDL_SetRenderDrawColor(renderer_, T().popupBorder.r, T().popupBorder.g, T().popupBorder.b, T().popupBorder.a);
     SDL_RenderDrawLine(renderer_, px + 30, y, px + POP_W - 30, y);
     y += 20;
 
     // Description
-    drawTextCentered("Pokemon Box Manager for Nintendo Switch", cx, y, COLOR_TEXT, font_);
+    drawTextCentered("Pokemon Box Manager for Nintendo Switch", cx, y, T().text, font_);
     y += 28;
-    drawTextCentered("Move Pokemon between save files and banks.", cx, y, COLOR_TEXT, font_);
+    drawTextCentered("Move Pokemon between save files and banks.", cx, y, T().text, font_);
     y += 28;
-    drawTextCentered("Supported Games", cx, y, COLOR_SELECTED, font_);
+    drawTextCentered("Supported Games", cx, y, T().selected, font_);
     y += 24;
-    drawTextCentered("Let's Go Pikachu/Eevee (1.0.2)  -  Sword/Shield (1.3.2)", cx, y, COLOR_TEXT_DIM, fontSmall_);
+    drawTextCentered("Let's Go Pikachu/Eevee (1.0.2)  -  Sword/Shield (1.3.2)", cx, y, T().textDim, fontSmall_);
     y += 20;
-    drawTextCentered("Brilliant Diamond/Shining Pearl (1.3.0)  -  Legends: Arceus (1.1.1)", cx, y, COLOR_TEXT_DIM, fontSmall_);
+    drawTextCentered("Brilliant Diamond/Shining Pearl (1.3.0)  -  Legends: Arceus (1.1.1)", cx, y, T().textDim, fontSmall_);
     y += 20;
-    drawTextCentered("Scarlet/Violet (4.0.0)  -  Legends: Z-A (2.0.1)", cx, y, COLOR_TEXT_DIM, fontSmall_);
+    drawTextCentered("Scarlet/Violet (4.0.0)  -  Legends: Z-A (2.0.1)", cx, y, T().textDim, fontSmall_);
     y += 30;
 
     // Divider
-    SDL_SetRenderDrawColor(renderer_, 0x30, 0x30, 0x55, 255);
+    SDL_SetRenderDrawColor(renderer_, T().popupBorder.r, T().popupBorder.g, T().popupBorder.b, T().popupBorder.a);
     SDL_RenderDrawLine(renderer_, px + 30, y, px + POP_W - 30, y);
     y += 20;
 
     // Credits
-    drawTextCentered("Based on PKHeX by kwsch & PokeCrypto research.", cx, y, {0x88, 0x88, 0x88, 255}, fontSmall_);
+    drawTextCentered("Based on PKHeX by kwsch & PokeCrypto research.", cx, y, T().creditsText, fontSmall_);
     y += 20;
-    drawTextCentered("Save backup & write logic based on JKSV by J-D-K.", cx, y, {0x88, 0x88, 0x88, 255}, fontSmall_);
+    drawTextCentered("Save backup & write logic based on JKSV by J-D-K.", cx, y, T().creditsText, fontSmall_);
     y += 35;
 
     // Controls
-    drawTextCentered("Controls", cx, y, COLOR_SELECTED, font_);
+    drawTextCentered("Controls", cx, y, T().selected, font_);
     y += 28;
-    drawText("A: Pick/Place    B: Cancel    X: Details    Y: Multi-select", px + 50, y, COLOR_TEXT_DIM, fontSmall_);
+    drawText("A: Pick/Place    B: Cancel    X: Details    Y: Multi-select", px + 50, y, T().textDim, fontSmall_);
     y += 20;
-    drawText("L/R: Switch Box    ZL/ZR: Box View    +: Menu    -: About", px + 50, y, COLOR_TEXT_DIM, fontSmall_);
+    drawText("L/R: Switch Box    ZL/ZR: Box View    +: Menu    -: About", px + 50, y, T().textDim, fontSmall_);
 
     // Footer
-    drawTextCentered("Press - or B to close", cx, py + POP_H - 22, COLOR_TEXT_DIM, fontSmall_);
+    drawTextCentered("Press - or B to close", cx, py + POP_H - 22, T().textDim, fontSmall_);
 }
 
 void UI::drawBoxViewOverlay() {
     // Full-screen dark overlay
-    drawRect(0, 0, SCREEN_W, SCREEN_H, {0, 0, 0, 160});
+    drawRect(0, 0, SCREEN_W, SCREEN_H, T().overlay);
 
     int totalBoxes;
     if (boxViewPanel_ == Panel::Game)
@@ -633,8 +665,8 @@ void UI::drawBoxViewOverlay() {
     int popY = (SCREEN_H - popH) / 2;
 
     // Popup background
-    drawRect(popX, popY, popW, popH, COLOR_PANEL_BG);
-    drawRectOutline(popX, popY, popW, popH, COLOR_CURSOR, 2);
+    drawRect(popX, popY, popW, popH, T().panelBg);
+    drawRectOutline(popX, popY, popW, popH, T().cursor, 2);
 
     // Title
     const char* title;
@@ -642,7 +674,7 @@ void UI::drawBoxViewOverlay() {
         title = appletMode_ ? "Left Bank Boxes" : "Save Boxes";
     else
         title = "Bank Boxes";
-    drawTextCentered(title, popX + popW / 2, popY + 20, COLOR_TEXT, font_);
+    drawTextCentered(title, popX + popW / 2, popY + 20, T().text, font_);
 
     // Grid of box cells
     int gridStartX = popX + 20;
@@ -658,12 +690,12 @@ void UI::drawBoxViewOverlay() {
         int cellY = gridStartY + row * (BV_CELL_H + BV_CELL_PAD);
 
         // Cell background — highlight the currently-active box
-        SDL_Color bg = (i == activeBox) ? COLOR_SLOT_FULL : COLOR_SLOT_EMPTY;
+        SDL_Color bg = (i == activeBox) ? T().slotFull : T().slotEmpty;
         drawRect(cellX, cellY, BV_CELL_W, BV_CELL_H, bg);
 
         // Cursor outline
         if (i == boxViewCursor_) {
-            drawRectOutline(cellX, cellY, BV_CELL_W, BV_CELL_H, COLOR_CURSOR, 2);
+            drawRectOutline(cellX, cellY, BV_CELL_W, BV_CELL_H, T().cursor, 2);
             cursorCellX = cellX;
             cursorCellY = cellY;
         }
@@ -680,12 +712,12 @@ void UI::drawBoxViewOverlay() {
             label = label.substr(0, 15) + ".";
 
         drawTextCentered(label, cellX + BV_CELL_W / 2, cellY + BV_CELL_H / 2,
-                         COLOR_TEXT, fontSmall_);
+                         T().text, fontSmall_);
     }
 
     // Footer hint
     drawTextCentered("A:Go to Box  B:Cancel  D-Pad:Navigate",
-                     popX + popW / 2, popY + popH - 15, COLOR_TEXT_DIM, fontSmall_);
+                     popX + popW / 2, popY + popH - 15, T().textDim, fontSmall_);
 
     // Box preview for cursor box (drawn last so it appears on top)
     drawBoxPreview(boxViewCursor_, cursorCellX, cursorCellY);
@@ -716,8 +748,8 @@ void UI::drawBoxPreview(int boxIdx, int anchorX, int anchorY) {
         prevY = 4;
 
     // Background
-    drawRect(prevX, prevY, previewW, previewH, {40, 40, 55, 230});
-    drawRectOutline(prevX, prevY, previewW, previewH, COLOR_TEXT_DIM, 1);
+    drawRect(prevX, prevY, previewW, previewH, T().boxPreviewBg);
+    drawRectOutline(prevX, prevY, previewW, previewH, T().textDim, 1);
 
     // Box name header
     std::string boxName;
@@ -726,7 +758,7 @@ void UI::drawBoxPreview(int boxIdx, int anchorX, int anchorY) {
     else
         boxName = bank_.getBoxName(boxIdx);
     drawTextCentered(boxName, prevX + previewW / 2,
-                     prevY + BV_PREVIEW_HDR / 2 + 2, COLOR_BOX_NAME, fontSmall_);
+                     prevY + BV_PREVIEW_HDR / 2 + 2, T().boxName, fontSmall_);
 
     // Mini sprite grid
     int gridX = prevX + BV_PREVIEW_PAD;
@@ -746,9 +778,9 @@ void UI::drawBoxPreview(int boxIdx, int anchorX, int anchorY) {
                 pkm = bank_.getSlot(boxIdx, slot);
 
             if (pkm.isEmpty()) {
-                drawRect(sx, sy, BV_MINI_CELL, BV_MINI_CELL, {55, 55, 70, 180});
+                drawRect(sx, sy, BV_MINI_CELL, BV_MINI_CELL, T().miniCellEmpty);
             } else {
-                drawRect(sx, sy, BV_MINI_CELL, BV_MINI_CELL, {55, 70, 90, 200});
+                drawRect(sx, sy, BV_MINI_CELL, BV_MINI_CELL, T().miniCellFull);
 
                 SDL_Texture* sprite = getSprite(pkm.isEgg() ? 0 : pkm.species());
                 if (sprite) {
@@ -826,11 +858,11 @@ void UI::drawHeldOverlay() {
         int cx = cellX + CELL_W / 2;
         int cy = cellY + CELL_H / 2;
 
-        SDL_SetRenderDrawColor(renderer_, COLOR_SELECTED.r, COLOR_SELECTED.g, COLOR_SELECTED.b, 220);
+        SDL_SetRenderDrawColor(renderer_, T().selected.r, T().selected.g, T().selected.b, 220);
         for (int dy = -badgeR; dy <= badgeR; dy++) {
             int dx = static_cast<int>(std::sqrt(badgeR * badgeR - dy * dy));
             SDL_RenderDrawLine(renderer_, cx - dx, cy + dy, cx + dx, cy + dy);
         }
-        drawTextCentered(num, cx, cy, {0, 0, 0, 255}, font_);
+        drawTextCentered(num, cx, cy, T().textOnBadge, font_);
     }
 }

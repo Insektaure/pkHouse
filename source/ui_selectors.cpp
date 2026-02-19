@@ -11,10 +11,10 @@
 // --- Profile Selector ---
 
 void UI::drawProfileSelectorFrame() {
-    SDL_SetRenderDrawColor(renderer_, COLOR_BG.r, COLOR_BG.g, COLOR_BG.b, 255);
+    SDL_SetRenderDrawColor(renderer_, T().bg.r, T().bg.g, T().bg.b, 255);
     SDL_RenderClear(renderer_);
 
-    drawTextCentered("Select Profile", SCREEN_W / 2, 40, COLOR_TEXT, font_);
+    drawTextCentered("Select Profile", SCREEN_W / 2, 40, T().text, font_);
 
     const auto& profiles = account_.profiles();
     int count = (int)profiles.size();
@@ -33,10 +33,10 @@ void UI::drawProfileSelectorFrame() {
         int cardY = startY;
 
         if (i == profileSelCursor_) {
-            drawRect(cardX, cardY, CARD_W, CARD_H, {60, 60, 80, 255});
-            drawRectOutline(cardX, cardY, CARD_W, CARD_H, COLOR_CURSOR, 3);
+            drawRect(cardX, cardY, CARD_W, CARD_H, T().menuHighlight);
+            drawRectOutline(cardX, cardY, CARD_W, CARD_H, T().cursor, 3);
         } else {
-            drawRect(cardX, cardY, CARD_W, CARD_H, COLOR_PANEL_BG);
+            drawRect(cardX, cardY, CARD_W, CARD_H, T().panelBg);
         }
 
         int iconX = cardX + (CARD_W - ICON_SIZE) / 2;
@@ -46,20 +46,20 @@ void UI::drawProfileSelectorFrame() {
             SDL_Rect dst = {iconX, iconY, ICON_SIZE, ICON_SIZE};
             SDL_RenderCopy(renderer_, profiles[i].iconTexture, nullptr, &dst);
         } else {
-            drawRect(iconX, iconY, ICON_SIZE, ICON_SIZE, {80, 80, 120, 255});
+            drawRect(iconX, iconY, ICON_SIZE, ICON_SIZE, T().iconPlaceholder);
             if (!profiles[i].nickname.empty()) {
                 std::string initial(1, profiles[i].nickname[0]);
                 drawTextCentered(initial, iconX + ICON_SIZE / 2, iconY + ICON_SIZE / 2,
-                                 COLOR_TEXT, font_);
+                                 T().text, font_);
             }
         }
 
         std::string name = profiles[i].nickname;
         if (name.length() > 14) name = name.substr(0, 13) + ".";
-        drawTextCentered(name, cardX + CARD_W / 2, cardY + ICON_SIZE + 24, COLOR_TEXT, fontSmall_);
+        drawTextCentered(name, cardX + CARD_W / 2, cardY + ICON_SIZE + 24, T().text, fontSmall_);
     }
 
-    drawStatusBar("A:Select  -:About  +:Quit");
+    drawStatusBar("A:Select  Y:Theme  -:About  +:Quit");
 }
 
 void UI::handleProfileSelectorInput(bool& running) {
@@ -93,6 +93,10 @@ void UI::handleProfileSelectorInput(bool& running) {
                 case SDL_CONTROLLER_BUTTON_B: // Switch A = select
                     selectProfile(profileSelCursor_);
                     break;
+                case SDL_CONTROLLER_BUTTON_X: // Switch Y = theme
+                    showThemeSelector_ = true;
+                    themeSelCursor_ = themeIndex_;
+                    break;
                 case SDL_CONTROLLER_BUTTON_BACK: // - = about
                     showAbout_ = true;
                     break;
@@ -113,6 +117,10 @@ void UI::handleProfileSelectorInput(bool& running) {
                 case SDLK_a:
                 case SDLK_RETURN:
                     selectProfile(profileSelCursor_);
+                    break;
+                case SDLK_y:
+                    showThemeSelector_ = true;
+                    themeSelCursor_ = themeIndex_;
                     break;
                 case SDLK_MINUS:
                     showAbout_ = true;
@@ -247,15 +255,15 @@ void UI::freeGameIcons() {
 // --- Game Selector ---
 
 void UI::drawGameSelectorFrame() {
-    SDL_SetRenderDrawColor(renderer_, COLOR_BG.r, COLOR_BG.g, COLOR_BG.b, 255);
+    SDL_SetRenderDrawColor(renderer_, T().bg.r, T().bg.g, T().bg.b, 255);
     SDL_RenderClear(renderer_);
 
     if (appletMode_) {
-        drawTextCentered("Select Game (Dual Bank)", SCREEN_W / 2, 30, COLOR_TEXT, font_);
+        drawTextCentered("Select Game (Dual Bank)", SCREEN_W / 2, 30, T().text, font_);
         drawTextCentered("Use title override mode to transfer between save and bank",
-                         SCREEN_W / 2, 55, COLOR_TEXT_DIM, fontSmall_);
+                         SCREEN_W / 2, 55, T().textDim, fontSmall_);
     } else {
-        drawTextCentered("Select Game", SCREEN_W / 2, 40, COLOR_TEXT, font_);
+        drawTextCentered("Select Game", SCREEN_W / 2, 40, T().text, font_);
     }
 
     int numGames = (int)availableGames_.size();
@@ -283,10 +291,10 @@ void UI::drawGameSelectorFrame() {
 
         // Card background
         if (i == gameSelCursor_) {
-            drawRect(cardX, cardY, CARD_W, CARD_H, {60, 60, 80, 255});
-            drawRectOutline(cardX, cardY, CARD_W, CARD_H, COLOR_CURSOR, 3);
+            drawRect(cardX, cardY, CARD_W, CARD_H, T().menuHighlight);
+            drawRectOutline(cardX, cardY, CARD_W, CARD_H, T().cursor, 3);
         } else {
-            drawRect(cardX, cardY, CARD_W, CARD_H, COLOR_PANEL_BG);
+            drawRect(cardX, cardY, CARD_W, CARD_H, T().panelBg);
         }
 
         // Icon
@@ -299,7 +307,7 @@ void UI::drawGameSelectorFrame() {
             SDL_RenderCopy(renderer_, it->second, nullptr, &dst);
         } else {
             // Colored placeholder with game abbreviation
-            drawRect(iconX, iconY, ICON_SIZE, ICON_SIZE, {80, 80, 120, 255});
+            drawRect(iconX, iconY, ICON_SIZE, ICON_SIZE, T().iconPlaceholder);
             const char* abbr = "";
             switch (availableGames_[i]) {
                 case GameType::Sw: abbr = "Sw"; break;
@@ -314,7 +322,7 @@ void UI::drawGameSelectorFrame() {
                 case GameType::GE: abbr = "GE"; break;
             }
             drawTextCentered(abbr, iconX + ICON_SIZE / 2, iconY + ICON_SIZE / 2,
-                             COLOR_TEXT, font_);
+                             T().text, font_);
         }
 
         // Game name below icon
@@ -324,23 +332,23 @@ void UI::drawGameSelectorFrame() {
             name = name.substr(8);
         if (name.length() > 20) name = name.substr(0, 19) + ".";
         drawTextCentered(name, cardX + CARD_W / 2, cardY + ICON_SIZE + 30,
-                         COLOR_TEXT, fontSmall_);
+                         T().text, fontSmall_);
     }
 
     if (selectedProfile_ >= 0) {
-        drawStatusBar("A:Select  B:Back  -:About  +:Quit");
+        drawStatusBar("A:Select  B:Back  Y:Theme  -:About  +:Quit");
         std::string profileLabel = account_.profiles()[selectedProfile_].nickname;
         int tw = 0, th = 0;
         TTF_SizeUTF8(fontSmall_, profileLabel.c_str(), &tw, &th);
-        drawText(profileLabel, SCREEN_W - tw - 15, SCREEN_H - 30, {255, 215, 0, 255}, fontSmall_);
+        drawText(profileLabel, SCREEN_W - tw - 15, SCREEN_H - 30, T().goldLabel, fontSmall_);
     } else {
-        drawStatusBar("A:Select  B:Quit  -:About");
+        drawStatusBar("A:Select  B:Quit  Y:Theme  -:About");
     }
     if (appletMode_) {
         const char* modeLabel = "Dual Bank Mode";
         int tw = 0, th = 0;
         TTF_SizeUTF8(fontSmall_, modeLabel, &tw, &th);
-        drawText(modeLabel, SCREEN_W - tw - 15, SCREEN_H - 30, {255, 215, 0, 255}, fontSmall_);
+        drawText(modeLabel, SCREEN_W - tw - 15, SCREEN_H - 30, T().goldLabel, fontSmall_);
     }
 }
 
@@ -416,6 +424,10 @@ void UI::handleGameSelectorInput(bool& running) {
                         running = false;
                     }
                     break;
+                case SDL_CONTROLLER_BUTTON_X: // Switch Y = theme
+                    showThemeSelector_ = true;
+                    themeSelCursor_ = themeIndex_;
+                    break;
                 case SDL_CONTROLLER_BUTTON_BACK: // - = about
                     showAbout_ = true;
                     break;
@@ -442,6 +454,10 @@ void UI::handleGameSelectorInput(bool& running) {
                 case SDLK_a:
                 case SDLK_RETURN:
                     selectGame(availableGames_[gameSelCursor_]);
+                    break;
+                case SDLK_y:
+                    showThemeSelector_ = true;
+                    themeSelCursor_ = themeIndex_;
                     break;
                 case SDLK_MINUS:
                     showAbout_ = true;

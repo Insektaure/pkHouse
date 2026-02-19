@@ -68,12 +68,19 @@ void UI::handleInput(bool& running) {
 
         // While menu is open, handle menu input only
         if (showMenu_) {
-            int menuCount = appletMode_ ? 5 : 4;
+            int menuCount = appletMode_ ? 6 : 5;
             auto menuConfirm = [&]() {
+                // 0=Theme (both modes)
+                if (menuSelection_ == 0) {
+                    showThemeSelector_ = true;
+                    themeSelCursor_ = themeIndex_;
+                    return;
+                }
+                int sel = menuSelection_ - 1; // shift for Theme at index 0
                 if (appletMode_) {
-                    // 0=Switch Left Bank, 1=Switch Right Bank, 2=Change Game,
+                    // sel: 0=Switch Left Bank, 1=Switch Right Bank, 2=Change Game,
                     // 3=Save Banks, 4=Quit
-                    if (menuSelection_ == 0) {
+                    if (sel == 0) {
                         // Need at least 1 bank available that isn't loaded on the right
                         int avail = 0;
                         for (auto& b : bankManager_.list())
@@ -94,7 +101,7 @@ void UI::handleInput(bool& running) {
                         bankSelTarget_ = Panel::Game;
                         screen_ = AppScreen::BankSelector;
                         showMenu_ = false;
-                    } else if (menuSelection_ == 1) {
+                    } else if (sel == 1) {
                         // Need at least 1 bank available that isn't loaded on the left
                         int avail = 0;
                         for (auto& b : bankManager_.list())
@@ -115,7 +122,7 @@ void UI::handleInput(bool& running) {
                         bankSelTarget_ = Panel::Bank;
                         screen_ = AppScreen::BankSelector;
                         showMenu_ = false;
-                    } else if (menuSelection_ == 2) {
+                    } else if (sel == 2) {
                         // Change Game — save banks and return to game selector
                         if (!saveBankFiles()) { showMenu_ = false; return; }
                         leftBankName_.clear();
@@ -124,15 +131,15 @@ void UI::handleInput(bool& running) {
                         activeBankPath_.clear();
                         screen_ = AppScreen::GameSelector;
                         showMenu_ = false;
-                    } else if (menuSelection_ == 3) {
+                    } else if (sel == 3) {
                         saveBankFiles();
                         showMenu_ = false;
                     } else {
                         running = false;
                     }
                 } else {
-                    // 0=Switch Bank, 1=Change Game, 2=Save & Quit, 3=Quit Without Saving
-                    if (menuSelection_ == 0) {
+                    // sel: 0=Switch Bank, 1=Change Game, 2=Save & Quit, 3=Quit Without Saving
+                    if (sel == 0) {
                         if (!saveBankFiles()) { showMenu_ = false; return; }
                         showWorking("Saving...");
                         if (save_.isLoaded())
@@ -141,7 +148,7 @@ void UI::handleInput(bool& running) {
                         bankManager_.refresh();
                         screen_ = AppScreen::BankSelector;
                         showMenu_ = false;
-                    } else if (menuSelection_ == 1) {
+                    } else if (sel == 1) {
                         // Change Game — save everything, unmount, go to game selector
                         if (!saveBankFiles()) { showMenu_ = false; return; }
                         showWorking("Saving...");
@@ -153,7 +160,7 @@ void UI::handleInput(bool& running) {
                         activeBankPath_.clear();
                         screen_ = AppScreen::GameSelector;
                         showMenu_ = false;
-                    } else if (menuSelection_ == 2) {
+                    } else if (sel == 2) {
                         saveNow_ = true;
                         running = false;
                     } else {
@@ -370,7 +377,7 @@ void UI::handleInput(bool& running) {
             } else if (showMenu_) {
                 if (stickDirY_ != 0)
                 {
-                    int mc = appletMode_ ? 5 : 4;
+                    int mc = appletMode_ ? 6 : 5;
                     menuSelection_ = (menuSelection_ + (stickDirY_ > 0 ? 1 : mc - 1)) % mc;
                 }
             } else if (!showDetail_) {

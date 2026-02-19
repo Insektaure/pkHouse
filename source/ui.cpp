@@ -100,6 +100,9 @@ bool UI::init() {
         }
     }
 
+    // Set default theme (persisted selection loaded in run())
+    theme_ = &getTheme(0);
+
     return true;
 }
 
@@ -160,7 +163,7 @@ void UI::showSplash() {
                 return;
             }
         }
-        SDL_SetRenderDrawColor(renderer_, COLOR_BG.r, COLOR_BG.g, COLOR_BG.b, 255);
+        SDL_SetRenderDrawColor(renderer_, T().bg.r, T().bg.g, T().bg.b, 255);
         SDL_RenderClear(renderer_);
         SDL_RenderCopy(renderer_, tex, nullptr, &dst);
         SDL_RenderPresent(renderer_);
@@ -182,7 +185,7 @@ void UI::showSplash() {
         if (elapsed >= fadeMs)
             break;
         int alpha = 255 - static_cast<int>(255 * elapsed / fadeMs);
-        SDL_SetRenderDrawColor(renderer_, COLOR_BG.r, COLOR_BG.g, COLOR_BG.b, 255);
+        SDL_SetRenderDrawColor(renderer_, T().bg.r, T().bg.g, T().bg.b, 255);
         SDL_RenderClear(renderer_);
         SDL_SetTextureAlphaMod(tex, static_cast<Uint8>(alpha));
         SDL_RenderCopy(renderer_, tex, nullptr, &dst);
@@ -213,12 +216,12 @@ void UI::showMessageAndWait(const std::string& title, const std::string& body) {
             }
         }
 
-        SDL_SetRenderDrawColor(renderer_, COLOR_BG.r, COLOR_BG.g, COLOR_BG.b, 255);
+        SDL_SetRenderDrawColor(renderer_, T().bg.r, T().bg.g, T().bg.b, 255);
         SDL_RenderClear(renderer_);
 
-        drawTextCentered(title, SCREEN_W / 2, SCREEN_H / 2 - 40, COLOR_RED, fontLarge_);
-        drawTextCentered(body, SCREEN_W / 2, SCREEN_H / 2 + 15, COLOR_TEXT_DIM, font_);
-        drawTextCentered("Press B to dismiss", SCREEN_W / 2, SCREEN_H / 2 + 65, COLOR_TEXT_DIM, fontSmall_);
+        drawTextCentered(title, SCREEN_W / 2, SCREEN_H / 2 - 40, T().red, fontLarge_);
+        drawTextCentered(body, SCREEN_W / 2, SCREEN_H / 2 + 15, T().textDim, font_);
+        drawTextCentered("Press B to dismiss", SCREEN_W / 2, SCREEN_H / 2 + 65, T().textDim, fontSmall_);
 
         SDL_RenderPresent(renderer_);
         SDL_Delay(16);
@@ -249,12 +252,12 @@ bool UI::showConfirmDialog(const std::string& title, const std::string& body) {
             }
         }
 
-        SDL_SetRenderDrawColor(renderer_, COLOR_BG.r, COLOR_BG.g, COLOR_BG.b, 255);
+        SDL_SetRenderDrawColor(renderer_, T().bg.r, T().bg.g, T().bg.b, 255);
         SDL_RenderClear(renderer_);
 
-        drawTextCentered(title, SCREEN_W / 2, SCREEN_H / 2 - 40, COLOR_RED, fontLarge_);
-        drawTextCentered(body, SCREEN_W / 2, SCREEN_H / 2 + 15, COLOR_TEXT_DIM, font_);
-        drawTextCentered("A: Continue   B: Cancel", SCREEN_W / 2, SCREEN_H / 2 + 65, COLOR_TEXT_DIM, fontSmall_);
+        drawTextCentered(title, SCREEN_W / 2, SCREEN_H / 2 - 40, T().red, fontLarge_);
+        drawTextCentered(body, SCREEN_W / 2, SCREEN_H / 2 + 15, T().textDim, font_);
+        drawTextCentered("A: Continue   B: Cancel", SCREEN_W / 2, SCREEN_H / 2 + 65, T().textDim, fontSmall_);
 
         SDL_RenderPresent(renderer_);
         SDL_Delay(16);
@@ -265,7 +268,7 @@ bool UI::showConfirmDialog(const std::string& title, const std::string& body) {
 void UI::showWorking(const std::string& msg) {
     if (!renderer_) return;
 
-    SDL_SetRenderDrawColor(renderer_, COLOR_BG.r, COLOR_BG.g, COLOR_BG.b, 255);
+    SDL_SetRenderDrawColor(renderer_, T().bg.r, T().bg.g, T().bg.b, 255);
     SDL_RenderClear(renderer_);
 
     // Dark card behind gear + message
@@ -273,8 +276,8 @@ void UI::showWorking(const std::string& msg) {
     constexpr int POP_H = 160;
     int popX = (SCREEN_W - POP_W) / 2;
     int popY = (SCREEN_H - POP_H) / 2;
-    drawRect(popX, popY, POP_W, POP_H, COLOR_PANEL_BG);
-    drawRectOutline(popX, popY, POP_W, POP_H, COLOR_TEXT_DIM, 2);
+    drawRect(popX, popY, POP_W, POP_H, T().panelBg);
+    drawRectOutline(popX, popY, POP_W, POP_H, T().textDim, 2);
 
     // Draw gear icon
     int gearCX = SCREEN_W / 2;
@@ -296,7 +299,7 @@ void UI::showWorking(const std::string& msg) {
     };
 
     // Tooth rectangles around the gear (8 teeth at 45-degree intervals)
-    SDL_Color gearColor = COLOR_ARROW;
+    SDL_Color gearColor = T().arrow;
     SDL_SetRenderDrawColor(renderer_, gearColor.r, gearColor.g, gearColor.b, gearColor.a);
     for (int i = 0; i < TEETH; i++) {
         double angle = i * (3.14159265 * 2.0 / TEETH);
@@ -310,10 +313,10 @@ void UI::showWorking(const std::string& msg) {
     fillCircle(gearCX, gearCY, OUTER_R, gearColor);
 
     // Center hole
-    fillCircle(gearCX, gearCY, HOLE_R, COLOR_PANEL_BG);
+    fillCircle(gearCX, gearCY, HOLE_R, T().panelBg);
 
     // Message text below gear
-    drawTextCentered(msg, SCREEN_W / 2, popY + POP_H - 32, COLOR_TEXT, font_);
+    drawTextCentered(msg, SCREEN_W / 2, popY + POP_H - 32, T().text, font_);
 
     SDL_RenderPresent(renderer_);
 }
@@ -321,6 +324,10 @@ void UI::showWorking(const std::string& msg) {
 void UI::run(const std::string& basePath, const std::string& savePath) {
     basePath_ = basePath;
     savePath_ = savePath;
+
+    // Load persisted theme
+    themeIndex_ = loadThemeIndex(basePath_);
+    theme_ = &getTheme(themeIndex_);
 
     // All games in menu order
     constexpr GameType allGames[] = {
@@ -380,6 +387,85 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
             else if (screen_ == AppScreen::BankSelector) drawBankSelectorFrame();
             else drawFrame();
             drawAboutPopup();
+            SDL_RenderPresent(renderer_);
+            SDL_Delay(16);
+            continue;
+        }
+
+        // Theme selector intercepts input from any screen
+        if (showThemeSelector_) {
+            SDL_Event event;
+            while (SDL_PollEvent(&event)) {
+                if (event.type == SDL_QUIT) { running = false; break; }
+                if (event.type == SDL_CONTROLLERAXISMOTION) {
+                    if (event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX ||
+                        event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY) {
+                        int16_t lx = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTX);
+                        int16_t ly = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTY);
+                        updateStick(lx, ly);
+                    }
+                }
+                if (event.type == SDL_CONTROLLERBUTTONDOWN) {
+                    switch (event.cbutton.button) {
+                        case SDL_CONTROLLER_BUTTON_DPAD_UP:
+                            themeSelCursor_ = (themeSelCursor_ + THEME_COUNT - 1) % THEME_COUNT;
+                            break;
+                        case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+                            themeSelCursor_ = (themeSelCursor_ + 1) % THEME_COUNT;
+                            break;
+                        case SDL_CONTROLLER_BUTTON_B: // Switch A = confirm
+                            themeIndex_ = themeSelCursor_;
+                            theme_ = &getTheme(themeIndex_);
+                            saveThemeIndex(basePath_, themeIndex_);
+                            showThemeSelector_ = false;
+                            showMenu_ = false;
+                            break;
+                        case SDL_CONTROLLER_BUTTON_A: // Switch B = cancel
+                        case SDL_CONTROLLER_BUTTON_X: // Switch Y = cancel
+                            showThemeSelector_ = false;
+                            break;
+                    }
+                }
+                if (event.type == SDL_KEYDOWN) {
+                    switch (event.key.keysym.sym) {
+                        case SDLK_UP:
+                            themeSelCursor_ = (themeSelCursor_ + THEME_COUNT - 1) % THEME_COUNT;
+                            break;
+                        case SDLK_DOWN:
+                            themeSelCursor_ = (themeSelCursor_ + 1) % THEME_COUNT;
+                            break;
+                        case SDLK_a:
+                        case SDLK_RETURN:
+                            themeIndex_ = themeSelCursor_;
+                            theme_ = &getTheme(themeIndex_);
+                            saveThemeIndex(basePath_, themeIndex_);
+                            showThemeSelector_ = false;
+                            showMenu_ = false;
+                            break;
+                        case SDLK_b:
+                        case SDLK_ESCAPE:
+                        case SDLK_y:
+                            showThemeSelector_ = false;
+                            break;
+                    }
+                }
+            }
+            // Joystick repeat
+            if (stickDirY_ != 0) {
+                uint32_t now = SDL_GetTicks();
+                uint32_t delay = stickMoved_ ? STICK_REPEAT_DELAY : STICK_INITIAL_DELAY;
+                if (now - stickMoveTime_ >= delay) {
+                    themeSelCursor_ = (themeSelCursor_ + (stickDirY_ > 0 ? 1 : THEME_COUNT - 1)) % THEME_COUNT;
+                    stickMoveTime_ = now;
+                    stickMoved_ = true;
+                }
+            }
+            // Draw the underlying screen, then theme popup on top
+            if (screen_ == AppScreen::ProfileSelector) drawProfileSelectorFrame();
+            else if (screen_ == AppScreen::GameSelector) drawGameSelectorFrame();
+            else if (screen_ == AppScreen::BankSelector) drawBankSelectorFrame();
+            else drawFrame();
+            drawThemeSelectorPopup();
             SDL_RenderPresent(renderer_);
             SDL_Delay(16);
             continue;

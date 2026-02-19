@@ -11,7 +11,7 @@
 // --- Bank Selector ---
 
 void UI::drawBankSelectorFrame() {
-    SDL_SetRenderDrawColor(renderer_, COLOR_BG.r, COLOR_BG.g, COLOR_BG.b, 255);
+    SDL_SetRenderDrawColor(renderer_, T().bg.r, T().bg.g, T().bg.b, 255);
     SDL_RenderClear(renderer_);
 
     // Show split view: bank selector on one side, other panel visible
@@ -56,19 +56,19 @@ void UI::drawBankSelectorFrame() {
     if (appletMode_) {
         const char* side = (bankSelTarget_ == Panel::Game) ? "Left" : "Right";
         drawTextCentered(std::string("Select ") + side + " Bank",
-                         selCenterX, 25, COLOR_TEXT, font_);
+                         selCenterX, 25, T().text, font_);
     } else {
         drawTextCentered("Select Bank", selCenterX,
-                         splitView ? 25 : 40, COLOR_TEXT, font_);
+                         splitView ? 25 : 40, T().text, font_);
     }
 
     const auto& banks = bankManager_.list();
 
     if (banks.empty()) {
         drawTextCentered("No banks found.",
-                         selCenterX, SCREEN_H / 2 - 10, COLOR_TEXT_DIM, font_);
+                         selCenterX, SCREEN_H / 2 - 10, T().textDim, font_);
         drawTextCentered("Press X to create one.",
-                         selCenterX, SCREEN_H / 2 + 15, COLOR_TEXT_DIM, fontSmall_);
+                         selCenterX, SCREEN_H / 2 + 15, T().textDim, fontSmall_);
     } else {
         // List area
         int LIST_W = splitView ? (PANEL_W - 30) : 800;
@@ -85,10 +85,10 @@ void UI::drawBankSelectorFrame() {
 
         // Scroll arrows
         if (bankSelScroll_ > 0) {
-            drawTextCentered("^", selCenterX, LIST_Y - 12, COLOR_ARROW, font_);
+            drawTextCentered("^", selCenterX, LIST_Y - 12, T().arrow, font_);
         }
         if (bankSelScroll_ + visibleRows < (int)banks.size()) {
-            drawTextCentered("v", selCenterX, LIST_BOTTOM + 4, COLOR_ARROW, font_);
+            drawTextCentered("v", selCenterX, LIST_BOTTOM + 4, T().arrow, font_);
         }
 
         for (int i = 0; i < visibleRows && (bankSelScroll_ + i) < (int)banks.size(); i++) {
@@ -97,13 +97,13 @@ void UI::drawBankSelectorFrame() {
 
             // Highlighted row
             if (idx == bankSelCursor_) {
-                drawRect(LIST_X, rowY, LIST_W, ROW_H - 4, {60, 60, 80, 255});
-                drawRectOutline(LIST_X, rowY, LIST_W, ROW_H - 4, COLOR_CURSOR, 2);
+                drawRect(LIST_X, rowY, LIST_W, ROW_H - 4, T().menuHighlight);
+                drawRectOutline(LIST_X, rowY, LIST_W, ROW_H - 4, T().cursor, 2);
             }
 
             // Bank name (left-aligned)
             drawText(banks[idx].name, LIST_X + 20, rowY + (ROW_H - 4) / 2 - 9,
-                     COLOR_TEXT, font_);
+                     T().text, font_);
 
             // Slot count (right-aligned)
             int maxSlots = isLGPE(selectedGame_) ? 1000 : isBDSP(selectedGame_) ? 1200 : 960;
@@ -111,7 +111,7 @@ void UI::drawBankSelectorFrame() {
             int tw = 0, th = 0;
             TTF_SizeUTF8(font_, slotStr.c_str(), &tw, &th);
             drawText(slotStr, LIST_X + LIST_W - 20 - tw, rowY + (ROW_H - 4) / 2 - 9,
-                     COLOR_TEXT_DIM, font_);
+                     T().textDim, font_);
         }
     }
 
@@ -128,7 +128,7 @@ void UI::drawBankSelectorFrame() {
         label += gameDisplayNameOf(selectedGame_);
         int tw = 0, th = 0;
         TTF_SizeUTF8(fontSmall_, label.c_str(), &tw, &th);
-        drawText(label, SCREEN_W - tw - 15, SCREEN_H - 30, {255, 215, 0, 255}, fontSmall_);
+        drawText(label, SCREEN_W - tw - 15, SCREEN_H - 30, T().goldLabel, fontSmall_);
     }
 
     // Delete confirmation overlay
@@ -363,26 +363,26 @@ void UI::openSelectedBank() {
 // --- Delete Confirmation ---
 
 void UI::drawDeleteConfirmPopup() {
-    drawRect(0, 0, SCREEN_W, SCREEN_H, {0, 0, 0, 160});
+    drawRect(0, 0, SCREEN_W, SCREEN_H, T().overlay);
 
     constexpr int POP_W = 500;
     constexpr int POP_H = 180;
     int popX = (SCREEN_W - POP_W) / 2;
     int popY = (SCREEN_H - POP_H) / 2;
 
-    drawRect(popX, popY, POP_W, POP_H, COLOR_PANEL_BG);
-    drawRectOutline(popX, popY, POP_W, POP_H, COLOR_RED, 2);
+    drawRect(popX, popY, POP_W, POP_H, T().panelBg);
+    drawRectOutline(popX, popY, POP_W, POP_H, T().red, 2);
 
     const auto& banks = bankManager_.list();
     std::string bankName = (bankSelCursor_ >= 0 && bankSelCursor_ < (int)banks.size())
         ? banks[bankSelCursor_].name : "";
 
     drawTextCentered("Delete \"" + bankName + "\"?",
-                     popX + POP_W / 2, popY + 50, COLOR_TEXT, font_);
+                     popX + POP_W / 2, popY + 50, T().text, font_);
     drawTextCentered("This cannot be undone!",
-                     popX + POP_W / 2, popY + 85, COLOR_RED, fontSmall_);
+                     popX + POP_W / 2, popY + 85, T().red, fontSmall_);
     drawTextCentered("A:Confirm  B:Cancel",
-                     popX + POP_W / 2, popY + POP_H - 25, COLOR_TEXT_DIM, fontSmall_);
+                     popX + POP_W / 2, popY + POP_H - 25, T().textDim, fontSmall_);
 }
 
 void UI::handleDeleteConfirmEvent(const SDL_Event& event) {
@@ -468,31 +468,31 @@ void UI::beginTextInput(TextInputPurpose purpose) {
 }
 
 void UI::drawTextInputPopup() {
-    drawRect(0, 0, SCREEN_W, SCREEN_H, {0, 0, 0, 160});
+    drawRect(0, 0, SCREEN_W, SCREEN_H, T().overlay);
 
     constexpr int POP_W = 500;
     constexpr int POP_H = 180;
     int popX = (SCREEN_W - POP_W) / 2;
     int popY = (SCREEN_H - POP_H) / 2;
 
-    drawRect(popX, popY, POP_W, POP_H, COLOR_PANEL_BG);
-    drawRectOutline(popX, popY, POP_W, POP_H, COLOR_CURSOR, 2);
+    drawRect(popX, popY, POP_W, POP_H, T().panelBg);
+    drawRectOutline(popX, popY, POP_W, POP_H, T().cursor, 2);
 
     const char* title = (textInputPurpose_ == TextInputPurpose::CreateBank)
         ? "New Bank Name" : "Rename Bank";
-    drawTextCentered(title, popX + POP_W / 2, popY + 30, COLOR_TEXT, font_);
+    drawTextCentered(title, popX + POP_W / 2, popY + 30, T().text, font_);
 
     // Text field background
     int fieldX = popX + 40;
     int fieldY = popY + 60;
     int fieldW = POP_W - 80;
     int fieldH = 36;
-    drawRect(fieldX, fieldY, fieldW, fieldH, {30, 30, 40, 255});
-    drawRectOutline(fieldX, fieldY, fieldW, fieldH, COLOR_TEXT_DIM, 1);
+    drawRect(fieldX, fieldY, fieldW, fieldH, T().textFieldBg);
+    drawRectOutline(fieldX, fieldY, fieldW, fieldH, T().textDim, 1);
 
     // Text content
     if (!textInputBuffer_.empty()) {
-        drawText(textInputBuffer_, fieldX + 8, fieldY + 8, COLOR_TEXT, font_);
+        drawText(textInputBuffer_, fieldX + 8, fieldY + 8, T().text, font_);
     }
 
     // Blinking cursor
@@ -505,11 +505,11 @@ void UI::drawTextInputPopup() {
     }
     // Blink every 500ms
     if ((SDL_GetTicks() / 500) % 2 == 0) {
-        drawRect(cursorX, fieldY + 6, 2, fieldH - 12, COLOR_TEXT);
+        drawRect(cursorX, fieldY + 6, 2, fieldH - 12, T().text);
     }
 
     drawTextCentered("Enter:Confirm  Escape:Cancel",
-                     popX + POP_W / 2, popY + POP_H - 25, COLOR_TEXT_DIM, fontSmall_);
+                     popX + POP_W / 2, popY + POP_H - 25, T().textDim, fontSmall_);
 }
 
 void UI::handleTextInputEvent(const SDL_Event& event) {

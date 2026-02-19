@@ -409,9 +409,11 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
                     switch (event.cbutton.button) {
                         case SDL_CONTROLLER_BUTTON_DPAD_UP:
                             themeSelCursor_ = (themeSelCursor_ + THEME_COUNT - 1) % THEME_COUNT;
+                            theme_ = &getTheme(themeSelCursor_);
                             break;
                         case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
                             themeSelCursor_ = (themeSelCursor_ + 1) % THEME_COUNT;
+                            theme_ = &getTheme(themeSelCursor_);
                             break;
                         case SDL_CONTROLLER_BUTTON_B: // Switch A = confirm
                             themeIndex_ = themeSelCursor_;
@@ -422,6 +424,8 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
                             break;
                         case SDL_CONTROLLER_BUTTON_A: // Switch B = cancel
                         case SDL_CONTROLLER_BUTTON_X: // Switch Y = cancel
+                            themeIndex_ = themeSelOriginal_;
+                            theme_ = &getTheme(themeIndex_);
                             showThemeSelector_ = false;
                             break;
                     }
@@ -430,9 +434,11 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
                     switch (event.key.keysym.sym) {
                         case SDLK_UP:
                             themeSelCursor_ = (themeSelCursor_ + THEME_COUNT - 1) % THEME_COUNT;
+                            theme_ = &getTheme(themeSelCursor_);
                             break;
                         case SDLK_DOWN:
                             themeSelCursor_ = (themeSelCursor_ + 1) % THEME_COUNT;
+                            theme_ = &getTheme(themeSelCursor_);
                             break;
                         case SDLK_a:
                         case SDLK_RETURN:
@@ -445,6 +451,8 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
                         case SDLK_b:
                         case SDLK_ESCAPE:
                         case SDLK_y:
+                            themeIndex_ = themeSelOriginal_;
+                            theme_ = &getTheme(themeIndex_);
                             showThemeSelector_ = false;
                             break;
                     }
@@ -456,6 +464,7 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
                 uint32_t delay = stickMoved_ ? STICK_REPEAT_DELAY : STICK_INITIAL_DELAY;
                 if (now - stickMoveTime_ >= delay) {
                     themeSelCursor_ = (themeSelCursor_ + (stickDirY_ > 0 ? 1 : THEME_COUNT - 1)) % THEME_COUNT;
+                    theme_ = &getTheme(themeSelCursor_);
                     stickMoveTime_ = now;
                     stickMoved_ = true;
                 }

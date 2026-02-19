@@ -572,7 +572,7 @@ void UI::drawThemeSelectorPopup() {
             drawRectOutline(popX + 20, rowY, POP_W - 40, rowH - 4, T().cursor, 2);
         }
         std::string label = getThemeName(i);
-        if (i == themeIndex_) label = "* " + label + " *";
+        if (i == themeSelOriginal_) label = "* " + label + " *";
         drawTextCentered(label, popX + POP_W / 2, rowY + (rowH - 4) / 2, T().text, font_);
     }
 

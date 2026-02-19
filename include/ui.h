@@ -100,6 +100,7 @@ private:
     // Theme selector state
     bool showThemeSelector_ = false;
     int  themeSelCursor_    = 0;
+    int  themeSelOriginal_  = 0;
 
     // Joystick navigation
     static constexpr int16_t STICK_DEADZONE = 16000;

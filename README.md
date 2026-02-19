@@ -145,6 +145,7 @@ pkHouse includes 7 color themes:
 | Pikachu | Yellow and brown Pikachu colors |
 
 Change themes from the **menu** (+ button) in the main view, or press **Y** on the profile/game selection screens.\
+A live preview is applied as you scroll through the list. Press **A** to confirm or **B** to cancel and revert.\
 Your theme choice is saved automatically and persists across sessions.
 
 ### Save Integrity

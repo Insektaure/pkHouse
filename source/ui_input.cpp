@@ -74,6 +74,7 @@ void UI::handleInput(bool& running) {
                 if (menuSelection_ == 0) {
                     showThemeSelector_ = true;
                     themeSelCursor_ = themeIndex_;
+                    themeSelOriginal_ = themeIndex_;
                     return;
                 }
                 int sel = menuSelection_ - 1; // shift for Theme at index 0

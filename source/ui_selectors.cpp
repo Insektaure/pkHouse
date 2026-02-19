@@ -96,6 +96,7 @@ void UI::handleProfileSelectorInput(bool& running) {
                 case SDL_CONTROLLER_BUTTON_X: // Switch Y = theme
                     showThemeSelector_ = true;
                     themeSelCursor_ = themeIndex_;
+                    themeSelOriginal_ = themeIndex_;
                     break;
                 case SDL_CONTROLLER_BUTTON_BACK: // - = about
                     showAbout_ = true;
@@ -121,6 +122,7 @@ void UI::handleProfileSelectorInput(bool& running) {
                 case SDLK_y:
                     showThemeSelector_ = true;
                     themeSelCursor_ = themeIndex_;
+                    themeSelOriginal_ = themeIndex_;
                     break;
                 case SDLK_MINUS:
                     showAbout_ = true;
@@ -427,6 +429,7 @@ void UI::handleGameSelectorInput(bool& running) {
                 case SDL_CONTROLLER_BUTTON_X: // Switch Y = theme
                     showThemeSelector_ = true;
                     themeSelCursor_ = themeIndex_;
+                    themeSelOriginal_ = themeIndex_;
                     break;
                 case SDL_CONTROLLER_BUTTON_BACK: // - = about
                     showAbout_ = true;
@@ -458,6 +461,7 @@ void UI::handleGameSelectorInput(bool& running) {
                 case SDLK_y:
                     showThemeSelector_ = true;
                     themeSelCursor_ = themeIndex_;
+                    themeSelOriginal_ = themeIndex_;
                     break;
                 case SDLK_MINUS:
                     showAbout_ = true;

@@ -130,6 +130,23 @@ The backup is only created once when initially selecting a game — switching ba
 
 Before backing up, the app checks available SD card space. If there isn't enough free space (2x the save size), a warning is shown with the option to continue without a backup or cancel. If the backup itself fails, you'll see a similar prompt before proceeding.
 
+### Themes
+
+pkHouse includes 7 color themes:
+
+| Theme | Style |
+|-------|-------|
+| Default | Dark blue-gray (original) |
+| HOME | Light pastels inspired by Pokemon HOME |
+| HOME - Violet | Purple/lavender tones from HOME's Pokedex |
+| HOME - Blue | Blue palette from HOME's GTS |
+| HOME - Green | Green variant of the HOME style |
+| HOME - Red | Red variant of the HOME style |
+| Pikachu | Yellow and brown Pikachu colors |
+
+Change themes from the **menu** (+ button) in the main view, or press **Y** on the profile/game selection screens.\
+Your theme choice is saved automatically and persists across sessions.
+
 ### Save Integrity
 
 - **SCBlock saves** (ZA, SV, SwSh, PLA): Decrypted, modified, and re-encrypted. A round-trip verification runs on load to confirm the cycle is lossless.
@@ -145,6 +162,7 @@ Before backing up, the app checks available SD card space. If there isn't enough
 |--------|--------|
 | D-Pad Left/Right | Navigate profiles |
 | A | Select profile |
+| Y | Theme selector |
 | - | About |
 | + | Quit |
 
@@ -155,6 +173,7 @@ Before backing up, the app checks available SD card space. If there isn't enough
 | D-Pad | Navigate game grid |
 | A | Select game |
 | B | Back to profile selector |
+| Y | Theme selector |
 | - | About |
 | + | Quit |
 
@@ -190,6 +209,7 @@ When switching banks, the selector appears on the side being switched while the 
 
 | Option | Description |
 |--------|-------------|
+| Theme | Open the theme selector |
 | Switch Bank | Save game and bank, return to bank selector |
 | Change Game | Save everything, return to game selector |
 | Save & Quit | Save everything and exit |
@@ -199,6 +219,7 @@ When switching banks, the selector appears on the side being switched while the 
 
 | Option | Description |
 |--------|-------------|
+| Theme | Open the theme selector |
 | Switch Left Bank | Save both banks, switch the left bank |
 | Switch Right Bank | Save both banks, switch the right bank |
 | Change Game | Save both banks, return to game selector |

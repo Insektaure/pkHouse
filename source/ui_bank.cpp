@@ -128,7 +128,7 @@ void UI::drawBankSelectorFrame() {
         label += gameDisplayNameOf(selectedGame_);
         int tw = 0, th = 0;
         TTF_SizeUTF8(fontSmall_, label.c_str(), &tw, &th);
-        drawText(label, SCREEN_W - tw - 15, SCREEN_H - 30, T().goldLabel, fontSmall_);
+        drawText(label, SCREEN_W - tw - 15, SCREEN_H - 26, T().goldLabel, fontSmall_);
     }
 
     // Delete confirmation overlay

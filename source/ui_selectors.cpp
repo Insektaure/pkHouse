@@ -340,7 +340,7 @@ void UI::drawGameSelectorFrame() {
         std::string profileLabel = account_.profiles()[selectedProfile_].nickname;
         int tw = 0, th = 0;
         TTF_SizeUTF8(fontSmall_, profileLabel.c_str(), &tw, &th);
-        drawText(profileLabel, SCREEN_W - tw - 15, SCREEN_H - 30, T().goldLabel, fontSmall_);
+        drawText(profileLabel, SCREEN_W - tw - 15, SCREEN_H - 26, T().goldLabel, fontSmall_);
     } else {
         drawStatusBar("A:Select  B:Quit  Y:Theme  -:About");
     }
@@ -348,7 +348,7 @@ void UI::drawGameSelectorFrame() {
         const char* modeLabel = "Dual Bank Mode";
         int tw = 0, th = 0;
         TTF_SizeUTF8(fontSmall_, modeLabel, &tw, &th);
-        drawText(modeLabel, SCREEN_W - tw - 15, SCREEN_H - 30, T().goldLabel, fontSmall_);
+        drawText(modeLabel, SCREEN_W - tw - 15, SCREEN_H - 26, T().goldLabel, fontSmall_);
     }
 }
 

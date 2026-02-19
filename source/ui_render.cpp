@@ -83,7 +83,7 @@ void UI::drawTextCentered(const std::string& text, int cx, int cy, SDL_Color col
 
 void UI::drawStatusBar(const std::string& msg) {
     drawRect(0, SCREEN_H - 35, SCREEN_W, 35, T().statusBarBg);
-    drawText(msg, 15, SCREEN_H - 30, T().statusText, fontSmall_);
+    drawText(msg, 15, SCREEN_H - 26, T().statusText, fontSmall_);
 }
 
 void UI::drawSlot(int x, int y, const Pokemon& pkm, bool isCursor, int selectOrder) {
@@ -319,7 +319,7 @@ void UI::drawFrame() {
         label += gameDisplayNameOf(selectedGame_);
         int tw = 0, th = 0;
         TTF_SizeUTF8(fontSmall_, label.c_str(), &tw, &th);
-        drawText(label, SCREEN_W - tw - 15, SCREEN_H - 30, T().goldLabel, fontSmall_);
+        drawText(label, SCREEN_W - tw - 15, SCREEN_H - 26, T().goldLabel, fontSmall_);
     }
 
     // Held Pokemon overlay (draw on top of panels, under popups)

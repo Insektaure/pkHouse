@@ -166,8 +166,10 @@ Available filters:
 | Level | Min and max level range |
 | Perfect IVs | Off / 1+ (at least one 31 IV) / 6IV (all 31) |
 
-Results are shown as a scrollable list with status badges ([S] shiny, [A] alpha, [E] egg), species name, level, gender, and location.\
-Press **A** to jump directly to a result in the box view, **L/R** to skip 10 results, **X** to go back and adjust filters, or **B** to close.
+Two result modes are available (selectable in the filter with Left/Right):
+
+- **List**: Results are shown as a scrollable list with status badges ([S] shiny, [A] alpha, [E] egg), species name, level, gender, and location. Press **A** to jump directly to a result in the box view, **L/R** to skip 10 results, **X** to go back and adjust filters, or **B** to close.
+- **Highlight**: Returns to the box view with matching Pokemon outlined in color and non-matching Pokemon dimmed. The highlight follows Pokemon as you move them between slots. Press **B** to clear highlights, or open the menu to start a new search.
 
 ### Save Integrity
 

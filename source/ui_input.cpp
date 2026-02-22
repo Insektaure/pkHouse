@@ -289,10 +289,10 @@ void UI::handleInput(bool& running) {
         if (event.type == SDL_CONTROLLERBUTTONDOWN) {
             switch (event.cbutton.button) {
                 case SDL_CONTROLLER_BUTTON_B: // Switch A (right) = SDL B
-                    if (!yHeld_) actionSelect();
+                    if (!yHeld_) { actionSelect(); refreshHighlightSet(); }
                     break;
                 case SDL_CONTROLLER_BUTTON_A: // Switch B (bottom) = SDL A
-                    if (!yHeld_) actionCancel();
+                    if (!yHeld_) { actionCancel(); refreshHighlightSet(); }
                     break;
                 case SDL_CONTROLLER_BUTTON_Y: // Switch X (top) = SDL Y
                 {
@@ -307,6 +307,7 @@ void UI::handleInput(bool& running) {
                             swapHistory_.clear();
                             holding_ = false;
                             positionPreserve_ = false;
+                            refreshHighlightSet();
                         }
                     } else {
                         Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(gridCols()), cursor_.panel);
@@ -364,9 +365,9 @@ void UI::handleInput(bool& running) {
                 case SDLK_LEFT:   moveCursor(-1, 0); break;
                 case SDLK_RIGHT:  moveCursor(+1, 0); break;
                 case SDLK_a:
-                case SDLK_RETURN: if (!yHeld_) actionSelect(); break;
+                case SDLK_RETURN: if (!yHeld_) { actionSelect(); refreshHighlightSet(); } break;
                 case SDLK_b:
-                case SDLK_ESCAPE: if (!yHeld_) actionCancel(); break;
+                case SDLK_ESCAPE: if (!yHeld_) { actionCancel(); refreshHighlightSet(); } break;
                 case SDLK_x:
                 {
                     if (yHeld_) break;
@@ -380,6 +381,7 @@ void UI::handleInput(bool& running) {
                             swapHistory_.clear();
                             holding_ = false;
                             positionPreserve_ = false;
+                            refreshHighlightSet();
                         }
                     } else {
                         Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(gridCols()), cursor_.panel);
@@ -1010,6 +1012,61 @@ void UI::handleSearchResultsInput(const SDL_Event& event) {
     }
 }
 
+bool UI::matchesSearchFilter(const Pokemon& pkm,
+                             const std::string& filterSpecies,
+                             const std::string& filterOT) const {
+    if (pkm.isEmpty()) return false;
+
+    auto toLower = [](const std::string& s) {
+        std::string out = s;
+        for (auto& c : out) c = std::tolower(static_cast<unsigned char>(c));
+        return out;
+    };
+
+    if (!filterSpecies.empty()) {
+        std::string name = toLower(SpeciesName::get(pkm.species()));
+        if (name.find(filterSpecies) == std::string::npos)
+            return false;
+    }
+
+    if (!filterOT.empty()) {
+        std::string ot = toLower(pkm.otName());
+        if (ot.find(filterOT) == std::string::npos)
+            return false;
+    }
+
+    if (searchFilter_.filterShiny && !pkm.isShiny()) return false;
+    if (searchFilter_.filterEgg && !pkm.isEgg()) return false;
+    if (searchFilter_.filterAlpha && !pkm.isAlpha()) return false;
+
+    if (searchFilter_.gender != GenderFilter::Any) {
+        uint8_t g = pkm.gender();
+        if (searchFilter_.gender == GenderFilter::Male && g != 0) return false;
+        if (searchFilter_.gender == GenderFilter::Female && g != 1) return false;
+        if (searchFilter_.gender == GenderFilter::Genderless && g != 2) return false;
+    }
+
+    if (!pkm.isEgg()) {
+        uint8_t lv = pkm.level();
+        if (searchFilter_.levelMin > 0 && lv < searchFilter_.levelMin) return false;
+        if (searchFilter_.levelMax > 0 && lv > searchFilter_.levelMax) return false;
+    }
+
+    if (searchFilter_.perfectIVs != PerfectIVFilter::Off) {
+        int perfect = 0;
+        if (pkm.ivHp()  == 31) perfect++;
+        if (pkm.ivAtk() == 31) perfect++;
+        if (pkm.ivDef() == 31) perfect++;
+        if (pkm.ivSpe() == 31) perfect++;
+        if (pkm.ivSpA() == 31) perfect++;
+        if (pkm.ivSpD() == 31) perfect++;
+        if (searchFilter_.perfectIVs == PerfectIVFilter::AtLeastOne && perfect == 0) return false;
+        if (searchFilter_.perfectIVs == PerfectIVFilter::All6 && perfect < 6) return false;
+    }
+
+    return true;
+}
+
 void UI::executeSearch() {
     searchResults_.clear();
 
@@ -1018,56 +1075,8 @@ void UI::executeSearch() {
         for (auto& c : out) c = std::tolower(static_cast<unsigned char>(c));
         return out;
     };
-
     std::string filterSpecies = toLower(searchFilter_.speciesName);
     std::string filterOT = toLower(searchFilter_.otName);
-
-    auto matches = [&](const Pokemon& pkm) -> bool {
-        if (pkm.isEmpty()) return false;
-
-        if (!filterSpecies.empty()) {
-            std::string name = toLower(SpeciesName::get(pkm.species()));
-            if (name.find(filterSpecies) == std::string::npos)
-                return false;
-        }
-
-        if (!filterOT.empty()) {
-            std::string ot = toLower(pkm.otName());
-            if (ot.find(filterOT) == std::string::npos)
-                return false;
-        }
-
-        if (searchFilter_.filterShiny && !pkm.isShiny()) return false;
-        if (searchFilter_.filterEgg && !pkm.isEgg()) return false;
-        if (searchFilter_.filterAlpha && !pkm.isAlpha()) return false;
-
-        if (searchFilter_.gender != GenderFilter::Any) {
-            uint8_t g = pkm.gender();
-            if (searchFilter_.gender == GenderFilter::Male && g != 0) return false;
-            if (searchFilter_.gender == GenderFilter::Female && g != 1) return false;
-            if (searchFilter_.gender == GenderFilter::Genderless && g != 2) return false;
-        }
-
-        if (!pkm.isEgg()) {
-            uint8_t lv = pkm.level();
-            if (searchFilter_.levelMin > 0 && lv < searchFilter_.levelMin) return false;
-            if (searchFilter_.levelMax > 0 && lv > searchFilter_.levelMax) return false;
-        }
-
-        if (searchFilter_.perfectIVs != PerfectIVFilter::Off) {
-            int perfect = 0;
-            if (pkm.ivHp()  == 31) perfect++;
-            if (pkm.ivAtk() == 31) perfect++;
-            if (pkm.ivDef() == 31) perfect++;
-            if (pkm.ivSpe() == 31) perfect++;
-            if (pkm.ivSpA() == 31) perfect++;
-            if (pkm.ivSpD() == 31) perfect++;
-            if (searchFilter_.perfectIVs == PerfectIVFilter::AtLeastOne && perfect == 0) return false;
-            if (searchFilter_.perfectIVs == PerfectIVFilter::All6 && perfect < 6) return false;
-        }
-
-        return true;
-    };
 
     auto scanPanel = [&](Panel panel) {
         int boxes, slots;
@@ -1088,7 +1097,7 @@ void UI::executeSearch() {
         for (int b = 0; b < boxes; b++) {
             for (int s = 0; s < slots; s++) {
                 Pokemon pkm = getPokemonAt(b, s, panel);
-                if (matches(pkm)) {
+                if (matchesSearchFilter(pkm, filterSpecies, filterOT)) {
                     SearchResult r;
                     r.panel = panel;
                     r.box = b;
@@ -1189,4 +1198,53 @@ void UI::clearSearchHighlight() {
     searchHighlightActive_ = false;
     searchMatchSet_.clear();
     searchResults_.clear();
+}
+
+void UI::refreshHighlightSet() {
+    if (!searchHighlightActive_) return;
+    searchMatchSet_.clear();
+    searchResults_.clear();
+
+    auto toLower = [](const std::string& s) {
+        std::string out = s;
+        for (auto& c : out) c = std::tolower(static_cast<unsigned char>(c));
+        return out;
+    };
+    std::string filterSpecies = toLower(searchFilter_.speciesName);
+    std::string filterOT = toLower(searchFilter_.otName);
+
+    auto scanPanel = [&](Panel panel) {
+        int boxes, slots;
+        if (panel == Panel::Game) {
+            if (appletMode_) {
+                if (leftBankName_.empty()) return;
+                boxes = bankLeft_.boxCount();
+                slots = bankLeft_.slotsPerBox();
+            } else {
+                boxes = save_.boxCount();
+                slots = save_.slotsPerBox();
+            }
+        } else {
+            boxes = bank_.boxCount();
+            slots = bank_.slotsPerBox();
+        }
+
+        for (int b = 0; b < boxes; b++) {
+            for (int s = 0; s < slots; s++) {
+                Pokemon pkm = getPokemonAt(b, s, panel);
+                if (matchesSearchFilter(pkm, filterSpecies, filterOT)) {
+                    uint64_t key = (static_cast<uint64_t>(panel == Panel::Bank ? 1 : 0) << 48)
+                                 | (static_cast<uint64_t>(b) << 16)
+                                 | static_cast<uint64_t>(s);
+                    searchMatchSet_.insert(key);
+                    searchResults_.push_back({panel, b, s, SpeciesName::get(pkm.species()),
+                        pkm.level(), pkm.isShiny(), pkm.isEgg(), pkm.isAlpha(),
+                        pkm.gender(), pkm.otName()});
+                }
+            }
+        }
+    };
+
+    scanPanel(Panel::Game);
+    scanPanel(Panel::Bank);
 }

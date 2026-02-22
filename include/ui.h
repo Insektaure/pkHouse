@@ -317,8 +317,11 @@ private:
     void handleSearchFilterInput(const SDL_Event& event);
     void handleSearchResultsInput(const SDL_Event& event);
     void executeSearch();
+    bool matchesSearchFilter(const Pokemon& pkm, const std::string& filterSpecies,
+                             const std::string& filterOT) const;
     bool isSearchMatch(Panel panel, int box, int slot) const;
     void clearSearchHighlight();
+    void refreshHighlightSet();
     void handleBoxViewInput(const SDL_Event& event);
     void moveBoxViewCursor(int dx, int dy);
     void openBoxView(Panel panel);

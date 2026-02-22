@@ -428,6 +428,8 @@ void UI::handleInput(bool& running) {
                 }
                 if (stickDirX_ != 0 && searchFilterCursor_ == 6)
                     searchLevelFocus_ = stickDirX_ > 0 ? 1 : 0;
+                if (stickDirX_ != 0 && searchFilterCursor_ == 8)
+                    searchFilter_.mode = stickDirX_ > 0 ? SearchMode::Highlight : SearchMode::List;
             } else if (showSearchResults_) {
                 if (stickDirY_ != 0 && !searchResults_.empty()) {
                     searchResultCursor_ += stickDirY_ > 0 ? 1 : -1;
@@ -888,9 +890,11 @@ void UI::handleSearchFilterInput(const SDL_Event& event) {
                 break;
             case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
                 if (searchFilterCursor_ == 6) searchLevelFocus_ = 0;
+                else if (searchFilterCursor_ == 8) searchFilter_.mode = SearchMode::List;
                 break;
             case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
                 if (searchFilterCursor_ == 6) searchLevelFocus_ = 1;
+                else if (searchFilterCursor_ == 8) searchFilter_.mode = SearchMode::Highlight;
                 break;
             case SDL_CONTROLLER_BUTTON_B: // Switch A = confirm
                 confirmAction();
@@ -910,9 +914,11 @@ void UI::handleSearchFilterInput(const SDL_Event& event) {
                 break;
             case SDLK_LEFT:
                 if (searchFilterCursor_ == 6) searchLevelFocus_ = 0;
+                else if (searchFilterCursor_ == 8) searchFilter_.mode = SearchMode::List;
                 break;
             case SDLK_RIGHT:
                 if (searchFilterCursor_ == 6) searchLevelFocus_ = 1;
+                else if (searchFilterCursor_ == 8) searchFilter_.mode = SearchMode::Highlight;
                 break;
             case SDLK_a:
             case SDLK_RETURN:

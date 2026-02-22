@@ -697,9 +697,11 @@ void UI::drawSearchFilterPopup() {
             }
             case 8: {
                 drawText("Mode:", labelX, textY, T().text, font_);
-                const char* modeStr = (searchFilter_.mode == SearchMode::Highlight) ? "Highlight" : "List";
-                SDL_Color modeColor = (searchFilter_.mode == SearchMode::Highlight) ? T().searchMatch : T().text;
-                drawText(modeStr, valueX, textY, modeColor, font_);
+                bool isList = (searchFilter_.mode == SearchMode::List);
+                drawText(isList ? "[x] List" : "[ ] List",
+                         valueX, textY, isList ? T().text : T().textDim, font_);
+                drawText(!isList ? "[x] Highlight" : "[ ] Highlight",
+                         valueX + 100, textY, !isList ? T().searchMatch : T().textDim, font_);
                 break;
             }
             case 9:

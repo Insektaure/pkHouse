@@ -52,7 +52,8 @@ Navigate freely between both panels to move Pokemon back and forth.
 
 Press **A** on a Pokemon to pick it up, navigate to any slot (in either panel), and press **A** again to place it.\
 Placing on an occupied slot swaps the two Pokemon.\
-Press **B** to cancel and return the Pokemon to its original slot.
+Press **B** to cancel and return the Pokemon to its original slot.\
+Press **X** while holding Pokemon to delete them (with confirmation). Useful for clearing boxes of rejected eggs.
 
 ### Multi-Select
 
@@ -202,7 +203,7 @@ When switching banks, the selector appears on the side being switched while the 
 | A | Pick up / Place Pokemon |
 | B | Cancel / Return held Pokemon |
 | Y | Toggle multi-select |
-| X | View Pokemon details |
+| X | View Pokemon details / Delete held Pokemon |
 | + | Open menu |
 | - | About |
 

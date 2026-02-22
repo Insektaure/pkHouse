@@ -274,7 +274,19 @@ void UI::handleInput(bool& running) {
                     break;
                 case SDL_CONTROLLER_BUTTON_Y: // Switch X (top) = SDL Y
                 {
-                    if (!yHeld_) {
+                    if (yHeld_) break;
+                    if (holding_) {
+                        int count = heldMulti_.empty() ? 1 : (int)heldMulti_.size();
+                        std::string msg = "Delete " + std::to_string(count) + " Pokemon?";
+                        if (showConfirmDialog("Delete Pokemon", msg)) {
+                            heldMulti_.clear();
+                            heldMultiSlots_.clear();
+                            heldPkm_ = Pokemon{};
+                            swapHistory_.clear();
+                            holding_ = false;
+                            positionPreserve_ = false;
+                        }
+                    } else {
                         Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(gridCols()), cursor_.panel);
                         if (!pkm.isEmpty())
                             showDetail_ = true;
@@ -335,7 +347,19 @@ void UI::handleInput(bool& running) {
                 case SDLK_ESCAPE: if (!yHeld_) actionCancel(); break;
                 case SDLK_x:
                 {
-                    if (!yHeld_) {
+                    if (yHeld_) break;
+                    if (holding_) {
+                        int count = heldMulti_.empty() ? 1 : (int)heldMulti_.size();
+                        std::string msg = "Delete " + std::to_string(count) + " Pokemon?";
+                        if (showConfirmDialog("Delete Pokemon", msg)) {
+                            heldMulti_.clear();
+                            heldMultiSlots_.clear();
+                            heldPkm_ = Pokemon{};
+                            swapHistory_.clear();
+                            holding_ = false;
+                            positionPreserve_ = false;
+                        }
+                    } else {
                         Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(gridCols()), cursor_.panel);
                         if (!pkm.isEmpty())
                             showDetail_ = true;

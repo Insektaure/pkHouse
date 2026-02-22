@@ -84,6 +84,7 @@ void UI::handleInput(bool& running) {
                     showSearchFilter_ = true;
                     searchFilterCursor_ = 0;
                     searchFilter_ = SearchFilter{};
+                    clearSearchHighlight();
                     return;
                 }
                 int sel = menuSelection_ - 2; // shift for Theme + Search at index 0-1
@@ -421,9 +422,9 @@ void UI::handleInput(bool& running) {
                 bool alpha = (selectedGame_ == GameType::LA || selectedGame_ == GameType::ZA);
                 if (stickDirY_ != 0) {
                     int dir = stickDirY_ > 0 ? 1 : -1;
-                    searchFilterCursor_ = (searchFilterCursor_ + dir + 10) % 10;
+                    searchFilterCursor_ = (searchFilterCursor_ + dir + 11) % 11;
                     if (!alpha && searchFilterCursor_ == 4)
-                        searchFilterCursor_ = (searchFilterCursor_ + dir + 10) % 10;
+                        searchFilterCursor_ = (searchFilterCursor_ + dir + 11) % 11;
                 }
                 if (stickDirX_ != 0 && searchFilterCursor_ == 6)
                     searchLevelFocus_ = stickDirX_ > 0 ? 1 : 0;
@@ -666,6 +667,12 @@ void UI::actionSelect() {
 }
 
 void UI::actionCancel() {
+    // Dismiss search highlight
+    if (searchHighlightActive_ && !holding_ && selectedSlots_.empty()) {
+        clearSearchHighlight();
+        return;
+    }
+
     // Multi-hold cancel: return all to original positions
     if (holding_ && !heldMulti_.empty()) {
         for (int i = 0; i < (int)heldMulti_.size(); i++)
@@ -836,9 +843,9 @@ void UI::handleSearchFilterInput(const SDL_Event& event) {
     bool hasAlpha = (selectedGame_ == GameType::LA || selectedGame_ == GameType::ZA);
 
     auto moveFilterCursor = [&](int dir) {
-        searchFilterCursor_ = (searchFilterCursor_ + dir + 10) % 10;
+        searchFilterCursor_ = (searchFilterCursor_ + dir + 11) % 11;
         if (!hasAlpha && searchFilterCursor_ == 4)
-            searchFilterCursor_ = (searchFilterCursor_ + dir + 10) % 10;
+            searchFilterCursor_ = (searchFilterCursor_ + dir + 11) % 11;
     };
 
     auto confirmAction = [&]() {
@@ -862,8 +869,12 @@ void UI::handleSearchFilterInput(const SDL_Event& event) {
                 searchFilter_.perfectIVs = static_cast<PerfectIVFilter>(
                     (static_cast<int>(searchFilter_.perfectIVs) + 1) % 3);
                 break;
-            case 8: searchFilter_ = SearchFilter{}; break;
-            case 9: executeSearch(); break;
+            case 8:
+                searchFilter_.mode = (searchFilter_.mode == SearchMode::List)
+                    ? SearchMode::Highlight : SearchMode::List;
+                break;
+            case 9: searchFilter_ = SearchFilter{}; break;
+            case 10: executeSearch(); break;
         }
     };
 
@@ -1092,10 +1103,24 @@ void UI::executeSearch() {
     scanPanel(Panel::Game);
     scanPanel(Panel::Bank);
 
-    searchResultCursor_ = 0;
-    searchResultScroll_ = 0;
-    showSearchFilter_ = false;
-    showSearchResults_ = true;
+    if (searchFilter_.mode == SearchMode::Highlight) {
+        searchMatchSet_.clear();
+        for (const auto& r : searchResults_) {
+            uint64_t key = (static_cast<uint64_t>(r.panel == Panel::Bank ? 1 : 0) << 48)
+                         | (static_cast<uint64_t>(r.box) << 16)
+                         | static_cast<uint64_t>(r.slot);
+            searchMatchSet_.insert(key);
+        }
+        searchHighlightActive_ = true;
+        showSearchFilter_ = false;
+    } else {
+        searchMatchSet_.clear();
+        searchHighlightActive_ = false;
+        searchResultCursor_ = 0;
+        searchResultScroll_ = 0;
+        showSearchFilter_ = false;
+        showSearchResults_ = true;
+    }
 }
 
 void UI::openBoxView(Panel panel) {
@@ -1145,4 +1170,17 @@ void UI::moveBoxViewCursor(int dx, int dy) {
         newIdx = (dx > 0 || dy > 0) ? 0 : totalBoxes - 1;
 
     boxViewCursor_ = newIdx;
+}
+
+bool UI::isSearchMatch(Panel panel, int box, int slot) const {
+    uint64_t key = (static_cast<uint64_t>(panel == Panel::Bank ? 1 : 0) << 48)
+                 | (static_cast<uint64_t>(box) << 16)
+                 | static_cast<uint64_t>(slot);
+    return searchMatchSet_.count(key) > 0;
+}
+
+void UI::clearSearchHighlight() {
+    searchHighlightActive_ = false;
+    searchMatchSet_.clear();
+    searchResults_.clear();
 }

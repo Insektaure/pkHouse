@@ -59,6 +59,10 @@ struct Theme {
 
     // Text Input
     SDL_Color textFieldBg;
+
+    // Search Highlight
+    SDL_Color searchMatch;
+    SDL_Color searchDim;
 };
 
 inline constexpr int THEME_COUNT = 7;

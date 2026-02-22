@@ -87,7 +87,8 @@ void UI::drawStatusBar(const std::string& msg) {
     drawText(msg, 15, SCREEN_H - 26, T().statusText, fontSmall_);
 }
 
-void UI::drawSlot(int x, int y, const Pokemon& pkm, bool isCursor, int selectOrder) {
+void UI::drawSlot(int x, int y, const Pokemon& pkm, bool isCursor, int selectOrder,
+                  int highlightState) {
     SDL_Color bgColor;
     if (pkm.isEmpty()) {
         bgColor = T().slotEmpty;
@@ -99,6 +100,10 @@ void UI::drawSlot(int x, int y, const Pokemon& pkm, bool isCursor, int selectOrd
 
     // Slot background
     drawRect(x, y, CELL_W, CELL_H, bgColor);
+
+    // Search match outline (drawn early so it frames the slot content)
+    if (highlightState == 1)
+        drawRectOutline(x + 1, y + 1, CELL_W - 2, CELL_H - 2, T().searchMatch, 2);
 
     // Selection outline (drawn before cursor so cursor overlays it)
     if (selectOrder > 0) {
@@ -195,6 +200,10 @@ void UI::drawSlot(int x, int y, const Pokemon& pkm, bool isCursor, int selectOrd
         }
         drawTextCentered(num, cx, cy, T().textOnBadge, font_);
     }
+
+    // Search dim overlay (drawn last so it covers everything)
+    if (highlightState == -1)
+        drawRect(x, y, CELL_W, CELL_H, T().searchDim);
 }
 
 void UI::drawPanel(int panelX, const std::string& boxName, int boxIdx,
@@ -238,7 +247,10 @@ void UI::drawPanel(int panelX, const std::string& boxName, int boxIdx,
                     }
                 }
             }
-            drawSlot(cellX, cellY, pkm, isCursor, selOrder);
+            int hlState = 0;
+            if (searchHighlightActive_ && !pkm.isEmpty())
+                hlState = isSearchMatch(panelId, box, slot) ? 1 : -1;
+            drawSlot(cellX, cellY, pkm, isCursor, selOrder, hlState);
         }
     }
 }
@@ -290,7 +302,10 @@ void UI::drawFrame() {
 
     // Status bar
     std::string statusMsg = "D-Pad:Move  L/R:Box  A:Pick/Place  Y:Select  YY:All  B:Cancel  X:Detail";
-    if (holding_ && !heldMulti_.empty()) {
+    if (searchHighlightActive_ && !holding_ && selectedSlots_.empty() && !yHeld_) {
+        statusMsg = "Search: " + std::to_string(searchResults_.size()) +
+                    " matches  |  B:Clear  +:Menu";
+    } else if (holding_ && !heldMulti_.empty()) {
         statusMsg = "Holding " + std::to_string(heldMulti_.size()) +
                     " Pokemon" + (positionPreserve_ ? " (keep positions)" : "") +
                     "  |  A:Place  B:Return  X:Delete";
@@ -596,7 +611,7 @@ void UI::drawSearchFilterPopup() {
     drawRect(0, 0, SCREEN_W, SCREEN_H, T().overlay);
 
     bool hasAlpha = (selectedGame_ == GameType::LA || selectedGame_ == GameType::ZA);
-    int rowCount = hasAlpha ? 10 : 9;
+    int rowCount = hasAlpha ? 11 : 10;
 
     constexpr int POP_W = 600;
     constexpr int ROW_H = 36;
@@ -614,7 +629,7 @@ void UI::drawSearchFilterPopup() {
     int valueX = popX + 230;
 
     int visualRow = 0;
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 11; i++) {
         if (i == 4 && !hasAlpha) continue;
 
         int rowY = startY + visualRow * ROW_H;
@@ -680,10 +695,17 @@ void UI::drawSearchFilterPopup() {
                 drawText(iv, valueX, textY, T().text, font_);
                 break;
             }
-            case 8:
+            case 8: {
+                drawText("Mode:", labelX, textY, T().text, font_);
+                const char* modeStr = (searchFilter_.mode == SearchMode::Highlight) ? "Highlight" : "List";
+                SDL_Color modeColor = (searchFilter_.mode == SearchMode::Highlight) ? T().searchMatch : T().text;
+                drawText(modeStr, valueX, textY, modeColor, font_);
+                break;
+            }
+            case 9:
                 drawTextCentered("[ Reset ]", popX + POP_W / 2, rowY + (ROW_H - 4) / 2, T().textDim, font_);
                 break;
-            case 9:
+            case 10:
                 drawTextCentered("[ Search ]", popX + POP_W / 2, rowY + (ROW_H - 4) / 2, T().text, font_);
                 break;
         }

@@ -10,6 +10,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <unordered_set>
 
 // Which panel the cursor is on
 enum class Panel { Game, Bank };
@@ -26,6 +27,7 @@ enum class TextInputPurpose {
 // Search filter enums
 enum class GenderFilter { Any, Male, Female, Genderless };
 enum class PerfectIVFilter { Off, AtLeastOne, All6 };
+enum class SearchMode { List, Highlight };
 
 // Search filter criteria
 struct SearchFilter {
@@ -38,6 +40,7 @@ struct SearchFilter {
     PerfectIVFilter perfectIVs = PerfectIVFilter::Off;
     int levelMin = 0;
     int levelMax = 0;
+    SearchMode mode = SearchMode::List;
 };
 
 // Search result entry
@@ -145,6 +148,8 @@ private:
     int  searchLevelFocus_   = 0;   // 0=min, 1=max
     int  searchResultCursor_ = 0;
     int  searchResultScroll_ = 0;
+    bool searchHighlightActive_ = false;
+    std::unordered_set<uint64_t> searchMatchSet_;
 
     // Joystick navigation
     static constexpr int16_t STICK_DEADZONE = 16000;
@@ -289,7 +294,8 @@ private:
     void drawPanel(int panelX, const std::string& boxName, int boxIdx,
                    int totalBoxes, bool isActive, SaveFile* save, Bank* bank, int box,
                    Panel panelId);
-    void drawSlot(int x, int y, const Pokemon& pkm, bool isCursor, int selectOrder);
+    void drawSlot(int x, int y, const Pokemon& pkm, bool isCursor, int selectOrder,
+                  int highlightState = 0);
     void drawText(const std::string& text, int x, int y, SDL_Color color, TTF_Font* f);
     void drawTextCentered(const std::string& text, int cx, int cy, SDL_Color color, TTF_Font* f);
     void drawRect(int x, int y, int w, int h, SDL_Color color);
@@ -311,6 +317,8 @@ private:
     void handleSearchFilterInput(const SDL_Event& event);
     void handleSearchResultsInput(const SDL_Event& event);
     void executeSearch();
+    bool isSearchMatch(Panel panel, int box, int slot) const;
+    void clearSearchHighlight();
     void handleBoxViewInput(const SDL_Event& event);
     void moveBoxViewCursor(int dx, int dy);
     void openBoxView(Panel panel);

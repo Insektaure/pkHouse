@@ -35,6 +35,8 @@ static const Theme themes[THEME_COUNT] = {
         .miniCellEmpty   = {55, 55, 70, 180},
         .miniCellFull    = {55, 70, 90, 200},
         .textFieldBg     = {30, 30, 40, 255},
+        .searchMatch     = {255, 140, 50, 255},
+        .searchDim       = {0, 0, 0, 120},
     },
 
     // ===== 1: HOME (Pokemon HOME-inspired light pastel theme) =====
@@ -70,6 +72,8 @@ static const Theme themes[THEME_COUNT] = {
         .miniCellEmpty   = {225, 230, 240, 200},
         .miniCellFull    = {190, 220, 218, 220},
         .textFieldBg     = {245, 245, 250, 255},
+        .searchMatch     = {230, 100, 60, 255},
+        .searchDim       = {0, 0, 0, 80},
     },
 
     // ===== 2: HOME - Violet (Pokemon HOME Violet Pokedex theme) =====
@@ -105,6 +109,8 @@ static const Theme themes[THEME_COUNT] = {
         .miniCellEmpty   = {222, 215, 238, 200},     // Pale purple
         .miniCellFull    = {195, 185, 218, 220},     // Soft purple
         .textFieldBg     = {242, 238, 250, 255},     // Very light lavender
+        .searchMatch     = {240, 140, 40, 255},
+        .searchDim       = {30, 20, 50, 90},
     },
 
     // ===== 3: HOME - Blue (Pokemon HOME GTS-style blue theme) =====
@@ -140,6 +146,8 @@ static const Theme themes[THEME_COUNT] = {
         .miniCellEmpty   = {120, 170, 210, 200},     // Soft blue
         .miniCellFull    = {95, 150, 200, 220},      // Steel blue
         .textFieldBg     = {130, 175, 215, 255},     // Muted blue field
+        .searchMatch     = {255, 160, 50, 255},
+        .searchDim       = {20, 50, 90, 90},
     },
 
     // ===== 4: HOME - Green (Pokemon HOME green variant) =====
@@ -175,6 +183,8 @@ static const Theme themes[THEME_COUNT] = {
         .miniCellEmpty   = {120, 185, 150, 200},     // Soft green
         .miniCellFull    = {95, 165, 125, 220},      // Forest green
         .textFieldBg     = {130, 190, 155, 255},     // Muted green field
+        .searchMatch     = {255, 160, 50, 255},
+        .searchDim       = {15, 50, 30, 90},
     },
 
     // ===== 5: HOME - Red (Pokemon HOME red variant) =====
@@ -210,6 +220,8 @@ static const Theme themes[THEME_COUNT] = {
         .miniCellEmpty   = {200, 130, 130, 200},     // Soft red
         .miniCellFull    = {185, 105, 105, 220},     // Crimson
         .textFieldBg     = {210, 140, 140, 255},     // Muted red field
+        .searchMatch     = {255, 200, 50, 255},
+        .searchDim       = {60, 15, 15, 90},
     },
 
     // ===== 6: Pikachu (bright yellow & brown, Pikachu colors) =====
@@ -245,6 +257,8 @@ static const Theme themes[THEME_COUNT] = {
         .miniCellEmpty   = {245, 220, 120, 200},     // Soft yellow
         .miniCellFull    = {235, 200, 85, 220},      // Golden
         .textFieldBg     = {250, 230, 150, 255},     // Light yellow field
+        .searchMatch     = {50, 130, 220, 255},
+        .searchDim       = {60, 40, 10, 100},
     },
 };
 

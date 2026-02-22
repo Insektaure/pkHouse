@@ -1,5 +1,6 @@
 #include "ui.h"
 #include "species_converter.h"
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 
@@ -292,12 +293,12 @@ void UI::drawFrame() {
     if (holding_ && !heldMulti_.empty()) {
         statusMsg = "Holding " + std::to_string(heldMulti_.size()) +
                     " Pokemon" + (positionPreserve_ ? " (keep positions)" : "") +
-                    "  |  A:Place  B:Return";
+                    "  |  A:Place  B:Return  X:Delete";
     } else if (holding_) {
         std::string heldName = heldPkm_.displayName();
         if (!heldName.empty()) {
             statusMsg = "Holding: " + heldName + " Lv." + std::to_string(heldPkm_.level()) +
-                        "  |  A:Place  B:Return";
+                        "  |  A:Place  B:Return  X:Delete";
         }
     } else if (yHeld_ && yDragActive_) {
         statusMsg = "Drag selecting: " + std::to_string(selectedSlots_.size()) +
@@ -344,6 +345,16 @@ void UI::drawFrame() {
     // Box view overlay
     if (showBoxView_) {
         drawBoxViewOverlay();
+    }
+
+    // Search popups
+    if (showSearchFilter_) {
+        drawSearchFilterPopup();
+        if (showTextInput_)
+            drawTextInputPopup();
+    }
+    if (showSearchResults_) {
+        drawSearchResultsPopup();
     }
 }
 
@@ -504,12 +515,12 @@ void UI::drawMenuPopup() {
     drawRect(0, 0, SCREEN_W, SCREEN_H, T().overlay);
 
     // Menu items differ by mode
-    // Applet: Theme / Switch Left Bank / Switch Right Bank / Change Game / Save Banks / Quit
-    // Normal: Theme / Switch Bank / Change Game / Save & Quit / Quit Without Saving
-    int menuCount = appletMode_ ? 6 : 5;
+    // Applet: Theme / Search / Switch Left Bank / Switch Right Bank / Change Game / Save Banks / Quit
+    // Normal: Theme / Search / Switch Bank / Change Game / Save & Quit / Quit Without Saving
+    int menuCount = appletMode_ ? 7 : 6;
 
     constexpr int POP_W = 380;
-    int POP_H = appletMode_ ? 332 : 292;
+    int POP_H = appletMode_ ? 368 : 328;
     int popX = (SCREEN_W - POP_W) / 2;
     int popY = (SCREEN_H - POP_H) / 2;
 
@@ -520,6 +531,7 @@ void UI::drawMenuPopup() {
 
     const char* labelsNormal[] = {
         "Theme",
+        "Search",
         "Switch Bank",
         "Change Game",
         "Save & Quit",
@@ -527,6 +539,7 @@ void UI::drawMenuPopup() {
     };
     const char* labelsApplet[] = {
         "Theme",
+        "Search",
         "Switch Left Bank",
         "Switch Right Bank",
         "Change Game",
@@ -577,6 +590,196 @@ void UI::drawThemeSelectorPopup() {
     }
 
     drawTextCentered("A:Select  B:Cancel", popX + POP_W / 2, popY + POP_H - 18, T().textDim, fontSmall_);
+}
+
+void UI::drawSearchFilterPopup() {
+    drawRect(0, 0, SCREEN_W, SCREEN_H, T().overlay);
+
+    bool hasAlpha = (selectedGame_ == GameType::LA || selectedGame_ == GameType::ZA);
+    int rowCount = hasAlpha ? 10 : 9;
+
+    constexpr int POP_W = 600;
+    constexpr int ROW_H = 36;
+    int POP_H = 50 + rowCount * ROW_H + 30;
+    int popX = (SCREEN_W - POP_W) / 2;
+    int popY = (SCREEN_H - POP_H) / 2;
+
+    drawRect(popX, popY, POP_W, POP_H, T().panelBg);
+    drawRectOutline(popX, popY, POP_W, POP_H, T().cursor, 2);
+
+    drawTextCentered("Search / Filter", popX + POP_W / 2, popY + 22, T().text, font_);
+
+    int startY = popY + 50;
+    int labelX = popX + 30;
+    int valueX = popX + 230;
+
+    int visualRow = 0;
+    for (int i = 0; i < 10; i++) {
+        if (i == 4 && !hasAlpha) continue;
+
+        int rowY = startY + visualRow * ROW_H;
+
+        if (i == searchFilterCursor_) {
+            drawRect(popX + 20, rowY, POP_W - 40, ROW_H - 4, T().menuHighlight);
+            drawRectOutline(popX + 20, rowY, POP_W - 40, ROW_H - 4, T().cursor, 2);
+        }
+
+        int textY = rowY + (ROW_H - 4) / 2 - 9;
+
+        switch (i) {
+            case 0:
+                drawText("Species Name:", labelX, textY, T().text, font_);
+                drawText(searchFilter_.speciesName.empty() ? "(any)" : searchFilter_.speciesName,
+                         valueX, textY, searchFilter_.speciesName.empty() ? T().textDim : T().text, font_);
+                break;
+            case 1:
+                drawText("OT Name:", labelX, textY, T().text, font_);
+                drawText(searchFilter_.otName.empty() ? "(any)" : searchFilter_.otName,
+                         valueX, textY, searchFilter_.otName.empty() ? T().textDim : T().text, font_);
+                break;
+            case 2:
+                drawText("Shiny:", labelX, textY, T().text, font_);
+                drawText(searchFilter_.filterShiny ? "Yes" : "Off",
+                         valueX, textY, searchFilter_.filterShiny ? T().shiny : T().textDim, font_);
+                break;
+            case 3:
+                drawText("Egg:", labelX, textY, T().text, font_);
+                drawText(searchFilter_.filterEgg ? "Yes" : "Off",
+                         valueX, textY, searchFilter_.filterEgg ? T().text : T().textDim, font_);
+                break;
+            case 4:
+                drawText("Alpha:", labelX, textY, T().text, font_);
+                drawText(searchFilter_.filterAlpha ? "Yes" : "Off",
+                         valueX, textY, searchFilter_.filterAlpha ? T().text : T().textDim, font_);
+                break;
+            case 5: {
+                drawText("Gender:", labelX, textY, T().text, font_);
+                const char* g = "Any";
+                if (searchFilter_.gender == GenderFilter::Male)        g = "Male";
+                else if (searchFilter_.gender == GenderFilter::Female)  g = "Female";
+                else if (searchFilter_.gender == GenderFilter::Genderless) g = "Genderless";
+                drawText(g, valueX, textY, T().text, font_);
+                break;
+            }
+            case 6: {
+                drawText("Level:", labelX, textY, T().text, font_);
+                std::string minStr = searchFilter_.levelMin > 0 ? std::to_string(searchFilter_.levelMin) : "-";
+                std::string maxStr = searchFilter_.levelMax > 0 ? std::to_string(searchFilter_.levelMax) : "-";
+                SDL_Color minC = (searchFilterCursor_ == 6 && searchLevelFocus_ == 0) ? T().cursor : T().text;
+                SDL_Color maxC = (searchFilterCursor_ == 6 && searchLevelFocus_ == 1) ? T().cursor : T().text;
+                drawText("[" + minStr + "]", valueX, textY, minC, font_);
+                drawText("-", valueX + 60, textY, T().textDim, font_);
+                drawText("[" + maxStr + "]", valueX + 80, textY, maxC, font_);
+                break;
+            }
+            case 7: {
+                drawText("Perfect IVs:", labelX, textY, T().text, font_);
+                const char* iv = "Off";
+                if (searchFilter_.perfectIVs == PerfectIVFilter::AtLeastOne) iv = "1+";
+                else if (searchFilter_.perfectIVs == PerfectIVFilter::All6)  iv = "6IV";
+                drawText(iv, valueX, textY, T().text, font_);
+                break;
+            }
+            case 8:
+                drawTextCentered("[ Reset ]", popX + POP_W / 2, rowY + (ROW_H - 4) / 2, T().textDim, font_);
+                break;
+            case 9:
+                drawTextCentered("[ Search ]", popX + POP_W / 2, rowY + (ROW_H - 4) / 2, T().text, font_);
+                break;
+        }
+        visualRow++;
+    }
+
+    drawTextCentered("A:Edit/Toggle  B:Cancel", popX + POP_W / 2, popY + POP_H - 18, T().textDim, fontSmall_);
+}
+
+void UI::drawSearchResultsPopup() {
+    drawRect(0, 0, SCREEN_W, SCREEN_H, T().overlay);
+
+    constexpr int POP_W = 900;
+    constexpr int POP_H = 550;
+    int popX = (SCREEN_W - POP_W) / 2;
+    int popY = (SCREEN_H - POP_H) / 2;
+
+    drawRect(popX, popY, POP_W, POP_H, T().panelBg);
+    drawRectOutline(popX, popY, POP_W, POP_H, T().cursor, 2);
+
+    std::string title = "Search Results (" + std::to_string(searchResults_.size()) + " found)";
+    drawTextCentered(title, popX + POP_W / 2, popY + 22, T().text, font_);
+
+    if (searchResults_.empty()) {
+        drawTextCentered("No Pokemon found.", popX + POP_W / 2, popY + POP_H / 2, T().textDim, font_);
+    } else {
+        constexpr int ROW_H = 36;
+        int listY = popY + 50;
+        int listBottom = popY + POP_H - 40;
+        int visibleRows = (listBottom - listY) / ROW_H;
+        int listX = popX + 20;
+        int listW = POP_W - 40;
+
+        int maxScroll = std::max(0, (int)searchResults_.size() - visibleRows);
+        if (searchResultScroll_ > maxScroll) searchResultScroll_ = maxScroll;
+
+        if (searchResultScroll_ > 0)
+            drawTextCentered("^", popX + POP_W / 2, listY - 12, T().arrow, fontSmall_);
+        if (searchResultScroll_ + visibleRows < (int)searchResults_.size())
+            drawTextCentered("v", popX + POP_W / 2, listBottom + 2, T().arrow, fontSmall_);
+
+        for (int i = 0; i < visibleRows && (searchResultScroll_ + i) < (int)searchResults_.size(); i++) {
+            int idx = searchResultScroll_ + i;
+            const auto& r = searchResults_[idx];
+            int rowY = listY + i * ROW_H;
+
+            if (idx == searchResultCursor_) {
+                drawRect(listX, rowY, listW, ROW_H - 4, T().menuHighlight);
+                drawRectOutline(listX, rowY, listW, ROW_H - 4, T().cursor, 2);
+            }
+
+            int textY = rowY + (ROW_H - 4) / 2 - 9;
+            int x = listX + 10;
+
+            // Status badges (fixed-width area for up to three badges)
+            {
+                int bx = x;
+                if (r.isShiny) { drawText("[S]", bx, textY, T().shiny, font_); bx += 35; }
+                if (r.isAlpha) { drawText("[A]", bx, textY, T().text, font_); bx += 35; }
+                if (r.isEgg)   { drawText("[E]", bx, textY, T().textDim, font_); }
+            }
+            x += 105;
+
+            // Species name
+            std::string name = r.isEgg ? "Egg" : r.speciesName;
+            if (name.length() > 14) name = name.substr(0, 13) + ".";
+            drawText(name, x, textY, r.isShiny ? T().shiny : T().text, font_);
+            x += 170;
+
+            // Level
+            std::string lvlStr = r.isEgg ? "Egg" : "Lv." + std::to_string(r.level);
+            drawText(lvlStr, x, textY, T().textDim, font_);
+            x += 70;
+
+            // Gender
+            if (r.gender == 0)
+                drawText("\xe2\x99\x82", x, textY, T().genderMale, font_);
+            else if (r.gender == 1)
+                drawText("\xe2\x99\x80", x, textY, T().genderFemale, font_);
+            x += 30;
+
+            // Location
+            std::string loc;
+            if (appletMode_)
+                loc = (r.panel == Panel::Game ? "Left" : "Right");
+            else
+                loc = (r.panel == Panel::Game ? "Save" : "Bank");
+            loc += " Box " + std::to_string(r.box + 1) + " Slot " + std::to_string(r.slot + 1);
+            drawText(loc, x, textY, T().textDim, font_);
+        }
+    }
+
+    std::string footer = searchResults_.empty()
+        ? "B:Close  X:Back to Filter"
+        : "A:Go to  L/R:Skip 10  B:Close  X:Filter";
+    drawTextCentered(footer, popX + POP_W / 2, popY + POP_H - 18, T().textDim, fontSmall_);
 }
 
 void UI::drawAboutPopup() {

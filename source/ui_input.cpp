@@ -1,6 +1,8 @@
 #include "ui.h"
+#include "species_converter.h"
 #include <algorithm>
 #include <cmath>
+#include <cctype>
 
 // --- Joystick ---
 
@@ -68,16 +70,23 @@ void UI::handleInput(bool& running) {
 
         // While menu is open, handle menu input only
         if (showMenu_) {
-            int menuCount = appletMode_ ? 6 : 5;
+            int menuCount = appletMode_ ? 7 : 6;
             auto menuConfirm = [&]() {
-                // 0=Theme (both modes)
+                // 0=Theme, 1=Search (both modes)
                 if (menuSelection_ == 0) {
                     showThemeSelector_ = true;
                     themeSelCursor_ = themeIndex_;
                     themeSelOriginal_ = themeIndex_;
                     return;
                 }
-                int sel = menuSelection_ - 1; // shift for Theme at index 0
+                if (menuSelection_ == 1) {
+                    showMenu_ = false;
+                    showSearchFilter_ = true;
+                    searchFilterCursor_ = 0;
+                    searchFilter_ = SearchFilter{};
+                    return;
+                }
+                int sel = menuSelection_ - 2; // shift for Theme + Search at index 0-1
                 if (appletMode_) {
                     // sel: 0=Switch Left Bank, 1=Switch Right Bank, 2=Change Game,
                     // 3=Save Banks, 4=Quit
@@ -211,6 +220,18 @@ void UI::handleInput(bool& running) {
                         break;
                 }
             }
+            continue;
+        }
+
+        // While search filter is open, handle its input only
+        if (showSearchFilter_) {
+            handleSearchFilterInput(event);
+            continue;
+        }
+
+        // While search results are open, handle their input only
+        if (showSearchResults_) {
+            handleSearchResultsInput(event);
             continue;
         }
 
@@ -396,13 +417,35 @@ void UI::handleInput(bool& running) {
         uint32_t now = SDL_GetTicks();
         uint32_t delay = stickMoved_ ? STICK_REPEAT_DELAY : STICK_INITIAL_DELAY;
         if (now - stickMoveTime_ >= delay) {
-            if (showBoxView_) {
+            if (showSearchFilter_) {
+                bool alpha = (selectedGame_ == GameType::LA || selectedGame_ == GameType::ZA);
+                if (stickDirY_ != 0) {
+                    int dir = stickDirY_ > 0 ? 1 : -1;
+                    searchFilterCursor_ = (searchFilterCursor_ + dir + 10) % 10;
+                    if (!alpha && searchFilterCursor_ == 4)
+                        searchFilterCursor_ = (searchFilterCursor_ + dir + 10) % 10;
+                }
+                if (stickDirX_ != 0 && searchFilterCursor_ == 6)
+                    searchLevelFocus_ = stickDirX_ > 0 ? 1 : 0;
+            } else if (showSearchResults_) {
+                if (stickDirY_ != 0 && !searchResults_.empty()) {
+                    searchResultCursor_ += stickDirY_ > 0 ? 1 : -1;
+                    if (searchResultCursor_ < 0) searchResultCursor_ = 0;
+                    if (searchResultCursor_ >= (int)searchResults_.size())
+                        searchResultCursor_ = (int)searchResults_.size() - 1;
+                    int visibleRows = 12;
+                    if (searchResultCursor_ < searchResultScroll_)
+                        searchResultScroll_ = searchResultCursor_;
+                    if (searchResultCursor_ >= searchResultScroll_ + visibleRows)
+                        searchResultScroll_ = searchResultCursor_ - visibleRows + 1;
+                }
+            } else if (showBoxView_) {
                 if (stickDirX_ != 0) moveBoxViewCursor(stickDirX_, 0);
                 if (stickDirY_ != 0) moveBoxViewCursor(0, stickDirY_);
             } else if (showMenu_) {
                 if (stickDirY_ != 0)
                 {
-                    int mc = appletMode_ ? 6 : 5;
+                    int mc = appletMode_ ? 7 : 6;
                     menuSelection_ = (menuSelection_ + (stickDirY_ > 0 ? 1 : mc - 1)) % mc;
                 }
             } else if (!showDetail_) {
@@ -769,6 +812,290 @@ void UI::selectAll() {
         if (!pkm.isEmpty())
             selectedSlots_.push_back(s);
     }
+}
+
+// --- Search/Filter ---
+
+void UI::handleSearchFilterInput(const SDL_Event& event) {
+    // Delegate to text input if active (PC only)
+    if (showTextInput_) {
+        handleTextInputEvent(event);
+        return;
+    }
+
+    if (event.type == SDL_CONTROLLERAXISMOTION) {
+        if (event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX ||
+            event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY) {
+            int16_t lx = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTX);
+            int16_t ly = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTY);
+            updateStick(lx, ly);
+        }
+        return;
+    }
+
+    bool hasAlpha = (selectedGame_ == GameType::LA || selectedGame_ == GameType::ZA);
+
+    auto moveFilterCursor = [&](int dir) {
+        searchFilterCursor_ = (searchFilterCursor_ + dir + 10) % 10;
+        if (!hasAlpha && searchFilterCursor_ == 4)
+            searchFilterCursor_ = (searchFilterCursor_ + dir + 10) % 10;
+    };
+
+    auto confirmAction = [&]() {
+        switch (searchFilterCursor_) {
+            case 0: beginTextInput(TextInputPurpose::SearchSpecies); break;
+            case 1: beginTextInput(TextInputPurpose::SearchOT); break;
+            case 2: searchFilter_.filterShiny = !searchFilter_.filterShiny; break;
+            case 3: searchFilter_.filterEgg = !searchFilter_.filterEgg; break;
+            case 4: searchFilter_.filterAlpha = !searchFilter_.filterAlpha; break;
+            case 5:
+                searchFilter_.gender = static_cast<GenderFilter>(
+                    (static_cast<int>(searchFilter_.gender) + 1) % 4);
+                break;
+            case 6:
+                if (searchLevelFocus_ == 0)
+                    beginTextInput(TextInputPurpose::SearchLevelMin);
+                else
+                    beginTextInput(TextInputPurpose::SearchLevelMax);
+                break;
+            case 7:
+                searchFilter_.perfectIVs = static_cast<PerfectIVFilter>(
+                    (static_cast<int>(searchFilter_.perfectIVs) + 1) % 3);
+                break;
+            case 8: searchFilter_ = SearchFilter{}; break;
+            case 9: executeSearch(); break;
+        }
+    };
+
+    if (event.type == SDL_CONTROLLERBUTTONDOWN) {
+        switch (event.cbutton.button) {
+            case SDL_CONTROLLER_BUTTON_DPAD_UP:
+                moveFilterCursor(-1);
+                break;
+            case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+                moveFilterCursor(1);
+                break;
+            case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
+                if (searchFilterCursor_ == 6) searchLevelFocus_ = 0;
+                break;
+            case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
+                if (searchFilterCursor_ == 6) searchLevelFocus_ = 1;
+                break;
+            case SDL_CONTROLLER_BUTTON_B: // Switch A = confirm
+                confirmAction();
+                break;
+            case SDL_CONTROLLER_BUTTON_A: // Switch B = cancel
+                showSearchFilter_ = false;
+                break;
+        }
+    }
+    if (event.type == SDL_KEYDOWN) {
+        switch (event.key.keysym.sym) {
+            case SDLK_UP:
+                moveFilterCursor(-1);
+                break;
+            case SDLK_DOWN:
+                moveFilterCursor(1);
+                break;
+            case SDLK_LEFT:
+                if (searchFilterCursor_ == 6) searchLevelFocus_ = 0;
+                break;
+            case SDLK_RIGHT:
+                if (searchFilterCursor_ == 6) searchLevelFocus_ = 1;
+                break;
+            case SDLK_a:
+            case SDLK_RETURN:
+                confirmAction();
+                break;
+            case SDLK_b:
+            case SDLK_ESCAPE:
+                showSearchFilter_ = false;
+                break;
+        }
+    }
+}
+
+void UI::handleSearchResultsInput(const SDL_Event& event) {
+    if (event.type == SDL_CONTROLLERAXISMOTION) {
+        if (event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX ||
+            event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY) {
+            int16_t lx = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTX);
+            int16_t ly = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTY);
+            updateStick(lx, ly);
+        }
+        return;
+    }
+
+    auto navigate = [&](int dir) {
+        if (searchResults_.empty()) return;
+        searchResultCursor_ += dir;
+        if (searchResultCursor_ < 0) searchResultCursor_ = 0;
+        if (searchResultCursor_ >= (int)searchResults_.size())
+            searchResultCursor_ = (int)searchResults_.size() - 1;
+        int visibleRows = 12;
+        if (searchResultCursor_ < searchResultScroll_)
+            searchResultScroll_ = searchResultCursor_;
+        if (searchResultCursor_ >= searchResultScroll_ + visibleRows)
+            searchResultScroll_ = searchResultCursor_ - visibleRows + 1;
+    };
+
+    auto jumpToResult = [&]() {
+        if (searchResults_.empty()) return;
+        const auto& r = searchResults_[searchResultCursor_];
+        cursor_.panel = r.panel;
+        cursor_.box = r.box;
+        cursor_.col = r.slot % gridCols();
+        cursor_.row = r.slot / gridCols();
+        if (r.panel == Panel::Game)
+            gameBox_ = r.box;
+        else
+            bankBox_ = r.box;
+        showSearchResults_ = false;
+    };
+
+    if (event.type == SDL_CONTROLLERBUTTONDOWN) {
+        switch (event.cbutton.button) {
+            case SDL_CONTROLLER_BUTTON_DPAD_UP:   navigate(-1); break;
+            case SDL_CONTROLLER_BUTTON_DPAD_DOWN:  navigate(1);  break;
+            case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:  navigate(-10); break;
+            case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: navigate(10);  break;
+            case SDL_CONTROLLER_BUTTON_B: // Switch A = jump
+                jumpToResult();
+                break;
+            case SDL_CONTROLLER_BUTTON_A: // Switch B = close
+                showSearchResults_ = false;
+                break;
+            case SDL_CONTROLLER_BUTTON_Y: // Switch X = back to filter
+                showSearchResults_ = false;
+                showSearchFilter_ = true;
+                break;
+        }
+    }
+    if (event.type == SDL_KEYDOWN) {
+        switch (event.key.keysym.sym) {
+            case SDLK_UP:   navigate(-1); break;
+            case SDLK_DOWN: navigate(1);  break;
+            case SDLK_q:    navigate(-10); break;
+            case SDLK_e:    navigate(10);  break;
+            case SDLK_a:
+            case SDLK_RETURN:
+                jumpToResult();
+                break;
+            case SDLK_b:
+            case SDLK_ESCAPE:
+                showSearchResults_ = false;
+                break;
+            case SDLK_x:
+                showSearchResults_ = false;
+                showSearchFilter_ = true;
+                break;
+        }
+    }
+}
+
+void UI::executeSearch() {
+    searchResults_.clear();
+
+    auto toLower = [](const std::string& s) {
+        std::string out = s;
+        for (auto& c : out) c = std::tolower(static_cast<unsigned char>(c));
+        return out;
+    };
+
+    std::string filterSpecies = toLower(searchFilter_.speciesName);
+    std::string filterOT = toLower(searchFilter_.otName);
+
+    auto matches = [&](const Pokemon& pkm) -> bool {
+        if (pkm.isEmpty()) return false;
+
+        if (!filterSpecies.empty()) {
+            std::string name = toLower(SpeciesName::get(pkm.species()));
+            if (name.find(filterSpecies) == std::string::npos)
+                return false;
+        }
+
+        if (!filterOT.empty()) {
+            std::string ot = toLower(pkm.otName());
+            if (ot.find(filterOT) == std::string::npos)
+                return false;
+        }
+
+        if (searchFilter_.filterShiny && !pkm.isShiny()) return false;
+        if (searchFilter_.filterEgg && !pkm.isEgg()) return false;
+        if (searchFilter_.filterAlpha && !pkm.isAlpha()) return false;
+
+        if (searchFilter_.gender != GenderFilter::Any) {
+            uint8_t g = pkm.gender();
+            if (searchFilter_.gender == GenderFilter::Male && g != 0) return false;
+            if (searchFilter_.gender == GenderFilter::Female && g != 1) return false;
+            if (searchFilter_.gender == GenderFilter::Genderless && g != 2) return false;
+        }
+
+        if (!pkm.isEgg()) {
+            uint8_t lv = pkm.level();
+            if (searchFilter_.levelMin > 0 && lv < searchFilter_.levelMin) return false;
+            if (searchFilter_.levelMax > 0 && lv > searchFilter_.levelMax) return false;
+        }
+
+        if (searchFilter_.perfectIVs != PerfectIVFilter::Off) {
+            int perfect = 0;
+            if (pkm.ivHp()  == 31) perfect++;
+            if (pkm.ivAtk() == 31) perfect++;
+            if (pkm.ivDef() == 31) perfect++;
+            if (pkm.ivSpe() == 31) perfect++;
+            if (pkm.ivSpA() == 31) perfect++;
+            if (pkm.ivSpD() == 31) perfect++;
+            if (searchFilter_.perfectIVs == PerfectIVFilter::AtLeastOne && perfect == 0) return false;
+            if (searchFilter_.perfectIVs == PerfectIVFilter::All6 && perfect < 6) return false;
+        }
+
+        return true;
+    };
+
+    auto scanPanel = [&](Panel panel) {
+        int boxes, slots;
+        if (panel == Panel::Game) {
+            if (appletMode_) {
+                if (leftBankName_.empty()) return;
+                boxes = bankLeft_.boxCount();
+                slots = bankLeft_.slotsPerBox();
+            } else {
+                boxes = save_.boxCount();
+                slots = save_.slotsPerBox();
+            }
+        } else {
+            boxes = bank_.boxCount();
+            slots = bank_.slotsPerBox();
+        }
+
+        for (int b = 0; b < boxes; b++) {
+            for (int s = 0; s < slots; s++) {
+                Pokemon pkm = getPokemonAt(b, s, panel);
+                if (matches(pkm)) {
+                    SearchResult r;
+                    r.panel = panel;
+                    r.box = b;
+                    r.slot = s;
+                    r.speciesName = SpeciesName::get(pkm.species());
+                    r.level = pkm.level();
+                    r.isShiny = pkm.isShiny();
+                    r.isEgg = pkm.isEgg();
+                    r.isAlpha = pkm.isAlpha();
+                    r.gender = pkm.gender();
+                    r.otName = pkm.otName();
+                    searchResults_.push_back(r);
+                }
+            }
+        }
+    };
+
+    scanPanel(Panel::Game);
+    scanPanel(Panel::Bank);
+
+    searchResultCursor_ = 0;
+    searchResultScroll_ = 0;
+    showSearchFilter_ = false;
+    showSearchResults_ = true;
 }
 
 void UI::openBoxView(Panel panel) {

@@ -18,7 +18,41 @@ enum class Panel { Game, Bank };
 enum class AppScreen { ProfileSelector, GameSelector, BankSelector, MainView };
 
 // Purpose of text input popup
-enum class TextInputPurpose { CreateBank, RenameBank };
+enum class TextInputPurpose {
+    CreateBank, RenameBank,
+    SearchSpecies, SearchOT, SearchLevelMin, SearchLevelMax
+};
+
+// Search filter enums
+enum class GenderFilter { Any, Male, Female, Genderless };
+enum class PerfectIVFilter { Off, AtLeastOne, All6 };
+
+// Search filter criteria
+struct SearchFilter {
+    std::string speciesName;
+    std::string otName;
+    bool filterShiny  = false;
+    bool filterEgg    = false;
+    bool filterAlpha  = false;
+    GenderFilter gender = GenderFilter::Any;
+    PerfectIVFilter perfectIVs = PerfectIVFilter::Off;
+    int levelMin = 0;
+    int levelMax = 0;
+};
+
+// Search result entry
+struct SearchResult {
+    Panel panel;
+    int box;
+    int slot;
+    std::string speciesName;
+    uint8_t level;
+    bool isShiny;
+    bool isEgg;
+    bool isAlpha;
+    uint8_t gender;
+    std::string otName;
+};
 
 // Cursor position within the two-panel display
 struct Cursor {
@@ -101,6 +135,16 @@ private:
     bool showThemeSelector_ = false;
     int  themeSelCursor_    = 0;
     int  themeSelOriginal_  = 0;
+
+    // Search/Filter state
+    bool showSearchFilter_  = false;
+    bool showSearchResults_ = false;
+    SearchFilter searchFilter_;
+    std::vector<SearchResult> searchResults_;
+    int  searchFilterCursor_ = 0;
+    int  searchLevelFocus_   = 0;   // 0=min, 1=max
+    int  searchResultCursor_ = 0;
+    int  searchResultScroll_ = 0;
 
     // Joystick navigation
     static constexpr int16_t STICK_DEADZONE = 16000;
@@ -237,6 +281,8 @@ private:
     void drawMenuPopup();
     void drawAboutPopup();
     void drawThemeSelectorPopup();
+    void drawSearchFilterPopup();
+    void drawSearchResultsPopup();
     void drawHeldOverlay();
     void drawBoxViewOverlay();
     void drawBoxPreview(int boxIdx, int anchorX, int anchorY);
@@ -262,6 +308,9 @@ private:
     void endYPress();
     void updateDragSelection();
     void selectAll();
+    void handleSearchFilterInput(const SDL_Event& event);
+    void handleSearchResultsInput(const SDL_Event& event);
+    void executeSearch();
     void handleBoxViewInput(const SDL_Event& event);
     void moveBoxViewCursor(int dx, int dy);
     void openBoxView(Panel panel);

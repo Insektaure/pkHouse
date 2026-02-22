@@ -149,6 +149,26 @@ Change themes from the **menu** (+ button) in the main view, or press **Y** on t
 A live preview is applied as you scroll through the list. Press **A** to confirm or **B** to cancel and revert.\
 Your theme choice is saved automatically and persists across sessions.
 
+### Search / Filter
+
+Search for Pokemon across both panels (save and bank) using the **menu** (+ button → Search).
+
+Available filters:
+
+| Filter | Description |
+|--------|-------------|
+| Species Name | Text search (substring, case-insensitive) |
+| OT Name | Text search (substring, case-insensitive) |
+| Shiny | Toggle to match shiny Pokemon only |
+| Egg | Toggle to match eggs only |
+| Alpha | Toggle to match alpha Pokemon only (Legends: Arceus / Z-A only) |
+| Gender | Cycle: Any / Male / Female / Genderless |
+| Level | Min and max level range |
+| Perfect IVs | Off / 1+ (at least one 31 IV) / 6IV (all 31) |
+
+Results are shown as a scrollable list with status badges ([S] shiny, [A] alpha, [E] egg), species name, level, gender, and location.\
+Press **A** to jump directly to a result in the box view, **L/R** to skip 10 results, **X** to go back and adjust filters, or **B** to close.
+
 ### Save Integrity
 
 - **SCBlock saves** (ZA, SV, SwSh, PLA): Decrypted, modified, and re-encrypted. A round-trip verification runs on load to confirm the cycle is lossless.
@@ -212,6 +232,7 @@ When switching banks, the selector appears on the side being switched while the 
 | Option | Description |
 |--------|-------------|
 | Theme | Open the theme selector |
+| Search | Search for Pokemon across both panels |
 | Switch Bank | Save game and bank, return to bank selector |
 | Change Game | Save everything, return to game selector |
 | Save & Quit | Save everything and exit |
@@ -222,6 +243,7 @@ When switching banks, the selector appears on the side being switched while the 
 | Option | Description |
 |--------|-------------|
 | Theme | Open the theme selector |
+| Search | Search for Pokemon across both panels |
 | Switch Left Bank | Save both banks, switch the left bank |
 | Switch Right Bank | Save both banks, switch the right bank |
 | Change Game | Save both banks, return to game selector |

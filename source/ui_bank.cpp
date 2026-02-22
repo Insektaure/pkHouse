@@ -2,6 +2,7 @@
 #include "ui_util.h"
 #include <algorithm>
 #include <cstring>
+#include <cstdlib>
 #include <sys/statvfs.h>
 
 #ifdef __SWITCH__
@@ -443,6 +444,20 @@ void UI::beginTextInput(TextInputPurpose purpose) {
             textInputBuffer_ = renamingBankName_;
             textInputCursorPos_ = (int)textInputBuffer_.size();
         }
+    } else if (purpose == TextInputPurpose::SearchSpecies) {
+        textInputBuffer_ = searchFilter_.speciesName;
+        textInputCursorPos_ = (int)textInputBuffer_.size();
+    } else if (purpose == TextInputPurpose::SearchOT) {
+        textInputBuffer_ = searchFilter_.otName;
+        textInputCursorPos_ = (int)textInputBuffer_.size();
+    } else if (purpose == TextInputPurpose::SearchLevelMin) {
+        if (searchFilter_.levelMin > 0)
+            textInputBuffer_ = std::to_string(searchFilter_.levelMin);
+        textInputCursorPos_ = (int)textInputBuffer_.size();
+    } else if (purpose == TextInputPurpose::SearchLevelMax) {
+        if (searchFilter_.levelMax > 0)
+            textInputBuffer_ = std::to_string(searchFilter_.levelMax);
+        textInputCursorPos_ = (int)textInputBuffer_.size();
     }
 
 #ifdef __SWITCH__
@@ -452,15 +467,31 @@ void UI::beginTextInput(TextInputPurpose purpose) {
     swkbdConfigSetStringLenMax(&kbd, 32);
     if (purpose == TextInputPurpose::CreateBank)
         swkbdConfigSetHeaderText(&kbd, "Enter bank name");
-    else
+    else if (purpose == TextInputPurpose::RenameBank)
         swkbdConfigSetHeaderText(&kbd, "Rename bank");
+    else if (purpose == TextInputPurpose::SearchSpecies)
+        swkbdConfigSetHeaderText(&kbd, "Species name");
+    else if (purpose == TextInputPurpose::SearchOT)
+        swkbdConfigSetHeaderText(&kbd, "OT name");
+    else if (purpose == TextInputPurpose::SearchLevelMin)
+        swkbdConfigSetHeaderText(&kbd, "Min level");
+    else if (purpose == TextInputPurpose::SearchLevelMax)
+        swkbdConfigSetHeaderText(&kbd, "Max level");
     if (purpose == TextInputPurpose::RenameBank && !renamingBankName_.empty())
         swkbdConfigSetInitialText(&kbd, renamingBankName_.c_str());
+    else if (!textInputBuffer_.empty())
+        swkbdConfigSetInitialText(&kbd, textInputBuffer_.c_str());
+    if (purpose == TextInputPurpose::SearchLevelMin || purpose == TextInputPurpose::SearchLevelMax) {
+        swkbdConfigSetType(&kbd, SwkbdType_NumPad);
+        swkbdConfigSetStringLenMax(&kbd, 3);
+    }
     char result[64] = {};
     Result rc = swkbdShow(&kbd, result, sizeof(result));
     swkbdClose(&kbd);
     if (R_SUCCEEDED(rc) && result[0])
         commitTextInput(result);
+    else if (R_SUCCEEDED(rc))
+        commitTextInput("");
 #else
     showTextInput_ = true;
     SDL_StartTextInput();
@@ -478,8 +509,15 @@ void UI::drawTextInputPopup() {
     drawRect(popX, popY, POP_W, POP_H, T().panelBg);
     drawRectOutline(popX, popY, POP_W, POP_H, T().cursor, 2);
 
-    const char* title = (textInputPurpose_ == TextInputPurpose::CreateBank)
-        ? "New Bank Name" : "Rename Bank";
+    const char* title = "Text Input";
+    switch (textInputPurpose_) {
+        case TextInputPurpose::CreateBank:    title = "New Bank Name"; break;
+        case TextInputPurpose::RenameBank:    title = "Rename Bank"; break;
+        case TextInputPurpose::SearchSpecies: title = "Species Name"; break;
+        case TextInputPurpose::SearchOT:      title = "OT Name"; break;
+        case TextInputPurpose::SearchLevelMin: title = "Min Level"; break;
+        case TextInputPurpose::SearchLevelMax: title = "Max Level"; break;
+    }
     drawTextCentered(title, popX + POP_W / 2, popY + 30, T().text, font_);
 
     // Text field background
@@ -599,5 +637,15 @@ void UI::commitTextInput(const std::string& text) {
                 }
             }
         }
+    } else if (textInputPurpose_ == TextInputPurpose::SearchSpecies) {
+        searchFilter_.speciesName = text;
+    } else if (textInputPurpose_ == TextInputPurpose::SearchOT) {
+        searchFilter_.otName = text;
+    } else if (textInputPurpose_ == TextInputPurpose::SearchLevelMin) {
+        int val = text.empty() ? 0 : std::atoi(text.c_str());
+        searchFilter_.levelMin = (val < 0) ? 0 : (val > 100 ? 100 : val);
+    } else if (textInputPurpose_ == TextInputPurpose::SearchLevelMax) {
+        int val = text.empty() ? 0 : std::atoi(text.c_str());
+        searchFilter_.levelMax = (val < 0) ? 0 : (val > 100 ? 100 : val);
     }
 }

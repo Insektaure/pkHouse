@@ -920,6 +920,16 @@ void UI::drawBoxViewOverlay() {
         SDL_Color bg = (i == activeBox) ? T().slotFull : T().slotEmpty;
         drawRect(cellX, cellY, BV_CELL_W, BV_CELL_H, bg);
 
+        // Search highlight: outline boxes that contain matches
+        if (searchHighlightActive_) {
+            bool hasMatch = false;
+            int slots = maxSlots();
+            for (int s = 0; s < slots && !hasMatch; s++)
+                hasMatch = isSearchMatch(boxViewPanel_, i, s);
+            if (hasMatch)
+                drawRectOutline(cellX + 1, cellY + 1, BV_CELL_W - 2, BV_CELL_H - 2, T().searchMatch, 2);
+        }
+
         // Cursor outline
         if (i == boxViewCursor_) {
             drawRectOutline(cellX, cellY, BV_CELL_W, BV_CELL_H, T().cursor, 2);
@@ -1023,6 +1033,14 @@ void UI::drawBoxPreview(int boxIdx, int anchorX, int anchorY) {
                         dstW, dstH
                     };
                     SDL_RenderCopy(renderer_, sprite, nullptr, &dst);
+                }
+
+                // Search highlight on mini slots
+                if (searchHighlightActive_) {
+                    if (isSearchMatch(boxViewPanel_, boxIdx, slot))
+                        drawRectOutline(sx, sy, BV_MINI_CELL, BV_MINI_CELL, T().searchMatch, 1);
+                    else
+                        drawRect(sx, sy, BV_MINI_CELL, BV_MINI_CELL, T().searchDim);
                 }
             }
         }

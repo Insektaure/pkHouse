@@ -272,14 +272,14 @@ void UI::handleInput(bool& running) {
                 updateStick(lx, ly);
             }
             if (event.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERLEFT) {
-                bool pressed = event.caxis.value > 16000;
+                bool pressed = event.caxis.value > TRIGGER_DEADZONE;
                 if (pressed && !zlPressed_ &&
                     !(appletMode_ && leftBankName_.empty()))
                     openBoxView(Panel::Game);
                 zlPressed_ = pressed;
             }
             if (event.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERRIGHT) {
-                bool pressed = event.caxis.value > 16000;
+                bool pressed = event.caxis.value > TRIGGER_DEADZONE;
                 if (pressed && !zrPressed_)
                     openBoxView(Panel::Bank);
                 zrPressed_ = pressed;

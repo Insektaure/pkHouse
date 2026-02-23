@@ -152,7 +152,8 @@ private:
     std::unordered_set<uint64_t> searchMatchSet_;
 
     // Joystick navigation
-    static constexpr int16_t STICK_DEADZONE = 16000;
+    static constexpr int16_t STICK_DEADZONE   = 16000;
+    static constexpr int16_t TRIGGER_DEADZONE = 8000;
     static constexpr uint32_t STICK_INITIAL_DELAY = 400; // ms before first repeat
     static constexpr uint32_t STICK_REPEAT_DELAY  = 200; // ms between repeats
     int stickDirX_ = 0;  // -1, 0, +1

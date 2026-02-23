@@ -1208,6 +1208,8 @@ void UI::openBoxView(Panel panel) {
 
 void UI::closeBoxView(bool navigate) {
     showBoxView_ = false;
+    zlPressed_ = false;
+    zrPressed_ = false;
     if (navigate) {
         if (boxViewPanel_ == Panel::Game) {
             gameBox_ = boxViewCursor_;

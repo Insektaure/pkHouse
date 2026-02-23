@@ -40,7 +40,7 @@ struct SearchFilter {
     PerfectIVFilter perfectIVs = PerfectIVFilter::Off;
     int levelMin = 0;
     int levelMax = 0;
-    SearchMode mode = SearchMode::List;
+    SearchMode mode = SearchMode::Highlight;
 };
 
 // Search result entry

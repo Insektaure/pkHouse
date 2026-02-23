@@ -329,10 +329,20 @@ void UI::handleInput(bool& running) {
                     if (!yHeld_) showAbout_ = true;
                     break;
                 case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
-                    if (!yHeld_) switchBox(-1);
+                    if (!yHeld_) {
+                        switchBox(-1);
+                        lHeld_ = true;
+                        bumperRepeatTime_ = SDL_GetTicks();
+                        bumperMoved_ = false;
+                    }
                     break;
                 case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:
-                    if (!yHeld_) switchBox(+1);
+                    if (!yHeld_) {
+                        switchBox(+1);
+                        rHeld_ = true;
+                        bumperRepeatTime_ = SDL_GetTicks();
+                        bumperMoved_ = false;
+                    }
                     break;
                 case SDL_CONTROLLER_BUTTON_DPAD_UP:
                     moveCursor(0, -1);
@@ -353,6 +363,12 @@ void UI::handleInput(bool& running) {
             switch (event.cbutton.button) {
                 case SDL_CONTROLLER_BUTTON_X: // Switch Y released
                     endYPress();
+                    break;
+                case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
+                    lHeld_ = false;
+                    break;
+                case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:
+                    rHeld_ = false;
                     break;
             }
         }
@@ -459,6 +475,34 @@ void UI::handleInput(bool& running) {
             }
             stickMoveTime_ = now;
             stickMoved_ = true;
+        }
+    }
+
+    // L/R shoulder button repeat
+    if (lHeld_ || rHeld_) {
+        uint32_t now = SDL_GetTicks();
+        uint32_t delay = bumperMoved_ ? BUMPER_REPEAT_DELAY : BUMPER_INITIAL_DELAY;
+        if (now - bumperRepeatTime_ >= delay) {
+            if (showSearchResults_ && !searchResults_.empty()) {
+                // Page through search results
+                int dir = lHeld_ ? -10 : 10;
+                searchResultCursor_ += dir;
+                if (searchResultCursor_ < 0) searchResultCursor_ = 0;
+                if (searchResultCursor_ >= (int)searchResults_.size())
+                    searchResultCursor_ = (int)searchResults_.size() - 1;
+                int visibleRows = 12;
+                if (searchResultCursor_ < searchResultScroll_)
+                    searchResultScroll_ = searchResultCursor_;
+                if (searchResultCursor_ >= searchResultScroll_ + visibleRows)
+                    searchResultScroll_ = searchResultCursor_ - visibleRows + 1;
+            } else if (!showDetail_ && !showMenu_ && !showSearchFilter_ &&
+                       !showBoxView_) {
+                // Box switching
+                if (lHeld_) switchBox(-1);
+                if (rHeld_) switchBox(+1);
+            }
+            bumperRepeatTime_ = now;
+            bumperMoved_ = true;
         }
     }
 }
@@ -976,8 +1020,18 @@ void UI::handleSearchResultsInput(const SDL_Event& event) {
         switch (event.cbutton.button) {
             case SDL_CONTROLLER_BUTTON_DPAD_UP:   navigate(-1); break;
             case SDL_CONTROLLER_BUTTON_DPAD_DOWN:  navigate(1);  break;
-            case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:  navigate(-10); break;
-            case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: navigate(10);  break;
+            case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
+                navigate(-10);
+                lHeld_ = true;
+                bumperRepeatTime_ = SDL_GetTicks();
+                bumperMoved_ = false;
+                break;
+            case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:
+                navigate(10);
+                rHeld_ = true;
+                bumperRepeatTime_ = SDL_GetTicks();
+                bumperMoved_ = false;
+                break;
             case SDL_CONTROLLER_BUTTON_B: // Switch A = jump
                 jumpToResult();
                 break;
@@ -988,6 +1042,12 @@ void UI::handleSearchResultsInput(const SDL_Event& event) {
                 showSearchResults_ = false;
                 showSearchFilter_ = true;
                 break;
+        }
+    }
+    if (event.type == SDL_CONTROLLERBUTTONUP) {
+        switch (event.cbutton.button) {
+            case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:  lHeld_ = false; break;
+            case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: rHeld_ = false; break;
         }
     }
     if (event.type == SDL_KEYDOWN) {

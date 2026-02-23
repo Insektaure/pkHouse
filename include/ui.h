@@ -161,6 +161,14 @@ private:
     bool stickMoved_ = false;    // has initial move fired?
     void updateStick(int16_t axisX, int16_t axisY);
 
+    // L/R shoulder button repeat
+    static constexpr uint32_t BUMPER_INITIAL_DELAY = 400;
+    static constexpr uint32_t BUMPER_REPEAT_DELAY  = 200;
+    bool lHeld_ = false;
+    bool rHeld_ = false;
+    uint32_t bumperRepeatTime_ = 0;
+    bool bumperMoved_ = false;
+
     // App screen state
     AppScreen screen_ = AppScreen::GameSelector;
     bool appletMode_ = false;

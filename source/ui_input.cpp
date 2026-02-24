@@ -24,6 +24,12 @@ void UI::updateStick(int16_t axisX, int16_t axisY) {
 // --- Input ---
 
 void UI::handleBoxViewInput(const SDL_Event& event) {
+    // Delegate to text input if active (PC only, for box rename)
+    if (showTextInput_) {
+        handleTextInputEvent(event);
+        return;
+    }
+
     if (event.type == SDL_CONTROLLERAXISMOTION) {
         if (event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX ||
             event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY) {
@@ -32,6 +38,13 @@ void UI::handleBoxViewInput(const SDL_Event& event) {
             updateStick(lx, ly);
         }
     }
+    // Can rename if viewing a bank panel (always in applet, only Bank panel in normal)
+    auto canRenameBox = [&]() -> Bank* {
+        if (appletMode_)
+            return (boxViewPanel_ == Panel::Game) ? &bankLeft_ : &bank_;
+        return (boxViewPanel_ == Panel::Bank) ? &bank_ : nullptr;
+    };
+
     if (event.type == SDL_CONTROLLERBUTTONDOWN) {
         switch (event.cbutton.button) {
             case SDL_CONTROLLER_BUTTON_B: // Switch A = confirm
@@ -40,6 +53,16 @@ void UI::handleBoxViewInput(const SDL_Event& event) {
             case SDL_CONTROLLER_BUTTON_A: // Switch B = cancel
                 closeBoxView(false);
                 break;
+            case SDL_CONTROLLER_BUTTON_X: // Switch Y = rename
+            {
+                Bank* b = canRenameBox();
+                if (b) {
+                    renamingBoxIdx_ = boxViewCursor_;
+                    renamingBoxBank_ = b;
+                    beginTextInput(TextInputPurpose::RenameBoxName);
+                }
+                break;
+            }
             case SDL_CONTROLLER_BUTTON_DPAD_UP:    moveBoxViewCursor(0, -1); break;
             case SDL_CONTROLLER_BUTTON_DPAD_DOWN:   moveBoxViewCursor(0, +1); break;
             case SDL_CONTROLLER_BUTTON_DPAD_LEFT:   moveBoxViewCursor(-1, 0); break;
@@ -52,6 +75,16 @@ void UI::handleBoxViewInput(const SDL_Event& event) {
             case SDLK_RETURN: closeBoxView(true);  break;
             case SDLK_b:
             case SDLK_ESCAPE: closeBoxView(false); break;
+            case SDLK_y:
+            {
+                Bank* b = canRenameBox();
+                if (b) {
+                    renamingBoxIdx_ = boxViewCursor_;
+                    renamingBoxBank_ = b;
+                    beginTextInput(TextInputPurpose::RenameBoxName);
+                }
+                break;
+            }
             case SDLK_UP:     moveBoxViewCursor(0, -1); break;
             case SDLK_DOWN:   moveBoxViewCursor(0, +1); break;
             case SDLK_LEFT:   moveBoxViewCursor(-1, 0); break;

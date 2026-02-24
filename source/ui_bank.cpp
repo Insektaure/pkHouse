@@ -444,6 +444,11 @@ void UI::beginTextInput(TextInputPurpose purpose) {
             textInputBuffer_ = renamingBankName_;
             textInputCursorPos_ = (int)textInputBuffer_.size();
         }
+    } else if (purpose == TextInputPurpose::RenameBoxName) {
+        if (renamingBoxBank_) {
+            textInputBuffer_ = renamingBoxBank_->getBoxName(renamingBoxIdx_);
+            textInputCursorPos_ = (int)textInputBuffer_.size();
+        }
     } else if (purpose == TextInputPurpose::SearchSpecies) {
         textInputBuffer_ = searchFilter_.speciesName;
         textInputCursorPos_ = (int)textInputBuffer_.size();
@@ -469,7 +474,10 @@ void UI::beginTextInput(TextInputPurpose purpose) {
         swkbdConfigSetHeaderText(&kbd, "Enter bank name");
     else if (purpose == TextInputPurpose::RenameBank)
         swkbdConfigSetHeaderText(&kbd, "Rename bank");
-    else if (purpose == TextInputPurpose::SearchSpecies)
+    else if (purpose == TextInputPurpose::RenameBoxName) {
+        swkbdConfigSetHeaderText(&kbd, "Rename box");
+        swkbdConfigSetStringLenMax(&kbd, 16);
+    } else if (purpose == TextInputPurpose::SearchSpecies)
         swkbdConfigSetHeaderText(&kbd, "Species name");
     else if (purpose == TextInputPurpose::SearchOT)
         swkbdConfigSetHeaderText(&kbd, "OT name");
@@ -513,6 +521,7 @@ void UI::drawTextInputPopup() {
     switch (textInputPurpose_) {
         case TextInputPurpose::CreateBank:    title = "New Bank Name"; break;
         case TextInputPurpose::RenameBank:    title = "Rename Bank"; break;
+        case TextInputPurpose::RenameBoxName: title = "Rename Box"; break;
         case TextInputPurpose::SearchSpecies: title = "Species Name"; break;
         case TextInputPurpose::SearchOT:      title = "OT Name"; break;
         case TextInputPurpose::SearchLevelMin: title = "Min Level"; break;
@@ -552,7 +561,8 @@ void UI::drawTextInputPopup() {
 
 void UI::handleTextInputEvent(const SDL_Event& event) {
     if (event.type == SDL_TEXTINPUT) {
-        if ((int)textInputBuffer_.size() < 32) {
+        int maxLen = (textInputPurpose_ == TextInputPurpose::RenameBoxName) ? 16 : 32;
+        if ((int)textInputBuffer_.size() < maxLen) {
             std::string input = event.text.text;
             textInputBuffer_.insert(textInputCursorPos_, input);
             textInputCursorPos_ += (int)input.size();
@@ -637,6 +647,9 @@ void UI::commitTextInput(const std::string& text) {
                 }
             }
         }
+    } else if (textInputPurpose_ == TextInputPurpose::RenameBoxName) {
+        if (renamingBoxBank_ && !text.empty())
+            renamingBoxBank_->setBoxName(renamingBoxIdx_, text);
     } else if (textInputPurpose_ == TextInputPurpose::SearchSpecies) {
         searchFilter_.speciesName = text;
     } else if (textInputPurpose_ == TextInputPurpose::SearchOT) {

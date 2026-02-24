@@ -20,7 +20,7 @@ enum class AppScreen { ProfileSelector, GameSelector, BankSelector, MainView };
 
 // Purpose of text input popup
 enum class TextInputPurpose {
-    CreateBank, RenameBank,
+    CreateBank, RenameBank, RenameBoxName,
     SearchSpecies, SearchOT, SearchLevelMin, SearchLevelMax
 };
 
@@ -215,6 +215,8 @@ private:
     std::string textInputBuffer_;
     int textInputCursorPos_ = 0;
     std::string renamingBankName_;
+    int renamingBoxIdx_ = 0;
+    Bank* renamingBoxBank_ = nullptr;
 
     // Main view state
     Cursor cursor_;

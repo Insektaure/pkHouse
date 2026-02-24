@@ -4,6 +4,7 @@
 
 Bank::Bank() {
     slots_.resize(boxCount_ * slotsPerBox_);
+    boxNames_.resize(boxCount_);
 }
 
 void Bank::setGameType(GameType g) {
@@ -26,6 +27,7 @@ void Bank::setGameType(GameType g) {
         slotSize_ = PokeCrypto::SIZE_9PARTY;
     }
     slots_.resize(boxCount_ * slotsPerBox_);
+    boxNames_.resize(boxCount_);
 }
 
 bool Bank::load(const std::string& path) {
@@ -83,7 +85,19 @@ bool Bank::load(const std::string& path) {
         file.read(reinterpret_cast<char*>(slots_[i].data.data()), slotSize_);
     }
 
-    return file.good();
+    // Read box names if present (appended after slot data)
+    boxNames_.resize(boxCount_);
+    for (int i = 0; i < boxCount_; i++) {
+        char nameBuf[BOX_NAME_SIZE] = {};
+        if (!file.read(nameBuf, BOX_NAME_SIZE))
+            break; // Old file without names — leave remaining as empty
+        // Find null terminator or use full buffer
+        int len = 0;
+        while (len < BOX_NAME_SIZE && nameBuf[len] != '\0') len++;
+        boxNames_[i] = std::string(nameBuf, len);
+    }
+
+    return true;
 }
 
 bool Bank::save(const std::string& path) {
@@ -102,6 +116,16 @@ bool Bank::save(const std::string& path) {
     int total = totalSlots();
     for (int i = 0; i < total; i++) {
         file.write(reinterpret_cast<const char*>(slots_[i].data.data()), slotSize_);
+    }
+
+    // Write box names (16 bytes each, null-padded)
+    for (int i = 0; i < boxCount_; i++) {
+        char nameBuf[BOX_NAME_SIZE] = {};
+        if (i < (int)boxNames_.size()) {
+            std::memcpy(nameBuf, boxNames_[i].c_str(),
+                        std::min((int)boxNames_[i].size(), BOX_NAME_SIZE));
+        }
+        file.write(nameBuf, BOX_NAME_SIZE);
     }
 
     return file.good();
@@ -131,5 +155,16 @@ void Bank::clearSlot(int box, int slot) {
 }
 
 std::string Bank::getBoxName(int box) const {
+    if (box >= 0 && box < (int)boxNames_.size() && !boxNames_[box].empty())
+        return boxNames_[box];
     return "Bank " + std::to_string(box + 1);
+}
+
+void Bank::setBoxName(int box, const std::string& name) {
+    if (box < 0 || box >= (int)boxNames_.size())
+        return;
+    if ((int)name.size() > BOX_NAME_SIZE)
+        boxNames_[box] = name.substr(0, BOX_NAME_SIZE);
+    else
+        boxNames_[box] = name;
 }

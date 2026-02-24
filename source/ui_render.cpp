@@ -360,6 +360,8 @@ void UI::drawFrame() {
     // Box view overlay
     if (showBoxView_) {
         drawBoxViewOverlay();
+        if (showTextInput_)
+            drawTextInputPopup();
     }
 
     // Search popups
@@ -953,8 +955,11 @@ void UI::drawBoxViewOverlay() {
     }
 
     // Footer hint
-    drawTextCentered("A:Go to Box  B:Cancel  D-Pad:Navigate",
-                     popX + popW / 2, popY + popH - 15, T().textDim, fontSmall_);
+    bool canRename = appletMode_ || (boxViewPanel_ == Panel::Bank);
+    const char* footer = canRename
+        ? "A:Go to Box  Y:Rename  B:Cancel  D-Pad:Navigate"
+        : "A:Go to Box  B:Cancel  D-Pad:Navigate";
+    drawTextCentered(footer, popX + popW / 2, popY + popH - 15, T().textDim, fontSmall_);
 
     // Box preview for cursor box (drawn last so it appears on top)
     drawBoxPreview(boxViewCursor_, cursorCellX, cursorCellY);

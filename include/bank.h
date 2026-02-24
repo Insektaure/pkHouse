@@ -24,11 +24,12 @@ public:
     void clearSlot(int box, int slot);
 
     std::string getBoxName(int box) const;
+    void setBoxName(int box, const std::string& name);
 
     int boxCount() const { return boxCount_; }
     int slotsPerBox() const { return slotsPerBox_; }
     int totalSlots() const { return boxCount_ * slotsPerBox_; }
-    size_t fileSize() const { return HEADER_SIZE + (size_t)totalSlots() * slotSize_; }
+    size_t fileSize() const { return HEADER_SIZE + (size_t)totalSlots() * slotSize_ + (size_t)boxCount_ * BOX_NAME_SIZE; }
 
 private:
     // File format:
@@ -36,8 +37,9 @@ private:
     //   [4 bytes]  Version (u32 LE): 1 = 32 boxes, 2 = 40 boxes
     //   [4 bytes]  Reserved
     //   [N bytes]  totalSlots * SIZE_9PARTY decrypted data
-    static constexpr int HEADER_SIZE = 16;
-    static constexpr int SLOT_SIZE   = PokeCrypto::SIZE_9PARTY;
+    static constexpr int HEADER_SIZE   = 16;
+    static constexpr int SLOT_SIZE     = PokeCrypto::SIZE_9PARTY;
+    static constexpr int BOX_NAME_SIZE = 16;
 
     static constexpr char MAGIC[8] = {'P','K','H','O','U','S','E','\0'};
     static constexpr uint32_t VERSION_32BOX = 1;
@@ -50,6 +52,7 @@ private:
     int slotsPerBox_ = 30;
     int slotSize_ = PokeCrypto::SIZE_9PARTY;
     std::vector<Pokemon> slots_;
+    std::vector<std::string> boxNames_;
 
     uint32_t fileVersion() const {
         if (isLGPE(gameType_)) return VERSION_LGPE;

@@ -215,8 +215,18 @@ void UI::drawPanel(int panelX, const std::string& boxName, int boxIdx,
     // Box name header with arrows
     SDL_Color hdrColor = isActive ? T().boxName : T().textDim;
     drawTextCentered("<", panelX + 20, BOX_HDR_Y + BOX_HDR_H / 2, T().arrow, font_);
-    drawTextCentered(boxName + " (" + std::to_string(boxIdx + 1) + "/" + std::to_string(totalBoxes) + ")",
-                     panelX + PANEL_W / 2, BOX_HDR_Y + BOX_HDR_H / 2, hdrColor, font_);
+    std::string hdrText = boxName + " (" + std::to_string(boxIdx + 1) + "/" + std::to_string(totalBoxes) + ")";
+    // Truncate if too wide for panel (leave room for arrows)
+    int maxHdrW = PANEL_W - 80;
+    int tw = 0, th = 0;
+    TTF_SizeUTF8(font_, hdrText.c_str(), &tw, &th);
+    if (tw > maxHdrW) {
+        while (hdrText.size() > 5 && tw > maxHdrW) {
+            hdrText = hdrText.substr(0, hdrText.size() - 5) + "(..)";
+            TTF_SizeUTF8(font_, hdrText.c_str(), &tw, &th);
+        }
+    }
+    drawTextCentered(hdrText, panelX + PANEL_W / 2, BOX_HDR_Y + BOX_HDR_H / 2, hdrColor, font_);
     drawTextCentered(">", panelX + PANEL_W - 20, BOX_HDR_Y + BOX_HDR_H / 2, T().arrow, font_);
 
     // Grid: dynamic columns x 5 rows
@@ -266,6 +276,12 @@ void UI::drawFrame() {
     else
         bankBox_ = cursor_.box;
 
+    auto truncName = [](const std::string& s, size_t max) -> std::string {
+        if (s.size() <= max) return s;
+        return s.substr(0, max - 3) + "(..)";
+
+    };
+
     if (appletMode_) {
         // Dual-bank mode: two bank panels side by side
         bool leftActive = (cursor_.panel == Panel::Game);
@@ -274,7 +290,7 @@ void UI::drawFrame() {
         // Left panel: left bank
         std::string leftBoxName;
         if (!leftBankName_.empty())
-            leftBoxName = leftBankName_ + " - " + bankLeft_.getBoxName(gameBox_);
+            leftBoxName = truncName(leftBankName_, 16) + " - " + bankLeft_.getBoxName(gameBox_);
         else
             leftBoxName = "(No Bank Loaded)";
         drawPanel(PANEL_X_L, leftBoxName, gameBox_,
@@ -284,7 +300,7 @@ void UI::drawFrame() {
                   gameBox_, Panel::Game);
 
         // Right panel: right bank
-        std::string rightBoxName = activeBankName_ + " - " + bank_.getBoxName(bankBox_);
+        std::string rightBoxName = truncName(activeBankName_, 16) + " - " + bank_.getBoxName(bankBox_);
         drawPanel(PANEL_X_R, rightBoxName, bankBox_, bank_.boxCount(),
                   rightActive, nullptr, &bank_, bankBox_, Panel::Bank);
     } else {
@@ -295,7 +311,7 @@ void UI::drawFrame() {
                   leftActive, &save_, nullptr, gameBox_, Panel::Game);
 
         bool rightActive = (cursor_.panel == Panel::Bank);
-        std::string bankBoxName = activeBankName_ + " - " + bank_.getBoxName(bankBox_);
+        std::string bankBoxName = truncName(activeBankName_, 16) + " - " + bank_.getBoxName(bankBox_);
         drawPanel(PANEL_X_R, bankBoxName, bankBox_, bank_.boxCount(),
                   rightActive, nullptr, &bank_, bankBox_, Panel::Bank);
     }
@@ -888,7 +904,7 @@ void UI::drawBoxViewOverlay() {
     int gridW = BV_COLS * BV_CELL_W + (BV_COLS - 1) * BV_CELL_PAD;
     int gridH = usedRows * BV_CELL_H + (usedRows - 1) * BV_CELL_PAD;
     int popW = gridW + 40;
-    int popH = gridH + 80;
+    int popH = gridH + 100;
 
     int popX = (SCREEN_W - popW) / 2;
     int popY = (SCREEN_H - popH) / 2;
@@ -903,11 +919,26 @@ void UI::drawBoxViewOverlay() {
         title = appletMode_ ? "Left Bank Boxes" : "Save Boxes";
     else
         title = "Bank Boxes";
-    drawTextCentered(title, popX + popW / 2, popY + 20, T().text, font_);
+    drawTextCentered(title, popX + popW / 2, popY + 15, T().text, font_);
+
+    // Subtitle: bank file name or profile | game
+    std::string subtitle;
+    if (boxViewPanel_ == Panel::Game) {
+        if (appletMode_)
+            subtitle = leftBankName_;
+        else if (selectedProfile_ >= 0 && selectedProfile_ < account_.profileCount())
+            subtitle = account_.profiles()[selectedProfile_].nickname + " | " + gameDisplayNameOf(selectedGame_);
+        else
+            subtitle = gameDisplayNameOf(selectedGame_);
+    } else {
+        subtitle = activeBankName_;
+    }
+    if (!subtitle.empty())
+        drawTextCentered(subtitle, popX + popW / 2, popY + 38, T().textDim, fontSmall_);
 
     // Grid of box cells
     int gridStartX = popX + 20;
-    int gridStartY = popY + 45;
+    int gridStartY = popY + 55;
     int activeBox = (boxViewPanel_ == Panel::Game) ? gameBox_ : bankBox_;
 
     int cursorCellX = 0, cursorCellY = 0;

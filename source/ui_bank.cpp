@@ -28,17 +28,27 @@ void UI::drawBankSelectorFrame() {
             // Applet: selector on left, keep right bank visible
             selCenterX = PANEL_X_L + PANEL_W / 2;
             selAreaX = PANEL_X_L;
-            std::string rightBoxName = activeBankName_ + " - " + bank_.getBoxName(bankBox_);
+            auto truncName = [](const std::string& s, size_t max) -> std::string {
+                if (s.size() <= max) return s;
+                return s.substr(0, max - 3) + "(..)";
+
+            };
+            std::string rightBoxName = truncName(activeBankName_, 16) + " - " + bank_.getBoxName(bankBox_);
             drawPanel(PANEL_X_R, rightBoxName, bankBox_, bank_.boxCount(),
                       false, nullptr, &bank_, bankBox_, Panel::Bank);
         } else {
             // Normal mode or applet switching right bank: selector on right
             selCenterX = PANEL_X_R + PANEL_W / 2;
             selAreaX = PANEL_X_R;
+            auto truncName = [](const std::string& s, size_t max) -> std::string {
+                if (s.size() <= max) return s;
+                return s.substr(0, max - 3) + "(..)";
+
+            };
             // Draw left panel (save or left bank)
             if (appletMode_) {
                 if (!leftBankName_.empty()) {
-                    std::string leftBoxName = leftBankName_ + " - " + bankLeft_.getBoxName(gameBox_);
+                    std::string leftBoxName = truncName(leftBankName_, 16) + " - " + bankLeft_.getBoxName(gameBox_);
                     drawPanel(PANEL_X_L, leftBoxName, gameBox_, bankLeft_.boxCount(),
                               false, nullptr, &bankLeft_, gameBox_, Panel::Game);
                 } else {

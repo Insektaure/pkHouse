@@ -76,7 +76,7 @@ Selection is cleared when switching boxes or panels.
 
 Press **ZL** to open a box overview of all save boxes, or **ZR** for all bank boxes.\
 Navigate the grid with the D-Pad. A semi-transparent preview of the highlighted box's contents (Pokemon sprites) appears as you move.\
-Press **A** to jump directly to that box, or **B** to cancel.
+Press **A** to jump directly to that box, **Y** to rename the box (bank boxes only, max 16 characters), or **B** to cancel.
 
 ### Pokemon Details
 

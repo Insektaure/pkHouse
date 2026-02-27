@@ -157,7 +157,7 @@ void UI::selectProfile(int index) {
     constexpr GameType allGames[] = {
         GameType::GP, GameType::GE, GameType::Sw, GameType::Sh,
         GameType::BD, GameType::SP, GameType::LA, GameType::S,
-        GameType::V, GameType::ZA
+        GameType::V, GameType::ZA, GameType::FR, GameType::LG
     };
     for (GameType g : allGames) {
         if (account_.hasSaveData(index, g))
@@ -269,7 +269,7 @@ void UI::drawGameSelectorFrame() {
     }
 
     int numGames = (int)availableGames_.size();
-    constexpr int COLS = 5;
+    constexpr int COLS = 6;
     constexpr int CARD_W = 160;
     constexpr int CARD_H = 200;
     constexpr int CARD_GAP = 20;
@@ -322,6 +322,8 @@ void UI::drawGameSelectorFrame() {
                 case GameType::ZA: abbr = "ZA"; break;
                 case GameType::GP: abbr = "GP"; break;
                 case GameType::GE: abbr = "GE"; break;
+                case GameType::FR: abbr = "FR"; break;
+                case GameType::LG: abbr = "LG"; break;
             }
             drawTextCentered(abbr, iconX + ICON_SIZE / 2, iconY + ICON_SIZE / 2,
                              T().text, font_);
@@ -358,7 +360,7 @@ void UI::handleGameSelectorInput(bool& running) {
     int numGames = (int)availableGames_.size();
     if (numGames == 0) return;
 
-    constexpr int COLS = 5;
+    constexpr int COLS = 6;
 
     auto moveGrid = [&](int dx, int dy) {
         int col = gameSelCursor_ % COLS;

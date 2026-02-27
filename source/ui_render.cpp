@@ -828,7 +828,7 @@ void UI::drawAboutPopup() {
     drawRect(0, 0, SCREEN_W, SCREEN_H, T().overlayDark);
 
     constexpr int POP_W = 700;
-    constexpr int POP_H = 490;
+    constexpr int POP_H = 510;
     int px = (SCREEN_W - POP_W) / 2;
     int py = (SCREEN_H - POP_H) / 2;
 
@@ -865,6 +865,8 @@ void UI::drawAboutPopup() {
     drawTextCentered("Brilliant Diamond/Shining Pearl (1.3.0)  -  Legends: Arceus (1.1.1)", cx, y, T().textDim, fontSmall_);
     y += 20;
     drawTextCentered("Scarlet/Violet (4.0.0)  -  Legends: Z-A (2.0.1)", cx, y, T().textDim, fontSmall_);
+    y += 20;
+    drawTextCentered("FireRed/LeafGreen (GBA)", cx, y, T().textDim, fontSmall_);
     y += 30;
 
     // Divider

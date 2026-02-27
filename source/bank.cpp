@@ -9,7 +9,11 @@ Bank::Bank() {
 
 void Bank::setGameType(GameType g) {
     gameType_ = g;
-    if (isLGPE(g)) {
+    if (isFRLG(g)) {
+        boxCount_ = 14;
+        slotsPerBox_ = 30;
+        slotSize_ = PokeCrypto::SIZE_3STORED;
+    } else if (isLGPE(g)) {
         boxCount_ = 40;
         slotsPerBox_ = 25;
         slotSize_ = PokeCrypto::SIZE_6PARTY;
@@ -50,7 +54,11 @@ bool Bank::load(const std::string& path) {
     int fileBoxCount;
     int fileSlotSize;
     int fileSlotsPerBox;
-    if (version == VERSION_LGPE) {
+    if (version == VERSION_FRLG) {
+        fileBoxCount = 14;
+        fileSlotSize = PokeCrypto::SIZE_3STORED;
+        fileSlotsPerBox = 30;
+    } else if (version == VERSION_LGPE) {
         fileBoxCount = 40;
         fileSlotSize = PokeCrypto::SIZE_6PARTY;
         fileSlotsPerBox = 25;

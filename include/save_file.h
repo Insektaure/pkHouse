@@ -87,6 +87,30 @@ private:
 
     static uint16_t crc16NoInvert(const uint8_t* data, size_t len);
 
+    // GBA save format constants (sector-based, for FRLG)
+    static constexpr int GBA_SAVE_SIZE       = 0x20000;  // 128KB
+    static constexpr int GBA_SECTOR_SIZE     = 0x1000;   // 4KB per sector
+    static constexpr int GBA_SECTOR_USED     = 0xF80;    // usable data per sector
+    static constexpr int GBA_SECTOR_COUNT    = 14;       // sectors per save slot
+    static constexpr int GBA_STORAGE_FIRST   = 5;        // first sector ID for box storage
+    static constexpr int GBA_STORAGE_LAST    = 13;       // last sector ID for box storage
+    static constexpr int GBA_STORAGE_SECTORS = 9;        // sectors for box storage
+    static constexpr int GBA_BOX_COUNT       = 14;
+    static constexpr int GBA_SLOTS_PER_BOX   = 30;
+    static constexpr int GBA_BOXNAME_LEN     = 9;        // 8 chars + terminator (Gen3 encoded)
+
+    // GBA sector footer offsets (within each 0x1000 sector)
+    static constexpr int GBA_OFS_SECTOR_ID   = 0xFF4;    // u16 sector ID
+    static constexpr int GBA_OFS_CHECKSUM    = 0xFF6;    // u16 checksum
+    static constexpr int GBA_OFS_SAVE_INDEX  = 0xFFC;    // u32 save counter
+
+    // GBA CheckSum32: sum u32s in data, fold to u16
+    static uint16_t checkSum32GBA(const uint8_t* data, size_t len);
+
+    // GBA assembled storage buffer (sectors 5-13 concatenated)
+    std::vector<uint8_t> gbaStorage_;
+    int gbaActiveSlot_ = 0;
+
     // BDSP and LGPE raw save data (flat binary, no SCBlocks)
     std::vector<uint8_t> rawData_;
 
@@ -99,6 +123,8 @@ private:
     bool saveBDSP(const std::string& path);
     bool loadLGPE(const std::string& path);
     bool saveLGPE(const std::string& path);
+    bool loadGBA(const std::string& path);
+    bool saveGBA(const std::string& path);
 
     static bool isBDSPSize(size_t size);
 

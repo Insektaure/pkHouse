@@ -13,6 +13,12 @@ namespace SpeciesConverter {
     // Convert national dex ID to Gen9 internal species ID.
     uint16_t getInternal9(uint16_t species);
 
+    // Convert Gen3 internal species ID to national dex ID.
+    uint16_t getNational3(uint16_t raw);
+
+    // Convert national dex ID to Gen3 internal species ID.
+    uint16_t getInternal3(uint16_t species);
+
 } // namespace SpeciesConverter
 
 // Species name lookup (loaded from romfs text file).

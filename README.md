@@ -30,6 +30,8 @@ If you need to restore a backup, use a save manager such as [Checkpoint](https:/
 | Pokemon Scarlet | 4.0.0 | SCBlock (`main`) | 32 | 30 |
 | Pokemon Violet | 4.0.0 | SCBlock (`main`) | 32 | 30 |
 | Pokemon Legends: Z-A | 2.0.1 | SCBlock (`main`) | 32 | 30 |
+| Pokemon FireRed | 1.0.0 | GBA sectors (`FireRed_e.sav`) | 14 | 30 |
+| Pokemon LeafGreen | 1.0.0 | GBA sectors (`LeafGreen_e.sav`) | 14 | 30 |
 
 > **Note:** Moving Pokemon between different games is not supported. Banks are separated by game family because transferred Pokemon would lack the HOME Tracker ID required for cross-game compatibility.
 
@@ -104,6 +106,7 @@ Banks are local `.bin` files stored per game family. Paired games share the same
 | Legends: Arceus | `banks/LegendsArceus/` |
 | Scarlet / Violet | `banks/ScarletViolet/` |
 | Legends: Z-A | `banks/LegendsZA/` |
+| FireRed / LeafGreen | `banks/FireRedLeafGreen/` |
 
 From the bank selector you can:
 
@@ -176,6 +179,7 @@ Two result modes are available (selectable in the filter with Left/Right, defaul
 - **SCBlock saves** (ZA, SV, SwSh, PLA): Decrypted, modified, and re-encrypted. A round-trip verification runs on load to confirm the cycle is lossless.
 - **BDSP saves**: Flat binary with MD5 checksum, recalculated on every save.
 - **LGPE saves**: BEEF block format with CRC16 checksums, recalculated on every save. Storage is compacted before writing.
+- **FRLG saves**: GBA sector-based format (128KB, two save slots). CheckSum32 recalculated per sector on save. Both slots are updated.
 - All saves are written in-place to preserve the Switch filesystem journal.
 
 ## Controls

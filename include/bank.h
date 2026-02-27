@@ -46,6 +46,7 @@ private:
     static constexpr uint32_t VERSION_40BOX = 2;
     static constexpr uint32_t VERSION_LA    = 3;
     static constexpr uint32_t VERSION_LGPE  = 4;
+    static constexpr uint32_t VERSION_FRLG  = 5;
 
     GameType gameType_ = GameType::ZA;
     int boxCount_ = 32;
@@ -55,6 +56,7 @@ private:
     std::vector<std::string> boxNames_;
 
     uint32_t fileVersion() const {
+        if (isFRLG(gameType_)) return VERSION_FRLG;
         if (isLGPE(gameType_)) return VERSION_LGPE;
         if (gameType_ == GameType::LA) return VERSION_LA;
         return boxCount_ == 40 ? VERSION_40BOX : VERSION_32BOX;

@@ -53,6 +53,69 @@ uint16_t SpeciesConverter::getInternal9(uint16_t species) {
     return static_cast<uint16_t>(species + TABLE_9_NATIONAL_TO_INTERNAL[shift]);
 }
 
+// --- Gen3 species conversion (from PKHeX SpeciesConverter.cs lines 87-136) ---
+// Species 1-251 map 1:1 between national and internal. Divergence starts at 252/277.
+static constexpr int FIRST_UNALIGNED_NATIONAL_3 = 252;
+static constexpr int FIRST_UNALIGNED_INTERNAL_3 = 277;
+
+// Delta: internal ID (index + 277) + delta = national ID
+static const int8_t TABLE_3_INTERNAL_TO_NATIONAL[] = {
+                                       -25, -25, -25,
+    -25, -25, -25, -25, -25, -25, -25, -25, -25, -25,
+    -25, -25, -25, -25, -25, -25, -25, -25, -25, -25,
+    -25, -11, -11, -11, -28, -28, -21, -21,  19, -31,
+    -31, -28, -28,   7,   7, -15, -15,  35,  25,  25,
+    -21,   3, -20,  16,  16,  45,  15,  15,  21,  21,
+    -12, -12,  -4,  -4,  -4, -39, -39, -28, -28, -17,
+    -17,  22,  22,  22, -13, -13,  15,  15, -11, -11,
+    -52, -26, -26, -42, -42, -52, -49, -49, -25, -25,
+      0,  -6,  -6, -48, -77, -77, -77, -51, -51, -12,
+    -77, -77, -77,  -7,  -7,  -7, -17, -24, -24, -43,
+    -45, -12, -78, -78, -78, -34, -73, -73, -43, -43,
+    -43, -43,-112,-112,-112, -24, -24, -24, -24, -24,
+    -24, -24, -24, -24, -22, -22, -22, -27, -27, -24,
+    -24, -53,
+};
+
+// Delta: national ID (index + 252) + delta = internal ID
+static const int8_t TABLE_3_NATIONAL_TO_INTERNAL[] = {
+              25,  25,  25,  25,  25,  25,  25,  25,
+     25,  25,  25,  25,  25,  25,  25,  25,  25,  25,
+     25,  25,  25,  25,  25,  25,  28,  28,  31,  31,
+    112, 112, 112,  28,  28,  21,  21,  77,  77,  77,
+     11,  11,  11,  77,  77,  77,  39,  39,  52,  21,
+     15,  15,  20,  52,  78,  78,  78,  49,  49,  28,
+     28,  42,  42,  73,  73,  48,  51,  51,  12,  12,
+     -7,  -7,  17,  17,  -3,  26,  26, -19,   4,   4,
+      4,  13,  13,  25,  25,  45,  43,  11,  11, -16,
+    -16, -15, -15, -25, -25,  43,  43,  43,  43, -21,
+    -21,  34, -35,  24,  24,   6,   6,  12,  53,  17,
+      0, -15, -15, -22, -22, -22,   7,   7,   7,  12,
+    -45,  24,  24,  24,  24,  24,  24,  24,  24,  24,
+     27,  27,  22,  22,  22,  24,  24,
+};
+
+static constexpr size_t TABLE_3_INT_TO_NAT_SIZE = sizeof(TABLE_3_INTERNAL_TO_NATIONAL);
+static constexpr size_t TABLE_3_NAT_TO_INT_SIZE = sizeof(TABLE_3_NATIONAL_TO_INTERNAL);
+
+uint16_t SpeciesConverter::getNational3(uint16_t raw) {
+    if (raw < FIRST_UNALIGNED_INTERNAL_3)
+        return raw;
+    int shift = raw - FIRST_UNALIGNED_INTERNAL_3;
+    if (static_cast<unsigned>(shift) >= TABLE_3_INT_TO_NAT_SIZE)
+        return raw;
+    return static_cast<uint16_t>(raw + TABLE_3_INTERNAL_TO_NATIONAL[shift]);
+}
+
+uint16_t SpeciesConverter::getInternal3(uint16_t species) {
+    if (species < FIRST_UNALIGNED_NATIONAL_3)
+        return species;
+    int shift = species - FIRST_UNALIGNED_NATIONAL_3;
+    if (static_cast<unsigned>(shift) >= TABLE_3_NAT_TO_INT_SIZE)
+        return species;
+    return static_cast<uint16_t>(species + TABLE_3_NATIONAL_TO_INTERNAL[shift]);
+}
+
 // Species name data
 static std::vector<std::string> s_names;
 static const std::string s_unknown = "???";

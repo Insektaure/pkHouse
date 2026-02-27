@@ -191,3 +191,66 @@ void PokeCrypto::encryptArray6(const uint8_t* pk, size_t len, uint8_t* outBuf) {
     if (static_cast<int>(len) > end)
         cryptArray(outBuf + end, len - end, pv);
 }
+
+// --- PK3 (FireRed/LeafGreen) — constant XOR (not LCG), 12-byte blocks ---
+
+// Gen3 XOR: each u32 in data[0x20..0x50] is XORed with the SAME seed (no LCG advancement)
+static void cryptArray3(uint8_t* data, uint32_t seed) {
+    for (int i = PokeCrypto::SIZE_3HEADER; i < PokeCrypto::SIZE_3STORED; i += 4) {
+        uint32_t val = readU32LE(data + i);
+        val ^= seed;
+        std::memcpy(data + i, &val, 4);
+    }
+}
+
+// Gen3 shuffle: uses same BLOCK_POSITION table but with 12-byte blocks starting at offset 32
+static void shuffleArray3(const uint8_t* data, size_t len, uint32_t sv, uint8_t* out) {
+    constexpr int hdr = PokeCrypto::SIZE_3HEADER;
+    constexpr int blkSz = PokeCrypto::SIZE_3BLOCK;
+    constexpr int blkCount = PokeCrypto::BLOCK_COUNT;
+    int index = static_cast<int>(sv) * blkCount;
+
+    // Copy header (first 32 bytes)
+    std::memcpy(out, data, hdr);
+    // Copy party stats tail (if present, bytes 80+)
+    if (static_cast<int>(len) > PokeCrypto::SIZE_3STORED)
+        std::memcpy(out + PokeCrypto::SIZE_3STORED, data + PokeCrypto::SIZE_3STORED,
+                     len - PokeCrypto::SIZE_3STORED);
+    // Shuffle 4 blocks of 12 bytes
+    for (int block = 0; block < blkCount; block++) {
+        int destOfs = hdr + blkSz * block;
+        int srcBlock = BLOCK_POSITION[index + block];
+        int srcOfs = hdr + blkSz * srcBlock;
+        std::memcpy(out + destOfs, data + srcOfs, blkSz);
+    }
+}
+
+void PokeCrypto::decryptArray3(const uint8_t* ekm, size_t len, uint8_t* outBuf) {
+    uint8_t tmp[SIZE_3PARTY];
+    size_t sz = len > SIZE_3PARTY ? SIZE_3PARTY : len;
+    std::memcpy(tmp, ekm, sz);
+    if (sz < SIZE_3PARTY)
+        std::memset(tmp + sz, 0, SIZE_3PARTY - sz);
+
+    uint32_t pid = readU32LE(tmp);
+    uint32_t oid = readU32LE(tmp + 4);
+    uint32_t seed = pid ^ oid;
+
+    // Decrypt blocks (constant XOR, not LCG)
+    cryptArray3(tmp, seed);
+
+    // Unshuffle blocks using PID % 24
+    shuffleArray3(tmp, sz, pid % 24, outBuf);
+}
+
+void PokeCrypto::encryptArray3(const uint8_t* pk, size_t len, uint8_t* outBuf) {
+    uint32_t pid = readU32LE(pk);
+
+    // Inverse shuffle
+    shuffleArray3(pk, len, BLOCK_POSITION_INVERT[pid % 24], outBuf);
+
+    // Encrypt blocks (constant XOR)
+    uint32_t oid = readU32LE(pk + 4);
+    uint32_t seed = pid ^ oid;
+    cryptArray3(outBuf, seed);
+}

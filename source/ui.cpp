@@ -333,7 +333,7 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
     constexpr GameType allGames[] = {
         GameType::GP, GameType::GE, GameType::Sw, GameType::Sh,
         GameType::BD, GameType::SP, GameType::LA, GameType::S,
-        GameType::V, GameType::ZA
+        GameType::V, GameType::ZA, GameType::FR, GameType::LG
     };
 
 #ifdef __SWITCH__
@@ -585,6 +585,8 @@ void UI::selectGame(GameType game) {
             savePath_ = basePath_ + "main_la";
         else if (isLGPE(game))
             savePath_ = basePath_ + "main_lgpe";
+        else if (isFRLG(game))
+            savePath_ = basePath_ + "main_frlg";
         else
             savePath_ = basePath_ + "main";
 #endif
@@ -592,7 +594,7 @@ void UI::selectGame(GameType game) {
         save_.load(savePath_);
 
         // Debug: verify encryption round-trip (encrypt(decrypt(file)) == file)
-        if (!isBDSP(game) && !isLGPE(game)) {
+        if (!isBDSP(game) && !isLGPE(game) && !isFRLG(game)) {
             std::string rtResult = save_.verifyRoundTrip();
             if (rtResult != "OK")
                 showMessageAndWait("Round-Trip Check", rtResult);

@@ -22,6 +22,12 @@ namespace PokeCrypto {
     constexpr int SIZE_6PARTY  = 0x104;  // 260 bytes (LGPE boxes store party format)
     constexpr int SIZE_6BLOCK  = 56;     // 56 bytes per block
 
+    // Gen3 (PK3 — FireRed/LeafGreen)
+    constexpr int SIZE_3STORED = 80;     // 80 bytes (box format)
+    constexpr int SIZE_3PARTY  = 100;    // 100 bytes (party format)
+    constexpr int SIZE_3HEADER = 32;     // unencrypted header
+    constexpr int SIZE_3BLOCK  = 12;     // 12 bytes per block
+
     // Largest party size across all formats (for Pokemon data array sizing)
     constexpr int MAX_PARTY_SIZE = SIZE_8APARTY; // 0x178
 
@@ -39,5 +45,10 @@ namespace PokeCrypto {
     // Decrypt/encrypt Gen6/Gen7 Pokemon data (PB7 — Let's Go Pikachu/Eevee).
     void decryptArray6(const uint8_t* ekm, size_t len, uint8_t* outBuf);
     void encryptArray6(const uint8_t* pk, size_t len, uint8_t* outBuf);
+
+    // Decrypt/encrypt Gen3 Pokemon data (PK3 — FireRed/LeafGreen).
+    // Gen3 uses PID^OID seed with constant XOR (not LCG) + 4x12-byte block shuffle.
+    void decryptArray3(const uint8_t* ekm, size_t len, uint8_t* outBuf);
+    void encryptArray3(const uint8_t* pk, size_t len, uint8_t* outBuf);
 
 } // namespace PokeCrypto

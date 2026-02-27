@@ -866,7 +866,7 @@ void UI::drawAboutPopup() {
     y += 20;
     drawTextCentered("Scarlet/Violet (4.0.0)  -  Legends: Z-A (2.0.1)", cx, y, T().textDim, fontSmall_);
     y += 20;
-    drawTextCentered("FireRed/LeafGreen (GBA)", cx, y, T().textDim, fontSmall_);
+    drawTextCentered("FireRed/LeafGreen (1.0.0)", cx, y, T().textDim, fontSmall_);
     y += 30;
 
     // Divider

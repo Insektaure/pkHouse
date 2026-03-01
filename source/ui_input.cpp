@@ -544,6 +544,10 @@ void UI::moveCursor(int dx, int dy) {
     Panel prevPanel = cursor_.panel;
     int cols = gridCols();
     int maxCol = cols - 1;
+
+    // Party view: single row of 6 slots
+    bool inParty = (cursor_.panel == Panel::Game && cursor_.box == PARTY_BOX);
+
     cursor_.col += dx;
     cursor_.row += dy;
 
@@ -551,8 +555,9 @@ void UI::moveCursor(int dx, int dy) {
         // During drag: clamp to same panel, no wrapping
         if (cursor_.col < 0) cursor_.col = 0;
         if (cursor_.col > maxCol) cursor_.col = maxCol;
+        int maxRow = inParty ? 0 : 4;
         if (cursor_.row < 0) cursor_.row = 0;
-        if (cursor_.row > 4) cursor_.row = 4;
+        if (cursor_.row > maxRow) cursor_.row = maxRow;
 
         if (cursor_.col != dragAnchorCol_ || cursor_.row != dragAnchorRow_)
             yDragActive_ = true;
@@ -560,9 +565,14 @@ void UI::moveCursor(int dx, int dy) {
         return;
     }
 
-    // Wrap row
-    if (cursor_.row < 0) cursor_.row = 4;
-    if (cursor_.row > 4) cursor_.row = 0;
+    if (inParty) {
+        // Party: only row 0, up/down stay on row 0
+        cursor_.row = 0;
+    } else {
+        // Wrap row
+        if (cursor_.row < 0) cursor_.row = 4;
+        if (cursor_.row > 4) cursor_.row = 0;
+    }
 
     // Horizontal: crossing panel boundary
     if (cursor_.col < 0) {
@@ -593,6 +603,22 @@ void UI::switchBox(int direction) {
     if (yHeld_)
         return;
     clearSelection();
+
+    // Save panel (non-applet): include party in rotation
+    if (cursor_.panel == Panel::Game && !appletMode_ && save_.hasParty()) {
+        int maxBox = save_.boxCount();
+        cursor_.box += direction;
+        if (cursor_.box < PARTY_BOX) cursor_.box = maxBox - 1;
+        if (cursor_.box >= maxBox) cursor_.box = PARTY_BOX;
+        // Reset cursor position when entering/leaving party
+        if (cursor_.box == PARTY_BOX) {
+            cursor_.col = std::min(cursor_.col, 5);
+            cursor_.row = 0;
+        }
+        gameBox_ = cursor_.box;
+        return;
+    }
+
     int maxBox;
     if (cursor_.panel == Panel::Game) {
         if (appletMode_)
@@ -614,6 +640,8 @@ void UI::switchBox(int direction) {
 
 Pokemon UI::getPokemonAt(int box, int slot, Panel panel) const {
     if (panel == Panel::Game) {
+        if (box == PARTY_BOX)
+            return save_.getPartySlot(slot);
         if (appletMode_)
             return bankLeft_.getSlot(box, slot);
         return save_.getBoxSlot(box, slot);
@@ -623,6 +651,10 @@ Pokemon UI::getPokemonAt(int box, int slot, Panel panel) const {
 
 void UI::setPokemonAt(int box, int slot, Panel panel, const Pokemon& pkm) {
     if (panel == Panel::Game) {
+        if (box == PARTY_BOX) {
+            save_.setPartySlot(slot, pkm);
+            return;
+        }
         if (appletMode_)
             bankLeft_.setSlot(box, slot, pkm);
         else
@@ -634,6 +666,10 @@ void UI::setPokemonAt(int box, int slot, Panel panel, const Pokemon& pkm) {
 
 void UI::clearPokemonAt(int box, int slot, Panel panel) {
     if (panel == Panel::Game) {
+        if (box == PARTY_BOX) {
+            save_.clearPartySlot(slot);
+            return;
+        }
         if (appletMode_)
             bankLeft_.clearSlot(box, slot);
         else
@@ -690,7 +726,7 @@ void UI::actionSelect() {
             }
         } else {
             // First-available: fill empty slots in order
-            int slotsInBox = maxSlots();
+            int slotsInBox = slotsForBox(box);
             int emptyCount = 0;
             for (int s = 0; s < slotsInBox; s++) {
                 if (getPokemonAt(box, s, cursor_.panel).isEmpty())
@@ -888,7 +924,7 @@ void UI::selectAll() {
     if (appletMode_ && cursor_.panel == Panel::Game && leftBankName_.empty())
         return;
 
-    int slots = maxSlots();
+    int slots = slotsForBox(cursor_.box);
 
     selectedSlots_.clear();
     selectedPanel_ = cursor_.panel;
@@ -1171,7 +1207,31 @@ void UI::executeSearch() {
     std::string filterSpecies = toLower(searchFilter_.speciesName);
     std::string filterOT = toLower(searchFilter_.otName);
 
+    auto addResult = [&](Panel panel, int box, int slot, const Pokemon& pkm) {
+        SearchResult r;
+        r.panel = panel;
+        r.box = box;
+        r.slot = slot;
+        r.speciesName = SpeciesName::get(pkm.species());
+        r.level = pkm.level();
+        r.isShiny = pkm.isShiny();
+        r.isEgg = pkm.isEgg();
+        r.isAlpha = pkm.isAlpha();
+        r.gender = pkm.gender();
+        r.otName = pkm.otName();
+        searchResults_.push_back(r);
+    };
+
     auto scanPanel = [&](Panel panel) {
+        // Scan party slots first (save panel only)
+        if (panel == Panel::Game && !appletMode_ && save_.hasParty()) {
+            for (int s = 0; s < SaveFile::PARTY_SLOTS; s++) {
+                Pokemon pkm = getPokemonAt(PARTY_BOX, s, panel);
+                if (matchesSearchFilter(pkm, filterSpecies, filterOT))
+                    addResult(panel, PARTY_BOX, s, pkm);
+            }
+        }
+
         int boxes, slots;
         if (panel == Panel::Game) {
             if (appletMode_) {
@@ -1190,20 +1250,8 @@ void UI::executeSearch() {
         for (int b = 0; b < boxes; b++) {
             for (int s = 0; s < slots; s++) {
                 Pokemon pkm = getPokemonAt(b, s, panel);
-                if (matchesSearchFilter(pkm, filterSpecies, filterOT)) {
-                    SearchResult r;
-                    r.panel = panel;
-                    r.box = b;
-                    r.slot = s;
-                    r.speciesName = SpeciesName::get(pkm.species());
-                    r.level = pkm.level();
-                    r.isShiny = pkm.isShiny();
-                    r.isEgg = pkm.isEgg();
-                    r.isAlpha = pkm.isAlpha();
-                    r.gender = pkm.gender();
-                    r.otName = pkm.otName();
-                    searchResults_.push_back(r);
-                }
+                if (matchesSearchFilter(pkm, filterSpecies, filterOT))
+                    addResult(panel, b, s, pkm);
             }
         }
     };
@@ -1215,7 +1263,7 @@ void UI::executeSearch() {
         searchMatchSet_.clear();
         for (const auto& r : searchResults_) {
             uint64_t key = (static_cast<uint64_t>(r.panel == Panel::Bank ? 1 : 0) << 48)
-                         | (static_cast<uint64_t>(r.box) << 16)
+                         | (static_cast<uint64_t>(static_cast<uint32_t>(r.box)) << 16)
                          | static_cast<uint64_t>(r.slot);
             searchMatchSet_.insert(key);
         }
@@ -1236,7 +1284,15 @@ void UI::openBoxView(Panel panel) {
         return;
     showBoxView_ = true;
     boxViewPanel_ = panel;
-    boxViewCursor_ = (panel == Panel::Game) ? gameBox_ : bankBox_;
+    if (panel == Panel::Game) {
+        // If party is available, index 0 = party, 1+ = boxes
+        if (!appletMode_ && save_.hasParty())
+            boxViewCursor_ = (gameBox_ == PARTY_BOX) ? 0 : gameBox_ + 1;
+        else
+            boxViewCursor_ = gameBox_;
+    } else {
+        boxViewCursor_ = bankBox_;
+    }
 }
 
 void UI::closeBoxView(bool navigate) {
@@ -1245,9 +1301,17 @@ void UI::closeBoxView(bool navigate) {
     zrPressed_ = false;
     if (navigate) {
         if (boxViewPanel_ == Panel::Game) {
-            gameBox_ = boxViewCursor_;
-            if (cursor_.panel == Panel::Game)
-                cursor_.box = boxViewCursor_;
+            int box;
+            if (!appletMode_ && save_.hasParty())
+                box = (boxViewCursor_ == 0) ? PARTY_BOX : boxViewCursor_ - 1;
+            else
+                box = boxViewCursor_;
+            gameBox_ = box;
+            if (cursor_.panel == Panel::Game) {
+                cursor_.box = box;
+                if (box == PARTY_BOX)
+                    cursor_.row = 0;
+            }
         } else {
             bankBox_ = boxViewCursor_;
             if (cursor_.panel == Panel::Bank)
@@ -1257,15 +1321,18 @@ void UI::closeBoxView(bool navigate) {
 }
 
 void UI::moveBoxViewCursor(int dx, int dy) {
-    int totalBoxes;
+    int totalEntries;
     if (boxViewPanel_ == Panel::Game) {
-        totalBoxes = (appletMode_) ? bankLeft_.boxCount() : save_.boxCount();
+        totalEntries = (appletMode_) ? bankLeft_.boxCount() : save_.boxCount();
+        // Add 1 for party entry
+        if (!appletMode_ && save_.hasParty())
+            totalEntries++;
     } else {
-        totalBoxes = bank_.boxCount();
+        totalEntries = bank_.boxCount();
     }
     int col = boxViewCursor_ % BV_COLS;
     int row = boxViewCursor_ / BV_COLS;
-    int maxRow = (totalBoxes - 1) / BV_COLS;
+    int maxRow = (totalEntries - 1) / BV_COLS;
 
     col += dx;
     row += dy;
@@ -1276,15 +1343,15 @@ void UI::moveBoxViewCursor(int dx, int dy) {
     if (row > maxRow) row = 0;
 
     int newIdx = row * BV_COLS + col;
-    if (newIdx >= totalBoxes)
-        newIdx = (dx > 0 || dy > 0) ? 0 : totalBoxes - 1;
+    if (newIdx >= totalEntries)
+        newIdx = (dx > 0 || dy > 0) ? 0 : totalEntries - 1;
 
     boxViewCursor_ = newIdx;
 }
 
 bool UI::isSearchMatch(Panel panel, int box, int slot) const {
     uint64_t key = (static_cast<uint64_t>(panel == Panel::Bank ? 1 : 0) << 48)
-                 | (static_cast<uint64_t>(box) << 16)
+                 | (static_cast<uint64_t>(static_cast<uint32_t>(box)) << 16)
                  | static_cast<uint64_t>(slot);
     return searchMatchSet_.count(key) > 0;
 }
@@ -1308,7 +1375,26 @@ void UI::refreshHighlightSet() {
     std::string filterSpecies = toLower(searchFilter_.speciesName);
     std::string filterOT = toLower(searchFilter_.otName);
 
+    auto addMatch = [&](Panel panel, int box, int slot, const Pokemon& pkm) {
+        uint64_t key = (static_cast<uint64_t>(panel == Panel::Bank ? 1 : 0) << 48)
+                     | (static_cast<uint64_t>(static_cast<uint32_t>(box)) << 16)
+                     | static_cast<uint64_t>(slot);
+        searchMatchSet_.insert(key);
+        searchResults_.push_back({panel, box, slot, SpeciesName::get(pkm.species()),
+            pkm.level(), pkm.isShiny(), pkm.isEgg(), pkm.isAlpha(),
+            pkm.gender(), pkm.otName()});
+    };
+
     auto scanPanel = [&](Panel panel) {
+        // Scan party slots first
+        if (panel == Panel::Game && !appletMode_ && save_.hasParty()) {
+            for (int s = 0; s < SaveFile::PARTY_SLOTS; s++) {
+                Pokemon pkm = getPokemonAt(PARTY_BOX, s, panel);
+                if (matchesSearchFilter(pkm, filterSpecies, filterOT))
+                    addMatch(panel, PARTY_BOX, s, pkm);
+            }
+        }
+
         int boxes, slots;
         if (panel == Panel::Game) {
             if (appletMode_) {
@@ -1327,15 +1413,8 @@ void UI::refreshHighlightSet() {
         for (int b = 0; b < boxes; b++) {
             for (int s = 0; s < slots; s++) {
                 Pokemon pkm = getPokemonAt(b, s, panel);
-                if (matchesSearchFilter(pkm, filterSpecies, filterOT)) {
-                    uint64_t key = (static_cast<uint64_t>(panel == Panel::Bank ? 1 : 0) << 48)
-                                 | (static_cast<uint64_t>(b) << 16)
-                                 | static_cast<uint64_t>(s);
-                    searchMatchSet_.insert(key);
-                    searchResults_.push_back({panel, b, s, SpeciesName::get(pkm.species()),
-                        pkm.level(), pkm.isShiny(), pkm.isEgg(), pkm.isAlpha(),
-                        pkm.gender(), pkm.otName()});
-                }
+                if (matchesSearchFilter(pkm, filterSpecies, filterOT))
+                    addMatch(panel, b, s, pkm);
             }
         }
     };

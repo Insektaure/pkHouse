@@ -229,6 +229,41 @@ void UI::drawPanel(int panelX, const std::string& boxName, int boxIdx,
     drawTextCentered(hdrText, panelX + PANEL_W / 2, BOX_HDR_Y + BOX_HDR_H / 2, hdrColor, font_);
     drawTextCentered(">", panelX + PANEL_W - 20, BOX_HDR_Y + BOX_HDR_H / 2, T().arrow, font_);
 
+    // Party view: 1 row of 6 slots, centered vertically
+    if (box == PARTY_BOX && save) {
+        int cols = 6;
+        int gridW = cols * (CELL_W + CELL_PAD) - CELL_PAD;
+        int gridStartX = panelX + (PANEL_W - gridW) / 2;
+        // Center the single row vertically in the grid area
+        int gridAreaH = 5 * (CELL_H + CELL_PAD) - CELL_PAD;
+        int gridStartY = GRID_Y + (gridAreaH - CELL_H) / 2;
+
+        for (int col = 0; col < cols; col++) {
+            int slot = col;
+            int cellX = gridStartX + col * (CELL_W + CELL_PAD);
+            int cellY = gridStartY;
+
+            Pokemon pkm = save->getPartySlot(slot);
+
+            bool isCursor = isActive && cursor_.col == col && cursor_.row == 0;
+            int selOrder = 0;
+            if (!selectedSlots_.empty()
+                && panelId == selectedPanel_ && box == selectedBox_) {
+                for (int i = 0; i < (int)selectedSlots_.size(); i++) {
+                    if (selectedSlots_[i] == slot) {
+                        selOrder = i + 1;
+                        break;
+                    }
+                }
+            }
+            int hlState = 0;
+            if (searchHighlightActive_ && !pkm.isEmpty())
+                hlState = isSearchMatch(panelId, box, slot) ? 1 : -1;
+            drawSlot(cellX, cellY, pkm, isCursor, selOrder, hlState);
+        }
+        return;
+    }
+
     // Grid: dynamic columns x 5 rows
     int cols = gridCols();
     int gridStartX = panelX + (PANEL_W - (cols * (CELL_W + CELL_PAD) - CELL_PAD)) / 2;
@@ -306,8 +341,19 @@ void UI::drawFrame() {
     } else {
         // Normal mode: save + bank
         bool leftActive = (cursor_.panel == Panel::Game);
-        std::string gameBoxName = save_.getBoxName(gameBox_);
-        drawPanel(PANEL_X_L, gameBoxName, gameBox_, save_.boxCount(),
+        bool hasParty = save_.hasParty();
+        int totalBoxes = save_.boxCount() + (hasParty ? 1 : 0);
+        std::string gameBoxName;
+        int boxDisplayIdx;
+        if (gameBox_ == PARTY_BOX) {
+            int count = save_.partyCount();
+            gameBoxName = "Party (" + std::to_string(count) + "/6)";
+            boxDisplayIdx = 0;
+        } else {
+            gameBoxName = save_.getBoxName(gameBox_);
+            boxDisplayIdx = gameBox_ + (hasParty ? 1 : 0);
+        }
+        drawPanel(PANEL_X_L, gameBoxName, boxDisplayIdx, totalBoxes,
                   leftActive, &save_, nullptr, gameBox_, Panel::Game);
 
         bool rightActive = (cursor_.panel == Panel::Bank);
@@ -813,7 +859,10 @@ void UI::drawSearchResultsPopup() {
                 loc = (r.panel == Panel::Game ? "Left" : "Right");
             else
                 loc = (r.panel == Panel::Game ? "Save" : "Bank");
-            loc += " Box " + std::to_string(r.box + 1) + " Slot " + std::to_string(r.slot + 1);
+            if (r.box == PARTY_BOX)
+                loc += " Party Slot " + std::to_string(r.slot + 1);
+            else
+                loc += " Box " + std::to_string(r.box + 1) + " Slot " + std::to_string(r.slot + 1);
             drawText(loc, x, textY, T().textDim, font_);
         }
     }
@@ -895,12 +944,18 @@ void UI::drawBoxViewOverlay() {
     // Full-screen dark overlay
     drawRect(0, 0, SCREEN_W, SCREEN_H, T().overlay);
 
-    int totalBoxes;
+    // Does this panel include a party entry?
+    bool hasPartyEntry = (boxViewPanel_ == Panel::Game && !appletMode_ && save_.hasParty());
+
+    int totalEntries;
     if (boxViewPanel_ == Panel::Game)
-        totalBoxes = (appletMode_) ? bankLeft_.boxCount() : save_.boxCount();
+        totalEntries = (appletMode_) ? bankLeft_.boxCount() : save_.boxCount();
     else
-        totalBoxes = bank_.boxCount();
-    int usedRows = (totalBoxes + BV_COLS - 1) / BV_COLS;
+        totalEntries = bank_.boxCount();
+    if (hasPartyEntry)
+        totalEntries++;  // +1 for party at index 0
+
+    int usedRows = (totalEntries + BV_COLS - 1) / BV_COLS;
 
     // Popup dimensions
     int gridW = BV_COLS * BV_CELL_W + (BV_COLS - 1) * BV_CELL_PAD;
@@ -941,26 +996,43 @@ void UI::drawBoxViewOverlay() {
     // Grid of box cells
     int gridStartX = popX + 20;
     int gridStartY = popY + 55;
-    int activeBox = (boxViewPanel_ == Panel::Game) ? gameBox_ : bankBox_;
+
+    // Determine which grid index is currently active
+    int activeIdx;
+    if (boxViewPanel_ == Panel::Game) {
+        if (hasPartyEntry)
+            activeIdx = (gameBox_ == PARTY_BOX) ? 0 : gameBox_ + 1;
+        else
+            activeIdx = gameBox_;
+    } else {
+        activeIdx = bankBox_;
+    }
 
     int cursorCellX = 0, cursorCellY = 0;
 
-    for (int i = 0; i < totalBoxes; i++) {
+    for (int i = 0; i < totalEntries; i++) {
         int col = i % BV_COLS;
         int row = i / BV_COLS;
         int cellX = gridStartX + col * (BV_CELL_W + BV_CELL_PAD);
         int cellY = gridStartY + row * (BV_CELL_H + BV_CELL_PAD);
 
+        // Map grid index to actual box index
+        int actualBox;
+        if (hasPartyEntry)
+            actualBox = (i == 0) ? PARTY_BOX : i - 1;
+        else
+            actualBox = i;
+
         // Cell background — highlight the currently-active box
-        SDL_Color bg = (i == activeBox) ? T().slotFull : T().slotEmpty;
+        SDL_Color bg = (i == activeIdx) ? T().slotFull : T().slotEmpty;
         drawRect(cellX, cellY, BV_CELL_W, BV_CELL_H, bg);
 
         // Search highlight: outline boxes that contain matches
         if (searchHighlightActive_) {
             bool hasMatch = false;
-            int slots = maxSlots();
+            int slots = slotsForBox(actualBox);
             for (int s = 0; s < slots && !hasMatch; s++)
-                hasMatch = isSearchMatch(boxViewPanel_, i, s);
+                hasMatch = isSearchMatch(boxViewPanel_, actualBox, s);
             if (hasMatch)
                 drawRectOutline(cellX + 1, cellY + 1, BV_CELL_W - 2, BV_CELL_H - 2, T().searchMatch, 2);
         }
@@ -973,15 +1045,19 @@ void UI::drawBoxViewOverlay() {
         }
 
         // Box label
-        std::string boxName;
-        if (boxViewPanel_ == Panel::Game)
-            boxName = (appletMode_) ? bankLeft_.getBoxName(i) : save_.getBoxName(i);
-        else
-            boxName = bank_.getBoxName(i);
-
-        std::string label = std::to_string(i + 1) + ": " + boxName;
-        if (label.length() > 16)
-            label = label.substr(0, 15) + ".";
+        std::string label;
+        if (actualBox == PARTY_BOX) {
+            label = "Party";
+        } else {
+            std::string boxName;
+            if (boxViewPanel_ == Panel::Game)
+                boxName = (appletMode_) ? bankLeft_.getBoxName(actualBox) : save_.getBoxName(actualBox);
+            else
+                boxName = bank_.getBoxName(actualBox);
+            label = std::to_string(actualBox + 1) + ": " + boxName;
+            if (label.length() > 16)
+                label = label.substr(0, 15) + ".";
+        }
 
         drawTextCentered(label, cellX + BV_CELL_W / 2, cellY + BV_CELL_H / 2,
                          T().text, fontSmall_);
@@ -999,8 +1075,16 @@ void UI::drawBoxViewOverlay() {
 }
 
 void UI::drawBoxPreview(int boxIdx, int anchorX, int anchorY) {
+    // Map grid index to actual box index
+    bool hasPartyEntry = (boxViewPanel_ == Panel::Game && !appletMode_ && save_.hasParty());
+    int actualBox;
+    if (hasPartyEntry)
+        actualBox = (boxIdx == 0) ? PARTY_BOX : boxIdx - 1;
+    else
+        actualBox = boxIdx;
+
     int cols = gridCols();
-    int rows = 5;
+    int rows = (actualBox == PARTY_BOX) ? 1 : 5;
 
     // Preview panel dimensions
     int previewInnerW = cols * BV_MINI_CELL + (cols - 1) * BV_MINI_PAD;
@@ -1028,10 +1112,13 @@ void UI::drawBoxPreview(int boxIdx, int anchorX, int anchorY) {
 
     // Box name header
     std::string boxName;
-    if (boxViewPanel_ == Panel::Game)
-        boxName = (appletMode_) ? bankLeft_.getBoxName(boxIdx) : save_.getBoxName(boxIdx);
-    else
-        boxName = bank_.getBoxName(boxIdx);
+    if (actualBox == PARTY_BOX) {
+        boxName = "Party";
+    } else if (boxViewPanel_ == Panel::Game) {
+        boxName = (appletMode_) ? bankLeft_.getBoxName(actualBox) : save_.getBoxName(actualBox);
+    } else {
+        boxName = bank_.getBoxName(actualBox);
+    }
     drawTextCentered(boxName, prevX + previewW / 2,
                      prevY + BV_PREVIEW_HDR / 2 + 2, T().boxName, fontSmall_);
 
@@ -1046,11 +1133,14 @@ void UI::drawBoxPreview(int boxIdx, int anchorX, int anchorY) {
             int sy = gridY + r * (BV_MINI_CELL + BV_MINI_PAD);
 
             Pokemon pkm;
-            if (boxViewPanel_ == Panel::Game)
-                pkm = (appletMode_) ? bankLeft_.getSlot(boxIdx, slot)
-                                    : save_.getBoxSlot(boxIdx, slot);
-            else
-                pkm = bank_.getSlot(boxIdx, slot);
+            if (actualBox == PARTY_BOX) {
+                pkm = save_.getPartySlot(slot);
+            } else if (boxViewPanel_ == Panel::Game) {
+                pkm = (appletMode_) ? bankLeft_.getSlot(actualBox, slot)
+                                    : save_.getBoxSlot(actualBox, slot);
+            } else {
+                pkm = bank_.getSlot(actualBox, slot);
+            }
 
             if (pkm.isEmpty()) {
                 drawRect(sx, sy, BV_MINI_CELL, BV_MINI_CELL, T().miniCellEmpty);
@@ -1075,7 +1165,7 @@ void UI::drawBoxPreview(int boxIdx, int anchorX, int anchorY) {
 
                 // Search highlight on mini slots
                 if (searchHighlightActive_) {
-                    if (isSearchMatch(boxViewPanel_, boxIdx, slot))
+                    if (isSearchMatch(boxViewPanel_, actualBox, slot))
                         drawRectOutline(sx, sy, BV_MINI_CELL, BV_MINI_CELL, T().searchMatch, 1);
                     else
                         drawRect(sx, sy, BV_MINI_CELL, BV_MINI_CELL, T().searchDim);

@@ -33,6 +33,15 @@ public:
     int boxCount() const { return boxCount_; }
     int slotsPerBox() const { return slotsPerBox_; }
 
+    // Party access (6-slot party from save file)
+    static constexpr int PARTY_SLOTS = 6;
+    Pokemon getPartySlot(int slot) const;
+    void setPartySlot(int slot, const Pokemon& pkm);
+    void clearPartySlot(int slot);
+    int partyCount() const;
+    void setPartyCount(int count);
+    bool hasParty() const;  // false for LGPE
+
 private:
     std::vector<SCBlock> blocks_;
 
@@ -110,6 +119,19 @@ private:
     // GBA assembled storage buffer (sectors 5-13 concatenated)
     std::vector<uint8_t> gbaStorage_;
     int gbaActiveSlot_ = 0;
+
+    // GBA Large buffer (sectors 1-4 concatenated) for party data
+    std::vector<uint8_t> gbaLarge_;
+
+    // Party data
+    uint8_t* partyData_     = nullptr;
+    size_t   partyDataLen_  = 0;
+    int      partySlotSize_ = 0;  // stride per slot (size + gap)
+    uint32_t kparty_        = 0;  // SCBlock key for party block
+    void compactParty();
+
+    // BDSP party offset
+    static constexpr int BDSP_PARTY_OFFSET = 0x14098;
 
     // BDSP and LGPE raw save data (flat binary, no SCBlocks)
     std::vector<uint8_t> rawData_;

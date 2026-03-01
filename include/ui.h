@@ -57,6 +57,9 @@ struct SearchResult {
     std::string otName;
 };
 
+// Special box index for party view
+static constexpr int PARTY_BOX = -1;
+
 // Cursor position within the two-panel display
 struct Cursor {
     Panel panel = Panel::Game;
@@ -341,6 +344,7 @@ private:
     // Dynamic grid: LGPE has 5 columns (5x5), others have 6 (6x5)
     int gridCols() const { return isLGPE(selectedGame_) ? 5 : 6; }
     int maxSlots() const { return gridCols() * 5; }
+    int slotsForBox(int box) const { return box == PARTY_BOX ? SaveFile::PARTY_SLOTS : maxSlots(); }
 
     // Get pokemon at cursor from the appropriate source
     Pokemon getPokemonAt(int box, int slot, Panel panel) const;

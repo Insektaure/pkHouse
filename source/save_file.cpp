@@ -7,32 +7,53 @@
 void SaveFile::setGameType(GameType game) {
     gameType_ = game;
     kbox_ = 0x0d66012c; // Reset to default; LA overrides below
+    kparty_ = 0;
+    partySlotSize_ = 0;
     slotsPerBox_ = 30;   // Default; LGPE overrides below
     if (game == GameType::ZA) {
         gapBoxSlot_  = 0x40;
         sizeBoxSlot_ = PokeCrypto::SIZE_9PARTY + 0x40;
         boxCount_    = 32;
+        kparty_      = 0x3AA1A9AD;
+        partySlotSize_ = 0x1E0;  // 0x158 + 0x88 gap
+    } else if (isSV(game)) {
+        gapBoxSlot_  = 0;
+        sizeBoxSlot_ = PokeCrypto::SIZE_9PARTY;
+        boxCount_    = 32;
+        kparty_      = 0x3AA1A9AD;
+        partySlotSize_ = PokeCrypto::SIZE_9PARTY;
+    } else if (isSwSh(game)) {
+        gapBoxSlot_  = 0;
+        sizeBoxSlot_ = PokeCrypto::SIZE_9PARTY;
+        boxCount_    = 32;
+        kparty_      = 0x2985fe5d;
+        partySlotSize_ = PokeCrypto::SIZE_9PARTY;
     } else if (isBDSP(game)) {
         gapBoxSlot_  = 0;
         sizeBoxSlot_ = PokeCrypto::SIZE_9PARTY;
         boxCount_    = BDSP_BOX_COUNT;
+        partySlotSize_ = PokeCrypto::SIZE_9PARTY;
     } else if (game == GameType::LA) {
         gapBoxSlot_  = 0;
         sizeBoxSlot_ = PokeCrypto::SIZE_8ASTORED;
         boxCount_    = 32;
         kbox_        = 0x47E1CEAB;
+        kparty_      = 0x2985fe5d;
+        partySlotSize_ = PokeCrypto::SIZE_8APARTY;
     } else if (isLGPE(game)) {
         gapBoxSlot_  = 0;
         sizeBoxSlot_ = PokeCrypto::SIZE_6PARTY;
         boxCount_    = LGPE_BOX_COUNT;
         slotsPerBox_ = LGPE_SLOTS_PER_BOX;
+        // LGPE: no separate party (party members are pointer-indexed box slots)
     } else if (isFRLG(game)) {
         gapBoxSlot_  = 0;
         sizeBoxSlot_ = PokeCrypto::SIZE_3STORED;  // 80 bytes per slot
         boxCount_    = GBA_BOX_COUNT;              // 14 boxes
         slotsPerBox_ = GBA_SLOTS_PER_BOX;         // 30 slots
+        partySlotSize_ = PokeCrypto::SIZE_3PARTY;  // 100 bytes per party slot
     } else {
-        // SV, SwSh: no gap, 32 boxes
+        // Fallback (should not be reached)
         gapBoxSlot_  = 0;
         sizeBoxSlot_ = PokeCrypto::SIZE_9PARTY;
         boxCount_    = 32;
@@ -51,6 +72,8 @@ bool SaveFile::load(const std::string& path) {
     loaded_ = false;
     boxData_ = nullptr;
     boxLayoutData_ = nullptr;
+    partyData_ = nullptr;
+    partyDataLen_ = 0;
 
     if (isFRLG(gameType_))
         return loadGBA(path);
@@ -106,6 +129,15 @@ bool SaveFile::loadSCBlock(const std::string& path) {
         boxLayoutLen_ = layoutBlock->data.size();
     }
 
+    // Find party block
+    if (kparty_) {
+        SCBlock* partyBlock = SwishCrypto::findBlock(blocks_, kparty_);
+        if (partyBlock) {
+            partyData_ = partyBlock->data.data();
+            partyDataLen_ = partyBlock->data.size();
+        }
+    }
+
     loaded_ = true;
     return true;
 }
@@ -156,6 +188,13 @@ bool SaveFile::loadBDSP(const std::string& path) {
     if (BDSP_LAYOUT_OFFSET + BDSP_LAYOUT_SIZE <= static_cast<int>(rawData_.size())) {
         boxLayoutData_ = rawData_.data() + BDSP_LAYOUT_OFFSET;
         boxLayoutLen_ = BDSP_LAYOUT_SIZE;
+    }
+
+    // Party data at fixed offset
+    size_t partyEnd = BDSP_PARTY_OFFSET + PARTY_SLOTS * PokeCrypto::SIZE_9PARTY + 1;
+    if (partyEnd <= rawData_.size()) {
+        partyData_ = rawData_.data() + BDSP_PARTY_OFFSET;
+        partyDataLen_ = partyEnd - BDSP_PARTY_OFFSET;
     }
 
     loaded_ = true;
@@ -666,6 +705,22 @@ bool SaveFile::loadGBA(const std::string& path) {
         boxLayoutLen_ = 0;
     }
 
+    // Assemble Large buffer from sectors 1-4 (for party data)
+    gbaLarge_.resize(4 * GBA_SECTOR_USED);
+    std::memset(gbaLarge_.data(), 0, gbaLarge_.size());
+    for (int i = 0; i < GBA_SECTOR_COUNT; i++) {
+        int sectorOfs = slotBase + i * GBA_SECTOR_SIZE;
+        uint16_t id = readU16LE(rawData_.data() + sectorOfs + GBA_OFS_SECTOR_ID);
+        if (id >= 1 && id <= 4) {
+            std::memcpy(gbaLarge_.data() + (id - 1) * GBA_SECTOR_USED,
+                        rawData_.data() + sectorOfs,
+                        GBA_SECTOR_USED);
+        }
+    }
+    // Party data at offset 0x038 in Large buffer
+    partyData_ = gbaLarge_.data() + 0x038;
+    partyDataLen_ = PARTY_SLOTS * PokeCrypto::SIZE_3PARTY;
+
     loaded_ = true;
     return true;
 }
@@ -686,7 +741,7 @@ bool SaveFile::saveGBA(const std::string& path) {
                         GBA_SECTOR_COUNT * GBA_SECTOR_SIZE);
         }
 
-        // Write storage data back to sectors 5-13
+        // Write storage data back to sectors 5-13 and Large data back to sectors 1-4
         for (int i = 0; i < GBA_SECTOR_COUNT; i++) {
             int sectorOfs = slotBase + i * GBA_SECTOR_SIZE;
             uint16_t id = readU16LE(rawData_.data() + sectorOfs + GBA_OFS_SECTOR_ID);
@@ -694,6 +749,10 @@ bool SaveFile::saveGBA(const std::string& path) {
                 int storageIdx = id - GBA_STORAGE_FIRST;
                 std::memcpy(rawData_.data() + sectorOfs,
                             gbaStorage_.data() + storageIdx * GBA_SECTOR_USED,
+                            GBA_SECTOR_USED);
+            } else if (id >= 1 && id <= 4) {
+                std::memcpy(rawData_.data() + sectorOfs,
+                            gbaLarge_.data() + (id - 1) * GBA_SECTOR_USED,
                             GBA_SECTOR_USED);
             }
         }
@@ -716,4 +775,149 @@ bool SaveFile::saveGBA(const std::string& path) {
     size_t written = std::fwrite(rawData_.data(), 1, rawData_.size(), f);
     std::fclose(f);
     return written == rawData_.size();
+}
+
+// --- Party access ---
+
+bool SaveFile::hasParty() const {
+    return partyData_ != nullptr && partySlotSize_ > 0;
+}
+
+int SaveFile::partyCount() const {
+    if (!hasParty())
+        return 0;
+
+    if (gameType_ == GameType::ZA) {
+        // ZA: auto-detect by scanning for non-empty slots
+        int count = 0;
+        for (int i = 0; i < PARTY_SLOTS; i++) {
+            int ofs = i * partySlotSize_;
+            if (ofs + 4 > static_cast<int>(partyDataLen_))
+                break;
+            uint32_t ec;
+            std::memcpy(&ec, partyData_ + ofs, 4);
+            if (ec != 0)
+                count++;
+        }
+        return count;
+    }
+
+    if (isFRLG(gameType_)) {
+        // FRLG: party count at Large[0x034]
+        if (gbaLarge_.size() > 0x034)
+            return gbaLarge_[0x034];
+        return 0;
+    }
+
+    // SV, SwSh, LA, BDSP: count byte after the 6 party slots
+    size_t countOfs = static_cast<size_t>(PARTY_SLOTS) * partySlotSize_;
+    if (countOfs < partyDataLen_)
+        return partyData_[countOfs];
+    return 0;
+}
+
+void SaveFile::setPartyCount(int count) {
+    if (!hasParty() || count < 0 || count > PARTY_SLOTS)
+        return;
+
+    if (gameType_ == GameType::ZA) {
+        // ZA: count is auto-detected, nothing to write
+        return;
+    }
+
+    if (isFRLG(gameType_)) {
+        if (gbaLarge_.size() > 0x034)
+            gbaLarge_[0x034] = static_cast<uint8_t>(count);
+        return;
+    }
+
+    size_t countOfs = static_cast<size_t>(PARTY_SLOTS) * partySlotSize_;
+    if (countOfs < partyDataLen_)
+        partyData_[countOfs] = static_cast<uint8_t>(count);
+}
+
+Pokemon SaveFile::getPartySlot(int slot) const {
+    Pokemon pkm;
+    if (!hasParty() || slot < 0 || slot >= PARTY_SLOTS)
+        return pkm;
+
+    int offset = slot * partySlotSize_;
+    if (offset + partySlotSize_ > static_cast<int>(partyDataLen_))
+        return pkm;
+
+    pkm.gameType_ = gameType_;
+    // Party data uses party-size format (larger than stored)
+    int dataSize = isFRLG(gameType_) ? PokeCrypto::SIZE_3PARTY
+                 : (gameType_ == GameType::LA) ? PokeCrypto::SIZE_8APARTY
+                 : PokeCrypto::SIZE_9PARTY;
+    pkm.loadFromEncrypted(partyData_ + offset, dataSize);
+    return pkm;
+}
+
+void SaveFile::setPartySlot(int slot, const Pokemon& pkm) {
+    if (!hasParty() || slot < 0 || slot >= PARTY_SLOTS)
+        return;
+
+    int offset = slot * partySlotSize_;
+    if (offset + partySlotSize_ > static_cast<int>(partyDataLen_))
+        return;
+
+    // Zero the full slot first (clears stale party stats extension and gap bytes)
+    std::memset(partyData_ + offset, 0, partySlotSize_);
+
+    Pokemon copy = pkm;
+    copy.gameType_ = gameType_;
+    copy.getEncrypted(partyData_ + offset);
+
+    // Compact and update count
+    compactParty();
+}
+
+void SaveFile::clearPartySlot(int slot) {
+    if (!hasParty() || slot < 0 || slot >= PARTY_SLOTS)
+        return;
+
+    int offset = slot * partySlotSize_;
+    if (offset + partySlotSize_ > static_cast<int>(partyDataLen_))
+        return;
+
+    std::memset(partyData_ + offset, 0, partySlotSize_);
+
+    // Compact and update count
+    compactParty();
+}
+
+void SaveFile::compactParty() {
+    if (!hasParty())
+        return;
+
+    // Shift non-empty slots to the front, zero trailing slots
+    uint8_t temp[PARTY_SLOTS][PokeCrypto::MAX_PARTY_SIZE + 0x88] = {};
+    int writeIdx = 0;
+
+    for (int i = 0; i < PARTY_SLOTS; i++) {
+        int ofs = i * partySlotSize_;
+        if (ofs + partySlotSize_ > static_cast<int>(partyDataLen_))
+            break;
+        // Check if slot is non-empty (EC != 0 for encrypted data)
+        uint32_t ec;
+        std::memcpy(&ec, partyData_ + ofs, 4);
+        if (ec != 0) {
+            std::memcpy(temp[writeIdx], partyData_ + ofs, partySlotSize_);
+            writeIdx++;
+        }
+    }
+
+    // Write back compacted slots
+    for (int i = 0; i < PARTY_SLOTS; i++) {
+        int ofs = i * partySlotSize_;
+        if (ofs + partySlotSize_ > static_cast<int>(partyDataLen_))
+            break;
+        if (i < writeIdx)
+            std::memcpy(partyData_ + ofs, temp[i], partySlotSize_);
+        else
+            std::memset(partyData_ + ofs, 0, partySlotSize_);
+    }
+
+    setPartyCount(writeIdx);
 }

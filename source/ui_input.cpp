@@ -292,6 +292,14 @@ void UI::handleInput(bool& running) {
                 if (showConfirmDialog("Release Pokemon",
                         "Release " + name + "?")) {
                     clearPokemonAt(box, slot, cursor_.panel);
+                    // Remove from multi-select if selected
+                    if (!selectedSlots_.empty() && cursor_.panel == selectedPanel_
+                        && box == selectedBox_) {
+                        auto it = std::find(selectedSlots_.begin(),
+                                            selectedSlots_.end(), slot);
+                        if (it != selectedSlots_.end())
+                            selectedSlots_.erase(it);
+                    }
                     showDetail_ = false;
                     refreshHighlightSet();
                 }

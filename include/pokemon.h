@@ -155,6 +155,10 @@ struct Pokemon {
     void loadFromEncrypted(const uint8_t* encrypted, size_t len);
     void getEncrypted(uint8_t* outBuf);
 
+    // Calculate and fill party stats extension (FRLG and LA only).
+    // Must be called before encrypting when placing a Pokemon into a party slot.
+    void calcPartyStats();
+
     // IsAlpha: PA9 → 0x23 != 0, PA8 → 0x16 bit 5, others → false
     bool isAlpha() const {
         if (isFRLG(gameType_)) return false;

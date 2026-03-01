@@ -867,7 +867,30 @@ void SaveFile::setPartySlot(int slot, const Pokemon& pkm) {
 
     Pokemon copy = pkm;
     copy.gameType_ = gameType_;
-    copy.getEncrypted(partyData_ + offset);
+
+    // Calculate party stats (FRLG: fills bytes 80-99, LA: fills 0x168-0x175 + HPCurrent)
+    copy.calcPartyStats();
+
+    if (isFRLG(gameType_)) {
+        // FRLG: getEncrypted writes SIZE_3STORED (80 bytes) but party slots are
+        // SIZE_3PARTY (100 bytes). The extra 20 bytes are plaintext party stats
+        // (level, HP, all stats). Copy them from the Pokemon data after encrypting.
+        copy.getEncrypted(partyData_ + offset);
+        std::memcpy(partyData_ + offset + PokeCrypto::SIZE_3STORED,
+                    copy.data.data() + PokeCrypto::SIZE_3STORED,
+                    PokeCrypto::SIZE_3PARTY - PokeCrypto::SIZE_3STORED);
+    } else if (gameType_ == GameType::LA) {
+        // LA: getEncrypted writes SIZE_8ASTORED (0x168) but party slots are
+        // SIZE_8APARTY (0x178). The extra 0x10 bytes are LCG-encrypted party stats.
+        // Encrypt with full party size to include them.
+        copy.refreshChecksum();
+        PokeCrypto::encryptArray8A(copy.data.data(), PokeCrypto::SIZE_8APARTY,
+                                   partyData_ + offset);
+    } else {
+        // Gen9 (ZA/SV/SwSh), BDSP: getEncrypted writes SIZE_9PARTY which
+        // matches the encrypted party format. No extra handling needed.
+        copy.getEncrypted(partyData_ + offset);
+    }
 
     // Compact and update count
     compactParty();

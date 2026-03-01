@@ -331,6 +331,12 @@ void UI::handleInput(bool& running) {
                 {
                     if (yHeld_) break;
                     if (holding_) {
+                        // Party guard: cannot delete if it would leave party empty
+                        if (save_.hasParty() && save_.partyCount() == 0) {
+                            showMessageAndWait("Party is empty",
+                                "Place a Pokemon in the party before deleting.");
+                            break;
+                        }
                         int count = heldMulti_.empty() ? 1 : (int)heldMulti_.size();
                         std::string msg = "Delete " + std::to_string(count) + " Pokemon?";
                         if (showConfirmDialog("Delete Pokemon", msg)) {
@@ -421,6 +427,12 @@ void UI::handleInput(bool& running) {
                 {
                     if (yHeld_) break;
                     if (holding_) {
+                        // Party guard: cannot delete if it would leave party empty
+                        if (save_.hasParty() && save_.partyCount() == 0) {
+                            showMessageAndWait("Party is empty",
+                                "Place a Pokemon in the party before deleting.");
+                            break;
+                        }
                         int count = heldMulti_.empty() ? 1 : (int)heldMulti_.size();
                         std::string msg = "Delete " + std::to_string(count) + " Pokemon?";
                         if (showConfirmDialog("Delete Pokemon", msg)) {
@@ -775,10 +787,6 @@ void UI::actionSelect() {
         if (pkm.isEmpty())
             return;
 
-        // Party guard: cannot take the last Pokemon from the party
-        if (box == PARTY_BOX && cursor_.panel == Panel::Game && save_.partyCount() <= 1)
-            return;
-
         heldPkm_ = pkm;
         holding_ = true;
         swapHistory_.clear();
@@ -789,6 +797,13 @@ void UI::actionSelect() {
         Pokemon target = getPokemonAt(box, slot, cursor_.panel);
 
         if (target.isEmpty()) {
+            // Party guard: placing on empty would end hold — block if party is empty
+            // (unless we're placing back into the party itself)
+            if (save_.hasParty() && save_.partyCount() == 0 && box != PARTY_BOX) {
+                showMessageAndWait("Party is empty",
+                    "Place a Pokemon in the party first.");
+                return;
+            }
             // Place on empty — commit, clear history
             setPokemonAt(box, slot, cursor_.panel, heldPkm_);
             holding_ = false;

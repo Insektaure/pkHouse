@@ -305,6 +305,7 @@ private:
     void drawHeldOverlay();
     void drawBoxViewOverlay();
     void drawBoxPreview(int boxIdx, int anchorX, int anchorY);
+    void drawRadarChart(int cx, int cy, int radius, const int values[6], int maxVal);
     void drawPanel(int panelX, const std::string& boxName, int boxIdx,
                    int totalBoxes, bool isActive, SaveFile* save, Bank* bank, int box,
                    Panel panelId);

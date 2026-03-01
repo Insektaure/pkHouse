@@ -89,8 +89,8 @@ Press **X** on any Pokemon to view detailed information:
 - Original Trainer (OT) and Trainer ID
 - Nature and Ability
 - All 4 moves
-- IVs (perfect 31s highlighted in gold)
-- EVs
+- IVs displayed as a hexagonal radar chart (perfect 31s highlighted in gold)
+- EVs displayed as a hexagonal radar chart
 
 Shiny Pokemon names are displayed in gold. Alpha Pokemon (Legends: Arceus / Z-A) show a dedicated icon.
 

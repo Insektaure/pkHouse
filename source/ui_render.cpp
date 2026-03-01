@@ -396,6 +396,145 @@ void UI::drawFrame() {
     }
 }
 
+// --- Polygon rendering helpers for radar charts ---
+// Unit vectors for a regular hexagon (top, top-right, bottom-right, bottom, bottom-left, top-left)
+static constexpr double HEX_COS[6] = { 0.0,  0.866025,  0.866025, 0.0, -0.866025, -0.866025 };
+static constexpr double HEX_SIN[6] = {-1.0, -0.5,       0.5,      1.0,  0.5,      -0.5      };
+
+namespace {
+
+void fillConvexPolygon(SDL_Renderer* renderer, const SDL_Point pts[], int count, SDL_Color color) {
+    if (count < 3) return;
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+
+    int minY = pts[0].y, maxY = pts[0].y;
+    for (int i = 1; i < count; i++) {
+        if (pts[i].y < minY) minY = pts[i].y;
+        if (pts[i].y > maxY) maxY = pts[i].y;
+    }
+
+    for (int y = minY; y <= maxY; y++) {
+        int minX = 99999, maxX = -99999;
+        for (int i = 0; i < count; i++) {
+            int j = (i + 1) % count;
+            int y0 = pts[i].y, y1 = pts[j].y;
+            if ((y0 <= y && y1 > y) || (y1 <= y && y0 > y)) {
+                int x = pts[i].x + (int)((long long)(y - y0) * (pts[j].x - pts[i].x) / (y1 - y0));
+                if (x < minX) minX = x;
+                if (x > maxX) maxX = x;
+            }
+        }
+        if (minX <= maxX)
+            SDL_RenderDrawLine(renderer, minX, y, maxX, y);
+    }
+}
+
+void drawPolygonOutline(SDL_Renderer* renderer, const SDL_Point pts[], int count, SDL_Color color) {
+    if (count < 2) return;
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+    for (int i = 0; i < count; i++) {
+        int j = (i + 1) % count;
+        SDL_RenderDrawLine(renderer, pts[i].x, pts[i].y, pts[j].x, pts[j].y);
+    }
+}
+
+} // anonymous namespace
+
+void UI::drawRadarChart(int cx, int cy, int radius, const int values[6], int maxVal) {
+    static const char* labels[6] = {"HP", "Attack", "Defense", "Speed", "Sp. Def", "Sp. Atk"};
+    constexpr int N = 6;
+    constexpr int LABEL_MARGIN = 12;
+
+    // Compute hex vertices (starting from top, clockwise)
+    SDL_Point outer[N];
+    for (int i = 0; i < N; i++) {
+        outer[i].x = cx + static_cast<int>(radius * HEX_COS[i]);
+        outer[i].y = cy + static_cast<int>(radius * HEX_SIN[i]);
+    }
+
+    // Guide lines from center to each vertex
+    SDL_Color guide = {T().textDim.r, T().textDim.g, T().textDim.b, 50};
+    SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(renderer_, guide.r, guide.g, guide.b, guide.a);
+    for (int i = 0; i < N; i++)
+        SDL_RenderDrawLine(renderer_, cx, cy, outer[i].x, outer[i].y);
+
+    // Intermediate ring at 50%
+    SDL_Point mid[N];
+    for (int i = 0; i < N; i++) {
+        mid[i].x = cx + static_cast<int>(radius * 0.5 * HEX_COS[i]);
+        mid[i].y = cy + static_cast<int>(radius * 0.5 * HEX_SIN[i]);
+    }
+    drawPolygonOutline(renderer_, mid, N, guide);
+
+    // Outer hex border
+    drawPolygonOutline(renderer_, outer, N, T().textDim);
+
+    // Compute data polygon vertices
+    SDL_Point data[N];
+    for (int i = 0; i < N; i++) {
+        double frac = maxVal > 0 ? std::min(1.0, static_cast<double>(values[i]) / maxVal) : 0.0;
+        double r = radius * frac;
+        data[i].x = cx + static_cast<int>(r * HEX_COS[i]);
+        data[i].y = cy + static_cast<int>(r * HEX_SIN[i]);
+    }
+
+    // Fill data polygon using triangle fan from center (handles concave shapes)
+    SDL_Color fill = {T().cursor.r, T().cursor.g, T().cursor.b, 60};
+    for (int i = 0; i < N; i++) {
+        int j = (i + 1) % N;
+        SDL_Point tri[3] = {{cx, cy}, data[i], data[j]};
+        fillConvexPolygon(renderer_, tri, 3, fill);
+    }
+
+    // Data polygon outline
+    SDL_Color outline = {T().cursor.r, T().cursor.g, T().cursor.b, 200};
+    drawPolygonOutline(renderer_, data, N, outline);
+
+    // Small dots at each data vertex
+    SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(renderer_, outline.r, outline.g, outline.b, outline.a);
+    for (int i = 0; i < N; i++) {
+        SDL_Rect dot = {data[i].x - 2, data[i].y - 2, 5, 5};
+        SDL_RenderFillRect(renderer_, &dot);
+    }
+
+    // Labels and values around the chart
+    for (int i = 0; i < N; i++) {
+        int lx = cx + static_cast<int>((radius + LABEL_MARGIN) * HEX_COS[i]);
+        int ly = cy + static_cast<int>((radius + LABEL_MARGIN) * HEX_SIN[i]);
+
+        const char* name = labels[i];
+        std::string valStr = std::to_string(values[i]);
+
+        SDL_Color nameColor = T().goldLabel;
+        SDL_Color valColor = (values[i] >= maxVal) ? T().shiny
+                           : (values[i] == 0)      ? T().textDim
+                           :                          T().text;
+
+        int nw, nh;
+        TTF_SizeUTF8(fontSmall_, name, &nw, &nh);
+        int vw, vh;
+        TTF_SizeUTF8(fontSmall_, valStr.c_str(), &vw, &vh);
+
+        if (i == 0) { // Top: centered, name then value downward
+            drawText(name, lx - nw / 2, ly - nh * 2 - 2, nameColor, fontSmall_);
+            drawText(valStr, lx - vw / 2, ly - vh, valColor, fontSmall_);
+        } else if (i == 3) { // Bottom: centered, value then name downward
+            drawText(valStr, lx - vw / 2, ly, valColor, fontSmall_);
+            drawText(name, lx - nw / 2, ly + vh + 2, nameColor, fontSmall_);
+        } else if (i == 1 || i == 2) { // Right: left-aligned
+            drawText(name, lx + 4, ly - nh, nameColor, fontSmall_);
+            drawText(valStr, lx + 4, ly + 2, valColor, fontSmall_);
+        } else { // Left (4, 5): right-aligned
+            drawText(name, lx - nw - 4, ly - nh, nameColor, fontSmall_);
+            drawText(valStr, lx - vw - 4, ly + 2, valColor, fontSmall_);
+        }
+    }
+}
+
 void UI::drawDetailPopup(const Pokemon& pkm) {
     // Semi-transparent dark overlay
     drawRect(0, 0, SCREEN_W, SCREEN_H, T().overlay);
@@ -511,38 +650,20 @@ void UI::drawDetailPopup(const Pokemon& pkm) {
         movesY += 26;
     }
 
-    // --- Right column: IVs and EVs ---
-    int statsX = popX + POP_W / 2 + 20;
-    int statsY = popY + 20;
+    // --- Right column: IV and EV radar charts ---
+    // Order: HP, Atk, Def, Spe, SpD, SpA (clockwise from top)
+    int chartCX = popX + POP_W * 3 / 4;
+    constexpr int CHART_RADIUS = 65;
 
-    // IVs header
-    drawText("IVs", statsX, statsY, T().text, font_);
-    statsY += 30;
+    // IVs radar chart
+    drawTextCentered("IVs", chartCX, popY + 18, T().text, font_);
+    int ivsRadar[] = {pkm.ivHp(), pkm.ivAtk(), pkm.ivDef(), pkm.ivSpe(), pkm.ivSpD(), pkm.ivSpA()};
+    drawRadarChart(chartCX, popY + 150, CHART_RADIUS, ivsRadar, 31);
 
-    const char* statLabels[] = {"HP", "Atk", "Def", "SpA", "SpD", "Spe"};
-    int ivs[] = {pkm.ivHp(), pkm.ivAtk(), pkm.ivDef(), pkm.ivSpA(), pkm.ivSpD(), pkm.ivSpe()};
-
-    for (int i = 0; i < 6; i++) {
-        std::string line = std::string(statLabels[i]) + ": " + std::to_string(ivs[i]);
-        SDL_Color ivColor = (ivs[i] == 31) ? T().shiny : T().textDim;
-        drawText(line, statsX + 10, statsY, ivColor, font_);
-        statsY += 26;
-    }
-
-    statsY += 10;
-
-    // EVs header
-    drawText("EVs", statsX, statsY, T().text, font_);
-    statsY += 30;
-
-    int evs[] = {pkm.evHp(), pkm.evAtk(), pkm.evDef(), pkm.evSpA(), pkm.evSpD(), pkm.evSpe()};
-
-    for (int i = 0; i < 6; i++) {
-        std::string line = std::string(statLabels[i]) + ": " + std::to_string(evs[i]);
-        SDL_Color evColor = (evs[i] > 0) ? T().text : T().textDim;
-        drawText(line, statsX + 10, statsY, evColor, font_);
-        statsY += 26;
-    }
+    // EVs radar chart
+    drawTextCentered("EVs", chartCX, popY + 283, T().text, font_);
+    int evsRadar[] = {pkm.evHp(), pkm.evAtk(), pkm.evDef(), pkm.evSpe(), pkm.evSpD(), pkm.evSpA()};
+    drawRadarChart(chartCX, popY + 415, CHART_RADIUS, evsRadar, 252);
 
     // Close hint at bottom
     drawTextCentered("A:Release   B / X: Close", popX + POP_W / 2, popY + POP_H - 20, T().textDim, fontSmall_);

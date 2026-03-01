@@ -545,7 +545,7 @@ void UI::drawDetailPopup(const Pokemon& pkm) {
     }
 
     // Close hint at bottom
-    drawTextCentered("B / X: Close", popX + POP_W / 2, popY + POP_H - 20, T().textDim, fontSmall_);
+    drawTextCentered("A:Release   B / X: Close", popX + POP_W / 2, popY + POP_H - 20, T().textDim, fontSmall_);
 }
 
 void UI::drawMenuPopup() {

@@ -275,13 +275,35 @@ void UI::handleInput(bool& running) {
             continue;
         }
 
-        // While detail popup is open, only allow closing it
+        // While detail popup is open, allow closing or releasing
         if (showDetail_) {
+            auto tryRelease = [&]() {
+                int box = cursor_.box;
+                int slot = cursor_.slot(gridCols());
+                // Block releasing LGPE party members
+                if (save_.isLGPEPartySlot(box, slot) && cursor_.panel == Panel::Game) {
+                    showMessageAndWait("Party Pokemon",
+                        "Can't release a party Pokemon.");
+                    return;
+                }
+                Pokemon pkm = getPokemonAt(box, slot, cursor_.panel);
+                if (pkm.isEmpty()) return;
+                std::string name = pkm.displayName();
+                if (showConfirmDialog("Release Pokemon",
+                        "Release " + name + "?")) {
+                    clearPokemonAt(box, slot, cursor_.panel);
+                    showDetail_ = false;
+                    refreshHighlightSet();
+                }
+            };
             if (event.type == SDL_CONTROLLERBUTTONDOWN) {
                 switch (event.cbutton.button) {
                     case SDL_CONTROLLER_BUTTON_A: // Switch B
                     case SDL_CONTROLLER_BUTTON_Y: // Switch X
                         showDetail_ = false;
+                        break;
+                    case SDL_CONTROLLER_BUTTON_B: // Switch A
+                        tryRelease();
                         break;
                 }
             }
@@ -291,6 +313,9 @@ void UI::handleInput(bool& running) {
                     case SDLK_ESCAPE:
                     case SDLK_x:
                         showDetail_ = false;
+                        break;
+                    case SDLK_a:
+                        tryRelease();
                         break;
                 }
             }
@@ -331,15 +356,22 @@ void UI::handleInput(bool& running) {
                 {
                     if (yHeld_) break;
                     if (holding_) {
+                        if (heldFromLGPEParty_) {
+                            showMessageAndWait("Party Pokemon",
+                                "Can't release a party Pokemon.");
+                            break;
+                        }
                         int count = heldMulti_.empty() ? 1 : (int)heldMulti_.size();
-                        std::string msg = "Delete " + std::to_string(count) + " Pokemon?";
-                        if (showConfirmDialog("Delete Pokemon", msg)) {
+                        std::string msg = "Release " + std::to_string(count) + " Pokemon?";
+                        if (showConfirmDialog("Release Pokemon", msg)) {
                             heldMulti_.clear();
                             heldMultiSlots_.clear();
                             heldPkm_ = Pokemon{};
                             swapHistory_.clear();
                             holding_ = false;
                             positionPreserve_ = false;
+                            heldFromLGPEParty_ = false;
+                            lgpeHeldPartyIdx_ = -1;
                             refreshHighlightSet();
                         }
                     } else {
@@ -421,15 +453,22 @@ void UI::handleInput(bool& running) {
                 {
                     if (yHeld_) break;
                     if (holding_) {
+                        if (heldFromLGPEParty_) {
+                            showMessageAndWait("Party Pokemon",
+                                "Can't release a party Pokemon.");
+                            break;
+                        }
                         int count = heldMulti_.empty() ? 1 : (int)heldMulti_.size();
-                        std::string msg = "Delete " + std::to_string(count) + " Pokemon?";
-                        if (showConfirmDialog("Delete Pokemon", msg)) {
+                        std::string msg = "Release " + std::to_string(count) + " Pokemon?";
+                        if (showConfirmDialog("Release Pokemon", msg)) {
                             heldMulti_.clear();
                             heldMultiSlots_.clear();
                             heldPkm_ = Pokemon{};
                             swapHistory_.clear();
                             holding_ = false;
                             positionPreserve_ = false;
+                            heldFromLGPEParty_ = false;
+                            lgpeHeldPartyIdx_ = -1;
                             refreshHighlightSet();
                         }
                     } else {

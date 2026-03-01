@@ -689,6 +689,22 @@ void UI::actionSelect() {
 
     // Multi-select pick up
     if (!holding_ && !selectedSlots_.empty()) {
+        // Party guard: cannot take all Pokemon from the party
+        if (selectedBox_ == PARTY_BOX && selectedPanel_ == Panel::Game) {
+            int partyOccupied = save_.partyCount();
+            int pickCount = 0;
+            for (int s : selectedSlots_) {
+                Pokemon pkm = getPokemonAt(selectedBox_, s, selectedPanel_);
+                if (!pkm.isEmpty()) pickCount++;
+            }
+            if (pickCount >= partyOccupied) {
+                showMessageAndWait("Party cannot be empty",
+                    "At least one Pokemon must remain in the party.");
+                selectedSlots_.clear();
+                return;
+            }
+        }
+
         heldMulti_.clear();
         heldMultiSlots_.clear();
         heldMultiSource_ = selectedPanel_;
@@ -757,6 +773,10 @@ void UI::actionSelect() {
     if (!holding_) {
         Pokemon pkm = getPokemonAt(box, slot, cursor_.panel);
         if (pkm.isEmpty())
+            return;
+
+        // Party guard: cannot take the last Pokemon from the party
+        if (box == PARTY_BOX && cursor_.panel == Panel::Game && save_.partyCount() <= 1)
             return;
 
         heldPkm_ = pkm;

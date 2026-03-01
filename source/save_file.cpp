@@ -242,6 +242,46 @@ void SaveFile::clearBoxSlot(int box, int slot) {
     }
 }
 
+bool SaveFile::isLGPEPartySlot(int box, int slot) const {
+    if (!isLGPE(gameType_)) return false;
+    uint16_t flatIdx = static_cast<uint16_t>(box * slotsPerBox_ + slot);
+    for (int i = 0; i < 6; i++) {
+        if (lgpePartyIndices_[i] == flatIdx) return true;
+    }
+    return false;
+}
+
+int SaveFile::lgpePartyIndexOf(int box, int slot) const {
+    if (!isLGPE(gameType_)) return -1;
+    uint16_t flatIdx = static_cast<uint16_t>(box * slotsPerBox_ + slot);
+    for (int i = 0; i < 6; i++) {
+        if (lgpePartyIndices_[i] == flatIdx) return i;
+    }
+    return -1;
+}
+
+void SaveFile::setLGPEPartyPointer(int partyIdx, uint16_t flatSlot) {
+    if (partyIdx < 0 || partyIdx >= 6) return;
+    lgpePartyIndices_[partyIdx] = flatSlot;
+    // Also update rawData_ header so save compaction stays consistent
+    if (isLGPE(gameType_) && !rawData_.empty()) {
+        size_t ofs = LGPE_HEADER_OFFSET + partyIdx * 2;
+        if (ofs + 2 <= rawData_.size())
+            std::memcpy(rawData_.data() + ofs, &flatSlot, 2);
+    }
+}
+
+void SaveFile::setLGPEPartyIndices(const std::array<uint16_t, 6>& v) {
+    lgpePartyIndices_ = v;
+    if (isLGPE(gameType_) && !rawData_.empty()) {
+        for (int i = 0; i < 6; i++) {
+            size_t ofs = LGPE_HEADER_OFFSET + i * 2;
+            if (ofs + 2 <= rawData_.size())
+                std::memcpy(rawData_.data() + ofs, &v[i], 2);
+        }
+    }
+}
+
 // Gen3 English character table (same as in pokemon.cpp — G3_EN)
 // We only need the common characters for box names here.
 static const uint16_t G3_EN_SAVE[256] = {
@@ -483,6 +523,15 @@ bool SaveFile::loadLGPE(const std::string& path) {
     boxLayoutData_ = nullptr;
     boxLayoutLen_ = 0;
 
+    // Parse party pointers from PokeListHeader (6 x u16)
+    lgpePartyCount_ = 0;
+    for (int i = 0; i < 6; i++) {
+        uint16_t idx;
+        std::memcpy(&idx, rawData_.data() + LGPE_HEADER_OFFSET + i * 2, 2);
+        lgpePartyIndices_[i] = idx;
+        if (idx < 1000) lgpePartyCount_++;
+    }
+
     loaded_ = true;
     return true;
 }
@@ -541,6 +590,8 @@ bool SaveFile::saveLGPE(const std::string& path) {
         if (oldIdx < static_cast<uint16_t>(totalSlots) && oldToNew[oldIdx] >= 0) {
             uint16_t newIdx = static_cast<uint16_t>(oldToNew[oldIdx]);
             std::memcpy(rawData_.data() + ptrOfs, &newIdx, 2);
+            // Keep in-memory party indices in sync (first 6 entries are party)
+            if (i < 6) lgpePartyIndices_[i] = newIdx;
         }
     }
 

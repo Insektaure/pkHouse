@@ -2,6 +2,7 @@
 #include "swish_crypto.h"
 #include "pokemon.h"
 #include "game_type.h"
+#include <array>
 #include <vector>
 #include <string>
 
@@ -32,6 +33,14 @@ public:
     // Dynamic box count and slots per box
     int boxCount() const { return boxCount_; }
     int slotsPerBox() const { return slotsPerBox_; }
+
+    // LGPE party slot detection and management
+    static constexpr uint16_t LGPE_SLOT_EMPTY = 1001;
+    bool isLGPEPartySlot(int box, int slot) const;
+    int  lgpePartyIndexOf(int box, int slot) const;  // returns party idx 0-5, or -1
+    void setLGPEPartyPointer(int partyIdx, uint16_t flatSlot);
+    const std::array<uint16_t, 6>& lgpePartyIndices() const { return lgpePartyIndices_; }
+    void setLGPEPartyIndices(const std::array<uint16_t, 6>& v);
 
 private:
     std::vector<SCBlock> blocks_;
@@ -110,6 +119,10 @@ private:
     // GBA assembled storage buffer (sectors 5-13 concatenated)
     std::vector<uint8_t> gbaStorage_;
     int gbaActiveSlot_ = 0;
+
+    // LGPE party slot tracking (indices into flat 1000-slot list)
+    std::array<uint16_t, 6> lgpePartyIndices_{};
+    int lgpePartyCount_ = 0;
 
     // BDSP and LGPE raw save data (flat binary, no SCBlocks)
     std::vector<uint8_t> rawData_;

@@ -658,6 +658,18 @@ void UI::actionSelect() {
         heldMultiSource_ = selectedPanel_;
         heldMultiBox_ = selectedBox_;
 
+        // Check if any selected slot is an LGPE party member; backup indices
+        heldFromLGPEParty_ = false;
+        lgpePartyBackup_ = save_.lgpePartyIndices();
+        if (selectedPanel_ == Panel::Game) {
+            for (int s : selectedSlots_) {
+                if (save_.isLGPEPartySlot(selectedBox_, s)) {
+                    heldFromLGPEParty_ = true;
+                    break;
+                }
+            }
+        }
+
         // Collect in selection order
         for (int s : selectedSlots_) {
             Pokemon pkm = getPokemonAt(selectedBox_, s, selectedPanel_);
@@ -675,6 +687,28 @@ void UI::actionSelect() {
 
     // Multi-select place
     if (holding_ && !heldMulti_.empty()) {
+        // Block LGPE party Pokemon from moving to bank
+        if (heldFromLGPEParty_ && cursor_.panel == Panel::Bank) {
+            showMessageAndWait("Party Pokemon",
+                "Can't move party Pokemon to bank.");
+            return;
+        }
+        // Helper: update LGPE party pointer when a Pokemon is placed at a new slot
+        auto updatePartyPtr = [&](int origSlot, int newBox, int newSlot) {
+            if (!heldFromLGPEParty_ || cursor_.panel != Panel::Game) return;
+            // Find which party index the original slot belongs to (using backup)
+            uint16_t origFlat = static_cast<uint16_t>(
+                heldMultiBox_ * save_.slotsPerBox() + origSlot);
+            for (int p = 0; p < 6; p++) {
+                if (lgpePartyBackup_[p] == origFlat) {
+                    uint16_t newFlat = static_cast<uint16_t>(
+                        newBox * save_.slotsPerBox() + newSlot);
+                    save_.setLGPEPartyPointer(p, newFlat);
+                    break;
+                }
+            }
+        };
+
         if (positionPreserve_) {
             // Position-preserving: place each Pokemon at its original slot index
             for (int i = 0; i < (int)heldMulti_.size(); i++) {
@@ -687,6 +721,7 @@ void UI::actionSelect() {
             }
             for (int i = 0; i < (int)heldMulti_.size(); i++) {
                 setPokemonAt(box, heldMultiSlots_[i], cursor_.panel, heldMulti_[i]);
+                updatePartyPtr(heldMultiSlots_[i], box, heldMultiSlots_[i]);
             }
         } else {
             // First-available: fill empty slots in order
@@ -706,6 +741,7 @@ void UI::actionSelect() {
             for (int s = 0; s < slotsInBox && placed < (int)heldMulti_.size(); s++) {
                 if (getPokemonAt(box, s, cursor_.panel).isEmpty()) {
                     setPokemonAt(box, s, cursor_.panel, heldMulti_[placed]);
+                    updatePartyPtr(heldMultiSlots_[placed], box, s);
                     placed++;
                 }
             }
@@ -714,6 +750,8 @@ void UI::actionSelect() {
         heldMultiSlots_.clear();
         holding_ = false;
         positionPreserve_ = false;
+        heldFromLGPEParty_ = false;
+        lgpeHeldPartyIdx_ = -1;
         return;
     }
 
@@ -725,24 +763,61 @@ void UI::actionSelect() {
 
         heldPkm_ = pkm;
         holding_ = true;
+        lgpeHeldPartyIdx_ = (cursor_.panel == Panel::Game)
+            ? save_.lgpePartyIndexOf(box, slot) : -1;
+        heldFromLGPEParty_ = (lgpeHeldPartyIdx_ >= 0);
+        lgpePartyBackup_ = save_.lgpePartyIndices();
         swapHistory_.clear();
         swapHistory_.push_back({pkm, cursor_.panel, box, slot});
 
         clearPokemonAt(box, slot, cursor_.panel);
     } else {
+        // Block LGPE party Pokemon from moving to bank
+        if (heldFromLGPEParty_ && cursor_.panel == Panel::Bank) {
+            showMessageAndWait("Party Pokemon",
+                "Can't move party Pokemon to bank.");
+            return;
+        }
+
         Pokemon target = getPokemonAt(box, slot, cursor_.panel);
 
         if (target.isEmpty()) {
             // Place on empty — commit, clear history
             setPokemonAt(box, slot, cursor_.panel, heldPkm_);
+            // Update party pointer to follow the Pokemon
+            if (lgpeHeldPartyIdx_ >= 0 && cursor_.panel == Panel::Game) {
+                uint16_t newFlat = static_cast<uint16_t>(
+                    box * save_.slotsPerBox() + slot);
+                save_.setLGPEPartyPointer(lgpeHeldPartyIdx_, newFlat);
+            }
             holding_ = false;
             heldPkm_ = Pokemon{};
             swapHistory_.clear();
+            heldFromLGPEParty_ = false;
+            lgpeHeldPartyIdx_ = -1;
         } else {
-            // Swap: record what was in the target slot, then swap
+            // Swap: check if target is also a party member BEFORE modifying
+            int targetPartyIdx = (cursor_.panel == Panel::Game)
+                ? save_.lgpePartyIndexOf(box, slot) : -1;
+
             swapHistory_.push_back({target, cursor_.panel, box, slot});
             setPokemonAt(box, slot, cursor_.panel, heldPkm_);
+
+            // Update party pointer for the placed Pokemon
+            if (lgpeHeldPartyIdx_ >= 0 && cursor_.panel == Panel::Game) {
+                uint16_t newFlat = static_cast<uint16_t>(
+                    box * save_.slotsPerBox() + slot);
+                save_.setLGPEPartyPointer(lgpeHeldPartyIdx_, newFlat);
+            }
+            // Target was a party member but held Pokemon was not (cross-panel swap):
+            // the party Pokemon is now held, so invalidate its pointer until placed.
+            if (targetPartyIdx >= 0 && lgpeHeldPartyIdx_ < 0) {
+                save_.setLGPEPartyPointer(targetPartyIdx, SaveFile::LGPE_SLOT_EMPTY);
+            }
+
             heldPkm_ = target;
+            lgpeHeldPartyIdx_ = targetPartyIdx;
+            heldFromLGPEParty_ = (targetPartyIdx >= 0);
         }
     }
 }
@@ -762,6 +837,9 @@ void UI::actionCancel() {
         heldMultiSlots_.clear();
         holding_ = false;
         positionPreserve_ = false;
+        heldFromLGPEParty_ = false;
+        lgpeHeldPartyIdx_ = -1;
+        save_.setLGPEPartyIndices(lgpePartyBackup_);
         return;
     }
 
@@ -783,6 +861,9 @@ void UI::actionCancel() {
     swapHistory_.clear();
     holding_ = false;
     heldPkm_ = Pokemon{};
+    heldFromLGPEParty_ = false;
+    lgpeHeldPartyIdx_ = -1;
+    save_.setLGPEPartyIndices(lgpePartyBackup_);
 }
 
 void UI::toggleSelect() {

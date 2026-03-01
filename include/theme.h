@@ -63,6 +63,9 @@ struct Theme {
     // Search Highlight
     SDL_Color searchMatch;
     SDL_Color searchDim;
+
+    // LGPE party marker
+    SDL_Color partyMark;
 };
 
 inline constexpr int THEME_COUNT = 7;

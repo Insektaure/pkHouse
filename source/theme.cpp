@@ -37,6 +37,7 @@ static const Theme themes[THEME_COUNT] = {
         .textFieldBg     = {30, 30, 40, 255},
         .searchMatch     = {255, 140, 50, 255},
         .searchDim       = {0, 0, 0, 120},
+        .partyMark       = {100, 200, 255, 255},
     },
 
     // ===== 1: HOME (Pokemon HOME-inspired light pastel theme) =====
@@ -74,6 +75,7 @@ static const Theme themes[THEME_COUNT] = {
         .textFieldBg     = {245, 245, 250, 255},
         .searchMatch     = {230, 100, 60, 255},
         .searchDim       = {0, 0, 0, 80},
+        .partyMark       = {50, 140, 220, 255},
     },
 
     // ===== 2: HOME - Violet (Pokemon HOME Violet Pokedex theme) =====
@@ -111,6 +113,7 @@ static const Theme themes[THEME_COUNT] = {
         .textFieldBg     = {242, 238, 250, 255},     // Very light lavender
         .searchMatch     = {240, 140, 40, 255},
         .searchDim       = {30, 20, 50, 90},
+        .partyMark       = {60, 180, 240, 255},
     },
 
     // ===== 3: HOME - Blue (Pokemon HOME GTS-style blue theme) =====
@@ -148,6 +151,7 @@ static const Theme themes[THEME_COUNT] = {
         .textFieldBg     = {130, 175, 215, 255},     // Muted blue field
         .searchMatch     = {255, 160, 50, 255},
         .searchDim       = {20, 50, 90, 90},
+        .partyMark       = {255, 200, 80, 255},
     },
 
     // ===== 4: HOME - Green (Pokemon HOME green variant) =====
@@ -185,6 +189,7 @@ static const Theme themes[THEME_COUNT] = {
         .textFieldBg     = {130, 190, 155, 255},     // Muted green field
         .searchMatch     = {255, 160, 50, 255},
         .searchDim       = {15, 50, 30, 90},
+        .partyMark       = {80, 160, 255, 255},
     },
 
     // ===== 5: HOME - Red (Pokemon HOME red variant) =====
@@ -222,6 +227,7 @@ static const Theme themes[THEME_COUNT] = {
         .textFieldBg     = {210, 140, 140, 255},     // Muted red field
         .searchMatch     = {255, 200, 50, 255},
         .searchDim       = {60, 15, 15, 90},
+        .partyMark       = {80, 180, 255, 255},
     },
 
     // ===== 6: Pikachu (bright yellow & brown, Pikachu colors) =====
@@ -259,6 +265,7 @@ static const Theme themes[THEME_COUNT] = {
         .textFieldBg     = {250, 230, 150, 255},     // Light yellow field
         .searchMatch     = {50, 130, 220, 255},
         .searchDim       = {60, 40, 10, 100},
+        .partyMark       = {50, 130, 220, 255},
     },
 };
 

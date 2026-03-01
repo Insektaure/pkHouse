@@ -88,7 +88,7 @@ void UI::drawStatusBar(const std::string& msg) {
 }
 
 void UI::drawSlot(int x, int y, const Pokemon& pkm, bool isCursor, int selectOrder,
-                  int highlightState) {
+                  int highlightState, bool isParty) {
     SDL_Color bgColor;
     if (pkm.isEmpty()) {
         bgColor = T().slotEmpty;
@@ -100,6 +100,10 @@ void UI::drawSlot(int x, int y, const Pokemon& pkm, bool isCursor, int selectOrd
 
     // Slot background
     drawRect(x, y, CELL_W, CELL_H, bgColor);
+
+    // LGPE party member outline
+    if (isParty)
+        drawRectOutline(x + 1, y + 1, CELL_W - 2, CELL_H - 2, T().partyMark, 2);
 
     // Search match outline (drawn early so it frames the slot content)
     if (highlightState == 1)
@@ -260,7 +264,8 @@ void UI::drawPanel(int panelX, const std::string& boxName, int boxIdx,
             int hlState = 0;
             if (searchHighlightActive_ && !pkm.isEmpty())
                 hlState = isSearchMatch(panelId, box, slot) ? 1 : -1;
-            drawSlot(cellX, cellY, pkm, isCursor, selOrder, hlState);
+            bool partySlot = save && save->isLGPEPartySlot(box, slot);
+            drawSlot(cellX, cellY, pkm, isCursor, selOrder, hlState, partySlot);
         }
     }
 }

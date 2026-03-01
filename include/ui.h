@@ -234,6 +234,9 @@ private:
     bool   zrPressed_     = false;
     bool   holding_    = false;
     Pokemon heldPkm_;
+    bool   heldFromLGPEParty_ = false;       // block save→bank moves for LGPE party
+    int    lgpeHeldPartyIdx_ = -1;          // which party pointer (0-5) held Pokemon belongs to
+    std::array<uint16_t, 6> lgpePartyBackup_{};  // backup for cancel/undo
 
     // Swap history for full undo on cancel
     struct SwapRecord {
@@ -306,7 +309,7 @@ private:
                    int totalBoxes, bool isActive, SaveFile* save, Bank* bank, int box,
                    Panel panelId);
     void drawSlot(int x, int y, const Pokemon& pkm, bool isCursor, int selectOrder,
-                  int highlightState = 0);
+                  int highlightState = 0, bool isParty = false);
     void drawText(const std::string& text, int x, int y, SDL_Color color, TTF_Font* f);
     void drawTextCentered(const std::string& text, int cx, int cy, SDL_Color color, TTF_Font* f);
     void drawRect(int x, int y, int w, int h, SDL_Color color);

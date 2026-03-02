@@ -61,28 +61,8 @@ void UI::drawWondercardScreen() {
             drawRectOutline(listStartX, rowY, LIST_W, ROW_H - 2, T().cursor, 2);
         }
 
-        // Mini sprite
-        SDL_Texture* sprite = getSprite(card.speciesNational);
-        if (sprite) {
-            SDL_Rect dst = {listStartX + 4, rowY + 2, 30, 30};
-            SDL_RenderCopy(renderer_, sprite, nullptr, &dst);
-        }
-
-        // Species name
-        std::string name = SpeciesName::get(card.speciesNational);
-        SDL_Color nameColor = (card.shinyType == WCShinyType::AlwaysStar ||
-                               card.shinyType == WCShinyType::AlwaysSquare)
-                              ? T().shiny : T().text;
-        drawText(name, listStartX + 40, rowY + 8, nameColor, font_);
-
-        // Level
-        std::string lvlStr = card.level > 0
-            ? "Lv." + std::to_string(card.level)
-            : "Lv.?";
-        drawText(lvlStr, listStartX + 250, rowY + 8, T().textDim, fontSmall_);
-
-        // Format label
-        drawText(card.formatLabel, listStartX + LIST_W - 50, rowY + 8, T().textDim, fontSmall_);
+        // Filename
+        drawText(card.filename, listStartX + 10, rowY + 8, T().text, font_);
     }
 
     // Scroll indicators
@@ -320,6 +300,22 @@ void UI::injectWondercard(int index) {
         return;
     }
 
+    // Inject at current cursor position (bank panel only, must be empty)
+    int targetBox = (cursor_.panel == Panel::Bank) ? bankBox_ : gameBox_;
+    int targetSlot = cursor_.slot(gridCols());
+
+    // Check the slot is on the bank side
+    if (cursor_.panel != Panel::Bank) {
+        showMessageAndWait("Error", "Move cursor to a bank slot to inject.");
+        return;
+    }
+
+    Pokemon existing = bank_.getSlot(targetBox, targetSlot);
+    if (!existing.isEmpty()) {
+        showMessageAndWait("Slot Occupied", "Select an empty bank slot to inject.");
+        return;
+    }
+
     // Convert to Pokemon
     Pokemon pkm = wc.toPokemon();
     if (pkm.isEmpty()) {
@@ -327,32 +323,14 @@ void UI::injectWondercard(int index) {
         return;
     }
 
-    // Find first empty slot in the active bank
-    int targetBox = -1, targetSlot = -1;
-    for (int b = 0; b < bank_.boxCount(); b++) {
-        for (int s = 0; s < bank_.slotsPerBox(); s++) {
-            Pokemon existing = bank_.getSlot(b, s);
-            if (existing.isEmpty()) {
-                targetBox = b;
-                targetSlot = s;
-                break;
-            }
-        }
-        if (targetBox >= 0) break;
-    }
-
-    if (targetBox < 0) {
-        showMessageAndWait("Bank Full", "No empty slots available in the bank.");
-        return;
-    }
-
     // Place the Pokemon
     bank_.setSlot(targetBox, targetSlot, pkm);
 
-    // Show success message
+    // Show success and close wondercard screen
     std::string specName = SpeciesName::get(pkm.species());
     std::string msg = specName + " injected into Box " +
                       std::to_string(targetBox + 1) + " Slot " +
                       std::to_string(targetSlot + 1);
     showMessageAndWait("Injected", msg);
+    showWondercardScreen_ = false;
 }

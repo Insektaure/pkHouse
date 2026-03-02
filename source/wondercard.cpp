@@ -1,6 +1,7 @@
 #include "wondercard.h"
 #include "species_converter.h"
 #include <cstdio>
+#include <ctime>
 #include <SDL2/SDL.h>
 
 // --- Simple LCG RNG (avoids <random> with -fno-exceptions) ---
@@ -625,10 +626,13 @@ Pokemon Wondercard::toPokemon() const {
 
     // --- Met Date (current date) ---
     int metDateOfs = isLA ? 0x134 : 0x11C;
-    // Use a reasonable default date
-    pkm.data[metDateOfs]     = 24; // year (2024)
-    pkm.data[metDateOfs + 1] = 1;  // month
-    pkm.data[metDateOfs + 2] = 1;  // day
+    {
+        time_t now = time(nullptr);
+        struct tm* t = localtime(&now);
+        pkm.data[metDateOfs]     = static_cast<uint8_t>(t->tm_year - 100); // years since 2000
+        pkm.data[metDateOfs + 1] = static_cast<uint8_t>(t->tm_mon + 1);
+        pkm.data[metDateOfs + 2] = static_cast<uint8_t>(t->tm_mday);
+    }
 
     // --- ObedienceLevel (Gen9 only) ---
     if (isGen9) {

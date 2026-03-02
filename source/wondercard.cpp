@@ -1,5 +1,6 @@
 #include "wondercard.h"
 #include "species_converter.h"
+#include "move_pp.h"
 #include <cstdio>
 #include <ctime>
 #include <SDL2/SDL.h>
@@ -496,6 +497,10 @@ static bool wcHasOT(const Wondercard& wc) {
     return wc.readU16(ofs) != 0;
 }
 
+bool Wondercard::hasFixedOT() const {
+    return wcHasOT(*this);
+}
+
 // --- Copy OT name from wondercard to Pokemon (UTF-16LE, up to 0x1A bytes) ---
 static void copyWCOTName(const Wondercard& wc, Pokemon& pkm, int pkmOTOffset) {
     int wcOfs = wcOTOffset(wc.format);
@@ -728,7 +733,7 @@ static bool lookupDistDate(WCFormat fmt, uint16_t cid, uint16_t chk,
 
 // --- Convert Wondercard to Pokemon ---
 
-Pokemon Wondercard::toPokemon() const {
+Pokemon Wondercard::toPokemon(const WCPlayerInfo& playerInfo) const {
     Pokemon pkm;
     GameType gt = targetGameType();
     pkm.gameType_ = gt;
@@ -752,14 +757,9 @@ Pokemon Wondercard::toPokemon() const {
     pkm.writeU16(0x0A, heldItem());
 
     // --- TID/SID ---
-    bool hasFixedOT = wcHasOT(*this);
-    uint16_t tidVal = tid();
-    uint16_t sidVal = sid();
-    if (!hasFixedOT) {
-        // Card uses player's OT → use generic values
-        tidVal = 12345;
-        sidVal = 54321;
-    }
+    bool fixedOT = wcHasOT(*this);
+    uint16_t tidVal = fixedOT ? tid() : playerInfo.tid16;
+    uint16_t sidVal = fixedOT ? sid() : playerInfo.sid16;
     pkm.writeU16(0x0C, tidVal);
     pkm.writeU16(0x0E, sidVal);
 
@@ -858,13 +858,16 @@ Pokemon Wondercard::toPokemon() const {
     // --- Version (OriginGame) ---
     uint8_t ver = originGame();
     if (ver == 0) {
-        // Use a default version for the target game
-        switch (format) {
-            case WCFormat::WC8: ver = 44; break; // Sword
-            case WCFormat::WB8: ver = 48; break; // BD
-            case WCFormat::WA8: ver = 47; break; // LA
-            case WCFormat::WC9: ver = 50; break; // Scarlet
-            case WCFormat::WA9: ver = 53; break; // ZA
+        // Use player's actual game version
+        switch (playerInfo.game) {
+            case GameType::Sw: ver = 44; break;
+            case GameType::Sh: ver = 45; break;
+            case GameType::BD: ver = 48; break;
+            case GameType::SP: ver = 49; break;
+            case GameType::LA: ver = 47; break;
+            case GameType::S:  ver = 50; break;
+            case GameType::V:  ver = 51; break;
+            case GameType::ZA: ver = 53; break;
             default: ver = 53; break;
         }
     }
@@ -881,10 +884,10 @@ Pokemon Wondercard::toPokemon() const {
 
     // --- OT Name ---
     int otOfs = isLA ? 0x110 : 0xF8;
-    if (hasFixedOT) {
+    if (fixedOT) {
         copyWCOTName(*this, pkm, otOfs);
     } else {
-        writeOTName(pkm, otOfs, "Event");
+        std::memcpy(pkm.data.data() + otOfs, playerInfo.otName, 0x1A);
     }
 
     // --- OT Friendship ---
@@ -927,7 +930,9 @@ Pokemon Wondercard::toPokemon() const {
     if (lvl == 0) lvl = 1 + wcRand32() % 100;
     if (mLvl == 0) mLvl = lvl;
     uint8_t otG = otGender();
-    if (otG >= 2) otG = 0; // default male OT
+    if (otG >= 2) {
+        otG = fixedOT ? 0 : playerInfo.gender;
+    }
     int metLvlOfs = isLA ? 0x13D : 0x125;
     pkm.data[metLvlOfs] = (mLvl & 0x7F) | (otG << 7);
 
@@ -958,6 +963,55 @@ Pokemon Wondercard::toPokemon() const {
     // Use a simple cubic approximation: EXP ≈ level^3
     uint32_t exp = static_cast<uint32_t>(lvl) * lvl * lvl;
     pkm.writeU32(0x10, exp);
+
+    // --- Ribbons ---
+    // Each wondercard stores up to 32 ribbon indices (0xFF = none).
+    // Pokemon files store ribbons as bits: index < 64 → byte 0x34+(index>>3),
+    // index >= 64 → byte 0x40+((index-64)>>3), bit = index & 7.
+    // WA9 does not copy ribbons (commented out in PKHeX).
+    int ribbonOfs = -1;
+    switch (format) {
+        case WCFormat::WC8: ribbonOfs = 0x24C; break;
+        case WCFormat::WB8: ribbonOfs = 0x292; break;
+        case WCFormat::WA8: ribbonOfs = 0x244; break;
+        case WCFormat::WC9: ribbonOfs = 0x248; break;
+        default: break; // WA9: no ribbons
+    }
+    if (ribbonOfs >= 0) {
+        uint8_t lastRibbon = 0xFF;
+        for (int i = 0; i < 32; i++) {
+            uint8_t ribbon = data[ribbonOfs + i];
+            if (ribbon == 0xFF)
+                continue;
+            if (ribbon >= 128)
+                continue; // out of range
+            int byteOfs;
+            if (ribbon < 64)
+                byteOfs = 0x34 + (ribbon >> 3);
+            else
+                byteOfs = 0x40 + ((ribbon - 64) >> 3);
+            pkm.data[byteOfs] |= (1 << (ribbon & 7));
+            lastRibbon = ribbon;
+        }
+        // WC9: set AffixedRibbon at 0xD4 in PK9/PA9
+        if (format == WCFormat::WC9 && lastRibbon != 0xFF)
+            pkm.data[0xD4] = lastRibbon;
+    }
+
+    // --- Move PP ---
+    int ppOfs = isLA ? 0x5C : 0x7A;
+    int gen;
+    switch (format) {
+        case WCFormat::WC8: case WCFormat::WB8: gen = 8; break;
+        case WCFormat::WA8: gen = 81; break;
+        case WCFormat::WC9: gen = 9; break;
+        case WCFormat::WA9: gen = 91; break;
+        default: gen = 9; break;
+    }
+    for (int i = 0; i < 4; i++) {
+        uint16_t m = move(i);
+        pkm.data[ppOfs + i] = m != 0 ? getMovePP(gen, m) : 0;
+    }
 
     // --- Finalize ---
     pkm.refreshChecksum();

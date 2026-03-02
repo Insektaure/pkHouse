@@ -26,6 +26,16 @@ public:
 
     bool isLoaded() const { return loaded_; }
 
+    // Trainer info (for wondercard injection with player OT)
+    struct TrainerInfo {
+        uint16_t tid16 = 0;
+        uint16_t sid16 = 0;
+        uint8_t  gender = 0;          // 0=M, 1=F
+        uint8_t  otName[0x1A] = {};   // UTF-16LE, up to 13 chars
+        bool     valid = false;
+    };
+    TrainerInfo getTrainerInfo() const;
+
     // Debug: verify encrypt(decrypt(file)) == file. Call right after load().
     // Returns "OK" if round-trip matches, or a description of the mismatch.
     std::string verifyRoundTrip();

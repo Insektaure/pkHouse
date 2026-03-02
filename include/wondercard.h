@@ -27,6 +27,15 @@ enum class WCAbilityType : uint8_t {
     First = 0, Second = 1, Hidden = 2, RandomDual = 3, RandomAny = 4
 };
 
+// Optional player trainer info for wondercards that use player's OT
+struct WCPlayerInfo {
+    uint16_t tid16 = 0;
+    uint16_t sid16 = 0;
+    uint8_t  gender = 0;
+    uint8_t  otName[0x1A] = {};  // UTF-16LE
+    GameType game = GameType::ZA; // player's actual game version
+};
+
 struct Wondercard {
     std::array<uint8_t, WC_MAX_SIZE> data{};
     int dataSize = 0;
@@ -92,7 +101,11 @@ struct Wondercard {
     GameType targetGameType() const;
 
     // --- Convert to Pokemon ---
-    Pokemon toPokemon() const;
+    // Uses playerInfo for game version, and OT/TID/SID when card uses player's OT.
+    Pokemon toPokemon(const WCPlayerInfo& playerInfo) const;
+
+    // Check if this card uses a fixed OT (from card) vs player's OT
+    bool hasFixedOT() const;
 
     // --- Display helpers ---
     std::string formatName() const;

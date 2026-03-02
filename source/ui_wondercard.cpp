@@ -1,6 +1,7 @@
 #include "ui.h"
 #include "species_converter.h"
 #include <algorithm>
+#include <cstring>
 
 // --- Wondercard Screen ---
 
@@ -300,6 +301,13 @@ void UI::injectWondercard(int index) {
         return;
     }
 
+    // Block player-OT cards in bank-only mode (no save file)
+    if (!wc.hasFixedOT() && appletMode_) {
+        showMessageAndWait("Error",
+            "This card uses player OT.\nOpen a save file to inject.");
+        return;
+    }
+
     // Inject at current cursor position (bank panel only, must be empty)
     int targetBox = (cursor_.panel == Panel::Bank) ? bankBox_ : gameBox_;
     int targetSlot = cursor_.slot(gridCols());
@@ -316,8 +324,20 @@ void UI::injectWondercard(int index) {
         return;
     }
 
-    // Convert to Pokemon
-    Pokemon pkm = wc.toPokemon();
+    // Build player info (game version always, OT/TID/SID for player-OT cards)
+    WCPlayerInfo playerInfo;
+    playerInfo.game = selectedGame_;
+    if (!wc.hasFixedOT() && save_.isLoaded()) {
+        auto ti = save_.getTrainerInfo();
+        if (ti.valid) {
+            playerInfo.tid16 = ti.tid16;
+            playerInfo.sid16 = ti.sid16;
+            playerInfo.gender = ti.gender;
+            std::memcpy(playerInfo.otName, ti.otName, 0x1A);
+        }
+    }
+
+    Pokemon pkm = wc.toPokemon(playerInfo);
     if (pkm.isEmpty()) {
         showMessageAndWait("Error", "Failed to convert wondercard to Pokemon.");
         return;

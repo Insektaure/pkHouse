@@ -74,6 +74,57 @@ bool SaveFile::save(const std::string& path) {
     return saveSCBlock(path);
 }
 
+SaveFile::TrainerInfo SaveFile::getTrainerInfo() const {
+    TrainerInfo info;
+    if (!loaded_) return info;
+
+    if (isBDSP(gameType_)) {
+        // BDSP: MyStatus8b at fixed offset 0x79BB4
+        // OT at 0x00, ID32 at 0x1C, Gender(Male bool) at 0x24
+        constexpr int STATUS_OFS = 0x79BB4;
+        if (rawData_.size() > STATUS_OFS + 0x26) {
+            const uint8_t* s = rawData_.data() + STATUS_OFS;
+            std::memcpy(info.otName, s, 0x1A);
+            std::memcpy(&info.tid16, s + 0x1C, 2);
+            std::memcpy(&info.sid16, s + 0x1E, 2);
+            info.gender = s[0x24] ? 0 : 1; // Male=1 → gender 0, else 1
+            info.valid = true;
+        }
+        return info;
+    }
+
+    if (isLGPE(gameType_) || isFRLG(gameType_))
+        return info; // No wondercard support for these formats
+
+    // SCBlock-based saves (SwSh, LA, SV, ZA)
+    uint32_t key;
+    int tidOfs, genderOfs, otOfs;
+
+    if (gameType_ == GameType::LA) {
+        key = 0xf25c070e;
+        tidOfs = 0x10; genderOfs = 0x15; otOfs = 0x20;
+    } else if (isSwSh(gameType_)) {
+        key = 0xf25c070e;
+        tidOfs = 0xA0; genderOfs = 0xA5; otOfs = 0xB0;
+    } else {
+        // SV, ZA
+        key = 0xE3E89BD1;
+        tidOfs = 0x00; genderOfs = 0x05; otOfs = 0x10;
+    }
+
+    const SCBlock* block = SwishCrypto::findBlock(blocks_, key);
+    if (!block || static_cast<int>(block->data.size()) < otOfs + 0x1A)
+        return info;
+
+    const uint8_t* d = block->data.data();
+    std::memcpy(&info.tid16, d + tidOfs, 2);
+    std::memcpy(&info.sid16, d + tidOfs + 2, 2);
+    info.gender = d[genderOfs];
+    std::memcpy(info.otName, d + otOfs, 0x1A);
+    info.valid = true;
+    return info;
+}
+
 bool SaveFile::loadSCBlock(const std::string& path) {
     std::ifstream file(path, std::ios::binary | std::ios::ate);
     if (!file.is_open())

@@ -103,7 +103,8 @@ void UI::handleInput(bool& running) {
 
         // While menu is open, handle menu input only
         if (showMenu_) {
-            int menuCount = appletMode_ ? 7 : 6;
+            bool hasWC = !isLGPE(selectedGame_) && !isFRLG(selectedGame_);
+            int menuCount = (appletMode_ ? 7 : 6) + (hasWC ? 1 : 0);
             auto menuConfirm = [&]() {
                 // 0=Theme, 1=Search (both modes)
                 if (menuSelection_ == 0) {
@@ -120,7 +121,18 @@ void UI::handleInput(bool& running) {
                     clearSearchHighlight();
                     return;
                 }
-                int sel = menuSelection_ - 2; // shift for Theme + Search at index 0-1
+                // Wondercard option (index 2 when supported)
+                if (hasWC && menuSelection_ == 2) {
+                    showMenu_ = false;
+                    wcManager_.scan(basePath_, selectedGame_);
+                    wcCursor_ = 0;
+                    wcScroll_ = 0;
+                    wcPreviewIdx_ = -1;
+                    wcPreviewValid_ = false;
+                    showWondercardScreen_ = true;
+                    return;
+                }
+                int sel = menuSelection_ - 2 - (hasWC ? 1 : 0); // shift past fixed items
                 if (appletMode_) {
                     // sel: 0=Switch Left Bank, 1=Switch Right Bank, 2=Change Game,
                     // 3=Save Banks, 4=Quit
@@ -254,6 +266,12 @@ void UI::handleInput(bool& running) {
                         break;
                 }
             }
+            continue;
+        }
+
+        // While wondercard screen is open, handle its input only
+        if (showWondercardScreen_) {
+            handleWondercardInput(event);
             continue;
         }
 
@@ -543,10 +561,15 @@ void UI::handleInput(bool& running) {
             } else if (showBoxView_) {
                 if (stickDirX_ != 0) moveBoxViewCursor(stickDirX_, 0);
                 if (stickDirY_ != 0) moveBoxViewCursor(0, stickDirY_);
+            } else if (showWondercardScreen_) {
+                int wcc = static_cast<int>(wcManager_.list().size());
+                if (stickDirY_ != 0 && wcc > 0)
+                    wcCursor_ = (wcCursor_ + (stickDirY_ > 0 ? 1 : wcc - 1)) % wcc;
             } else if (showMenu_) {
                 if (stickDirY_ != 0)
                 {
-                    int mc = appletMode_ ? 7 : 6;
+                    bool hasWC = !isLGPE(selectedGame_) && !isFRLG(selectedGame_);
+                    int mc = (appletMode_ ? 7 : 6) + (hasWC ? 1 : 0);
                     menuSelection_ = (menuSelection_ + (stickDirY_ > 0 ? 1 : mc - 1)) % mc;
                 }
             } else if (!showDetail_) {

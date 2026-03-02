@@ -2,6 +2,7 @@
 #include "save_file.h"
 #include "bank.h"
 #include "bank_manager.h"
+#include "wondercard_manager.h"
 #include "account.h"
 #include "theme.h"
 #include <SDL2/SDL.h>
@@ -228,6 +229,13 @@ private:
     int    menuSelection_ = 0;
     bool   saveNow_    = false;
     bool   showAbout_  = false;
+    bool   showWondercardScreen_ = false;
+    WondercardManager wcManager_;
+    int    wcCursor_ = 0;
+    int    wcScroll_ = 0;
+    int    wcPreviewIdx_ = -1;       // which card index is cached
+    Wondercard wcPreview_;           // cached loaded wondercard
+    bool   wcPreviewValid_ = false;  // whether cache is valid
     bool   showBoxView_   = false;
     Panel  boxViewPanel_  = Panel::Game;
     int    boxViewCursor_ = 0;
@@ -303,6 +311,9 @@ private:
     void drawThemeSelectorPopup();
     void drawSearchFilterPopup();
     void drawSearchResultsPopup();
+    void drawWondercardScreen();
+    void handleWondercardInput(const SDL_Event& event);
+    void injectWondercard(int index);
     void drawHeldOverlay();
     void drawBoxViewOverlay();
     void drawBoxPreview(int boxIdx, int anchorX, int anchorY);

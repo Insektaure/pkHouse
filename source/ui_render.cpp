@@ -394,6 +394,11 @@ void UI::drawFrame() {
     if (showSearchResults_) {
         drawSearchResultsPopup();
     }
+
+    // Wondercard screen overlay
+    if (showWondercardScreen_) {
+        drawWondercardScreen();
+    }
 }
 
 // --- Polygon rendering helpers for radar charts ---
@@ -673,13 +678,12 @@ void UI::drawMenuPopup() {
     // Semi-transparent dark overlay
     drawRect(0, 0, SCREEN_W, SCREEN_H, T().overlay);
 
-    // Menu items differ by mode
-    // Applet: Theme / Search / Switch Left Bank / Switch Right Bank / Change Game / Save Banks / Quit
-    // Normal: Theme / Search / Switch Bank / Change Game / Save & Quit / Quit Without Saving
-    int menuCount = appletMode_ ? 7 : 6;
+    // Wondercard injection available for Gen 8/9 games (not LGPE/FRLG)
+    bool hasWC = !isLGPE(selectedGame_) && !isFRLG(selectedGame_);
+    int menuCount = (appletMode_ ? 7 : 6) + (hasWC ? 1 : 0);
 
     constexpr int POP_W = 380;
-    int POP_H = appletMode_ ? 368 : 328;
+    int POP_H = 50 + menuCount * 36 + 30;
     int popX = (SCREEN_W - POP_W) / 2;
     int popY = (SCREEN_H - POP_H) / 2;
 
@@ -688,24 +692,25 @@ void UI::drawMenuPopup() {
 
     drawTextCentered("Menu", popX + POP_W / 2, popY + 22, T().text, font_);
 
-    const char* labelsNormal[] = {
-        "Theme",
-        "Search",
-        "Switch Bank",
-        "Change Game",
-        "Save & Quit",
-        "Quit Without Saving"
-    };
-    const char* labelsApplet[] = {
-        "Theme",
-        "Search",
-        "Switch Left Bank",
-        "Switch Right Bank",
-        "Change Game",
-        "Save Banks",
-        "Quit"
-    };
-    const char** labels = appletMode_ ? labelsApplet : labelsNormal;
+    // Build label list dynamically
+    const char* labelsBuf[10];
+    int n = 0;
+    labelsBuf[n++] = "Theme";
+    labelsBuf[n++] = "Search";
+    if (hasWC) labelsBuf[n++] = "Inject Wondercard";
+    if (appletMode_) {
+        labelsBuf[n++] = "Switch Left Bank";
+        labelsBuf[n++] = "Switch Right Bank";
+        labelsBuf[n++] = "Change Game";
+        labelsBuf[n++] = "Save Banks";
+        labelsBuf[n++] = "Quit";
+    } else {
+        labelsBuf[n++] = "Switch Bank";
+        labelsBuf[n++] = "Change Game";
+        labelsBuf[n++] = "Save & Quit";
+        labelsBuf[n++] = "Quit Without Saving";
+    }
+
     int rowH = 36;
     int startY = popY + 50;
 
@@ -715,7 +720,7 @@ void UI::drawMenuPopup() {
             drawRect(popX + 20, rowY, POP_W - 40, rowH - 4, T().menuHighlight);
             drawRectOutline(popX + 20, rowY, POP_W - 40, rowH - 4, T().cursor, 2);
         }
-        drawTextCentered(labels[i], popX + POP_W / 2, rowY + (rowH - 4) / 2, T().text, font_);
+        drawTextCentered(labelsBuf[i], popX + POP_W / 2, rowY + (rowH - 4) / 2, T().text, font_);
     }
 
     drawTextCentered("A:Confirm  B:Cancel", popX + POP_W / 2, popY + POP_H - 18, T().textDim, fontSmall_);

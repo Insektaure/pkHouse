@@ -94,6 +94,18 @@ struct Pokemon {
     uint16_t tid() const { return readU16(isFRLG(gameType_) ? 0x04 : 0x0C); }
     uint16_t sid() const { return readU16(isFRLG(gameType_) ? 0x06 : 0x0E); }
 
+    // Display TID/SID: Gen7+ uses 6-digit/4-digit format, Gen3 uses raw 16-bit
+    uint32_t displayTid() const {
+        if (isFRLG(gameType_)) return tid();
+        uint32_t combined = (static_cast<uint32_t>(sid()) << 16) | tid();
+        return combined % 1000000;
+    }
+    uint32_t displaySid() const {
+        if (isFRLG(gameType_)) return sid();
+        uint32_t combined = (static_cast<uint32_t>(sid()) << 16) | tid();
+        return combined / 1000000;
+    }
+
     // --- Fields with game-aware offsets ---
 
     // Nickname: 0x08 Gen3 encoded (PK3), 0x40 (PB7), 0x58 (PK8/PA9), 0x60 (PA8)

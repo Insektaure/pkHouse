@@ -618,8 +618,9 @@ void UI::drawDetailPopup(const Pokemon& pkm) {
     drawText(idStr, infoX, infoY, T().textDim, font_);
     infoY += 28;
 
-    // OT + TID
-    std::string otStr = "OT: " + pkm.otName() + " | TID: " + std::to_string(pkm.tid());
+    // OT + TID/SID
+    std::string otStr = "OT: " + pkm.otName() + " | TID: " + std::to_string(pkm.displayTid())
+                        + " | SID: " + std::to_string(pkm.displaySid());
     drawText(otStr, infoX, infoY, T().textDim, font_);
     infoY += 28;
 

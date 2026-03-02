@@ -10,6 +10,23 @@ inline bool isBDSP(GameType g) { return g == GameType::BD || g == GameType::SP; 
 inline bool isLGPE(GameType g) { return g == GameType::GP || g == GameType::GE; }
 inline bool isFRLG(GameType g) { return g == GameType::FR || g == GameType::LG; }
 
+// Returns the paired game (same bank folder), or the game itself if unpaired
+inline GameType pairedGame(GameType g) {
+    switch (g) {
+        case GameType::S:  return GameType::V;
+        case GameType::V:  return GameType::S;
+        case GameType::Sw: return GameType::Sh;
+        case GameType::Sh: return GameType::Sw;
+        case GameType::BD: return GameType::SP;
+        case GameType::SP: return GameType::BD;
+        case GameType::GP: return GameType::GE;
+        case GameType::GE: return GameType::GP;
+        case GameType::FR: return GameType::LG;
+        case GameType::LG: return GameType::FR;
+        default: return g;
+    }
+}
+
 // Switch Title IDs (for dynamic save loading)
 inline uint64_t titleIdOf(GameType g) {
     switch (g) {

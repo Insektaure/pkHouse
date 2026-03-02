@@ -217,6 +217,9 @@ void UI::handleBankSelectorInput(bool& running) {
                         }
                     } else {
                         account_.unmountSave();
+                        int cnt = BankManager::countBanks(basePath_, selectedGame_);
+                        gameBankCounts_[selectedGame_] = cnt;
+                        gameBankCounts_[pairedGame(selectedGame_)] = cnt;
                         screen_ = AppScreen::GameSelector;
                     }
                     break;
@@ -284,6 +287,9 @@ void UI::handleBankSelectorInput(bool& running) {
                         }
                     } else {
                         account_.unmountSave();
+                        int cnt = BankManager::countBanks(basePath_, selectedGame_);
+                        gameBankCounts_[selectedGame_] = cnt;
+                        gameBankCounts_[pairedGame(selectedGame_)] = cnt;
                         screen_ = AppScreen::GameSelector;
                     }
                     break;

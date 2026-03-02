@@ -342,7 +342,7 @@ void UI::drawGameSelectorFrame() {
         drawTextCentered(name, cardX + CARD_W / 2, cardY + ICON_SIZE + 30,
                          T().text, fontSmall_);
 
-        // Bank count under game name (cached)
+        // Bank count under game name
         auto bc = gameBankCounts_.find(availableGames_[i]);
         int bankCount = (bc != gameBankCounts_.end()) ? bc->second : 0;
         std::string bankStr = "(" + std::to_string(bankCount) + ")";

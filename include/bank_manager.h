@@ -22,6 +22,7 @@ public:
     std::string loadBank(const std::string& name, Bank& bank);
     std::string pathFor(const std::string& name) const;
     static int countOccupied(const std::string& filePath);
+    static int countBanks(const std::string& basePath, GameType game);
 
 private:
     std::string banksDir_;   // basePath + "banks/sv/" or "banks/za/"

@@ -170,6 +170,10 @@ void UI::selectProfile(int index) {
         return;
     }
 
+    gameBankCounts_.clear();
+    for (GameType g : availableGames_)
+        gameBankCounts_[g] = BankManager::countBanks(basePath_, g);
+
     gameSelCursor_ = 0;
     showWorking("Loading game icons...");
     loadGameIcons();
@@ -337,6 +341,13 @@ void UI::drawGameSelectorFrame() {
         if (name.length() > 20) name = name.substr(0, 19) + ".";
         drawTextCentered(name, cardX + CARD_W / 2, cardY + ICON_SIZE + 30,
                          T().text, fontSmall_);
+
+        // Bank count under game name (cached)
+        auto bc = gameBankCounts_.find(availableGames_[i]);
+        int bankCount = (bc != gameBankCounts_.end()) ? bc->second : 0;
+        std::string bankStr = "(" + std::to_string(bankCount) + ")";
+        drawTextCentered(bankStr, cardX + CARD_W / 2, cardY + ICON_SIZE + 50,
+                         T().textDim, fontSmall_);
     }
 
     if (selectedProfile_ >= 0) {

@@ -97,6 +97,22 @@ int BankManager::countOccupied(const std::string& filePath) {
     return count;
 }
 
+int BankManager::countBanks(const std::string& basePath, GameType game) {
+    std::string dir = basePath + "banks/" + bankFolderNameOf(game) + "/";
+    DIR* d = opendir(dir.c_str());
+    if (!d) return 0;
+
+    int count = 0;
+    struct dirent* entry;
+    while ((entry = readdir(d)) != nullptr) {
+        std::string name = entry->d_name;
+        if (name.size() >= 5 && name.substr(name.size() - 4) == ".bin")
+            count++;
+    }
+    closedir(d);
+    return count;
+}
+
 bool BankManager::createBank(const std::string& name) {
     std::string safe = sanitizeName(name);
     if (safe.empty())

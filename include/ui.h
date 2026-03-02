@@ -188,6 +188,7 @@ private:
     int gameSelCursor_ = 0;
     std::vector<GameType> availableGames_;
     std::unordered_map<GameType, SDL_Texture*> gameIconCache_;
+    std::unordered_map<GameType, int> gameBankCounts_;
     void loadGameIcons();
     void freeGameIcons();
 

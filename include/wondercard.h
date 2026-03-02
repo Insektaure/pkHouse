@@ -78,6 +78,10 @@ struct Wondercard {
     uint16_t eggLocation() const;
     uint8_t  originGame() const;
 
+    // Card metadata
+    uint16_t cardId() const;            // Card ID at 0x08
+    uint16_t checksum() const;          // Checksum (WC8: 0x2CC, WC9: 0x2C4)
+
     // Format-specific
     uint8_t  teraType() const;          // WC9 only
     bool     isAlpha() const;           // WA9 only

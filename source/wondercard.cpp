@@ -171,9 +171,9 @@ WCShinyType Wondercard::shinyType() const {
 uint16_t Wondercard::ball() const {
     switch (format) {
         case WCFormat::WC8: return readU16(0x22C);
-        case WCFormat::WB8: return readU16(0x284);
+        case WCFormat::WB8: return readU16(0x274);
         case WCFormat::WA8: return readU16(0x224);
-        case WCFormat::WC9: return readU16(0x222);
+        case WCFormat::WC9: return readU16(0x224);
         case WCFormat::WA9: return readU16(0x25C);
         default: return 4;
     }
@@ -182,9 +182,9 @@ uint16_t Wondercard::ball() const {
 uint16_t Wondercard::heldItem() const {
     switch (format) {
         case WCFormat::WC8: return readU16(0x22E);
-        case WCFormat::WB8: return readU16(0x286);
+        case WCFormat::WB8: return readU16(0x276);
         case WCFormat::WA8: return readU16(0x226);
-        case WCFormat::WC9: return readU16(0x224);
+        case WCFormat::WC9: return readU16(0x226);
         case WCFormat::WA9: return readU16(0x25E);
         default: return 0;
     }
@@ -195,9 +195,9 @@ uint16_t Wondercard::move(int idx) const {
     int base;
     switch (format) {
         case WCFormat::WC8: base = 0x230; break;
-        case WCFormat::WB8: base = 0x270; break;
+        case WCFormat::WB8: base = 0x278; break;
         case WCFormat::WA8: base = 0x228; break;
-        case WCFormat::WC9: base = 0x226; break;
+        case WCFormat::WC9: base = 0x228; break;
         case WCFormat::WA9: base = 0x260; break;
         default: return 0;
     }
@@ -209,9 +209,9 @@ uint16_t Wondercard::relearnMove(int idx) const {
     int base;
     switch (format) {
         case WCFormat::WC8: base = 0x238; break;
-        case WCFormat::WB8: base = 0x278; break;
+        case WCFormat::WB8: base = 0x280; break;
         case WCFormat::WA8: base = 0x230; break;
-        case WCFormat::WC9: base = 0x22E; break;
+        case WCFormat::WC9: base = 0x230; break;
         case WCFormat::WA9: base = 0x268; break;
         default: return 0;
     }
@@ -224,7 +224,7 @@ uint8_t Wondercard::iv(int idx) const {
     switch (format) {
         case WCFormat::WC8: base = 0x26C; break;
         case WCFormat::WB8: base = 0x2B2; break;
-        case WCFormat::WA8: base = 0x268; break;
+        case WCFormat::WA8: base = 0x264; break;
         case WCFormat::WC9: base = 0x268; break;
         case WCFormat::WA9: base = 0x29A; break;
         default: return 0;
@@ -238,7 +238,7 @@ uint8_t Wondercard::ev(int idx) const {
     switch (format) {
         case WCFormat::WC8: base = 0x273; break;
         case WCFormat::WB8: base = 0x2B9; break;
-        case WCFormat::WA8: base = 0x26F; break;
+        case WCFormat::WA8: base = 0x26B; break;
         case WCFormat::WC9: base = 0x26F; break;
         case WCFormat::WA9: base = 0x2A1; break;
         default: return 0;
@@ -263,10 +263,10 @@ uint16_t Wondercard::sid() const {
 uint8_t Wondercard::otGender() const {
     switch (format) {
         case WCFormat::WC8: return data[0x272];
-        case WCFormat::WB8: return data[0x2B1];
-        case WCFormat::WA8: return data[0x267];
-        case WCFormat::WC9: return data[0x267];
-        case WCFormat::WA9: return data[0x299];
+        case WCFormat::WB8: return data[0x2B8];
+        case WCFormat::WA8: return data[0x26A];
+        case WCFormat::WC9: return data[0x26E];
+        case WCFormat::WA9: return data[0x2A0];
         default: return 2;
     }
 }
@@ -285,9 +285,9 @@ uint8_t Wondercard::metLevel() const {
 uint16_t Wondercard::metLocation() const {
     switch (format) {
         case WCFormat::WC8: return readU16(0x22A);
-        case WCFormat::WB8: return readU16(0x282);
+        case WCFormat::WB8: return readU16(0x272);
         case WCFormat::WA8: return readU16(0x222);
-        case WCFormat::WC9: return readU16(0x220);
+        case WCFormat::WC9: return readU16(0x222);
         case WCFormat::WA9: return readU16(0x25A);
         default: return 0;
     }
@@ -296,10 +296,22 @@ uint16_t Wondercard::metLocation() const {
 uint16_t Wondercard::eggLocation() const {
     switch (format) {
         case WCFormat::WC8: return readU16(0x228);
-        case WCFormat::WB8: return readU16(0x280);
+        case WCFormat::WB8: return readU16(0x270);
         case WCFormat::WA8: return readU16(0x220);
-        case WCFormat::WC9: return readU16(0x21E);
+        case WCFormat::WC9: return readU16(0x220);
         case WCFormat::WA9: return readU16(0x258);
+        default: return 0;
+    }
+}
+
+uint16_t Wondercard::cardId() const {
+    return readU16(0x08); // Same offset for all formats
+}
+
+uint16_t Wondercard::checksum() const {
+    switch (format) {
+        case WCFormat::WC8: return readU16(0x2CC);
+        case WCFormat::WC9: return readU16(0x2C4);
         default: return 0;
     }
 }
@@ -496,6 +508,224 @@ static void copyWCOTName(const Wondercard& wc, Pokemon& pkm, int pkmOTOffset) {
     }
 }
 
+// --- Distribution Window Database (from PKHeX EncounterServerDate.cs) ---
+// Maps CardID → distribution start date + optional offset days.
+// Met date = start + addDays (GetGenerateDate in PKHeX).
+
+struct WCDistWindow {
+    uint16_t cardId;
+    uint8_t year;    // years since 2000
+    uint8_t month;
+    uint8_t day;
+    uint8_t addDays; // GenerateDaysAfterStart
+};
+
+static const WCDistWindow s_wc8Dates[] = {
+    {9008, 20, 6, 2, 0},   // Hidden Ability Grookey
+    {9009, 20, 6, 2, 0},   // Hidden Ability Scorbunny
+    {9010, 20, 6, 2, 0},   // Hidden Ability Sobble
+    {9011, 20, 6, 30, 0},  // Shiny Zeraora
+    {9012, 20, 11, 10, 0}, // Gigantamax Melmetal
+    {9013, 21, 6, 17, 0},  // Gigantamax Bulbasaur
+    {9014, 21, 6, 17, 0},  // Gigantamax Squirtle
+    {9029, 25, 2, 11, 0},  // Shiny Keldeo
+};
+
+static const WCDistWindow s_wa8Dates[] = {
+    { 138, 22, 1, 27, 0},  // Poke Center Happiny
+    { 301, 22, 2, 4, 0},   // Piplup
+    { 801, 22, 2, 25, 0},  // Hisuian Growlithe
+    {1201, 22, 5, 31, 0},  // Regigigas
+    {1202, 22, 5, 31, 0},  // Piplup
+    {1203, 22, 8, 18, 0},  // Hisuian Growlithe
+    { 151, 22, 9, 3, 0},   // Otsukimi Clefairy
+    {9018, 22, 5, 18, 0},  // Hidden Ability Rowlet
+    {9019, 22, 5, 18, 0},  // Hidden Ability Cyndaquil
+    {9020, 22, 5, 18, 0},  // Hidden Ability Oshawott
+    {9027, 25, 1, 27, 0},  // Shiny Enamorus
+};
+
+static const WCDistWindow s_wb8Dates[] = {
+    {9015, 22, 5, 18, 0},  // Hidden Ability Turtwig
+    {9016, 22, 5, 18, 0},  // Hidden Ability Chimchar
+    {9017, 22, 5, 18, 0},  // Hidden Ability Piplup
+    {9026, 25, 1, 27, 0},  // Shiny Manaphy
+};
+
+static const WCDistWindow s_wc9Dates[] = {
+    {   1, 22, 11, 17, 0}, // PokeCenter Birthday Flabebe
+    {   6, 22, 12, 16, 0}, // Jump Festa Gyarados
+    { 501, 23, 2, 16, 0},  // Jiseok's Garganacl
+    {1513, 23, 2, 27, 0},  // Hisuian Zoroark DLC Gift
+    { 502, 23, 3, 31, 0},  // TCG Flying Lechonk
+    { 503, 23, 4, 13, 0},  // Gavin's Palafin
+    {  25, 23, 4, 21, 0},  // PokeCenter Pikachu
+    {1003, 23, 5, 29, 0},  // Bronzong
+    {1002, 23, 5, 31, 0},  // Pichu
+    {  28, 23, 6, 9, 0},   // Bronzong
+    {1005, 23, 6, 16, 0},  // Gastrodon
+    { 504, 23, 6, 30, 0},  // Paul's Shiny Arcanine
+    {1522, 23, 7, 21, 0},  // Dark Tera Charizard
+    {  24, 23, 7, 26, 0},  // Nontaro's Shiny Grimmsnarl
+    { 505, 23, 8, 7, 0},   // WCS 2023 Tatsugiri
+    {1521, 23, 8, 8, 0},   // My Very Own Mew
+    { 506, 23, 8, 10, 0},  // Eduardo Gastrodon
+    {1524, 23, 9, 6, 0},   // Glaseado Cetitan
+    { 507, 23, 10, 13, 0}, // Trixie Mimikyu
+    {  31, 23, 11, 1, 0},  // PokeCenter Birthday Charcadet/Pawmi
+    {1006, 23, 11, 2, 0},  // Korea Bundle Fidough
+    { 508, 23, 11, 17, 0}, // Alex's Dragapult
+    {1526, 23, 11, 22, 0}, // Team Star Revavroom
+    {1529, 23, 12, 7, 0},  // New Moon Darkrai
+    {1530, 23, 12, 7, 0},  // Shiny Buddy Lucario
+    {1527, 23, 12, 13, 0}, // Paldea Gimmighoul
+    {  36, 23, 12, 14, 0}, // Roaring Moon / Iron Valiant
+    {1007, 23, 12, 29, 0}, // Baxcalibur
+    {  38, 24, 1, 14, 0},  // Scream Tail etc
+    {  48, 24, 2, 22, 0},  // Project Snorlax Gift
+    {1534, 24, 3, 12, 0},  // YOASOBI Pawmot
+    {1535, 24, 3, 14, 0},  // Liko's Sprigatito
+    { 509, 24, 4, 4, 0},   // Marco's Iron Hands
+    {1008, 24, 5, 4, 0},   // Flutter Mane
+    {  52, 24, 5, 11, 0},  // Sophia's Gyarados
+    {1536, 24, 5, 18, 0},  // Dot's Quaxly
+    {  49, 24, 5, 31, 0},  // Talonflame
+    { 510, 24, 6, 7, 0},   // Nils's Porygon2
+    {  50, 24, 7, 13, 0},  // Summer Festival Eevee
+    {1537, 24, 7, 24, 0},  // Roy's Fuecoco
+    { 511, 24, 8, 15, 0},  // WCS 2024 Steenee
+    { 512, 24, 8, 16, 0},  // Tomoya's Sylveon
+    {  62, 24, 10, 31, 0}, // PokeCenter Birthday Tandemaus
+    { 513, 24, 11, 15, 0}, // Patrick's Pelipper
+    {  54, 24, 11, 21, 0}, // Operation Mythical Keldeo
+    {  55, 24, 11, 21, 0}, // Operation Mythical Zarude
+    {  56, 24, 11, 21, 0}, // Operation Mythical Deoxys
+    {1011, 24, 11, 21, 0}, // KOR Keldeo
+    {1012, 24, 11, 21, 0}, // KOR Zarude
+    {1013, 24, 11, 21, 0}, // KOR Deoxys
+    {1010, 25, 1, 21, 0},  // KOR Lucario
+    { 514, 25, 2, 5, 2},   // Pokemon Day 2025 Flying Eevee (+2 days)
+    { 519, 25, 2, 20, 0},  // Marco's Jumpluff
+    {  66, 25, 4, 18, 0},  // Wei Chyr's Rillaboom
+    {1019, 25, 4, 24, 0},  // KOR Ditto Project
+    {1020, 25, 6, 6, 0},   // PTC 2025 Porygon2
+    { 523, 25, 6, 13, 0},  // NAIC 2025 Incineroar
+    {  67, 25, 6, 20, 0},  // PJCS 2025 Flutter Mane
+    {  68, 25, 6, 20, 0},  // PJCS 2025 Amoonguss
+    {1542, 25, 8, 7, 0},   // Shiny Wo-Chien
+    {1544, 25, 8, 21, 0},  // Shiny Chien-Pao
+    {1546, 25, 9, 4, 0},   // Shiny Ting-Lu
+    {1548, 25, 9, 18, 0},  // Shiny Chi-Yu
+    { 524, 25, 8, 14, 0},  // WCS 2025 Toedscool
+    { 525, 25, 8, 15, 0},  // WCS 2025 Farigiraf
+    {1540, 25, 9, 25, 0},  // Shiny Miraidon/Koraidon
+    {  70, 25, 10, 31, 0}, // PokeCenter Fidough Birthday
+    { 526, 25, 11, 21, 0}, // LAIC 2026 Whimsicott
+    {9021, 23, 5, 30, 0},  // Hidden Ability Sprigatito
+    {9022, 23, 5, 30, 0},  // Hidden Ability Fuecoco
+    {9023, 23, 5, 30, 0},  // Hidden Ability Quaxly
+    {9024, 24, 10, 16, 0}, // Shiny Meloetta
+    {9025, 24, 11, 1, 0},  // PokeCenter Birthday Tandemaus
+    {9030, 25, 10, 31, 0}, // PokeCenter Fidough Birthday
+};
+
+static const WCDistWindow s_wa9Dates[] = {
+    {1601, 25, 10, 14, 2}, // Ralts holding Gardevoirite (+2 days)
+    { 102, 25, 10, 23, 2}, // Slowpoke PokeCenter Gift (+2 days)
+    { 101, 25, 10, 31, 0}, // PokeCenter Audino Birthday
+    {1607, 25, 12, 9, 0},  // Alpha Charizard
+};
+
+// Checksum-based tables (HOME gift revisions and alternate cards)
+static const WCDistWindow s_wc8ChkDates[] = {
+    // HOME 1.0.0 to 2.0.2 (rev 1)
+    {0xFBBE, 20, 2, 12, 0}, // Bulbasaur
+    {0x48F5, 20, 2, 12, 0}, // Charmander
+    {0x47DB, 20, 2, 12, 0}, // Squirtle
+    {0x671A, 20, 2, 12, 0}, // Pikachu
+    {0x81A2, 20, 2, 12, 0}, // Original Color Magearna
+    {0x4CC7, 20, 2, 12, 0}, // Eevee
+    {0x1A0B, 20, 2, 12, 0}, // Rotom
+    {0x1C26, 20, 2, 12, 0}, // Pichu
+    // HOME 3.0.0 onward (rev 2)
+    {0x7124, 23, 5, 30, 0}, // Bulbasaur
+    {0xC26F, 23, 5, 30, 0}, // Charmander
+    {0xCD41, 23, 5, 30, 0}, // Squirtle
+    {0xED80, 23, 5, 30, 0}, // Pikachu
+    {0x0B38, 23, 5, 30, 0}, // Original Color Magearna
+    {0xC65D, 23, 5, 30, 0}, // Eevee
+    {0x9091, 23, 5, 30, 0}, // Rotom
+    {0x96BC, 23, 5, 30, 0}, // Pichu
+};
+
+static const WCDistWindow s_wc9ChkDates[] = {
+    {0xE5EB, 22, 11, 17, 0}, // Fly Pikachu - rev 1
+    {0x908B, 23, 2, 2, 0},   // Fly Pikachu - rev 2
+};
+
+// Look up in a table by key
+static bool lookupInTable(const WCDistWindow* table, int count, uint16_t key,
+                          uint8_t& outYear, uint8_t& outMonth, uint8_t& outDay) {
+    for (int i = 0; i < count; i++) {
+        if (table[i].cardId == key) {
+            if (table[i].addDays == 0) {
+                outYear  = table[i].year;
+                outMonth = table[i].month;
+                outDay   = table[i].day;
+            } else {
+                struct tm t = {};
+                t.tm_year = table[i].year + 100;
+                t.tm_mon  = table[i].month - 1;
+                t.tm_mday = table[i].day + table[i].addDays;
+                mktime(&t);
+                outYear  = static_cast<uint8_t>(t.tm_year - 100);
+                outMonth = static_cast<uint8_t>(t.tm_mon + 1);
+                outDay   = static_cast<uint8_t>(t.tm_mday);
+            }
+            return true;
+        }
+    }
+    return false;
+}
+
+// Look up distribution date for a card. Tries CardID first, then checksum fallback.
+static bool lookupDistDate(WCFormat fmt, uint16_t cid, uint16_t chk,
+                           uint8_t& outYear, uint8_t& outMonth, uint8_t& outDay) {
+    // CardID-based lookup
+    switch (fmt) {
+        case WCFormat::WC8:
+            if (lookupInTable(s_wc8Dates, sizeof(s_wc8Dates)/sizeof(s_wc8Dates[0]), cid, outYear, outMonth, outDay))
+                return true;
+            break;
+        case WCFormat::WA8:
+            if (lookupInTable(s_wa8Dates, sizeof(s_wa8Dates)/sizeof(s_wa8Dates[0]), cid, outYear, outMonth, outDay))
+                return true;
+            break;
+        case WCFormat::WB8:
+            if (lookupInTable(s_wb8Dates, sizeof(s_wb8Dates)/sizeof(s_wb8Dates[0]), cid, outYear, outMonth, outDay))
+                return true;
+            break;
+        case WCFormat::WC9:
+            if (lookupInTable(s_wc9Dates, sizeof(s_wc9Dates)/sizeof(s_wc9Dates[0]), cid, outYear, outMonth, outDay))
+                return true;
+            break;
+        case WCFormat::WA9:
+            if (lookupInTable(s_wa9Dates, sizeof(s_wa9Dates)/sizeof(s_wa9Dates[0]), cid, outYear, outMonth, outDay))
+                return true;
+            break;
+        default:
+            return false;
+    }
+
+    // Checksum-based fallback (WC8 and WC9 only)
+    if (fmt == WCFormat::WC8)
+        return lookupInTable(s_wc8ChkDates, sizeof(s_wc8ChkDates)/sizeof(s_wc8ChkDates[0]), chk, outYear, outMonth, outDay);
+    if (fmt == WCFormat::WC9)
+        return lookupInTable(s_wc9ChkDates, sizeof(s_wc9ChkDates)/sizeof(s_wc9ChkDates[0]), chk, outYear, outMonth, outDay);
+
+    return false;
+}
+
 // --- Convert Wondercard to Pokemon ---
 
 Pokemon Wondercard::toPokemon() const {
@@ -661,14 +891,21 @@ Pokemon Wondercard::toPokemon() const {
     int friendOfs = isLA ? 0x12A : 0x112;
     pkm.data[friendOfs] = 70; // default base friendship
 
-    // --- Met Date (current date) ---
+    // --- Met Date (use distribution window date if available, else current date) ---
     int metDateOfs = isLA ? 0x134 : 0x11C;
     {
-        time_t now = time(nullptr);
-        struct tm* t = localtime(&now);
-        pkm.data[metDateOfs]     = static_cast<uint8_t>(t->tm_year - 100); // years since 2000
-        pkm.data[metDateOfs + 1] = static_cast<uint8_t>(t->tm_mon + 1);
-        pkm.data[metDateOfs + 2] = static_cast<uint8_t>(t->tm_mday);
+        uint8_t metY, metM, metD;
+        if (lookupDistDate(format, cardId(), checksum(), metY, metM, metD)) {
+            pkm.data[metDateOfs]     = metY;
+            pkm.data[metDateOfs + 1] = metM;
+            pkm.data[metDateOfs + 2] = metD;
+        } else {
+            time_t now = time(nullptr);
+            struct tm* t = localtime(&now);
+            pkm.data[metDateOfs]     = static_cast<uint8_t>(t->tm_year - 100);
+            pkm.data[metDateOfs + 1] = static_cast<uint8_t>(t->tm_mon + 1);
+            pkm.data[metDateOfs + 2] = static_cast<uint8_t>(t->tm_mday);
+        }
     }
 
     // --- ObedienceLevel (Gen9 only) ---

@@ -464,6 +464,38 @@ static void writeOTName(Pokemon& pkm, int offset, const char* ascii) {
         pkm.writeU16(offset + i * 2, static_cast<uint16_t>(ascii[i]));
 }
 
+// --- Get OT name offset in wondercard for English (language index 1) ---
+static int wcOTOffset(WCFormat fmt) {
+    // Base offsets + (English language index 1) * stride
+    switch (fmt) {
+        case WCFormat::WC8: return 0x12C + 1 * 0x1C; // 0x148
+        case WCFormat::WB8: return 0x150 + 1 * 0x20; // 0x170
+        case WCFormat::WA8: return 0x124 + 1 * 0x1C; // 0x140
+        case WCFormat::WC9: return 0x124 + 1 * 0x1C; // 0x140
+        case WCFormat::WA9: return 0x140 + 1 * 0x1C; // 0x15C
+        default: return -1;
+    }
+}
+
+// --- Check if wondercard has a fixed OT name ---
+static bool wcHasOT(const Wondercard& wc) {
+    int ofs = wcOTOffset(wc.format);
+    if (ofs < 0 || ofs + 2 > wc.dataSize) return false;
+    return wc.readU16(ofs) != 0;
+}
+
+// --- Copy OT name from wondercard to Pokemon (UTF-16LE, up to 0x1A bytes) ---
+static void copyWCOTName(const Wondercard& wc, Pokemon& pkm, int pkmOTOffset) {
+    int wcOfs = wcOTOffset(wc.format);
+    if (wcOfs < 0) return;
+    constexpr int OT_NAME_BYTES = 0x1A; // 13 UTF-16LE chars
+    for (int i = 0; i < OT_NAME_BYTES; i += 2) {
+        uint16_t ch = wc.readU16(wcOfs + i);
+        pkm.writeU16(pkmOTOffset + i, ch);
+        if (ch == 0) break;
+    }
+}
+
 // --- Convert Wondercard to Pokemon ---
 
 Pokemon Wondercard::toPokemon() const {
@@ -490,9 +522,10 @@ Pokemon Wondercard::toPokemon() const {
     pkm.writeU16(0x0A, heldItem());
 
     // --- TID/SID ---
+    bool hasFixedOT = wcHasOT(*this);
     uint16_t tidVal = tid();
     uint16_t sidVal = sid();
-    if (otGender() >= 2) {
+    if (!hasFixedOT) {
         // Card uses player's OT → use generic values
         tidVal = 12345;
         sidVal = 54321;
@@ -618,7 +651,11 @@ Pokemon Wondercard::toPokemon() const {
 
     // --- OT Name ---
     int otOfs = isLA ? 0x110 : 0xF8;
-    writeOTName(pkm, otOfs, "Event");
+    if (hasFixedOT) {
+        copyWCOTName(*this, pkm, otOfs);
+    } else {
+        writeOTName(pkm, otOfs, "Event");
+    }
 
     // --- OT Friendship ---
     int friendOfs = isLA ? 0x12A : 0x112;

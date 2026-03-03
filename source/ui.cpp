@@ -196,6 +196,21 @@ void UI::showSplash() {
     SDL_DestroyTexture(tex);
 }
 
+int UI::drawBodyText(const std::string& body, int startY, const std::string& footer) {
+    int lineY = startY;
+    std::string remaining = body;
+    while (!remaining.empty()) {
+        size_t nl = remaining.find('\n');
+        std::string line = (nl != std::string::npos) ? remaining.substr(0, nl) : remaining;
+        drawTextCentered(line, SCREEN_W / 2, lineY, T().textDim, font_);
+        lineY += 24;
+        if (nl == std::string::npos) break;
+        remaining = remaining.substr(nl + 1);
+    }
+    drawTextCentered(footer, SCREEN_W / 2, lineY + 20, T().textDim, fontSmall_);
+    return lineY;
+}
+
 void UI::showMessageAndWait(const std::string& title, const std::string& body) {
     if (!renderer_) return;
 
@@ -220,8 +235,7 @@ void UI::showMessageAndWait(const std::string& title, const std::string& body) {
         SDL_RenderClear(renderer_);
 
         drawTextCentered(title, SCREEN_W / 2, SCREEN_H / 2 - 40, T().red, fontLarge_);
-        drawTextCentered(body, SCREEN_W / 2, SCREEN_H / 2 + 15, T().textDim, font_);
-        drawTextCentered("Press B to dismiss", SCREEN_W / 2, SCREEN_H / 2 + 65, T().textDim, fontSmall_);
+        drawBodyText(body, SCREEN_H / 2 + 5, "Press B to dismiss");
 
         SDL_RenderPresent(renderer_);
         SDL_Delay(16);
@@ -256,8 +270,7 @@ bool UI::showConfirmDialog(const std::string& title, const std::string& body) {
         SDL_RenderClear(renderer_);
 
         drawTextCentered(title, SCREEN_W / 2, SCREEN_H / 2 - 40, T().red, fontLarge_);
-        drawTextCentered(body, SCREEN_W / 2, SCREEN_H / 2 + 15, T().textDim, font_);
-        drawTextCentered("A: Continue   B: Cancel", SCREEN_W / 2, SCREEN_H / 2 + 65, T().textDim, fontSmall_);
+        drawBodyText(body, SCREEN_H / 2 + 5, "A: Continue   B: Cancel");
 
         SDL_RenderPresent(renderer_);
         SDL_Delay(16);

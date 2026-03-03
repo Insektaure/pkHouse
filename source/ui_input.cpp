@@ -125,13 +125,6 @@ void UI::handleInput(bool& running) {
                 if (hasSV && menuSelection_ == 2) {
                     showMenu_ = false;
                     wcList_ = scanWondercards(basePath_, selectedGame_);
-                    // In applet mode, filter out !hasOT (requires save-only)
-                    if (appletMode_) {
-                        wcList_.erase(
-                            std::remove_if(wcList_.begin(), wcList_.end(),
-                                [](const WCInfo& w) { return !w.hasOT; }),
-                            wcList_.end());
-                    }
                     wcListCursor_ = 0;
                     wcListScroll_ = 0;
                     showWondercardList_ = true;
@@ -1622,8 +1615,6 @@ void UI::injectWondercard(const WCInfo& info) {
     // If !hasOT and target is bank panel: show restriction
     if (!info.hasOT) {
         if (appletMode_) {
-            // In applet mode, filtered out already, but just in case
-            showWondercardList_ = false;
             showMessageAndWait("Cannot Inject",
                 "This wondercard uses your OT and\ncan only be injected into a save file.");
             return;

@@ -1053,14 +1053,22 @@ void UI::drawWondercardListPopup() {
                 drawText("Lv." + std::to_string(wc.level), x, textY, T().textDim, font_);
                 x += 70;
 
-                // Card ID
-                drawText("#" + std::to_string(wc.cardID), x, textY, T().textDim, font_);
-                x += 80;
-
                 // Player OT tag
                 if (!wc.hasOT) {
                     drawText("[Player OT]", x, textY, T().genderFemale, font_);
                 }
+                x += 120;
+
+                // Filename (truncate to fit)
+                int maxW = listX + listW - x - 5;
+                std::string fn = wc.filename;
+                while (fn.size() > 4) {
+                    int tw = 0, th = 0;
+                    TTF_SizeUTF8(fontSmall_, fn.c_str(), &tw, &th);
+                    if (tw <= maxW) break;
+                    fn = fn.substr(0, fn.size() - 5) + "..";
+                }
+                drawText(fn, x, textY, T().textDim, fontSmall_);
             }
         }
     }

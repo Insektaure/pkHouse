@@ -227,10 +227,14 @@ Pokemon WC9::convertToPK9(const TrainerInfo& trainer) const {
     uint32_t pkId32 = id32();
 
     // Ability (0x14, 0x16)
-    int abType = abilityType();
-    uint16_t abilityId = PersonalSV::getAbility(specNat, formVal, abType);
+    // AbilityType: 0/1/2=fixed slot, 3=random 0/1, 4=random 0/1/H
+    int abIdx = abilityType();
+    if (abIdx == 3) abIdx = std::rand() % 2;
+    else if (abIdx == 4) abIdx = std::rand() % 3;
+    else if (abIdx > 4) abIdx = 0;
+    uint16_t abilityId = PersonalSV::getAbility(specNat, formVal, abIdx);
     pk.writeU16(0x14, abilityId);
-    pk.data[0x16] = static_cast<uint8_t>(abType <= 2 ? abType : 0);
+    pk.data[0x16] = static_cast<uint8_t>(1 << abIdx); // AbilityNumber: 1=slot0, 2=slot1, 4=hidden
 
     // PID (0x1C) — set after ID32 is finalized
     // Will be set below

@@ -269,7 +269,9 @@ uint8_t Pokemon::gender() const {
     }
     if (isLGPE(gameType_))
         return (data[0x1D] >> 1) & 3;
-    return (data[0x22] >> 2) & 3;
+    if (isSV(gameType_) || gameType_ == GameType::ZA)
+        return (data[0x22] >> 1) & 3; // PK9/PA9: bits 1:2
+    return (data[0x22] >> 2) & 3;     // PK8/PB8/PA8: bits 2:3
 }
 
 // Gen3 English character encoding table (byte 0x00-0xFF → Unicode codepoint)

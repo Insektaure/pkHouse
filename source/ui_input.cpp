@@ -563,13 +563,27 @@ void UI::handleInput(bool& running) {
                     if (searchResultCursor_ >= searchResultScroll_ + visibleRows)
                         searchResultScroll_ = searchResultCursor_ - visibleRows + 1;
                 }
+            } else if (showWondercardList_) {
+                if (stickDirY_ != 0 && !wcList_.empty()) {
+                    int count = static_cast<int>(wcList_.size());
+                    wcListCursor_ += stickDirY_ > 0 ? 1 : -1;
+                    if (wcListCursor_ < 0) wcListCursor_ = count - 1;
+                    if (wcListCursor_ >= count) wcListCursor_ = 0;
+                    constexpr int ROW_H = 36;
+                    int visibleRows = (550 - 40 - 50) / ROW_H;
+                    if (wcListCursor_ < wcListScroll_)
+                        wcListScroll_ = wcListCursor_;
+                    else if (wcListCursor_ >= wcListScroll_ + visibleRows)
+                        wcListScroll_ = wcListCursor_ - visibleRows + 1;
+                }
             } else if (showBoxView_) {
                 if (stickDirX_ != 0) moveBoxViewCursor(stickDirX_, 0);
                 if (stickDirY_ != 0) moveBoxViewCursor(0, stickDirY_);
             } else if (showMenu_) {
                 if (stickDirY_ != 0)
                 {
-                    int mc = appletMode_ ? 7 : 6;
+                    bool hasSV = isSV(selectedGame_);
+                    int mc = appletMode_ ? (hasSV ? 8 : 7) : (hasSV ? 7 : 6);
                     menuSelection_ = (menuSelection_ + (stickDirY_ > 0 ? 1 : mc - 1)) % mc;
                 }
             } else if (!showDetail_) {

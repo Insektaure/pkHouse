@@ -328,8 +328,9 @@ Pokemon WC9::convertToPK9(const TrainerInfo& trainer) const {
         pk.writeU32(0x8C, iv32);
     }
 
-    // TeraType (0x94)
+    // TeraType (0x94 = original, 0x95 = override)
     pk.data[0x94] = teraTypeOrig();
+    pk.data[0x95] = 19; // TeraTypeUtil.OverrideNone — no override, use original
 
     // HT Name (0xA8) - if hasOT: player's OT; else: empty
     if (hasOT) {

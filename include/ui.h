@@ -74,6 +74,7 @@ public:
     bool init();
     void shutdown();
     void showSplash();
+    int  drawBodyText(const std::string& body, int startY, const std::string& footer);
     void showMessageAndWait(const std::string& title, const std::string& body);
     bool showConfirmDialog(const std::string& title, const std::string& body);
     void showWorking(const std::string& msg);

@@ -8,6 +8,51 @@
 #include <ctime>
 #include <dirent.h>
 #include <algorithm>
+#include <unordered_map>
+
+// --- UTF-8 to UTF-16LE conversion (BMP only, covers all species names) ---
+static std::u16string utf8to16(const std::string& s) {
+    std::u16string out;
+    size_t i = 0;
+    while (i < s.size()) {
+        uint32_t cp;
+        uint8_t c = static_cast<uint8_t>(s[i]);
+        if (c < 0x80) { cp = c; i += 1; }
+        else if ((c >> 5) == 0x6)  { cp = (c & 0x1F) << 6;  cp |= (static_cast<uint8_t>(s[i+1]) & 0x3F); i += 2; }
+        else if ((c >> 4) == 0xE)  { cp = (c & 0x0F) << 12; cp |= (static_cast<uint8_t>(s[i+1]) & 0x3F) << 6;
+                                     cp |= (static_cast<uint8_t>(s[i+2]) & 0x3F); i += 3; }
+        else { i += 4; continue; } // skip non-BMP
+        out += static_cast<char16_t>(cp);
+    }
+    return out;
+}
+
+// --- Localized species name lookup (lazy-loaded per language) ---
+static std::unordered_map<int, std::vector<std::string>> langSpeciesCache;
+
+static const std::string& getLocalizedSpeciesName(uint16_t natdex, int langId) {
+    static const std::string empty;
+    auto it = langSpeciesCache.find(langId);
+    if (it == langSpeciesCache.end()) {
+        // Load from romfs: species_{langId}.txt (English uses existing species_en.txt)
+        std::string path = (langId == 2)
+            ? "romfs:/data/species_en.txt"
+            : "romfs:/data/species_" + std::to_string(langId) + ".txt";
+        std::ifstream f(path);
+        std::vector<std::string> names;
+        if (f.is_open()) {
+            std::string line;
+            while (std::getline(f, line)) {
+                if (!line.empty() && line.back() == '\r') line.pop_back();
+                names.push_back(line);
+            }
+        }
+        it = langSpeciesCache.emplace(langId, std::move(names)).first;
+    }
+    if (natdex < it->second.size())
+        return it->second[natdex];
+    return empty;
+}
 
 // --- WC9 string helpers ---
 
@@ -98,6 +143,9 @@ static uint32_t randU32() {
 // --- WC9 → PK9 conversion ---
 
 Pokemon WC9::convertToPK9(const TrainerInfo& trainer) const {
+    static bool seeded = false;
+    if (!seeded) { std::srand(static_cast<unsigned>(std::time(nullptr))); seeded = true; }
+
     Pokemon pk;
     pk.gameType_ = GameType::S; // PK9 format
     pk.data.fill(0);
@@ -170,34 +218,58 @@ Pokemon WC9::convertToPK9(const TrainerInfo& trainer) const {
         int bitIdx = ribbon % 8;
         if (byteIdx < static_cast<int>(pk.data.size()))
             pk.data[byteIdx] |= (1 << bitIdx);
-        // Set AffixedRibbon (0x3C is the AffixedRibbon offset in PK9 at 0x38...
-        // Actually in PK9, AffixedRibbon is at offset 0x51 (sbyte)
-        pk.data[0x51] = ribbon;
+        pk.data[0xD4] = ribbon; // AffixedRibbon
     }
 
     // Height/Weight scalars (0x48-0x49)
     pk.data[0x48] = heightScalar();
     pk.data[0x49] = weightScalar();
 
-    // Scale (0x4A)
+    // Scale (0x4A) — patch-aware: pre-1.2.0 cards use weighted random
+    // IsBeforePatch120: cardID is 1/6/501/1501 AND date before 2023-03-01
+    // (date not yet computed here, but cardID check is sufficient for these 4 cards
+    //  since their distribution dates are all before 2023-03-01)
+    uint16_t cid = cardID();
+    bool patch120Card = (cid == 1 || cid == 6 || cid == 501 || cid == 1501);
     uint16_t scaleVal = scale();
-    if (scaleVal == 256)
+    if (patch120Card) {
+        // PokeSizeUtil.GetRandomScalar: triangular distribution (0x81 + 0x80)
+        pk.data[0x4A] = static_cast<uint8_t>((std::rand() % 0x81) + (std::rand() % 0x80));
+    } else if (scaleVal == 256) {
         pk.data[0x4A] = static_cast<uint8_t>(std::rand() % 256);
-    else
+    } else {
         pk.data[0x4A] = static_cast<uint8_t>(scaleVal);
+    }
 
     // Nickname (0x58) - UTF-16LE, up to 13 chars
+    // pkLang is the PK9 language (set later, but we compute it here)
+    uint8_t pkLang;
+    bool isEggWC = isEgg();
+    {
+        int lo = 0x28 + langIdx * 0x1C + 0x1A;
+        uint8_t wcLang = data[lo];
+        pkLang = wcLang != 0 ? wcLang : trainer.language;
+    }
     {
         std::u16string nick;
         bool isNicknamed = hasNickname(langIdx);
-        if (isNicknamed) {
+        if (isEggWC) {
+            // Egg wondercards use localized "Egg" name (species index 0)
+            const std::string& eggName = getLocalizedSpeciesName(0, pkLang);
+            if (!eggName.empty())
+                nick = utf8to16(eggName);
+            else
+                nick = utf8to16("Egg");
+            isNicknamed = true;
+        } else if (isNicknamed) {
             nick = getNickname(langIdx);
         } else {
-            // Use species name — get national ID and lookup name
-            const std::string& name = SpeciesName::get(specNat);
-            // Convert UTF-8 to UTF-16LE (basic ASCII conversion)
-            for (char c : name)
-                nick += static_cast<char16_t>(static_cast<uint8_t>(c));
+            // Use localized species name matching the PK9 language
+            const std::string& name = getLocalizedSpeciesName(specNat, pkLang);
+            if (!name.empty())
+                nick = utf8to16(name);
+            else
+                nick = utf8to16(SpeciesName::get(specNat)); // fallback to English
         }
         for (size_t i = 0; i < nick.size() && i < 13; i++) {
             uint16_t ch = static_cast<uint16_t>(nick[i]);
@@ -249,6 +321,8 @@ Pokemon WC9::convertToPK9(const TrainerInfo& trainer) const {
         }
         uint32_t iv32 = (ivs[0]) | (ivs[1] << 5) | (ivs[2] << 10)
                        | (ivs[3] << 15) | (ivs[4] << 20) | (ivs[5] << 25);
+        if (isEggWC)
+            iv32 |= (1u << 30); // IsEgg bit
         if (isNicknamed)
             iv32 |= (1u << 31); // IsNicknamed bit
         pk.writeU32(0x8C, iv32);
@@ -281,12 +355,8 @@ Pokemon WC9::convertToPK9(const TrainerInfo& trainer) const {
         pk.data[0xCE] = 50 + (std::rand() % 2);
     }
 
-    // Language (0xD5)
-    {
-        int langOfs = 0x28 + langIdx * 0x1C + 0x1A;
-        uint8_t wcLang = data[langOfs];
-        pk.data[0xD5] = wcLang != 0 ? wcLang : trainer.language;
-    }
+    // Language (0xD5) — already computed as pkLang above
+    pk.data[0xD5] = pkLang;
 
     // OT Name (0xF8) - if hasOT: WC9 OT; else: player's OT
     {
@@ -305,14 +375,24 @@ Pokemon WC9::convertToPK9(const TrainerInfo& trainer) const {
         pk.writeU32(0x10, exp);
     }
 
-    // OTFriendship (0x112)
-    pk.data[0x112] = PersonalSV::getBaseFriendship(specNat, formVal);
+    // OTFriendship (0x112) and CurrentFriendship
+    // For eggs, use HatchCycles instead of BaseFriendship
+    uint8_t friendship;
+    if (isEggWC) {
+        friendship = PersonalSV::getHatchCycles(specNat, formVal);
+    } else {
+        friendship = PersonalSV::getBaseFriendship(specNat, formVal);
+    }
+    pk.data[0x112] = friendship;
+    if (hasOT)
+        pk.data[0xC8] = friendship; // HT_Friendship (CurrentHandler=1)
 
     // OT Memory fields (0x113-0x118)
     pk.data[0x113] = otMemoryIntensity();
     pk.data[0x114] = otMemory();
-    pk.data[0x115] = otMemoryFeeling();
+    // 0x115 is unused alignment byte
     pk.writeU16(0x116, otMemoryVariable());
+    pk.data[0x118] = otMemoryFeeling();
 
     // MetDate (0x11C-0x11E) - year-2000, month, day
     uint16_t checksum = readU16(0x2C4);
@@ -320,6 +400,13 @@ Pokemon WC9::convertToPK9(const TrainerInfo& trainer) const {
     pk.data[0x11C] = md.year;
     pk.data[0x11D] = md.month;
     pk.data[0x11E] = md.day;
+
+    // EggMetDate (0x119-0x11B) - for egg wondercards, use same date
+    if (isEggWC) {
+        pk.data[0x119] = md.year;
+        pk.data[0x11A] = md.month;
+        pk.data[0x11B] = md.day;
+    }
 
     // Now finalize ID32 based on date
     // If OTGender >= 2: use player's ID
@@ -361,16 +448,16 @@ Pokemon WC9::convertToPK9(const TrainerInfo& trainer) const {
         uint8_t pType = pidType();
         uint32_t pidVal;
         switch (pType) {
-            case 0: // Random
-                pidVal = randU32();
-                break;
-            case 1: { // Never shiny (antishiny)
+            case 0: { // Never shiny (antishiny)
                 pidVal = randU32();
                 uint32_t xorVal = (pidVal >> 16) ^ (pidVal & 0xFFFF) ^ tid16 ^ sid16;
                 if (xorVal < 16)
                     pidVal ^= 0x10000000;
                 break;
             }
+            case 1: // Random
+                pidVal = randU32();
+                break;
             case 2: { // Always Star shiny
                 uint16_t low = static_cast<uint16_t>(pid() & 0xFFFF);
                 uint16_t high = 1u ^ low ^ tid16 ^ sid16;

@@ -121,6 +121,8 @@ struct WC9 {
     // OT Name: 0x124 + langIdx * 0x1C (UTF-16LE, up to 13 chars)
     std::u16string getOTName(int langIdx) const;
 
+    bool isEgg() const { return data[0x23D] == 1; }
+
     // --- Key methods ---
     bool isPokemon() const { return cardType() == 1; }
     bool getHasOT(int langIdx) const;

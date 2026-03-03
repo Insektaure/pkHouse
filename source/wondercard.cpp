@@ -228,10 +228,9 @@ Pokemon WC9::convertToPK9(const TrainerInfo& trainer) const {
 
     // Ability (0x14, 0x16)
     // AbilityType: 0/1/2=fixed slot, 3=random 0/1, 4=random 0/1/H
+    // PKHeX default (no criteria): types 3 and 4 both pick random 0 or 1
     int abIdx = abilityType();
-    if (abIdx == 3) abIdx = std::rand() % 2;
-    else if (abIdx == 4) abIdx = std::rand() % 3;
-    else if (abIdx > 4) abIdx = 0;
+    if (abIdx >= 3) abIdx = std::rand() % 2;
     uint16_t abilityId = PersonalSV::getAbility(specNat, formVal, abIdx);
     pk.writeU16(0x14, abilityId);
     pk.data[0x16] = static_cast<uint8_t>(1 << abIdx); // AbilityNumber: 1=slot0, 2=slot1, 4=hidden
@@ -500,7 +499,7 @@ Pokemon WC9::convertToPK9(const TrainerInfo& trainer) const {
     uint8_t ballVal = ball() != 0 ? static_cast<uint8_t>(ball()) : 4; // default Poké Ball
 
     // MetLevel (0x125 bits 0-6) + OTGender (bit 7)
-    uint8_t otGenderBit = hasOT ? otGender() : trainer.gender;
+    uint8_t otGenderBit = otGender() < 2 ? otGender() : trainer.gender;
     pk.data[0x124] = ballVal;
     pk.data[0x125] = static_cast<uint8_t>((mLevel & 0x7F) | ((otGenderBit & 1) << 7));
 

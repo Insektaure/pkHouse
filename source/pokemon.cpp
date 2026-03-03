@@ -3,7 +3,8 @@
 
 // Experience growth tables (from PKHeX.Core Experience.cs)
 // 6 tables x 100 entries: minimum EXP for each level (1-100)
-static const uint32_t EXP_TABLE[6][100] = {
+// Not static — also used by wondercard.cpp
+const uint32_t EXP_TABLE[6][100] = {
     // Growth 0: Medium Fast
     {0, 8, 27, 64, 125, 216, 343, 512, 729, 1000,
      1331, 1728, 2197, 2744, 3375, 4096, 4913, 5832, 6859, 8000,

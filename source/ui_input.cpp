@@ -103,7 +103,8 @@ void UI::handleInput(bool& running) {
 
         // While menu is open, handle menu input only
         if (showMenu_) {
-            int menuCount = appletMode_ ? 7 : 6;
+            bool hasSV = isSV(selectedGame_);
+            int menuCount = appletMode_ ? (hasSV ? 8 : 7) : (hasSV ? 7 : 6);
             auto menuConfirm = [&]() {
                 // 0=Theme, 1=Search (both modes)
                 if (menuSelection_ == 0) {
@@ -120,7 +121,23 @@ void UI::handleInput(bool& running) {
                     clearSearchHighlight();
                     return;
                 }
-                int sel = menuSelection_ - 2; // shift for Theme + Search at index 0-1
+                // Wondercard (index 2) for SV games only
+                if (hasSV && menuSelection_ == 2) {
+                    showMenu_ = false;
+                    wcList_ = scanWondercards(basePath_, selectedGame_);
+                    // In applet mode, filter out !hasOT (requires save-only)
+                    if (appletMode_) {
+                        wcList_.erase(
+                            std::remove_if(wcList_.begin(), wcList_.end(),
+                                [](const WCInfo& w) { return !w.hasOT; }),
+                            wcList_.end());
+                    }
+                    wcListCursor_ = 0;
+                    wcListScroll_ = 0;
+                    showWondercardList_ = true;
+                    return;
+                }
+                int sel = menuSelection_ - (hasSV ? 3 : 2); // shift past Theme + Search [+ Wondercard]
                 if (appletMode_) {
                     // sel: 0=Switch Left Bank, 1=Switch Right Bank, 2=Change Game,
                     // 3=Save Banks, 4=Quit
@@ -266,6 +283,12 @@ void UI::handleInput(bool& running) {
         // While search results are open, handle their input only
         if (showSearchResults_) {
             handleSearchResultsInput(event);
+            continue;
+        }
+
+        // While wondercard list is open, handle its input only
+        if (showWondercardList_) {
+            handleWondercardListInput(event);
             continue;
         }
 
@@ -1470,4 +1493,184 @@ void UI::refreshHighlightSet() {
 
     scanPanel(Panel::Game);
     scanPanel(Panel::Bank);
+}
+
+// --- Wondercard List ---
+
+void UI::handleWondercardListInput(const SDL_Event& event) {
+    if (event.type == SDL_CONTROLLERAXISMOTION) {
+        if (event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX ||
+            event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY) {
+            int16_t lx = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTX);
+            int16_t ly = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTY);
+            updateStick(lx, ly);
+        }
+    }
+
+    int count = static_cast<int>(wcList_.size());
+    if (count == 0) {
+        // Only B to close
+        if (event.type == SDL_CONTROLLERBUTTONDOWN && event.cbutton.button == SDL_CONTROLLER_BUTTON_A)
+            showWondercardList_ = false;
+        if (event.type == SDL_KEYDOWN && (event.key.keysym.sym == SDLK_b || event.key.keysym.sym == SDLK_ESCAPE))
+            showWondercardList_ = false;
+        return;
+    }
+
+    auto scrollIntoView = [&]() {
+        constexpr int ROW_H = 36;
+        int visibleRows = (550 - 40 - 50) / ROW_H; // matches popup layout
+        if (wcListCursor_ < wcListScroll_)
+            wcListScroll_ = wcListCursor_;
+        else if (wcListCursor_ >= wcListScroll_ + visibleRows)
+            wcListScroll_ = wcListCursor_ - visibleRows + 1;
+    };
+
+    if (event.type == SDL_CONTROLLERBUTTONDOWN) {
+        switch (event.cbutton.button) {
+            case SDL_CONTROLLER_BUTTON_DPAD_UP:
+                if (wcListCursor_ > 0) wcListCursor_--;
+                else wcListCursor_ = count - 1;
+                scrollIntoView();
+                break;
+            case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+                if (wcListCursor_ < count - 1) wcListCursor_++;
+                else wcListCursor_ = 0;
+                scrollIntoView();
+                break;
+            case SDL_CONTROLLER_BUTTON_LEFTSHOULDER: // L = page up
+                wcListCursor_ = std::max(0, wcListCursor_ - 10);
+                scrollIntoView();
+                break;
+            case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: // R = page down
+                wcListCursor_ = std::min(count - 1, wcListCursor_ + 10);
+                scrollIntoView();
+                break;
+            case SDL_CONTROLLER_BUTTON_B: // Switch A = confirm/inject
+                injectWondercard(wcList_[wcListCursor_]);
+                break;
+            case SDL_CONTROLLER_BUTTON_A: // Switch B = cancel
+                showWondercardList_ = false;
+                break;
+        }
+    }
+    if (event.type == SDL_KEYDOWN) {
+        switch (event.key.keysym.sym) {
+            case SDLK_UP:
+                if (wcListCursor_ > 0) wcListCursor_--;
+                else wcListCursor_ = count - 1;
+                scrollIntoView();
+                break;
+            case SDLK_DOWN:
+                if (wcListCursor_ < count - 1) wcListCursor_++;
+                else wcListCursor_ = 0;
+                scrollIntoView();
+                break;
+            case SDLK_q: // L
+                wcListCursor_ = std::max(0, wcListCursor_ - 10);
+                scrollIntoView();
+                break;
+            case SDLK_e: // R
+                wcListCursor_ = std::min(count - 1, wcListCursor_ + 10);
+                scrollIntoView();
+                break;
+            case SDLK_a:
+            case SDLK_RETURN:
+                injectWondercard(wcList_[wcListCursor_]);
+                break;
+            case SDLK_b:
+            case SDLK_ESCAPE:
+                showWondercardList_ = false;
+                break;
+        }
+    }
+}
+
+void UI::injectWondercard(const WCInfo& info) {
+    if (!info.valid) {
+        showMessageAndWait("Invalid", "This wondercard file is invalid\nand cannot be injected.");
+        return;
+    }
+
+    // Determine target slot (where cursor is)
+    Panel panel = cursor_.panel;
+    int box = (panel == Panel::Game) ? gameBox_ : bankBox_;
+    int slot = cursor_.slot(gridCols());
+
+    // Load full WC9 file
+    WC9 wc;
+    if (!wc.loadFromFile(info.path)) {
+        showWondercardList_ = false;
+        showMessageAndWait("Error", "Failed to load wondercard file.");
+        return;
+    }
+
+    // If !hasOT and target is bank panel: show restriction
+    if (!info.hasOT) {
+        if (appletMode_) {
+            // In applet mode, filtered out already, but just in case
+            showWondercardList_ = false;
+            showMessageAndWait("Cannot Inject",
+                "This wondercard uses your OT and\ncan only be injected into a save file.");
+            return;
+        }
+        if (panel == Panel::Bank) {
+            showMessageAndWait("Cannot Inject to Bank",
+                "This wondercard uses your OT.\n"
+                "Move cursor to the save panel first.");
+            return;
+        }
+    }
+
+    // Check if target slot is empty
+    Pokemon existing = getPokemonAt(box, slot, panel);
+    if (!existing.isEmpty()) {
+        showMessageAndWait("Slot Occupied",
+            "Move cursor to an empty slot to inject.");
+        return;
+    }
+
+    // Get trainer info
+    TrainerInfo trainer;
+    if (!info.hasOT || !appletMode_) {
+        // Need trainer info from save
+        trainer = save_.getTrainerInfo();
+        if (!trainer.valid) {
+            // Fallback: construct minimal info
+            trainer.id32 = 0;
+            trainer.gender = 0;
+            trainer.language = 2; // English
+            trainer.valid = true;
+        }
+    }
+    if (!trainer.valid) {
+        // For applet mode with hasOT, we still need some trainer info for HT
+        trainer.id32 = 0;
+        trainer.gender = 0;
+        trainer.language = 2;
+        trainer.otName = u"Player";
+        trainer.valid = true;
+    }
+
+    // Convert WC9 → PK9
+    Pokemon pkm = wc.convertToPK9(trainer);
+
+    // Ensure correct game type for the panel
+    if (panel == Panel::Game && !appletMode_)
+        pkm.gameType_ = selectedGame_;
+    else
+        pkm.gameType_ = isSV(selectedGame_) ? GameType::S : selectedGame_;
+
+    // Place the pokemon
+    setPokemonAt(box, slot, panel, pkm);
+
+    showWondercardList_ = false;
+
+    // Show success
+    uint16_t natId = SpeciesConverter::getNational9(wc.speciesInternal());
+    showMessageAndWait("Injected!",
+        SpeciesName::get(natId) + " was placed in "
+        + (panel == Panel::Game ? (appletMode_ ? "Left" : "Save") : (appletMode_ ? "Right" : "Bank"))
+        + " Box " + std::to_string(box + 1)
+        + " Slot " + std::to_string(slot + 1) + ".");
 }

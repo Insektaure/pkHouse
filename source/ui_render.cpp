@@ -394,6 +394,11 @@ void UI::drawFrame() {
     if (showSearchResults_) {
         drawSearchResultsPopup();
     }
+
+    // Wondercard list popup
+    if (showWondercardList_) {
+        drawWondercardListPopup();
+    }
 }
 
 // --- Polygon rendering helpers for radar charts ---
@@ -674,13 +679,17 @@ void UI::drawMenuPopup() {
     // Semi-transparent dark overlay
     drawRect(0, 0, SCREEN_W, SCREEN_H, T().overlay);
 
-    // Menu items differ by mode
-    // Applet: Theme / Search / Switch Left Bank / Switch Right Bank / Change Game / Save Banks / Quit
-    // Normal: Theme / Search / Switch Bank / Change Game / Save & Quit / Quit Without Saving
-    int menuCount = appletMode_ ? 7 : 6;
+    // Menu items differ by mode and game
+    // SV games get a "Wondercard" item after Search
+    bool hasSV = isSV(selectedGame_);
+    int menuCount;
+    if (appletMode_)
+        menuCount = hasSV ? 8 : 7;
+    else
+        menuCount = hasSV ? 7 : 6;
 
     constexpr int POP_W = 380;
-    int POP_H = appletMode_ ? 368 : 328;
+    int POP_H = 50 + menuCount * 36 + 30;
     int popX = (SCREEN_W - POP_W) / 2;
     int popY = (SCREEN_H - POP_H) / 2;
 
@@ -692,6 +701,7 @@ void UI::drawMenuPopup() {
     const char* labelsNormal[] = {
         "Theme",
         "Search",
+        "Wondercard",
         "Switch Bank",
         "Change Game",
         "Save & Quit",
@@ -700,13 +710,23 @@ void UI::drawMenuPopup() {
     const char* labelsApplet[] = {
         "Theme",
         "Search",
+        "Wondercard",
         "Switch Left Bank",
         "Switch Right Bank",
         "Change Game",
         "Save Banks",
         "Quit"
     };
-    const char** labels = appletMode_ ? labelsApplet : labelsNormal;
+    // Build label list, skipping "Wondercard" if not SV
+    const char* visibleLabels[8];
+    const char** allLabels = appletMode_ ? labelsApplet : labelsNormal;
+    int allCount = appletMode_ ? 8 : 7;
+    int vi = 0;
+    for (int i = 0; i < allCount; i++) {
+        if (!hasSV && i == 2) continue; // skip Wondercard
+        visibleLabels[vi++] = allLabels[i];
+    }
+
     int rowH = 36;
     int startY = popY + 50;
 
@@ -716,7 +736,7 @@ void UI::drawMenuPopup() {
             drawRect(popX + 20, rowY, POP_W - 40, rowH - 4, T().menuHighlight);
             drawRectOutline(popX + 20, rowY, POP_W - 40, rowH - 4, T().cursor, 2);
         }
-        drawTextCentered(labels[i], popX + POP_W / 2, rowY + (rowH - 4) / 2, T().text, font_);
+        drawTextCentered(visibleLabels[i], popX + POP_W / 2, rowY + (rowH - 4) / 2, T().text, font_);
     }
 
     drawTextCentered("A:Confirm  B:Cancel", popX + POP_W / 2, popY + POP_H - 18, T().textDim, fontSmall_);
@@ -948,6 +968,106 @@ void UI::drawSearchResultsPopup() {
     std::string footer = searchResults_.empty()
         ? "B:Close  X:Back to Filter"
         : "A:Go to  L/R:Skip 10  B:Close  X:Filter";
+    drawTextCentered(footer, popX + POP_W / 2, popY + POP_H - 18, T().textDim, fontSmall_);
+}
+
+void UI::drawWondercardListPopup() {
+    drawRect(0, 0, SCREEN_W, SCREEN_H, T().overlay);
+
+    constexpr int POP_W = 900;
+    constexpr int POP_H = 550;
+    int popX = (SCREEN_W - POP_W) / 2;
+    int popY = (SCREEN_H - POP_H) / 2;
+
+    drawRect(popX, popY, POP_W, POP_H, T().panelBg);
+    drawRectOutline(popX, popY, POP_W, POP_H, T().cursor, 2);
+
+    std::string title = "Wondercards (" + std::to_string(wcList_.size()) + ")";
+    drawTextCentered(title, popX + POP_W / 2, popY + 22, T().text, font_);
+
+    if (wcList_.empty()) {
+        drawTextCentered("No wondercard files found.", popX + POP_W / 2, popY + POP_H / 2 - 20, T().textDim, font_);
+        std::string hint = "Place .wc9 files in:";
+        drawTextCentered(hint, popX + POP_W / 2, popY + POP_H / 2 + 10, T().textDim, fontSmall_);
+        std::string path = "sdmc:/switch/pkHouse/wondercards/" + std::string(bankFolderNameOf(selectedGame_)) + "/";
+        drawTextCentered(path, popX + POP_W / 2, popY + POP_H / 2 + 30, T().textDim, fontSmall_);
+    } else {
+        constexpr int ROW_H = 36;
+        int listY = popY + 50;
+        int listBottom = popY + POP_H - 40;
+        int visibleRows = (listBottom - listY) / ROW_H;
+        int listX = popX + 20;
+        int listW = POP_W - 40;
+
+        int maxScroll = std::max(0, (int)wcList_.size() - visibleRows);
+        if (wcListScroll_ > maxScroll) wcListScroll_ = maxScroll;
+
+        if (wcListScroll_ > 0)
+            drawTextCentered("^", popX + POP_W / 2, listY - 12, T().arrow, fontSmall_);
+        if (wcListScroll_ + visibleRows < (int)wcList_.size())
+            drawTextCentered("v", popX + POP_W / 2, listBottom + 2, T().arrow, fontSmall_);
+
+        for (int i = 0; i < visibleRows && (wcListScroll_ + i) < (int)wcList_.size(); i++) {
+            int idx = wcListScroll_ + i;
+            const auto& wc = wcList_[idx];
+            int rowY = listY + i * ROW_H;
+
+            if (idx == wcListCursor_) {
+                drawRect(listX, rowY, listW, ROW_H - 4, T().menuHighlight);
+                drawRectOutline(listX, rowY, listW, ROW_H - 4, T().cursor, 2);
+            }
+
+            int textY = rowY + (ROW_H - 4) / 2 - 9;
+            int x = listX + 10;
+
+            if (!wc.valid) {
+                // Invalid entry — show filename and marker
+                drawText("[Invalid]", x, textY, T().genderFemale, font_);
+                x += 110;
+                std::string fn = wc.filename;
+                if (fn.length() > 40) fn = fn.substr(0, 39) + ".";
+                drawText(fn, x, textY, T().textDim, font_);
+            } else {
+                // Shiny indicator
+                if (wc.isShiny) {
+                    drawText("[S]", x, textY, T().shiny, font_);
+                }
+                x += 40;
+
+                // Sprite
+                SDL_Texture* sprite = getSprite(wc.species);
+                if (sprite) {
+                    SDL_Rect dst = {x, rowY + 2, ROW_H - 6, ROW_H - 6};
+                    SDL_RenderCopy(renderer_, sprite, nullptr, &dst);
+                }
+                x += ROW_H;
+
+                // Species name
+                const std::string& name = SpeciesName::get(wc.species);
+                std::string displayName = name;
+                if (displayName.length() > 14) displayName = displayName.substr(0, 13) + ".";
+                drawText(displayName, x, textY, wc.isShiny ? T().shiny : T().text, font_);
+                x += 170;
+
+                // Level
+                drawText("Lv." + std::to_string(wc.level), x, textY, T().textDim, font_);
+                x += 70;
+
+                // Card ID
+                drawText("#" + std::to_string(wc.cardID), x, textY, T().textDim, font_);
+                x += 80;
+
+                // Player OT tag
+                if (!wc.hasOT) {
+                    drawText("[Player OT]", x, textY, T().genderFemale, font_);
+                }
+            }
+        }
+    }
+
+    std::string footer = wcList_.empty()
+        ? "B:Close"
+        : "A:Inject  L/R:Skip 10  B:Cancel";
     drawTextCentered(footer, popX + POP_W / 2, popY + POP_H - 18, T().textDim, fontSmall_);
 }
 

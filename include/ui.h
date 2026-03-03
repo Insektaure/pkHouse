@@ -4,6 +4,7 @@
 #include "bank_manager.h"
 #include "account.h"
 #include "theme.h"
+#include "wondercard.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_image.h>
@@ -138,6 +139,12 @@ private:
     bool showThemeSelector_ = false;
     int  themeSelCursor_    = 0;
     int  themeSelOriginal_  = 0;
+
+    // Wondercard list state
+    bool showWondercardList_ = false;
+    int  wcListCursor_  = 0;
+    int  wcListScroll_  = 0;
+    std::vector<WCInfo> wcList_;
 
     // Search/Filter state
     bool showSearchFilter_  = false;
@@ -304,6 +311,7 @@ private:
     void drawThemeSelectorPopup();
     void drawSearchFilterPopup();
     void drawSearchResultsPopup();
+    void drawWondercardListPopup();
     void drawHeldOverlay();
     void drawBoxViewOverlay();
     void drawBoxPreview(int boxIdx, int anchorX, int anchorY);
@@ -333,6 +341,8 @@ private:
     void selectAll();
     void handleSearchFilterInput(const SDL_Event& event);
     void handleSearchResultsInput(const SDL_Event& event);
+    void handleWondercardListInput(const SDL_Event& event);
+    void injectWondercard(const WCInfo& info);
     void executeSearch();
     bool matchesSearchFilter(const Pokemon& pkm, const std::string& filterSpecies,
                              const std::string& filterOT) const;

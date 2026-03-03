@@ -451,6 +451,44 @@ std::string SaveFile::verifyRoundTrip() {
     return result;
 }
 
+// --- Trainer Info (for wondercard injection) ---
+
+TrainerInfo SaveFile::getTrainerInfo() const {
+    TrainerInfo info;
+    info.valid = false;
+
+    // Only for SCBlock-based games (SV, ZA, SwSh)
+    if (blocks_.empty())
+        return info;
+
+    // KMyStatus block key: 0xE3E89BD1
+    const SCBlock* block = SwishCrypto::findBlock(blocks_, 0xE3E89BD1);
+    if (!block || block->data.size() < 0x30)
+        return info;
+
+    const uint8_t* d = block->data.data();
+
+    // ID32 at 0x00
+    std::memcpy(&info.id32, d + 0x00, 4);
+
+    // Gender at 0x05
+    info.gender = d[0x05];
+
+    // Language at 0x07
+    info.language = d[0x07];
+
+    // OT Name at 0x10 (UTF-16LE)
+    for (int i = 0; i < 13; i++) {
+        uint16_t ch;
+        std::memcpy(&ch, d + 0x10 + i * 2, 2);
+        if (ch == 0) break;
+        info.otName += static_cast<char16_t>(ch);
+    }
+
+    info.valid = !info.otName.empty();
+    return info;
+}
+
 // --- CRC16NoInvert (for LGPE BEEF block checksums) ---
 
 static const uint16_t CRC16_TABLE[256] = {

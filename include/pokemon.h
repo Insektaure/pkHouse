@@ -6,6 +6,9 @@
 #include <string>
 #include <array>
 
+// EXP table: 6 growth rates x 100 levels (defined in pokemon.cpp)
+extern const uint32_t EXP_TABLE[6][100];
+
 // Pokemon data structure for Gen3/Gen6/Gen8/Gen8a/Gen9 (PK3/PB7/PK8/PA8/PA9).
 // Ported from PKHeX.Core/PKM/PA9.cs, G8PKM.cs, PA8.cs, PK3.cs
 struct Pokemon {

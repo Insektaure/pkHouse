@@ -2,6 +2,7 @@
 #include "swish_crypto.h"
 #include "pokemon.h"
 #include "game_type.h"
+#include "wondercard.h"
 #include <array>
 #include <vector>
 #include <string>
@@ -25,6 +26,9 @@ public:
     std::string getBoxName(int box) const;
 
     bool isLoaded() const { return loaded_; }
+
+    // Get trainer info from save file (SV/ZA only, SCBlock-based)
+    TrainerInfo getTrainerInfo() const;
 
     // Debug: verify encrypt(decrypt(file)) == file. Call right after load().
     // Returns "OK" if round-trip matches, or a description of the mismatch.

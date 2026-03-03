@@ -12,6 +12,7 @@ struct TrainerInfo {
     uint32_t id32 = 0;
     uint8_t  gender = 0;
     uint8_t  language = 0;
+    uint8_t  gameVersion = 0; // SL=50, VL=51
     std::u16string otName;
     bool valid = false;
 };

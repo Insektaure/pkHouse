@@ -350,9 +350,10 @@ Pokemon WC9::convertToPK9(const TrainerInfo& trainer) const {
     uint8_t originGame = this->originGame();
     if (originGame != 0) {
         pk.data[0xCE] = originGame;
+    } else if (trainer.gameVersion == 50 || trainer.gameVersion == 51) {
+        pk.data[0xCE] = trainer.gameVersion;
     } else {
-        // Pick SL (50) or VL (51) randomly
-        pk.data[0xCE] = 50 + (std::rand() % 2);
+        pk.data[0xCE] = 50; // fallback to Scarlet
     }
 
     // Language (0xD5) — already computed as pkLang above

@@ -1666,6 +1666,9 @@ void UI::injectWondercard(const WCInfo& info) {
         trainer.valid = true;
     }
 
+    // Set game version from selected game (SL=50, VL=51)
+    trainer.gameVersion = (selectedGame_ == GameType::V) ? 51 : 50;
+
     // Convert WC9 → PK9
     Pokemon pkm = wc.convertToPK9(trainer);
 

@@ -341,9 +341,7 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
         // Applet mode: skip profile, bank-only access
         screen_ = AppScreen::GameSelector;
         availableGames_.assign(std::begin(allGames), std::end(allGames));
-        gameBankCounts_.clear();
-        for (GameType g : availableGames_)
-            gameBankCounts_[g] = BankManager::countBanks(basePath_, g);
+        refreshBankCounts();
         showWorking("Loading game icons...");
         loadGameIcons();
     } else {
@@ -353,9 +351,7 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
         } else {
             screen_ = AppScreen::GameSelector;
             availableGames_.assign(std::begin(allGames), std::end(allGames));
-            gameBankCounts_.clear();
-            for (GameType g : availableGames_)
-                gameBankCounts_[g] = BankManager::countBanks(basePath_, g);
+            refreshBankCounts();
             showWorking("Loading game icons...");
             loadGameIcons();
         }
@@ -363,9 +359,7 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
 #else
     screen_ = AppScreen::GameSelector;
     availableGames_.assign(std::begin(allGames), std::end(allGames));
-    gameBankCounts_.clear();
-    for (GameType g : availableGames_)
-        gameBankCounts_[g] = BankManager::countBanks(basePath_, g);
+    refreshBankCounts();
     showWorking("Loading game icons...");
     loadGameIcons();
 #endif

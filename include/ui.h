@@ -189,6 +189,7 @@ private:
     std::vector<GameType> availableGames_;
     std::unordered_map<GameType, SDL_Texture*> gameIconCache_;
     std::unordered_map<GameType, int> gameBankCounts_;
+    void refreshBankCounts();
     void loadGameIcons();
     void freeGameIcons();
 

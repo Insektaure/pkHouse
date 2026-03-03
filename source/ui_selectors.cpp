@@ -8,6 +8,18 @@
 #include <switch.h>
 #endif
 
+void UI::refreshBankCounts() {
+    gameBankCounts_.clear();
+    for (GameType g : availableGames_) {
+        GameType p = pairedGame(g);
+        auto it = gameBankCounts_.find(p);
+        if (it != gameBankCounts_.end())
+            gameBankCounts_[g] = it->second;
+        else
+            gameBankCounts_[g] = BankManager::countBanks(basePath_, g);
+    }
+}
+
 // --- Profile Selector ---
 
 void UI::drawProfileSelectorFrame() {
@@ -170,9 +182,7 @@ void UI::selectProfile(int index) {
         return;
     }
 
-    gameBankCounts_.clear();
-    for (GameType g : availableGames_)
-        gameBankCounts_[g] = BankManager::countBanks(basePath_, g);
+    refreshBankCounts();
 
     gameSelCursor_ = 0;
     showWorking("Loading game icons...");

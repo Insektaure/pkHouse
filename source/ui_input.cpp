@@ -103,8 +103,8 @@ void UI::handleInput(bool& running) {
 
         // While menu is open, handle menu input only
         if (showMenu_) {
-            bool hasSV = isSV(selectedGame_);
-            int menuCount = appletMode_ ? (hasSV ? 8 : 7) : (hasSV ? 7 : 6);
+            bool hasWC = isSV(selectedGame_) || isSwSh(selectedGame_);
+            int menuCount = appletMode_ ? (hasWC ? 8 : 7) : (hasWC ? 7 : 6);
             auto menuConfirm = [&]() {
                 // 0=Theme, 1=Search (both modes)
                 if (menuSelection_ == 0) {
@@ -121,8 +121,8 @@ void UI::handleInput(bool& running) {
                     clearSearchHighlight();
                     return;
                 }
-                // Wondercard (index 2) for SV games only
-                if (hasSV && menuSelection_ == 2) {
+                // Wondercard (index 2) for SV/SwSh games
+                if (hasWC && menuSelection_ == 2) {
                     showMenu_ = false;
                     wcList_ = scanWondercards(basePath_, selectedGame_);
                     wcListCursor_ = 0;
@@ -130,7 +130,7 @@ void UI::handleInput(bool& running) {
                     showWondercardList_ = true;
                     return;
                 }
-                int sel = menuSelection_ - (hasSV ? 3 : 2); // shift past Theme + Search [+ Wondercard]
+                int sel = menuSelection_ - (hasWC ? 3 : 2); // shift past Theme + Search [+ Wondercard]
                 if (appletMode_) {
                     // sel: 0=Switch Left Bank, 1=Switch Right Bank, 2=Change Game,
                     // 3=Save Banks, 4=Quit
@@ -575,8 +575,8 @@ void UI::handleInput(bool& running) {
             } else if (showMenu_) {
                 if (stickDirY_ != 0)
                 {
-                    bool hasSV = isSV(selectedGame_);
-                    int mc = appletMode_ ? (hasSV ? 8 : 7) : (hasSV ? 7 : 6);
+                    bool hasWC = isSV(selectedGame_) || isSwSh(selectedGame_);
+                    int mc = appletMode_ ? (hasWC ? 8 : 7) : (hasWC ? 7 : 6);
                     menuSelection_ = (menuSelection_ + (stickDirY_ > 0 ? 1 : mc - 1)) % mc;
                 }
             } else if (!showDetail_) {
@@ -1604,14 +1604,6 @@ void UI::injectWondercard(const WCInfo& info) {
     int box = (panel == Panel::Game) ? gameBox_ : bankBox_;
     int slot = cursor_.slot(gridCols());
 
-    // Load full WC9 file
-    WC9 wc;
-    if (!wc.loadFromFile(info.path)) {
-        showWondercardList_ = false;
-        showMessageAndWait("Error", "Failed to load wondercard file.");
-        return;
-    }
-
     // If !hasOT and target is bank panel: show restriction
     if (!info.hasOT) {
         if (appletMode_) {
@@ -1638,18 +1630,15 @@ void UI::injectWondercard(const WCInfo& info) {
     // Get trainer info
     TrainerInfo trainer;
     if (!info.hasOT || !appletMode_) {
-        // Need trainer info from save
         trainer = save_.getTrainerInfo();
         if (!trainer.valid) {
-            // Fallback: construct minimal info
             trainer.id32 = 0;
             trainer.gender = 0;
-            trainer.language = 2; // English
+            trainer.language = 2;
             trainer.valid = true;
         }
     }
     if (!trainer.valid) {
-        // For applet mode with hasOT, we still need some trainer info for HT
         trainer.id32 = 0;
         trainer.gender = 0;
         trainer.language = 2;
@@ -1657,25 +1646,52 @@ void UI::injectWondercard(const WCInfo& info) {
         trainer.valid = true;
     }
 
-    // Set game version from selected game (SL=50, VL=51)
-    trainer.gameVersion = (selectedGame_ == GameType::V) ? 51 : 50;
+    Pokemon pkm;
+    uint16_t natId;
 
-    // Convert WC9 → PK9
-    Pokemon pkm = wc.convertToPK9(trainer);
+    if (isSwSh(selectedGame_)) {
+        // WC8 path
+        WC8 wc;
+        if (!wc.loadFromFile(info.path)) {
+            showWondercardList_ = false;
+            showMessageAndWait("Error", "Failed to load wondercard file.");
+            return;
+        }
+
+        // SW=44, SH=45
+        trainer.gameVersion = (selectedGame_ == GameType::Sh) ? 45 : 44;
+
+        pkm = wc.convertToPK8(trainer);
+        natId = wc.species(); // already national dex
+    } else {
+        // WC9 path
+        WC9 wc;
+        if (!wc.loadFromFile(info.path)) {
+            showWondercardList_ = false;
+            showMessageAndWait("Error", "Failed to load wondercard file.");
+            return;
+        }
+
+        // SL=50, VL=51
+        trainer.gameVersion = (selectedGame_ == GameType::V) ? 51 : 50;
+
+        pkm = wc.convertToPK9(trainer);
+        natId = SpeciesConverter::getNational9(wc.speciesInternal());
+    }
 
     // Ensure correct game type for the panel
     if (panel == Panel::Game && !appletMode_)
         pkm.gameType_ = selectedGame_;
+    else if (isSwSh(selectedGame_))
+        pkm.gameType_ = GameType::Sw;
     else
-        pkm.gameType_ = isSV(selectedGame_) ? GameType::S : selectedGame_;
+        pkm.gameType_ = GameType::S;
 
     // Place the pokemon
     setPokemonAt(box, slot, panel, pkm);
 
     showWondercardList_ = false;
 
-    // Show success
-    uint16_t natId = SpeciesConverter::getNational9(wc.speciesInternal());
     showMessageAndWait("Injected!",
         SpeciesName::get(natId) + " was placed in "
         + (panel == Panel::Game ? (appletMode_ ? "Left" : "Save") : (appletMode_ ? "Right" : "Bank"))

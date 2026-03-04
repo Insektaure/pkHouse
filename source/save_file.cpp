@@ -461,7 +461,39 @@ TrainerInfo SaveFile::getTrainerInfo() const {
     if (blocks_.empty())
         return info;
 
-    // KMyStatus block key: 0xE3E89BD1
+    if (isSwSh(gameType_)) {
+        // SWSH MyStatus8 block key: 0xf25c070e
+        const SCBlock* block = SwishCrypto::findBlock(blocks_, 0xf25c070e);
+        if (!block || block->data.size() < 0xCA)
+            return info;
+
+        const uint8_t* d = block->data.data();
+
+        // ID32 at 0xA0
+        std::memcpy(&info.id32, d + 0xA0, 4);
+
+        // Gender at 0xA5
+        info.gender = d[0xA5];
+
+        // Language at 0xA7
+        info.language = d[0xA7];
+
+        // OT Name at 0xB0 (UTF-16LE, up to 13 chars)
+        for (int i = 0; i < 13; i++) {
+            uint16_t ch;
+            std::memcpy(&ch, d + 0xB0 + i * 2, 2);
+            if (ch == 0) break;
+            info.otName += static_cast<char16_t>(ch);
+        }
+
+        // Game version: SW=44, SH=45
+        info.gameVersion = (gameType_ == GameType::Sw) ? 44 : 45;
+
+        info.valid = !info.otName.empty();
+        return info;
+    }
+
+    // SV/ZA: KMyStatus block key: 0xE3E89BD1
     const SCBlock* block = SwishCrypto::findBlock(blocks_, 0xE3E89BD1);
     if (!block || block->data.size() < 0x30)
         return info;

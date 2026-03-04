@@ -106,3 +106,47 @@ static constexpr WC9DateEntry WC9GiftsChk[] = {
 };
 
 static constexpr size_t WC9GiftsChk_Count = sizeof(WC9GiftsChk) / sizeof(WC9GiftsChk[0]);
+
+// --- WC8 (Sword & Shield) distribution dates ---
+// Reuse same struct format (WC9DateEntry works for WC8 too)
+using WC8DateEntry = WC9DateEntry;
+
+/// WC8Gifts - keyed by CardID
+static constexpr WC8DateEntry WC8Gifts[] = {
+    //  CardID  StartY  SM  SD   EndY  EM  ED  Days  Description
+    { 9008, 2020,  6,  2,    0,  0,  0, 0}, // Hidden Ability Grookey
+    { 9009, 2020,  6,  2,    0,  0,  0, 0}, // Hidden Ability Scorbunny
+    { 9010, 2020,  6,  2,    0,  0,  0, 0}, // Hidden Ability Sobble
+    { 9011, 2020,  6, 30,    0,  0,  0, 0}, // Shiny Zeraora
+    { 9012, 2020, 11, 10,    0,  0,  0, 0}, // Gigantamax Melmetal
+    { 9013, 2021,  6, 17,    0,  0,  0, 0}, // Gigantamax Bulbasaur
+    { 9014, 2021,  6, 17,    0,  0,  0, 0}, // Gigantamax Squirtle
+    { 9029, 2025,  2, 11,    0,  0,  0, 0}, // Shiny Keldeo
+};
+
+static constexpr size_t WC8Gifts_Count = sizeof(WC8Gifts) / sizeof(WC8Gifts[0]);
+
+/// WC8GiftsChk - keyed by Checksum (at WC8 offset 0x2CC)
+static constexpr WC8DateEntry WC8GiftsChk[] = {
+    // Checksum  StartY  SM  SD   EndY   EM  ED  Days  Description
+    // HOME 1.0.0 to 2.0.2 (old format: PID, EC, Height, Weight = fixed/zero)
+    {0xFBBE, 2020,  2, 12, 2023,  5, 29, 0}, // Bulbasaur
+    {0x48F5, 2020,  2, 12, 2023,  5, 29, 0}, // Charmander
+    {0x47DB, 2020,  2, 12, 2023,  5, 29, 0}, // Squirtle
+    {0x671A, 2020,  2, 12, 2023,  5, 29, 0}, // Pikachu
+    {0x81A2, 2020,  2, 12, 2023,  5, 29, 0}, // Original Color Magearna
+    {0x4CC7, 2020,  2, 12, 2023,  5, 29, 0}, // Eevee
+    {0x1A0B, 2020,  2, 12, 2023,  5, 29, 0}, // Rotom
+    {0x1C26, 2020,  2, 12, 2023,  5, 29, 0}, // Pichu
+    // HOME 3.0.0 onward (new format: PID, EC, Height, Weight = random)
+    {0x7124, 2023,  5, 30,    0,  0,  0, 0}, // Bulbasaur
+    {0xC26F, 2023,  5, 30,    0,  0,  0, 0}, // Charmander
+    {0xCD41, 2023,  5, 30,    0,  0,  0, 0}, // Squirtle
+    {0xED80, 2023,  5, 30,    0,  0,  0, 0}, // Pikachu
+    {0x0B38, 2023,  5, 30,    0,  0,  0, 0}, // Original Color Magearna
+    {0xC65D, 2023,  5, 30,    0,  0,  0, 0}, // Eevee
+    {0x9091, 2023,  5, 30,    0,  0,  0, 0}, // Rotom
+    {0x96BC, 2023,  5, 30,    0,  0,  0, 0}, // Pichu
+};
+
+static constexpr size_t WC8GiftsChk_Count = sizeof(WC8GiftsChk) / sizeof(WC8GiftsChk[0]);

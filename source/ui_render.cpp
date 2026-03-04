@@ -680,13 +680,13 @@ void UI::drawMenuPopup() {
     drawRect(0, 0, SCREEN_W, SCREEN_H, T().overlay);
 
     // Menu items differ by mode and game
-    // SV games get a "Wondercard" item after Search
-    bool hasSV = isSV(selectedGame_);
+    // SV/SwSh games get a "Wondercard" item after Search
+    bool hasWC = isSV(selectedGame_) || isSwSh(selectedGame_);
     int menuCount;
     if (appletMode_)
-        menuCount = hasSV ? 8 : 7;
+        menuCount = hasWC ? 8 : 7;
     else
-        menuCount = hasSV ? 7 : 6;
+        menuCount = hasWC ? 7 : 6;
 
     constexpr int POP_W = 380;
     int POP_H = 50 + menuCount * 36 + 30;
@@ -717,13 +717,13 @@ void UI::drawMenuPopup() {
         "Save Banks",
         "Quit"
     };
-    // Build label list, skipping "Wondercard" if not SV
+    // Build label list, skipping "Wondercard" if not SV/SwSh
     const char* visibleLabels[8];
     const char** allLabels = appletMode_ ? labelsApplet : labelsNormal;
     int allCount = appletMode_ ? 8 : 7;
     int vi = 0;
     for (int i = 0; i < allCount; i++) {
-        if (!hasSV && i == 2) continue; // skip Wondercard
+        if (!hasWC && i == 2) continue; // skip Wondercard
         visibleLabels[vi++] = allLabels[i];
     }
 
@@ -987,7 +987,7 @@ void UI::drawWondercardListPopup() {
 
     if (wcList_.empty()) {
         drawTextCentered("No wondercard files found.", popX + POP_W / 2, popY + POP_H / 2 - 20, T().textDim, font_);
-        std::string hint = "Place .wc9 files in:";
+        std::string hint = isSwSh(selectedGame_) ? "Place .wc8 files in:" : "Place .wc9 files in:";
         drawTextCentered(hint, popX + POP_W / 2, popY + POP_H / 2 + 10, T().textDim, fontSmall_);
         std::string path = "sdmc:/switch/pkHouse/wondercards/" + std::string(bankFolderNameOf(selectedGame_)) + "/";
         drawTextCentered(path, popX + POP_W / 2, popY + POP_H / 2 + 30, T().textDim, fontSmall_);

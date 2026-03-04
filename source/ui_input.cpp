@@ -103,7 +103,7 @@ void UI::handleInput(bool& running) {
 
         // While menu is open, handle menu input only
         if (showMenu_) {
-            bool hasWC = isSV(selectedGame_) || isSwSh(selectedGame_) || selectedGame_ == GameType::ZA;
+            bool hasWC = isSV(selectedGame_) || isSwSh(selectedGame_) || selectedGame_ == GameType::ZA || isBDSP(selectedGame_);
             int menuCount = appletMode_ ? (hasWC ? 8 : 7) : (hasWC ? 7 : 6);
             auto menuConfirm = [&]() {
                 // 0=Theme, 1=Search (both modes)
@@ -575,7 +575,7 @@ void UI::handleInput(bool& running) {
             } else if (showMenu_) {
                 if (stickDirY_ != 0)
                 {
-                    bool hasWC = isSV(selectedGame_) || isSwSh(selectedGame_) || selectedGame_ == GameType::ZA;
+                    bool hasWC = isSV(selectedGame_) || isSwSh(selectedGame_) || selectedGame_ == GameType::ZA || isBDSP(selectedGame_);
                     int mc = appletMode_ ? (hasWC ? 8 : 7) : (hasWC ? 7 : 6);
                     menuSelection_ = (menuSelection_ + (stickDirY_ > 0 ? 1 : mc - 1)) % mc;
                 }
@@ -1642,7 +1642,7 @@ void UI::injectWondercard(const WCInfo& info) {
         trainer.id32 = 0;
         trainer.gender = 0;
         trainer.language = 2;
-        trainer.otName = u"Player";
+        trainer.otName = std::u16string(u"Player", 6);
         trainer.valid = true;
     }
 
@@ -1675,6 +1675,18 @@ void UI::injectWondercard(const WCInfo& info) {
         trainer.gameVersion = 52; // ZA
         pkm = wc.convertToPA9(trainer);
         natId = SpeciesConverter::getNational9(wc.speciesInternal());
+    } else if (isBDSP(selectedGame_)) {
+        // WB8 path (Brilliant Diamond / Shining Pearl)
+        WB8 wc;
+        if (!wc.loadFromFile(info.path)) {
+            showWondercardList_ = false;
+            showMessageAndWait("Error", "Failed to load wondercard file.");
+            return;
+        }
+
+        trainer.gameVersion = (selectedGame_ == GameType::BD) ? 48 : 49;
+        pkm = wc.convertToPB8(trainer);
+        natId = wc.species(); // already national dex
     } else {
         // WC9 path (Scarlet/Violet)
         WC9 wc;
@@ -1698,6 +1710,8 @@ void UI::injectWondercard(const WCInfo& info) {
         pkm.gameType_ = GameType::Sw;
     else if (selectedGame_ == GameType::ZA)
         pkm.gameType_ = GameType::ZA;
+    else if (isBDSP(selectedGame_))
+        pkm.gameType_ = GameType::BD;
     else
         pkm.gameType_ = GameType::S;
 

@@ -457,6 +457,41 @@ TrainerInfo SaveFile::getTrainerInfo() const {
     TrainerInfo info;
     info.valid = false;
 
+    // BDSP uses flat binary (not SCBlock) — handle before SCBlock check
+    if (isBDSP(gameType_)) {
+        // MyStatus8b at raw offset 0x79BB4, ConfigSave8b at 0x79B74
+        constexpr size_t STATUS_OFF = 0x79BB4;
+        constexpr size_t CONFIG_OFF = 0x79B74;
+        if (rawData_.size() < STATUS_OFF + 0x50)
+            return info;
+        const uint8_t* s = rawData_.data() + STATUS_OFF;
+        const uint8_t* c = rawData_.data() + CONFIG_OFF;
+
+        // OT Name at MyStatus8b+0x00 (UTF-16LE, up to 13 chars)
+        for (int i = 0; i < 13; i++) {
+            uint16_t ch;
+            std::memcpy(&ch, s + i * 2, 2);
+            if (ch == 0) break;
+            info.otName += static_cast<char16_t>(ch);
+        }
+
+        // ID32 at MyStatus8b+0x1C
+        std::memcpy(&info.id32, s + 0x1C, 4);
+
+        // Gender at MyStatus8b+0x24 — raw byte is Male boolean (1=Male, 0=Female)
+        // PKHeX Gender convention: 0=Male, 1=Female — invert
+        info.gender = s[0x24] ? 0 : 1;
+
+        // Language at ConfigSave8b+0x04 (i32, but we only need low byte)
+        info.language = static_cast<uint8_t>(c[0x04]);
+
+        // Game version: BD=48, SP=49
+        info.gameVersion = (gameType_ == GameType::BD) ? 48 : 49;
+
+        info.valid = !info.otName.empty();
+        return info;
+    }
+
     // Only for SCBlock-based games (SV, ZA, SwSh)
     if (blocks_.empty())
         return info;

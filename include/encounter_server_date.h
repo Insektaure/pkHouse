@@ -164,3 +164,17 @@ static constexpr WA9DateEntry WA9Gifts[] = {
 };
 
 static constexpr size_t WA9Gifts_Count = sizeof(WA9Gifts) / sizeof(WA9Gifts[0]);
+
+/// WB8 (Brilliant Diamond / Shining Pearl) wondercard date table
+using WB8DateEntry = WC9DateEntry;
+
+/// WB8Gifts - keyed by CardID only (all HOME gifts)
+static constexpr WB8DateEntry WB8Gifts[] = {
+    //  CardID  StartY  SM  SD   EndY  EM  ED  Days  Description
+    { 9015, 2022,  5, 18,    0,  0,  0, 0}, // Hidden Ability Turtwig
+    { 9016, 2022,  5, 18,    0,  0,  0, 0}, // Hidden Ability Chimchar
+    { 9017, 2022,  5, 18,    0,  0,  0, 0}, // Hidden Ability Piplup
+    { 9026, 2025,  1, 27,    0,  0,  0, 0}, // Shiny Manaphy
+};
+
+static constexpr size_t WB8Gifts_Count = sizeof(WB8Gifts) / sizeof(WB8Gifts[0]);

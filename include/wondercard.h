@@ -363,5 +363,118 @@ struct WA9 {
     bool loadFromFile(const std::string& path);
 };
 
-// Scan wondercard directory for .wc9/.wc8/.wa9 files
+// WB8 wondercard parser (0x2DC bytes) — Brilliant Diamond / Shining Pearl
+// Ported from PKHeX.Core/MysteryGifts/WB8.cs
+struct WB8 {
+    static constexpr int SIZE = 0x2DC;
+
+    std::array<uint8_t, SIZE> data{};
+
+    // --- Helpers ---
+    uint16_t readU16(int ofs) const {
+        uint16_t v;
+        std::memcpy(&v, data.data() + ofs, 2);
+        return v;
+    }
+    uint32_t readU32(int ofs) const {
+        uint32_t v;
+        std::memcpy(&v, data.data() + ofs, 4);
+        return v;
+    }
+    int32_t readI32(int ofs) const {
+        int32_t v;
+        std::memcpy(&v, data.data() + ofs, 4);
+        return v;
+    }
+
+    // --- Field accessors ---
+    uint16_t cardID()          const { return readU16(0x08); }
+    uint8_t  cardType()        const { return data[0x11]; }
+    uint8_t  restrictVersion() const { return data[0x0E]; }
+
+    uint32_t id32()            const { return readU32(0x20); }
+    uint16_t tid16()           const { return readU16(0x20); }
+    uint16_t sid16()           const { return readU16(0x22); }
+    int32_t  originGame()      const { return readI32(0x24); }
+    uint32_t encryptionConst() const { return readU32(0x28); }
+    uint32_t pid()             const { return readU32(0x2C); }
+
+    // Pokemon data (national dex species)
+    uint16_t species()         const { return readU16(0x288); }
+    uint8_t  form()            const { return data[0x28A]; }
+    uint8_t  gender()          const { return data[0x28B]; }
+    uint8_t  level()           const { return data[0x28C]; }
+    uint8_t  nature()          const { return data[0x28E]; }
+    uint8_t  abilityType()     const { return data[0x28F]; }
+    uint8_t  pidType()         const { return data[0x290]; }
+    uint8_t  metLevel()        const { return data[0x291]; }
+
+    // Moves
+    uint16_t move1()           const { return readU16(0x278); }
+    uint16_t move2()           const { return readU16(0x27A); }
+    uint16_t move3()           const { return readU16(0x27C); }
+    uint16_t move4()           const { return readU16(0x27E); }
+    uint16_t relearnMove1()    const { return readU16(0x280); }
+    uint16_t relearnMove2()    const { return readU16(0x282); }
+    uint16_t relearnMove3()    const { return readU16(0x284); }
+    uint16_t relearnMove4()    const { return readU16(0x286); }
+
+    // Ball, item, locations
+    uint16_t ball()            const { return readU16(0x274); }
+    uint16_t heldItem()        const { return readU16(0x276); }
+    uint16_t eggLocation()     const { return readU16(0x270); }
+    uint16_t metLocation()     const { return readU16(0x272); }
+
+    // IVs (6 individual bytes at 0x2B2-0x2B7)
+    uint8_t ivHp()             const { return data[0x2B2]; }
+    uint8_t ivAtk()            const { return data[0x2B3]; }
+    uint8_t ivDef()            const { return data[0x2B4]; }
+    uint8_t ivSpe()            const { return data[0x2B5]; }
+    uint8_t ivSpA()            const { return data[0x2B6]; }
+    uint8_t ivSpD()            const { return data[0x2B7]; }
+
+    // OT Gender, EVs
+    uint8_t otGender()         const { return data[0x2B8]; }
+    uint8_t evHp()             const { return data[0x2B9]; }
+    uint8_t evAtk()            const { return data[0x2BA]; }
+    uint8_t evDef()            const { return data[0x2BB]; }
+    uint8_t evSpe()            const { return data[0x2BC]; }
+    uint8_t evSpA()            const { return data[0x2BD]; }
+    uint8_t evSpD()            const { return data[0x2BE]; }
+
+    // Contest stats (0x2BF-0x2C4)
+    uint8_t contestCool()      const { return data[0x2BF]; }
+    uint8_t contestBeauty()    const { return data[0x2C0]; }
+    uint8_t contestCute()      const { return data[0x2C1]; }
+    uint8_t contestSmart()     const { return data[0x2C2]; }
+    uint8_t contestTough()     const { return data[0x2C3]; }
+    uint8_t contestSheen()     const { return data[0x2C4]; }
+
+    // Ribbon bytes: 0x292 to 0x2B1 (32 bytes, 0xFF = end)
+    const uint8_t* ribbonData() const { return data.data() + 0x292; }
+    static constexpr int RIBBON_SIZE = 0x20;
+
+    // Nickname: 0x30 + langIdx * 0x20 (UTF-16LE, stride 0x20)
+    std::u16string getNickname(int langIdx) const;
+    bool hasNickname(int langIdx) const;
+
+    // OT Name: 0x150 + langIdx * 0x20 (UTF-16LE, stride 0x20)
+    std::u16string getOTName(int langIdx) const;
+
+    bool isEgg() const { return data[0x28D] == 1; }
+    bool isHOMEGift() const { return cardID() >= 9000; }
+
+    // --- Key methods ---
+    bool isPokemon() const { return cardType() == 1; }
+    bool getHasOT(int langIdx) const;
+    bool canInjectToBank(int langIdx) const { return getHasOT(langIdx); }
+
+    // Convert to PB8 data
+    Pokemon convertToPB8(const TrainerInfo& trainer) const;
+
+    // Load from file
+    bool loadFromFile(const std::string& path);
+};
+
+// Scan wondercard directory for .wc9/.wc8/.wa9/.wb8 files
 std::vector<WCInfo> scanWondercards(const std::string& basePath, GameType game);

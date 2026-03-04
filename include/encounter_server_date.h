@@ -150,3 +150,17 @@ static constexpr WC8DateEntry WC8GiftsChk[] = {
 };
 
 static constexpr size_t WC8GiftsChk_Count = sizeof(WC8GiftsChk) / sizeof(WC8GiftsChk[0]);
+
+/// WA9 (Pokemon Legends: Z-A) wondercard date table
+using WA9DateEntry = WC9DateEntry;
+
+/// WA9Gifts - keyed by CardID only (no checksum fallback)
+static constexpr WA9DateEntry WA9Gifts[] = {
+    //  CardID  StartY  SM  SD   EndY  EM  ED  Days  Description
+    { 1601, 2025, 10, 14, 2026,  3,  1, 2}, // Ralts holding Gardevoirite
+    {  102, 2025, 10, 23, 2026,  2,  1, 2}, // Slowpoke PokéCenter Gift
+    {  101, 2025, 10, 31, 2027,  2,  1, 0}, // PokéCenter Audino Birthday Gift
+    { 1607, 2025, 12,  9, 2026,  1, 20, 0}, // Alpha Charizard
+};
+
+static constexpr size_t WA9Gifts_Count = sizeof(WA9Gifts) / sizeof(WA9Gifts[0]);

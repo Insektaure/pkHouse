@@ -103,7 +103,7 @@ void UI::handleInput(bool& running) {
 
         // While menu is open, handle menu input only
         if (showMenu_) {
-            bool hasWC = isSV(selectedGame_) || isSwSh(selectedGame_);
+            bool hasWC = isSV(selectedGame_) || isSwSh(selectedGame_) || selectedGame_ == GameType::ZA;
             int menuCount = appletMode_ ? (hasWC ? 8 : 7) : (hasWC ? 7 : 6);
             auto menuConfirm = [&]() {
                 // 0=Theme, 1=Search (both modes)
@@ -575,7 +575,7 @@ void UI::handleInput(bool& running) {
             } else if (showMenu_) {
                 if (stickDirY_ != 0)
                 {
-                    bool hasWC = isSV(selectedGame_) || isSwSh(selectedGame_);
+                    bool hasWC = isSV(selectedGame_) || isSwSh(selectedGame_) || selectedGame_ == GameType::ZA;
                     int mc = appletMode_ ? (hasWC ? 8 : 7) : (hasWC ? 7 : 6);
                     menuSelection_ = (menuSelection_ + (stickDirY_ > 0 ? 1 : mc - 1)) % mc;
                 }
@@ -1663,8 +1663,20 @@ void UI::injectWondercard(const WCInfo& info) {
 
         pkm = wc.convertToPK8(trainer);
         natId = wc.species(); // already national dex
+    } else if (selectedGame_ == GameType::ZA) {
+        // WA9 path (Legends: Z-A)
+        WA9 wc;
+        if (!wc.loadFromFile(info.path)) {
+            showWondercardList_ = false;
+            showMessageAndWait("Error", "Failed to load wondercard file.");
+            return;
+        }
+
+        trainer.gameVersion = 52; // ZA
+        pkm = wc.convertToPA9(trainer);
+        natId = SpeciesConverter::getNational9(wc.speciesInternal());
     } else {
-        // WC9 path
+        // WC9 path (Scarlet/Violet)
         WC9 wc;
         if (!wc.loadFromFile(info.path)) {
             showWondercardList_ = false;
@@ -1684,6 +1696,8 @@ void UI::injectWondercard(const WCInfo& info) {
         pkm.gameType_ = selectedGame_;
     else if (isSwSh(selectedGame_))
         pkm.gameType_ = GameType::Sw;
+    else if (selectedGame_ == GameType::ZA)
+        pkm.gameType_ = GameType::ZA;
     else
         pkm.gameType_ = GameType::S;
 

@@ -517,6 +517,12 @@ TrainerInfo SaveFile::getTrainerInfo() const {
         info.otName += static_cast<char16_t>(ch);
     }
 
+    // Game version: ZA=52, SL=50, VL=51
+    if (gameType_ == GameType::ZA)
+        info.gameVersion = 52;
+    else
+        info.gameVersion = (gameType_ == GameType::V) ? 51 : 50;
+
     info.valid = !info.otName.empty();
     return info;
 }

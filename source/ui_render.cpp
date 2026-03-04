@@ -681,7 +681,7 @@ void UI::drawMenuPopup() {
 
     // Menu items differ by mode and game
     // SV/SwSh games get a "Wondercard" item after Search
-    bool hasWC = isSV(selectedGame_) || isSwSh(selectedGame_);
+    bool hasWC = isSV(selectedGame_) || isSwSh(selectedGame_) || selectedGame_ == GameType::ZA;
     int menuCount;
     if (appletMode_)
         menuCount = hasWC ? 8 : 7;
@@ -987,7 +987,8 @@ void UI::drawWondercardListPopup() {
 
     if (wcList_.empty()) {
         drawTextCentered("No wondercard files found.", popX + POP_W / 2, popY + POP_H / 2 - 20, T().textDim, font_);
-        std::string hint = isSwSh(selectedGame_) ? "Place .wc8 files in:" : "Place .wc9 files in:";
+        std::string hint = isSwSh(selectedGame_) ? "Place .wc8 files in:" :
+                           (selectedGame_ == GameType::ZA ? "Place .wa9 files in:" : "Place .wc9 files in:");
         drawTextCentered(hint, popX + POP_W / 2, popY + POP_H / 2 + 10, T().textDim, fontSmall_);
         std::string path = "sdmc:/switch/pkHouse/wondercards/" + std::string(bankFolderNameOf(selectedGame_)) + "/";
         drawTextCentered(path, popX + POP_W / 2, popY + POP_H / 2 + 30, T().textDim, fontSmall_);

@@ -457,6 +457,37 @@ TrainerInfo SaveFile::getTrainerInfo() const {
     TrainerInfo info;
     info.valid = false;
 
+    // LGPE uses flat binary — MyStatus7b at offset 0x01000
+    if (isLGPE(gameType_)) {
+        constexpr size_t STATUS_OFF = 0x01000;
+        if (rawData_.size() < STATUS_OFF + 0x60)
+            return info;
+        const uint8_t* s = rawData_.data() + STATUS_OFF;
+
+        // ID32 at 0x00
+        std::memcpy(&info.id32, s + 0x00, 4);
+
+        // Gender at 0x05
+        info.gender = s[0x05];
+
+        // Language at 0x35
+        info.language = s[0x35];
+
+        // OT Name at 0x38 (UTF-16LE, up to 12 chars)
+        for (int i = 0; i < 12; i++) {
+            uint16_t ch;
+            std::memcpy(&ch, s + 0x38 + i * 2, 2);
+            if (ch == 0) break;
+            info.otName += static_cast<char16_t>(ch);
+        }
+
+        // Game version: GP=42, GE=43
+        info.gameVersion = (gameType_ == GameType::GP) ? 42 : 43;
+
+        info.valid = !info.otName.empty();
+        return info;
+    }
+
     // BDSP uses flat binary (not SCBlock) — handle before SCBlock check
     if (isBDSP(gameType_)) {
         // MyStatus8b at raw offset 0x79BB4, ConfigSave8b at 0x79B74

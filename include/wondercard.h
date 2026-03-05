@@ -581,5 +581,114 @@ struct WA8 {
     bool loadFromFile(const std::string& path);
 };
 
-// Scan wondercard directory for .wc9/.wc8/.wa9/.wb8/.wa8 files
+// WB7 wondercard parser (0x310 bytes) — Let's Go Pikachu/Eevee
+// Ported from PKHeX.Core/MysteryGifts/WB7.cs
+struct WB7 {
+    static constexpr int SIZE = 0x310;
+    static constexpr int CARD_START = 0x208;
+
+    std::array<uint8_t, SIZE> data{};
+
+    // --- Helpers ---
+    uint16_t readU16(int ofs) const { return data[ofs] | (data[ofs+1] << 8); }
+    uint32_t readU32(int ofs) const { return data[ofs] | (data[ofs+1]<<8) | (data[ofs+2]<<16) | (data[ofs+3]<<24); }
+    int32_t readI32(int ofs) const { uint32_t v = readU32(ofs); return static_cast<int32_t>(v); }
+
+    // Card-relative accessor
+    uint8_t card(int ofs) const { return data[CARD_START + ofs]; }
+    uint16_t cardU16(int ofs) const { return readU16(CARD_START + ofs); }
+    uint32_t cardU32(int ofs) const { return readU32(CARD_START + ofs); }
+    int32_t cardI32(int ofs) const { return readI32(CARD_START + ofs); }
+
+    // --- Field accessors ---
+    uint16_t cardID() const { return cardU16(0x00); }
+    uint8_t cardType() const { return card(0x51); }
+    uint8_t restrictVersion() const { return data[0x00]; }
+
+    // Card date: encoded as (year-2000)*10000 + month*100 + day
+    uint32_t rawDate() const { return cardU32(0x4C); }
+
+    // Trainer / ID (Card-relative)
+    uint32_t id32() const { return cardU32(0x68); }
+    uint16_t tid16() const { return cardU16(0x68); }
+    uint16_t sid16() const { return cardU16(0x6A); }
+    int32_t originGame() const { return cardI32(0x6C); }
+    uint32_t encryptionConst() const { return cardU32(0x70); }
+    uint8_t ball() const { return card(0x76); } // u8, NOT u16!
+    uint16_t heldItem() const { return cardU16(0x78); }
+
+    // Moves
+    uint16_t move1() const { return cardU16(0x7A); }
+    uint16_t move2() const { return cardU16(0x7C); }
+    uint16_t move3() const { return cardU16(0x7E); }
+    uint16_t move4() const { return cardU16(0x80); }
+
+    // Pokemon attributes
+    uint16_t species() const { return cardU16(0x82); } // National dex
+    uint8_t form() const { return card(0x84); }
+    uint8_t nature() const { return card(0xA0); }
+    uint8_t gender() const { return card(0xA1); }
+    uint8_t abilityType() const { return isHOMEGift() ? card(0xA2) : 3; }
+    uint8_t pidType() const { return card(0xA3); } // ShinyType6: 0=Fixed,1=Rand,2=Always,3=Never
+    uint16_t eggLocation() const { return cardU16(0xA4); }
+    uint16_t metLocation() const { return cardU16(0xA6); }
+    uint8_t metLevel() const { return card(0xA8); }
+
+    // IVs
+    uint8_t ivHp() const { return card(0xAF); }
+    uint8_t ivAtk() const { return card(0xB0); }
+    uint8_t ivDef() const { return card(0xB1); }
+    uint8_t ivSpe() const { return card(0xB2); }
+    uint8_t ivSpA() const { return card(0xB3); }
+    uint8_t ivSpD() const { return card(0xB4); }
+
+    uint8_t otGender() const { return card(0xB5); }
+    uint8_t level() const { return card(0xD0); }
+    bool isEgg() const { return card(0xD1) == 1; }
+    uint32_t pid() const { return cardU32(0xD4); }
+
+    // Relearn moves
+    uint16_t relearnMove1() const { return cardU16(0xD8); }
+    uint16_t relearnMove2() const { return cardU16(0xDA); }
+    uint16_t relearnMove3() const { return cardU16(0xDC); }
+    uint16_t relearnMove4() const { return cardU16(0xDE); }
+
+    // Awakening Values
+    uint8_t avHp() const { return card(0xE5); }
+    uint8_t avAtk() const { return card(0xE6); }
+    uint8_t avDef() const { return card(0xE7); }
+    uint8_t avSpe() const { return card(0xE8); }
+    uint8_t avSpA() const { return card(0xE9); }
+    uint8_t avSpD() const { return card(0xEA); }
+
+    // Ribbons (raw data offsets, NOT Card-relative)
+    uint8_t rib0() const { return data[0x74]; }
+    uint8_t rib1() const { return data[0x75]; }
+
+    // Language data at raw offset 0x1D8 + langIdx
+    uint8_t languageData(int langIdx) const { return data[0x1D8 + langIdx]; }
+
+    bool isHOMEGift() const { return cardID() >= 9000; }
+    bool isMainlandChinaGift() const { return cardID() > 1500 && cardID() <= 1503; }
+
+    // Nickname: 0x04 + langIdx * 0x1A (UTF-16LE, up to 12 chars)
+    std::u16string getNickname(int langIdx) const;
+    bool hasNickname(int langIdx) const;
+
+    // OT Name: 0xEE + langIdx * 0x1A (UTF-16LE, up to 12 chars)
+    std::u16string getOTName(int langIdx) const;
+
+    // --- Key methods ---
+    bool isPokemon() const { return cardType() == 0; } // NOTE: 0 for Pokemon, 1 for Item!
+    bool getHasOT(int langIdx) const;
+    bool canInjectToBank(int langIdx) const { return getHasOT(langIdx); }
+
+    // Convert to PB7 data
+    Pokemon convertToPB7(const TrainerInfo& trainer) const;
+
+    // Load from file
+    bool loadFromFile(const std::string& path);
+};
+
+// Scan wondercard directory for .wc9/.wc8/.wa9/.wb8/.wa8/.wb7/.wb7full files
 std::vector<WCInfo> scanWondercards(const std::string& basePath, GameType game);

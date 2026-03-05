@@ -197,3 +197,12 @@ static constexpr WA8DateEntry WA8Gifts[] = {
 };
 
 static constexpr size_t WA8Gifts_Count = sizeof(WA8Gifts) / sizeof(WA8Gifts[0]);
+
+/// WB7Gifts - Let's Go Pikachu/Eevee distribution dates (keyed by CardID)
+using WB7DateEntry = WC9DateEntry;
+static constexpr WB7DateEntry WB7Gifts[] = {
+    //  CardID  StartY  SM  SD   EndY  EM  ED  Days  Description
+    { 9028, 2025,  2, 11,     0,  0,  0, 0}, // Shiny Meltan (HOME)
+};
+
+static constexpr size_t WB7Gifts_Count = sizeof(WB7Gifts) / sizeof(WB7Gifts[0]);

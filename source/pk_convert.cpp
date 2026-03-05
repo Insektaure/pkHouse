@@ -53,11 +53,24 @@ namespace G8 {
     constexpr int HT_LANG   = 0xC3;
     constexpr int CUR_HANDLER = 0xC4;
     constexpr int HT_FRIENDSHIP = 0xC8;
+    constexpr int HT_MEM_INTENSITY = 0xC9;
+    constexpr int HT_MEM        = 0xCA;
+    constexpr int HT_MEM_FEELING = 0xCB;
+    constexpr int HT_MEM_VAR    = 0xCC; // u16
+    constexpr int HT_TRAINER_ID = 0xC6; // u16
+    constexpr int FULLNESS      = 0xDC;
+    constexpr int ENJOYMENT     = 0xDD;
     constexpr int VERSION   = 0xDE;
+    constexpr int BATTLE_VERSION = 0xDF;
     constexpr int LANGUAGE  = 0xE2;
+    constexpr int FORM_ARGUMENT = 0xE4; // u32
     // Block D
     constexpr int OT_NAME   = 0xF8; // 26 bytes
     constexpr int OT_FRIENDSHIP = 0x112;
+    constexpr int OT_MEM_INTENSITY = 0x113;
+    constexpr int OT_MEM        = 0x114;
+    constexpr int OT_MEM_VAR    = 0x116; // u16
+    constexpr int OT_MEM_FEELING = 0x118;
     constexpr int EGG_YEAR  = 0x119;
     constexpr int MET_YEAR  = 0x11C;
     constexpr int EGG_LOC   = 0x120;
@@ -100,11 +113,24 @@ namespace G8A {
     constexpr int HT_LANG   = 0xD3;
     constexpr int CUR_HANDLER = 0xD4;
     constexpr int HT_FRIENDSHIP = 0xD8;
+    constexpr int HT_MEM_INTENSITY = 0xD9;
+    constexpr int HT_MEM        = 0xDA;
+    constexpr int HT_MEM_FEELING = 0xDB;
+    constexpr int HT_MEM_VAR    = 0xDC; // u16
+    constexpr int HT_TRAINER_ID = 0xD6; // u16
+    constexpr int FULLNESS      = 0xEC;
+    constexpr int ENJOYMENT     = 0xED;
     constexpr int VERSION   = 0xEE;
+    constexpr int BATTLE_VERSION = 0xEF;
     constexpr int LANGUAGE  = 0xF2;
+    constexpr int FORM_ARGUMENT = 0xF4; // u32
     // Block D (starts at 0x110 instead of 0xF8)
     constexpr int OT_NAME   = 0x110;
     constexpr int OT_FRIENDSHIP = 0x12A;
+    constexpr int OT_MEM_INTENSITY = 0x12B;
+    constexpr int OT_MEM        = 0x12C;
+    constexpr int OT_MEM_VAR    = 0x12E; // u16
+    constexpr int OT_MEM_FEELING = 0x130;
     constexpr int EGG_YEAR  = 0x131;
     constexpr int MET_YEAR  = 0x134;
     constexpr int BALL      = 0x137;
@@ -116,6 +142,8 @@ namespace G8A {
     constexpr int TRACKER   = 0x14D; // 8 bytes
     constexpr int STAT_HPCURRENT = 0x92;  // u16, in stored format
     constexpr int AFFIXED_RIBBON = 0xF8;  // i16, -1 = None
+    constexpr int HEIGHT_ABS = 0xAC; // float (4 bytes)
+    constexpr int WEIGHT_ABS = 0xB0; // float (4 bytes)
 }
 
 // --- PK9/PA9 offsets (80-byte blocks, but different field layout) ---
@@ -304,6 +332,22 @@ static int getGanbaruBias(int iv) {
     return 0;
 }
 
+// PA8 HeightAbsolute/WeightAbsolute (from PKHeX PA8.cs)
+static float getSizeRatio(uint8_t scalar) {
+    return scalar / 255.0f * 0.40000004f + 0.8f;
+}
+
+static void computeAndSetHeightWeightPA8(uint8_t* d, uint16_t species, uint8_t form) {
+    uint8_t hs = d[0x50]; // HeightScalar
+    uint8_t ws = d[0x51]; // WeightScalar
+    float hr = getSizeRatio(hs);
+    float wr = getSizeRatio(ws);
+    float heightAbs = hr * PersonalLA::getHeight(species, form);
+    float weightAbs = hr * wr * PersonalLA::getWeight(species, form);
+    writeFloat(d, G8A::HEIGHT_ABS, heightAbs);
+    writeFloat(d, G8A::WEIGHT_ABS, weightAbs);
+}
+
 // PLA HP formula (from PKHeX PA8.cs):
 //   HP = GetGanbaruStat(baseHP, iv, gv, level) + GetStatHp(baseHP, level)
 //   GetStatHp = (int)((level/100.0f + 1.0f) * baseHP + level)
@@ -443,9 +487,11 @@ Pokemon PKConvert::convertPK8toPK9(const Pokemon& src) {
     d[G9::HEIGHT_SCALAR] = s[G8::HEIGHT_SCALAR];
     d[G9::WEIGHT_SCALAR] = s[G8::WEIGHT_SCALAR];
     d[G9::SCALE] = 128; // default scale
-    // Clear PK8 positions (now repurposed in PK9)
+    // Clear PK8 positions and DLC TM Record Flags area (PK9 0x4B-0x57)
+    std::memset(d + 0x4B, 0, 13); // PK9 DLC TM flags
     d[G8::HEIGHT_SCALAR] = 0;
     d[G8::WEIGHT_SCALAR] = 0;
+    std::memset(d + 0x52, 0, 6); // PK8 unused 0x52-0x57
 
     // Clear Gigantamax flag (bit 4 of 0x16) - not applicable in Gen9
     d[0x16] &= ~(1 << 4);
@@ -453,21 +499,29 @@ Pokemon PKConvert::convertPK8toPK9(const Pokemon& src) {
     // Clear DynamaxLevel (no longer relevant in Gen9)
     d[G8::DYNAMAX_LEVEL] = 0;
 
-    // Set TeraType based on species' primary type
+    // Set TeraType from species' primary type
+    // TODO: PKHeX uses Type2 if Type1==Normal, but we lack Type2 data
     d[G9::TERA_TYPE_ORIG] = PersonalSV::getType1(species, form);
     d[G9::TERA_TYPE_OVER] = 19; // 19 = OverrideNone
 
     // AffixedRibbon: PK8 at 0xE8 -> PK9 at 0xD4
     d[G9::AFFIXED_RIBBON] = s[G8::AFFIXED_RIBBON];
-    d[G8::AFFIXED_RIBBON] = 0; // clear old position
+
+    // Clear PK8 Block C stale data (PokeJob 0xCE-0xDB, Fullness 0xDC, Enjoyment 0xDD)
+    std::memset(d + 0xCE, 0, 16); // 0xCE-0xDD
 
     // Version: PK8 at 0xDE -> PK9 at 0xCE
     d[G9::VERSION] = s[G8::VERSION];
-    d[G8::VERSION] = 0; // clear old position
-
+    // BattleVersion: PK8 at 0xDF -> PK9 at 0xCF
+    d[0xCF] = s[0xDF];
+    // FormArgument: PK8 at 0xE4 -> PK9 at 0xD0
+    writeU32(d, 0xD0, readU32(s, 0xE4));
     // Language: PK8 at 0xE2 -> PK9 at 0xD5
     d[G9::LANGUAGE] = s[G8::LANGUAGE];
-    d[G8::LANGUAGE] = 0; // clear old position
+
+    // Clear relocated PK8 Block C/D fields
+    std::memset(d + 0xD6, 0, 0xF8 - 0xD6); // PK9 extra bytes 0xD6-0xF7
+    d[G8::AFFIXED_RIBBON] = 0;
 
     // ObedienceLevel: set to MetLevel (PK8 doesn't have this)
     d[G9::OBEDIENCE_LEVEL] = s[G8::MET_LEVEL_OT_GENDER] & 0x7F;
@@ -519,9 +573,9 @@ Pokemon PKConvert::convertPK9toPK8(const Pokemon& src) {
     // HeightScalar/WeightScalar: PK9 at 0x48-0x49 -> PK8 at 0x50-0x51
     d[G8::HEIGHT_SCALAR] = s[G9::HEIGHT_SCALAR];
     d[G8::WEIGHT_SCALAR] = s[G9::WEIGHT_SCALAR];
-    d[G9::HEIGHT_SCALAR] = 0;
-    d[G9::WEIGHT_SCALAR] = 0;
-    d[G9::SCALE] = 0;
+    // Clear PK9 scalars and DLC TM Record Flags (0x48-0x57)
+    writeU32(d, 0x48, 0); // PK8 Sociability = 0
+    std::memset(d + 0x4C, 0, 12); // 0x4C-0x57: PK9 DLC TM flags -> PK8 unused
 
     // DynamaxLevel defaults to 0
     d[G8::DYNAMAX_LEVEL] = 0;
@@ -531,22 +585,29 @@ Pokemon PKConvert::convertPK9toPK8(const Pokemon& src) {
 
     // AffixedRibbon: PK9 at 0xD4 -> PK8 at 0xE8
     d[G8::AFFIXED_RIBBON] = s[G9::AFFIXED_RIBBON];
-    d[G9::AFFIXED_RIBBON] = 0; // clear old position
+
+    // Clear PK9 Block C area that maps to PK8 PokeJob/Fullness/Enjoyment
+    std::memset(d + 0xCE, 0, 16); // 0xCE-0xDD
 
     // Version: PK9 at 0xCE -> PK8 at 0xDE
     d[G8::VERSION] = s[G9::VERSION];
-    d[G9::VERSION] = 0;
-
+    // BattleVersion: PK9 at 0xCF -> PK8 at 0xDF
+    d[0xDF] = s[0xCF];
+    // FormArgument: PK9 at 0xD0 -> PK8 at 0xE4
+    writeU32(d, 0xE4, readU32(s, 0xD0));
     // Language: PK9 at 0xD5 -> PK8 at 0xE2
     d[G8::LANGUAGE] = s[G9::LANGUAGE];
-    d[G9::LANGUAGE] = 0;
+
+    // Clear relocated PK9 positions
+    std::memset(d + 0xE5, 0, 3); // leftover from PK9 Block C area after FormArgument
 
     // Tracker: PK9 at 0x127 -> PK8 at 0x135
     uint64_t tracker = readU64(s, G9::TRACKER);
     if (tracker == 0)
         tracker = generateTracker();
-    std::memset(d + G9::TRACKER, 0, 25); // clear PK9 record area
-    std::memset(d + G8::RECORD_FLAGS, 0, 14); // clear PK8 record flags
+    // Clear PK9 record + tracker area (0x127-0x147), then set PK8 regions
+    std::memset(d + G9::TRACKER, 0, 0x148 - G9::TRACKER); // clear 0x127-0x147
+    std::memset(d + G8::RECORD_FLAGS, 0, 14); // clear PK8 record flags 0x127-0x134
     writeU64(d, G8::TRACKER, tracker);
 
     // Refresh checksum
@@ -578,8 +639,13 @@ Pokemon PKConvert::convertPK8toPA8(const Pokemon& src) {
     // Block A core (0x00-0x53): copy directly (shared offsets)
     std::memcpy(d, s, 0x54);
 
-    // Clear Gigantamax flag
-    d[0x16] &= ~(1 << 4);
+    // Sanitize PA8-specific fields within Block A:
+    // AlphaMove (0x3E-0x3F): PK8 has ribbon flags here, PA8 uses it for AlphaMove
+    writeU16(d, G8A::ALPHA_MOVE, 0);
+    // Clear Gigantamax(bit4), IsAlpha(bit5), IsNoble(bit6) flags
+    d[0x16] &= ~((1 << 4) | (1 << 5) | (1 << 6));
+    // Scale (0x52): PK8 has unused/padding here, set to average (128)
+    d[0x52] = 128;
 
     // --- Moves: PK8 0x72-0x79 -> PA8 0x54-0x5B ---
     for (int i = 0; i < 4; i++)
@@ -608,19 +674,35 @@ Pokemon PKConvert::convertPK8toPA8(const Pokemon& src) {
 
     // --- Block C: HT info ---
     copyName(d, G8A::HT_NAME, s, G8::HT_NAME);
+    writeU16(d, G8A::HT_TRAINER_ID, readU16(s, G8::HT_TRAINER_ID));
     d[G8A::HT_GENDER] = s[G8::HT_GENDER];
     d[G8A::HT_LANG] = s[G8::HT_LANG];
     d[G8A::CUR_HANDLER] = s[G8::CUR_HANDLER];
     d[G8A::HT_FRIENDSHIP] = s[G8::HT_FRIENDSHIP];
+    // HT Memory
+    d[G8A::HT_MEM_INTENSITY] = s[G8::HT_MEM_INTENSITY];
+    d[G8A::HT_MEM]           = s[G8::HT_MEM];
+    d[G8A::HT_MEM_FEELING]   = s[G8::HT_MEM_FEELING];
+    writeU16(d, G8A::HT_MEM_VAR, readU16(s, G8::HT_MEM_VAR));
 
     // Version: PK8 0xDE -> PA8 0xEE (sanitize: PLA doesn't recognize >= 50)
     d[G8A::VERSION] = s[G8::VERSION] >= 50 ? gameVersionOf(GameType::LA) : s[G8::VERSION];
+    d[G8A::BATTLE_VERSION] = s[G8::BATTLE_VERSION];
+    d[G8A::FULLNESS] = s[G8::FULLNESS];
+    d[G8A::ENJOYMENT] = s[G8::ENJOYMENT];
     // Language: PK8 0xE2 -> PA8 0xF2
     d[G8A::LANGUAGE] = s[G8::LANGUAGE];
+    // FormArgument: PK8 0xE4 -> PA8 0xF4
+    writeU32(d, G8A::FORM_ARGUMENT, readU32(s, G8::FORM_ARGUMENT));
 
     // --- Block D: OT info ---
     copyName(d, G8A::OT_NAME, s, G8::OT_NAME);
     d[G8A::OT_FRIENDSHIP] = s[G8::OT_FRIENDSHIP];
+    // OT Memory
+    d[G8A::OT_MEM_INTENSITY] = s[G8::OT_MEM_INTENSITY];
+    d[G8A::OT_MEM]           = s[G8::OT_MEM];
+    writeU16(d, G8A::OT_MEM_VAR, readU16(s, G8::OT_MEM_VAR));
+    d[G8A::OT_MEM_FEELING]   = s[G8::OT_MEM_FEELING];
 
     // Dates
     d[G8A::EGG_YEAR]     = s[G8::EGG_YEAR];
@@ -636,6 +718,8 @@ Pokemon PKConvert::convertPK8toPA8(const Pokemon& src) {
     writeU16(d, G8A::MET_LOC, readU16(s, G8::MET_LOC));
     d[G8A::MET_LEVEL_OT_GENDER] = s[G8::MET_LEVEL_OT_GENDER];
     d[G8A::HYPER_TRAIN] = s[G8::HYPER_TRAIN];
+    // RecordFlags: PK8 0x127 (14 bytes) -> PA8 0x13F (14 bytes)
+    std::memcpy(d + G8A::RECORD_FLAGS, s + G8::RECORD_FLAGS, 14);
 
     // Tracker
     uint64_t tracker = readU64(s, G8::TRACKER);
@@ -646,8 +730,24 @@ Pokemon PKConvert::convertPK8toPA8(const Pokemon& src) {
     // AffixedRibbon: -1 (None) — PA8 default (sbyte at 0xF8)
     d[G8A::AFFIXED_RIBBON] = 0xFF;
 
+    // HeightAbsolute / WeightAbsolute (PA8-specific floats at 0xAC/0xB0)
+    computeAndSetHeightWeightPA8(d, species, form);
+
+    // Compute level safely: prefer party stats level, fallback to EXP
+    uint8_t level = s[G8::STAT_LEVEL];
+    if (level == 0) {
+        // Compute from EXP using LA growth rates
+        uint32_t exp = readU32(s, G8::EXP);
+        uint8_t growth = PersonalLA::getGrowthRate(species, form);
+        level = 1;
+        for (int lv = 1; lv < 100; lv++) {
+            if (EXP_TABLE[growth][lv] > exp) break;
+            level = (uint8_t)(lv + 1);
+        }
+    }
+
     // Compute Stat_HPCurrent (at 0x92 in PA8 stored format)
-    computeAndSetStatHPPA8(d, species, form, src.level());
+    computeAndSetStatHPPA8(d, species, form, level);
 
     // Checksum (PA8 uses SIZE_8ASTORED = 0x168)
     writeU16(d, G8::CHECKSUM, computeChecksum(d, PokeCrypto::SIZE_8ASTORED));
@@ -701,16 +801,32 @@ Pokemon PKConvert::convertPA8toPK8(const Pokemon& src) {
 
     // --- Block C ---
     copyName(d, G8::HT_NAME, s, G8A::HT_NAME);
+    writeU16(d, G8::HT_TRAINER_ID, readU16(s, G8A::HT_TRAINER_ID));
     d[G8::HT_GENDER] = s[G8A::HT_GENDER];
     d[G8::HT_LANG] = s[G8A::HT_LANG];
     d[G8::CUR_HANDLER] = s[G8A::CUR_HANDLER];
     d[G8::HT_FRIENDSHIP] = s[G8A::HT_FRIENDSHIP];
+    // HT Memory
+    d[G8::HT_MEM_INTENSITY] = s[G8A::HT_MEM_INTENSITY];
+    d[G8::HT_MEM]           = s[G8A::HT_MEM];
+    d[G8::HT_MEM_FEELING]   = s[G8A::HT_MEM_FEELING];
+    writeU16(d, G8::HT_MEM_VAR, readU16(s, G8A::HT_MEM_VAR));
+
+    d[G8::FULLNESS] = s[G8A::FULLNESS];
+    d[G8::ENJOYMENT] = s[G8A::ENJOYMENT];
     d[G8::VERSION] = s[G8A::VERSION];
+    d[G8::BATTLE_VERSION] = s[G8A::BATTLE_VERSION];
     d[G8::LANGUAGE] = s[G8A::LANGUAGE];
+    writeU32(d, G8::FORM_ARGUMENT, readU32(s, G8A::FORM_ARGUMENT));
 
     // --- Block D ---
     copyName(d, G8::OT_NAME, s, G8A::OT_NAME);
     d[G8::OT_FRIENDSHIP] = s[G8A::OT_FRIENDSHIP];
+    // OT Memory
+    d[G8::OT_MEM_INTENSITY] = s[G8A::OT_MEM_INTENSITY];
+    d[G8::OT_MEM]           = s[G8A::OT_MEM];
+    writeU16(d, G8::OT_MEM_VAR, readU16(s, G8A::OT_MEM_VAR));
+    d[G8::OT_MEM_FEELING]   = s[G8A::OT_MEM_FEELING];
 
     // Dates
     d[G8::EGG_YEAR]     = s[G8A::EGG_YEAR];
@@ -725,6 +841,8 @@ Pokemon PKConvert::convertPA8toPK8(const Pokemon& src) {
     writeU16(d, G8::MET_LOC, readU16(s, G8A::MET_LOC));
     d[G8::MET_LEVEL_OT_GENDER] = s[G8A::MET_LEVEL_OT_GENDER];
     d[G8::HYPER_TRAIN] = s[G8A::HYPER_TRAIN];
+    // RecordFlags: PA8 0x13F (14 bytes) -> PK8 0x127 (14 bytes)
+    std::memcpy(d + G8::RECORD_FLAGS, s + G8A::RECORD_FLAGS, 14);
 
     // AffixedRibbon: PA8 at 0xF8 -> PK8 at 0xE8
     d[G8::AFFIXED_RIBBON] = s[G8A::AFFIXED_RIBBON];
@@ -803,6 +921,15 @@ Pokemon PKConvert::convertPB7toPK8(const Pokemon& src) {
     // Pokerus
     d[0x32] = s[G7::POKERUS];
 
+    // MarkingValue: PB7 0x16 -> PK8 0x18
+    writeU16(d, 0x18, readU16(s, 0x16));
+
+    // Ribbons: PB7 0x30-0x36 -> PK8 0x34-0x3A
+    std::memcpy(d + 0x34, s + 0x30, 7);
+    // Contest/Battle memory ribbon counts: PB7 0x38-0x39 -> PK8 0x3C-0x3D
+    d[0x3C] = s[0x38];
+    d[0x3D] = s[0x39];
+
     // HeightScalar/WeightScalar
     d[G8::HEIGHT_SCALAR] = s[G7::HEIGHT_SCALAR];
     d[G8::WEIGHT_SCALAR] = s[G7::WEIGHT_SCALAR];
@@ -837,6 +964,9 @@ Pokemon PKConvert::convertPB7toPK8(const Pokemon& src) {
     // HT Name: PB7 0x78 -> PK8 0xA8
     copyName(d, G8::HT_NAME, s, G7::HT_NAME);
     d[G8::HT_GENDER] = s[G7::HT_GENDER];
+    // HT_LANG: PB7 has no HT language; set from OT language if traded
+    if (s[G7::CUR_HANDLER] != 0)
+        d[G8::HT_LANG] = s[G7::LANGUAGE];
     d[G8::CUR_HANDLER] = s[G7::CUR_HANDLER];
     d[G8::HT_FRIENDSHIP] = s[G7::HT_FRIENDSHIP];
 

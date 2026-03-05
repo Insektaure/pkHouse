@@ -174,6 +174,27 @@ Two result modes are available (selectable in the filter with Left/Right, defaul
 - **Highlight** (default): Returns to the box view with matching Pokemon outlined in color and non-matching Pokemon dimmed. The highlight follows Pokemon as you move them between slots. In box view (ZL/ZR), boxes containing matches are outlined and matching slots are highlighted in the preview. Press **B** to clear highlights, or open the menu to start a new search.
 - **List**: Results are shown as a scrollable list with status badges ([S] shiny, [A] alpha, [E] egg), species name, level, gender, and location. Press **A** to jump directly to a result in the box view, **L/R** to skip 10 results (hold to auto-repeat), **X** to go back and adjust filters, or **B** to close.
 
+### Wondercard Injection
+
+Inject event wondercard files directly into your save as fully formed Pokemon. Access from the **menu** (+ button → Wondercard).
+
+Place wondercard files in the corresponding folder on your SD card:
+
+| Game Family | Folder | File Extension |
+|-------------|--------|----------------|
+| Let's Go Pikachu / Eevee | `wondercards/LetsGo/` | `.wb7` / `.wb7full` |
+| Sword / Shield | `wondercards/SwordShield/` | `.wc8` |
+| Brilliant Diamond / Shining Pearl | `wondercards/BDSP/` | `.wb8` |
+| Legends: Arceus | `wondercards/LegendsArceus/` | `.wa8` |
+| Scarlet / Violet | `wondercards/ScarletViolet/` | `.wc9` |
+| Legends: Z-A | `wondercards/LegendsZA/` | `.wa9` |
+
+The wondercard list shows each card's species, level, and shiny status. Select a card and press **A** to inject it into the currently selected box slot.
+
+The injected Pokemon is fully generated from the wondercard data — PID, IVs, nature, ability, moves, OT, and all metadata are set according to the event's rules, matching official distribution behavior.
+
+Wondercard files can be downloaded from the [Project Pokemon EventsGallery](https://github.com/projectpokemon/EventsGallery) repository.
+
 ### Save Integrity
 
 - **SCBlock saves** (ZA, SV, SwSh, PLA): Decrypted, modified, and re-encrypted. A round-trip verification runs on load to confirm the cycle is lossless.
@@ -239,6 +260,7 @@ When switching banks, the selector appears on the side being switched while the 
 |--------|-------------|
 | Theme | Open the theme selector |
 | Search | Search for Pokemon across both panels |
+| Wondercard | Inject event wondercards as Pokemon (supported games only) |
 | Switch Bank | Save game and bank, return to bank selector |
 | Change Game | Save everything, return to game selector |
 | Save & Quit | Save everything and exit |
@@ -250,6 +272,7 @@ When switching banks, the selector appears on the side being switched while the 
 |--------|-------------|
 | Theme | Open the theme selector |
 | Search | Search for Pokemon across both panels |
+| Wondercard | Inject event wondercards as Pokemon (supported games only) |
 | Switch Left Bank | Save both banks, switch the left bank |
 | Switch Right Bank | Save both banks, switch the right bank |
 | Change Game | Save both banks, return to game selector |

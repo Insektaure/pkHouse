@@ -112,6 +112,25 @@ inline const char* formatFamilyShortName(FormatFamily f) {
     return "?";
 }
 
+// PKHeX GameVersion byte value (stored in Pokemon data as origin game)
+inline uint8_t gameVersionOf(GameType g) {
+    switch (g) {
+        case GameType::GP: return 42;
+        case GameType::GE: return 43;
+        case GameType::Sw: return 44;
+        case GameType::Sh: return 45;
+        case GameType::LA: return 47;
+        case GameType::BD: return 48;
+        case GameType::SP: return 49;
+        case GameType::S:  return 50;
+        case GameType::V:  return 51;
+        case GameType::ZA: return 52;
+        case GameType::FR: return 4;
+        case GameType::LG: return 5;
+    }
+    return 0;
+}
+
 // Whether a game family supports cross-generation transfers
 inline bool supportsUniversalBank(GameType g) {
     return !isFRLG(g); // FRLG too different (Gen3)

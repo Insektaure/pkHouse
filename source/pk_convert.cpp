@@ -65,6 +65,7 @@ namespace G8 {
     constexpr int BALL      = 0x124;
     constexpr int MET_LEVEL_OT_GENDER = 0x125;
     constexpr int HYPER_TRAIN = 0x126;
+    constexpr int AFFIXED_RIBBON = 0xE8; // sbyte, -1 (0xFF) = None
     constexpr int RECORD_FLAGS = 0x127; // 14 bytes
     constexpr int TRACKER   = 0x135; // 8 bytes
     constexpr int STAT_LEVEL = 0x148;
@@ -133,6 +134,7 @@ namespace G9 {
     // Block D:
     constexpr int OBEDIENCE_LEVEL = 0x11F;
     constexpr int TRACKER   = 0x127; // 8 bytes
+    constexpr int AFFIXED_RIBBON = 0xD4; // sbyte, -1 (0xFF) = None
     constexpr int RECORD_FLAGS_BASE = 0x12F; // 25 bytes
     // PA9-only:
     constexpr int IS_ALPHA  = 0x23; // byte (0 or non-zero)
@@ -455,6 +457,10 @@ Pokemon PKConvert::convertPK8toPK9(const Pokemon& src) {
     d[G9::TERA_TYPE_ORIG] = PersonalSV::getType1(species, form);
     d[G9::TERA_TYPE_OVER] = 19; // 19 = OverrideNone
 
+    // AffixedRibbon: PK8 at 0xE8 -> PK9 at 0xD4
+    d[G9::AFFIXED_RIBBON] = s[G8::AFFIXED_RIBBON];
+    d[G8::AFFIXED_RIBBON] = 0; // clear old position
+
     // Version: PK8 at 0xDE -> PK9 at 0xCE
     d[G9::VERSION] = s[G8::VERSION];
     d[G8::VERSION] = 0; // clear old position
@@ -522,6 +528,10 @@ Pokemon PKConvert::convertPK9toPK8(const Pokemon& src) {
     // TeraType fields become unused in PK8
     d[G9::TERA_TYPE_ORIG] = 0;
     d[G9::TERA_TYPE_OVER] = 0;
+
+    // AffixedRibbon: PK9 at 0xD4 -> PK8 at 0xE8
+    d[G8::AFFIXED_RIBBON] = s[G9::AFFIXED_RIBBON];
+    d[G9::AFFIXED_RIBBON] = 0; // clear old position
 
     // Version: PK9 at 0xCE -> PK8 at 0xDE
     d[G8::VERSION] = s[G9::VERSION];
@@ -603,8 +613,8 @@ Pokemon PKConvert::convertPK8toPA8(const Pokemon& src) {
     d[G8A::CUR_HANDLER] = s[G8::CUR_HANDLER];
     d[G8A::HT_FRIENDSHIP] = s[G8::HT_FRIENDSHIP];
 
-    // Version: PK8 0xDE -> PA8 0xEE
-    d[G8A::VERSION] = s[G8::VERSION];
+    // Version: PK8 0xDE -> PA8 0xEE (sanitize: PLA doesn't recognize >= 50)
+    d[G8A::VERSION] = s[G8::VERSION] >= 50 ? gameVersionOf(GameType::LA) : s[G8::VERSION];
     // Language: PK8 0xE2 -> PA8 0xF2
     d[G8A::LANGUAGE] = s[G8::LANGUAGE];
 
@@ -715,6 +725,9 @@ Pokemon PKConvert::convertPA8toPK8(const Pokemon& src) {
     writeU16(d, G8::MET_LOC, readU16(s, G8A::MET_LOC));
     d[G8::MET_LEVEL_OT_GENDER] = s[G8A::MET_LEVEL_OT_GENDER];
     d[G8::HYPER_TRAIN] = s[G8A::HYPER_TRAIN];
+
+    // AffixedRibbon: PA8 at 0xF8 -> PK8 at 0xE8
+    d[G8::AFFIXED_RIBBON] = s[G8A::AFFIXED_RIBBON];
 
     // Tracker
     uint64_t tracker = readU64(s, G8A::TRACKER);
@@ -852,6 +865,9 @@ Pokemon PKConvert::convertPB7toPK8(const Pokemon& src) {
     d[G8::MET_LEVEL_OT_GENDER] = s[G7::MET_LEVEL_OT_GENDER];
     d[G8::HYPER_TRAIN] = s[G7::HYPER_TRAIN];
 
+    // AffixedRibbon: PB7 has no ribbon field -> PK8 default None (0xFF)
+    d[G8::AFFIXED_RIBBON] = 0xFF;
+
     // Stat level: PB7 at 0xEC -> PK8 at 0x148
     d[G8::STAT_LEVEL] = s[G7::STAT_LEVEL];
 
@@ -885,6 +901,9 @@ Pokemon PKConvert::adaptPK8toPB8(const Pokemon& src) {
     dst.data[0x16] &= ~(1 << 4);
     // DynamaxLevel = 0
     dst.data[G8::DYNAMAX_LEVEL] = 0;
+    // Sanitize version: BDSP doesn't recognize version codes >= 50 (SV/ZA)
+    if (dst.data[G8::VERSION] >= 50)
+        dst.data[G8::VERSION] = gameVersionOf(GameType::BD);
     return dst;
 }
 

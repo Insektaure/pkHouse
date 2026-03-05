@@ -405,6 +405,223 @@ std::string Pokemon::displayName() const {
     return SpeciesName::get(species());
 }
 
+// --- Ribbon & Mark reader ---
+
+// {display name, romfs filename (no path/ext), isMark}
+struct RibbonDef {
+    const char* name;
+    const char* filename;
+    bool isMark;
+};
+
+// Matches RibbonIndex enum order (Gen8+: indices 0-110)
+static const RibbonDef RIBBON_DEFS[] = {
+    {"Kalos Champion",       "ribbonchampionkalos",       false},
+    {"Hoenn Champion",       "ribbonchampiong3",          false},
+    {"Sinnoh Champion",      "ribbonchampionsinnoh",      false},
+    {"Best Friends",         "ribbonbestfriends",         false},
+    {"Training",             "ribbontraining",            false},
+    {"Skillful Battler",     "ribbonbattlerskillful",     false},
+    {"Expert Battler",       "ribbonbattlerexpert",       false},
+    {"Effort",               "ribboneffort",              false},
+    {"Alert",                "ribbonalert",               false},
+    {"Shock",                "ribbonshock",               false},
+    {"Downcast",             "ribbondowncast",            false},
+    {"Careless",             "ribboncareless",            false},
+    {"Relax",                "ribbonrelax",               false},
+    {"Snooze",               "ribbonsnooze",              false},
+    {"Smile",                "ribbonsmile",               false},
+    {"Gorgeous",             "ribbongorgeous",            false},
+    {"Royal",                "ribbonroyal",               false},
+    {"Gorgeous Royal",       "ribbongorgeousroyal",       false},
+    {"Artist",               "ribbonartist",              false},
+    {"Footprint",            "ribbonfootprint",           false},
+    {"Record",               "ribbonrecord",              false},
+    {"Legend",                "ribbonlegend",              false},
+    {"Country",              "ribboncountry",             false},
+    {"National",             "ribbonnational",            false},
+    {"Earth",                "ribbonearth",               false},
+    {"World",                "ribbonworld",               false},
+    {"Classic",              "ribbonclassic",             false},
+    {"Premier",              "ribbonpremier",             false},
+    {"Event",                "ribbonevent",               false},
+    {"Birthday",             "ribbonbirthday",            false},
+    {"Special",              "ribbonspecial",             false},
+    {"Souvenir",             "ribbonsouvenir",            false},
+    {"Wishing",              "ribbonwishing",             false},
+    {"Battle Champion",      "ribbonchampionbattle",      false},
+    {"Regional Champion",    "ribbonchampionregional",    false},
+    {"National Champion",    "ribbonchampionnational",    false},
+    {"World Champion",       "ribbonchampionworld",       false},
+    {"Contest Memory",       "ribboncountmemorycontest",  false},
+    {"Battle Memory",        "ribboncountmemorybattle",   false},
+    {"Hoenn Champion (ORAS)","ribbonchampiong6hoenn",     false},
+    {"Contest Star",         "ribbonconteststar",         false},
+    {"Master Coolness",      "ribbonmastercoolness",      false},
+    {"Master Beauty",        "ribbonmasterbeauty",        false},
+    {"Master Cuteness",      "ribbonmastercuteness",      false},
+    {"Master Cleverness",    "ribbonmastercleverness",    false},
+    {"Master Toughness",     "ribbonmastertoughness",     false},
+    {"Alola Champion",       "ribbonchampionalola",       false},
+    {"Battle Royal Master",  "ribbonbattleroyale",        false},
+    {"Battle Tree Great",    "ribbonbattletreegreat",     false},
+    {"Battle Tree Master",   "ribbonbattletreemaster",    false},
+    {"Galar Champion",       "ribbonchampiongalar",       false},
+    {"Tower Master",         "ribbontowermaster",         false},
+    {"Master Rank",          "ribbonmasterrank",          false},
+    // Marks (index 53+)
+    {"Lunchtime Mark",       "ribbonmarklunchtime",       true},
+    {"Sleepy-Time Mark",     "ribbonmarksleepytime",      true},
+    {"Dusk Mark",            "ribbonmarkdusk",            true},
+    {"Dawn Mark",            "ribbonmarkdawn",            true},
+    {"Cloudy Mark",          "ribbonmarkcloudy",          true},
+    {"Rainy Mark",           "ribbonmarkrainy",           true},
+    {"Stormy Mark",          "ribbonmarkstormy",          true},
+    {"Snowy Mark",           "ribbonmarksnowy",           true},
+    {"Blizzard Mark",        "ribbonmarkblizzard",        true},
+    {"Dry Mark",             "ribbonmarkdry",             true},
+    {"Sandstorm Mark",       "ribbonmarksandstorm",       true},
+    {"Misty Mark",           "ribbonmarkmisty",           true},
+    {"Destiny Mark",         "ribbonmarkdestiny",         true},
+    {"Fishing Mark",         "ribbonmarkfishing",         true},
+    {"Curry Mark",           "ribbonmarkcurry",           true},
+    {"Uncommon Mark",        "ribbonmarkuncommon",         true},
+    {"Rare Mark",            "ribbonmarkrare",            true},
+    {"Rowdy Mark",           "ribbonmarkrowdy",           true},
+    {"Absent-Minded Mark",   "ribbonmarkabsentminded",    true},
+    {"Jittery Mark",         "ribbonmarkjittery",         true},
+    {"Excited Mark",         "ribbonmarkexcited",         true},
+    {"Charismatic Mark",     "ribbonmarkcharismatic",     true},
+    {"Calmness Mark",        "ribbonmarkcalmness",        true},
+    {"Intense Mark",         "ribbonmarkintense",         true},
+    {"Zoned-Out Mark",       "ribbonmarkzonedout",        true},
+    {"Joyful Mark",          "ribbonmarkjoyful",          true},
+    {"Angry Mark",           "ribbonmarkangry",           true},
+    {"Smiley Mark",          "ribbonmarksmiley",          true},
+    {"Teary Mark",           "ribbonmarkteary",           true},
+    {"Upbeat Mark",          "ribbonmarkupbeat",          true},
+    {"Peeved Mark",          "ribbonmarkpeeved",          true},
+    {"Intellectual Mark",    "ribbonmarkintellectual",    true},
+    {"Ferocious Mark",       "ribbonmarkferocious",       true},
+    {"Crafty Mark",          "ribbonmarkcrafty",          true},
+    {"Scowling Mark",        "ribbonmarkscowling",        true},
+    {"Kindly Mark",          "ribbonmarkkindly",          true},
+    {"Flustered Mark",       "ribbonmarkflustered",       true},
+    {"Pumped-Up Mark",       "ribbonmarkpumpedup",        true},
+    {"Zero Energy Mark",     "ribbonmarkzeroenergy",      true},
+    {"Prideful Mark",        "ribbonmarkprideful",        true},
+    {"Unsure Mark",          "ribbonmarkunsure",          true},
+    {"Humble Mark",          "ribbonmarkhumble",          true},
+    {"Thorny Mark",          "ribbonmarkthorny",          true},
+    {"Vigor Mark",           "ribbonmarkvigor",           true},
+    {"Slump Mark",           "ribbonmarkslump",           true},
+    // Post-Gen8 (index 98+)
+    {"Hisui",                "ribbonhisui",               false},
+    {"Twinkling Star",       "ribbontwinklingstar",       false},
+    {"Paldea Champion",      "ribbonchampionpaldea",      false},
+    {"Jumbo Mark",           "ribbonmarkjumbo",           true},
+    {"Mini Mark",            "ribbonmarkmini",            true},
+    {"Itemfinder Mark",      "ribbonmarkitemfinder",      true},
+    {"Partner Mark",         "ribbonmarkpartner",         true},
+    {"Gourmand Mark",        "ribbonmarkgourmand",        true},
+    {"Once-in-a-Lifetime",   "ribbononceinalifetime",     false},
+    {"Alpha Mark",           "ribbonmarkalpha",           true},
+    {"Mightiest Mark",       "ribbonmarkmightiest",       true},
+    {"Titan Mark",           "ribbonmarktitan",           true},
+    {"Partner",              "ribbonpartner",             false},
+};
+static constexpr int RIBBON_DEF_COUNT = sizeof(RIBBON_DEFS) / sizeof(RIBBON_DEFS[0]);
+
+// Gen3 ribbon definitions (from the uint32 at 0x4C)
+static const RibbonDef GEN3_RIBBON_DEFS[] = {
+    {"Cool",               "ribbong3cool",           false},
+    {"Cool Super",         "ribbong3coolsuper",       false},
+    {"Cool Hyper",         "ribbong3coolhyper",       false},
+    {"Cool Master",        "ribbong3coolmaster",      false},
+    {"Beauty",             "ribbong3beauty",          false},
+    {"Beauty Super",       "ribbong3beautysuper",     false},
+    {"Beauty Hyper",       "ribbong3beautyhyper",     false},
+    {"Beauty Master",      "ribbong3beautymaster",    false},
+    {"Cute",               "ribbong3cute",            false},
+    {"Cute Super",         "ribbong3cutesuper",       false},
+    {"Cute Hyper",         "ribbong3cutehyper",       false},
+    {"Cute Master",        "ribbong3cutemaster",      false},
+    {"Smart",              "ribbong3smart",           false},
+    {"Smart Super",        "ribbong3smartsuper",      false},
+    {"Smart Hyper",        "ribbong3smarthyper",      false},
+    {"Smart Master",       "ribbong3smartmaster",     false},
+    {"Tough",              "ribbong3tough",           false},
+    {"Tough Super",        "ribbong3toughsuper",      false},
+    {"Tough Hyper",        "ribbong3toughhyper",      false},
+    {"Tough Master",       "ribbong3toughmaster",     false},
+    // Single-bit ribbons (bits 15-26)
+    {"Champion",           "ribbonchampiong3",        false},
+    {"Winning",            "ribbonwinning",           false},
+    {"Victory",            "ribbonvictory",           false},
+    {"Artist",             "ribbonartist",            false},
+    {"Effort",             "ribboneffort",            false},
+    {"Battle Champion",    "ribbonchampionbattle",    false},
+    {"Regional Champion",  "ribbonchampionregional",  false},
+    {"National Champion",  "ribbonchampionnational",  false},
+    {"Country",            "ribboncountry",           false},
+    {"National",           "ribbonnational",          false},
+    {"Earth",              "ribbonearth",             false},
+    {"World",              "ribbonworld",             false},
+};
+
+std::vector<Pokemon::RibbonInfo> Pokemon::getRibbonsAndMarks() const {
+    std::vector<RibbonInfo> result;
+
+    if (isFRLG(gameType_)) {
+        // Gen3: single uint32 at 0x4C
+        uint32_t rib = readU32(0x4C);
+        // Contest ribbons: 3-bit counts at bits 0-14
+        for (int cat = 0; cat < 5; cat++) {
+            int count = (rib >> (cat * 3)) & 7;
+            for (int lvl = 0; lvl < 4 && lvl < count; lvl++) {
+                auto& d = GEN3_RIBBON_DEFS[cat * 4 + lvl];
+                result.push_back({d.name, d.filename, false});
+            }
+        }
+        // Single-bit ribbons at bits 15-26
+        for (int bit = 15; bit <= 26; bit++) {
+            if ((rib >> bit) & 1) {
+                auto& d = GEN3_RIBBON_DEFS[20 + (bit - 15)];
+                result.push_back({d.name, d.filename, false});
+            }
+        }
+        return result;
+    }
+
+    if (isLGPE(gameType_)) {
+        // PB7: ribbons at 0x30-0x36, same bit layout as Gen8 indices 0-55
+        for (int i = 0; i < 56 && i < RIBBON_DEF_COUNT; i++) {
+            int byteOfs = 0x30 + (i >> 3);
+            int bit = i & 7;
+            if ((data[byteOfs] >> bit) & 1) {
+                auto& d = RIBBON_DEFS[i];
+                result.push_back({d.name, d.filename, false});
+            }
+        }
+        return result;
+    }
+
+    // Gen8/8a/9: ribbons at 0x34-0x3B (indices 0-63), marks at 0x40-0x47 (indices 64-127)
+    for (int i = 0; i < RIBBON_DEF_COUNT && i < 128; i++) {
+        int byteOfs;
+        if (i < 64)
+            byteOfs = 0x34 + (i >> 3);
+        else
+            byteOfs = 0x40 + ((i - 64) >> 3);
+        int bit = i & 7;
+        if ((data[byteOfs] >> bit) & 1) {
+            auto& d = RIBBON_DEFS[i];
+            result.push_back({d.name, d.filename, d.isMark});
+        }
+    }
+    return result;
+}
+
 void Pokemon::loadFromEncrypted(const uint8_t* encrypted, size_t len) {
     if (isFRLG(gameType_))
         PokeCrypto::decryptArray3(encrypted, len, data.data());

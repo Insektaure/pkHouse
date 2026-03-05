@@ -5,6 +5,8 @@
 #include <cstring>
 #include <string>
 #include <array>
+#include <vector>
+#include <utility>
 
 // EXP table: 6 growth rates x 100 levels (defined in pokemon.cpp)
 extern const uint32_t EXP_TABLE[6][100];
@@ -179,6 +181,16 @@ struct Pokemon {
             return false;
         return data[0x23] != 0; // PA9 (ZA/SV)
     }
+
+    // Ribbon/mark info
+    struct RibbonInfo {
+        const char* name;     // Display name
+        const char* filename; // romfs filename (without path/extension)
+        bool isMark;
+    };
+
+    // Returns list of all set ribbons/marks
+    std::vector<RibbonInfo> getRibbonsAndMarks() const;
 
     // Shiny: XOR == 0 for Gen3, XOR < 16 for modern
     bool isShiny() const {

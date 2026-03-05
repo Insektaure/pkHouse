@@ -43,9 +43,30 @@ void UI::freeSprites() {
             SDL_DestroyTexture(tex);
     }
     spriteCache_.clear();
+    for (auto& [name, tex] : ribbonSpriteCache_) {
+        if (tex)
+            SDL_DestroyTexture(tex);
+    }
+    ribbonSpriteCache_.clear();
     if (iconShiny_)      { SDL_DestroyTexture(iconShiny_);      iconShiny_ = nullptr; }
     if (iconAlpha_)      { SDL_DestroyTexture(iconAlpha_);      iconAlpha_ = nullptr; }
     if (iconShinyAlpha_) { SDL_DestroyTexture(iconShinyAlpha_); iconShinyAlpha_ = nullptr; }
+}
+
+SDL_Texture* UI::getRibbonSprite(const std::string& filename) {
+    auto it = ribbonSpriteCache_.find(filename);
+    if (it != ribbonSpriteCache_.end())
+        return it->second;
+
+    std::string path;
+#ifdef __SWITCH__
+    path = "romfs:/ribbons/" + filename + ".png";
+#else
+    path = basePath_ + "/romfs/ribbons/" + filename + ".png";
+#endif
+    SDL_Texture* tex = IMG_LoadTexture(renderer_, path.c_str());
+    ribbonSpriteCache_[filename] = tex; // cache even if null
+    return tex;
 }
 
 // --- Rendering ---
@@ -654,6 +675,55 @@ void UI::drawDetailPopup(const Pokemon& pkm) {
             drawText("- ---", movesX + 10, movesY, T().textDim, font_);
         }
         movesY += 26;
+    }
+
+    // --- Ribbons & Marks below moves ---
+    auto ribbons = pkm.getRibbonsAndMarks();
+    if (!ribbons.empty()) {
+        movesY += 6;
+        std::string ribTitle = "Ribbons & Marks (" + std::to_string(ribbons.size()) + ")";
+        drawText(ribTitle, movesX, movesY, T().text, font_);
+        movesY += 24;
+
+        // Two columns, small font with sprite icons
+        int col1X = movesX + 4;
+        int col2X = movesX + 230;
+        int ribbonY = movesY;
+        constexpr int RIB_ROW_H = 26;
+        constexpr int ICON_SZ = 18;
+        constexpr int ICON_PAD = 4;
+        int maxY = popY + POP_H - 30;
+        int col = 0;
+
+        for (size_t i = 0; i < ribbons.size(); i++) {
+            int x = (col == 0) ? col1X : col2X;
+            if (ribbonY + RIB_ROW_H > maxY) {
+                int remaining = static_cast<int>(ribbons.size() - i);
+                drawText("+" + std::to_string(remaining) + " more...", x, ribbonY, T().textDim, font_);
+                break;
+            }
+
+            // Center both icon and text vertically within the row
+            int textH = TTF_FontHeight(font_);
+            int contentH = std::max(ICON_SZ, textH);
+            int baseY = ribbonY + (RIB_ROW_H - contentH) / 2;
+            int iconY = baseY + (contentH - ICON_SZ) / 2;
+            int textY = baseY + (contentH - textH) / 2;
+
+            SDL_Texture* ribTex = getRibbonSprite(ribbons[i].filename);
+            if (ribTex) {
+                SDL_Rect dst = {x, iconY, ICON_SZ, ICON_SZ};
+                SDL_RenderCopy(renderer_, ribTex, nullptr, &dst);
+            }
+
+            drawText(ribbons[i].name, x + ICON_SZ + ICON_PAD, textY, T().textDim, font_);
+
+            col++;
+            if (col >= 2) {
+                col = 0;
+                ribbonY += RIB_ROW_H;
+            }
+        }
     }
 
     // --- Right column: IV and EV radar charts ---

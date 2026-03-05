@@ -92,6 +92,10 @@ private:
     // Sprite cache: national dex ID -> texture
     std::unordered_map<uint16_t, SDL_Texture*> spriteCache_;
 
+    // Ribbon sprite cache: filename -> texture
+    std::unordered_map<std::string, SDL_Texture*> ribbonSpriteCache_;
+    SDL_Texture* getRibbonSprite(const std::string& filename);
+
     // Status icons
     SDL_Texture* iconShiny_      = nullptr;
     SDL_Texture* iconAlpha_      = nullptr;

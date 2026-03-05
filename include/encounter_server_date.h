@@ -178,3 +178,22 @@ static constexpr WB8DateEntry WB8Gifts[] = {
 };
 
 static constexpr size_t WB8Gifts_Count = sizeof(WB8Gifts) / sizeof(WB8Gifts[0]);
+
+/// WA8Gifts - Legends: Arceus distribution dates (keyed by CardID)
+using WA8DateEntry = WC9DateEntry;
+static constexpr WA8DateEntry WA8Gifts[] = {
+    //  CardID  StartY  SM  SD   EndY  EM  ED  Days  Description
+    {  138, 2022,  1, 27,  2023,  2,  1, 0}, // Poké Center Happiny
+    {  301, 2022,  2,  4,  2023,  3,  1, 0}, // プロポチャ Piplup
+    {  801, 2022,  2, 25,  2022,  6,  1, 0}, // Teresa Roca Hisuian Growlithe
+    { 1201, 2022,  5, 31,  2022,  8,  1, 0}, // 전이마을 Regigigas
+    { 1202, 2022,  5, 31,  2022,  8,  1, 0}, // 빛나's Piplup
+    { 1203, 2022,  8, 18,  2022, 11,  1, 0}, // Arceus Chronicles Hisuian Growlithe
+    {  151, 2022,  9,  3,  2022, 10,  1, 0}, // Otsukimi Festival 2022 Clefairy
+    { 9018, 2022,  5, 18,     0,  0,  0, 0}, // HA Rowlet (HOME)
+    { 9019, 2022,  5, 18,     0,  0,  0, 0}, // HA Cyndaquil (HOME)
+    { 9020, 2022,  5, 18,     0,  0,  0, 0}, // HA Oshawott (HOME)
+    { 9027, 2025,  1, 27,     0,  0,  0, 0}, // Shiny Enamorus (HOME)
+};
+
+static constexpr size_t WA8Gifts_Count = sizeof(WA8Gifts) / sizeof(WA8Gifts[0]);

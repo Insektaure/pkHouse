@@ -103,7 +103,7 @@ void UI::handleInput(bool& running) {
 
         // While menu is open, handle menu input only
         if (showMenu_) {
-            bool hasWC = isSV(selectedGame_) || isSwSh(selectedGame_) || selectedGame_ == GameType::ZA || isBDSP(selectedGame_);
+            bool hasWC = isSV(selectedGame_) || isSwSh(selectedGame_) || selectedGame_ == GameType::ZA || isBDSP(selectedGame_) || selectedGame_ == GameType::LA;
             int menuCount = appletMode_ ? (hasWC ? 8 : 7) : (hasWC ? 7 : 6);
             auto menuConfirm = [&]() {
                 // 0=Theme, 1=Search (both modes)
@@ -575,7 +575,7 @@ void UI::handleInput(bool& running) {
             } else if (showMenu_) {
                 if (stickDirY_ != 0)
                 {
-                    bool hasWC = isSV(selectedGame_) || isSwSh(selectedGame_) || selectedGame_ == GameType::ZA || isBDSP(selectedGame_);
+                    bool hasWC = isSV(selectedGame_) || isSwSh(selectedGame_) || selectedGame_ == GameType::ZA || isBDSP(selectedGame_) || selectedGame_ == GameType::LA;
                     int mc = appletMode_ ? (hasWC ? 8 : 7) : (hasWC ? 7 : 6);
                     menuSelection_ = (menuSelection_ + (stickDirY_ > 0 ? 1 : mc - 1)) % mc;
                 }
@@ -1687,6 +1687,18 @@ void UI::injectWondercard(const WCInfo& info) {
         trainer.gameVersion = (selectedGame_ == GameType::BD) ? 48 : 49;
         pkm = wc.convertToPB8(trainer);
         natId = wc.species(); // already national dex
+    } else if (selectedGame_ == GameType::LA) {
+        // WA8 path (Legends: Arceus)
+        WA8 wc;
+        if (!wc.loadFromFile(info.path)) {
+            showWondercardList_ = false;
+            showMessageAndWait("Error", "Failed to load wondercard file.");
+            return;
+        }
+
+        trainer.gameVersion = 47; // PLA
+        pkm = wc.convertToPA8(trainer);
+        natId = wc.species(); // already national dex
     } else {
         // WC9 path (Scarlet/Violet)
         WC9 wc;
@@ -1712,6 +1724,8 @@ void UI::injectWondercard(const WCInfo& info) {
         pkm.gameType_ = GameType::ZA;
     else if (isBDSP(selectedGame_))
         pkm.gameType_ = GameType::BD;
+    else if (selectedGame_ == GameType::LA)
+        pkm.gameType_ = GameType::LA;
     else
         pkm.gameType_ = GameType::S;
 

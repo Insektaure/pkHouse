@@ -3,6 +3,7 @@
 #include "personal_swsh.h"
 #include "personal_za.h"
 #include "personal_bdsp.h"
+#include "personal_la.h"
 #include "xoroshiro128plus.h"
 #include "plus_za.h"
 #include "encounter_server_date.h"
@@ -13,6 +14,7 @@
 #include <ctime>
 #include <dirent.h>
 #include <algorithm>
+#include <cmath>
 #include <unordered_map>
 
 // --- Gen9 Move PP table (from PKHeX MoveInfo9.PP, indexed by move ID) ---
@@ -281,6 +283,48 @@ bool WB8::loadFromFile(const std::string& path) {
     return f.good();
 }
 
+// --- WA8 string helpers (nick base=0x28, OT base=0x124, stride=0x1C, same as WC9) ---
+
+std::u16string WA8::getNickname(int langIdx) const {
+    int ofs = 0x28 + langIdx * 0x1C;
+    std::u16string result;
+    for (int i = 0; i < 13; i++) {
+        uint16_t ch = readU16(ofs + i * 2);
+        if (ch == 0) break;
+        result += static_cast<char16_t>(ch);
+    }
+    return result;
+}
+
+bool WA8::hasNickname(int langIdx) const {
+    return readU16(0x28 + langIdx * 0x1C) != 0;
+}
+
+std::u16string WA8::getOTName(int langIdx) const {
+    int ofs = 0x124 + langIdx * 0x1C;
+    std::u16string result;
+    for (int i = 0; i < 13; i++) {
+        uint16_t ch = readU16(ofs + i * 2);
+        if (ch == 0) break;
+        result += static_cast<char16_t>(ch);
+    }
+    return result;
+}
+
+bool WA8::getHasOT(int langIdx) const {
+    return readU16(0x124 + langIdx * 0x1C) != 0;
+}
+
+bool WA8::loadFromFile(const std::string& path) {
+    std::ifstream f(path, std::ios::binary | std::ios::ate);
+    if (!f.is_open()) return false;
+    auto sz = f.tellg();
+    if (sz != SIZE) return false;
+    f.seekg(0);
+    f.read(reinterpret_cast<char*>(data.data()), SIZE);
+    return f.good();
+}
+
 // --- Language index conversion (PKHeX LanguageID mapping) ---
 // PKHeX: JPN=1, ENG=2, FRE=3, ITA=4, GER=5, (6=unused), SPA=7, KOR=8, CHS=9, CHT=10
 // WC9 stores 9 language slots (index 0-8): JPN, ENG, FRE, ITA, GER, SPA, KOR, CHS, CHT
@@ -369,6 +413,20 @@ static MetDate getDistributionDateWB8(uint16_t cardId) {
     }
     // Fallback: BDSP release date 2021-11-19
     return { 21, 11, 19 };
+}
+
+static MetDate getDistributionDateWA8(uint16_t cardId) {
+    // WA8 only uses CardID lookup (no checksum fallback)
+    for (size_t i = 0; i < WA8Gifts_Count; i++) {
+        if (WA8Gifts[i].cardID == cardId) {
+            int year = WA8Gifts[i].startYear;
+            int month = WA8Gifts[i].startMonth;
+            int day = WA8Gifts[i].startDay + WA8Gifts[i].daysAfterStart;
+            return { static_cast<uint8_t>(year - 2000), static_cast<uint8_t>(month), static_cast<uint8_t>(day) };
+        }
+    }
+    // Fallback: PLA release date 2022-01-28
+    return { 22, 1, 28 };
 }
 
 // --- RNG helpers ---
@@ -804,7 +862,7 @@ Pokemon WC8::convertToPK8(const TrainerInfo& trainer) const {
     uint16_t pkTid16 = tid16();
     uint16_t pkSid16 = sid16();
 
-    // Ability (0x14, 0x16)
+    // Ability (0x14, 0x16) — PKHeX default: types 3 and 4 both pick random 0 or 1
     int abIdx = abilityType();
     if (abIdx >= 3) abIdx = std::rand() % 2;
     uint16_t abilityId = PersonalSWSH::getAbility(specNat, formVal, abIdx);
@@ -1805,11 +1863,11 @@ Pokemon WB8::convertToPB8(const TrainerInfo& trainer) const {
     }
 
     // IsDateLockJapanese: cards 9015/9016/9017 (HOME Sinnoh starters)
-    // were JPN-only before 2022-05-20; clamp date for non-Japanese recipients
+    // Uses trainer.language (not pkLang) per PKHeX WB8.cs
     {
         uint16_t cid = cardID();
         if ((cid == 9015 || cid == 9016 || cid == 9017) &&
-            pkLang != 1 /* Japanese */ &&
+            trainer.language != 1 /* Japanese */ &&
             (md.year < 22 || (md.year == 22 && (md.month < 5 || (md.month == 5 && md.day < 20))))) {
             md = { 22, 5, 20 };
         }
@@ -2093,6 +2151,471 @@ Pokemon WB8::convertToPB8(const TrainerInfo& trainer) const {
     return pk;
 }
 
+// --- WA8 → PA8 conversion (Legends: Arceus) ---
+// Ported from PKHeX.Core/MysteryGifts/WA8.cs ConvertToPKM()
+// PA8 has DIFFERENT offsets from PK8/PB8 — SIZE_8ASTORED=0x168, block size 0x58
+
+// Ganbaru multiplier table (from IGanbaru.cs)
+static constexpr uint8_t GanbaruMul[] = { 0, 2, 3, 4, 7, 8, 9, 14, 15, 16, 25 };
+
+static int getGanbaruBias(int iv) {
+    if (iv >= 31) return 3;
+    if (iv >= 26) return 2;
+    if (iv >= 20) return 1;
+    return 0;
+}
+
+static uint8_t getGanbaruMultiplier(uint8_t gv, int iv) {
+    int idx = gv + getGanbaruBias(iv);
+    if (idx > 10) idx = 10;
+    return GanbaruMul[idx];
+}
+
+static int getGanbaruStat(int baseStat, int iv, uint8_t gv, uint8_t level) {
+    float mul = getGanbaruMultiplier(gv, iv);
+    double step1 = std::abs(std::sqrt(static_cast<double>(baseStat))) * mul;
+    float result = (static_cast<float>(step1) + level) / 2.5f;
+    return static_cast<int>(std::round(result)); // MidpointRounding.AwayFromZero
+}
+
+static int plaStatHp(int baseStat, uint8_t level) {
+    return static_cast<int>(((level / 100.0f + 1.0f) * baseStat) + level);
+}
+
+static int plaStatOther(int baseStat, uint8_t level, uint8_t nature, int statIdx) {
+    int initial = static_cast<int>(((level / 50.0f + 1.0f) * baseStat) / 1.5f);
+    // NatureAmp: boosted = nat/5, reduced = nat%5
+    // statIdx: 0=ATK, 1=DEF, 2=SPE, 3=SPA, 4=SPD
+    int boosted = nature / 5;
+    int reduced = nature % 5;
+    if (boosted != reduced) {
+        if (statIdx == boosted) initial = 110 * initial / 100;
+        if (statIdx == reduced) initial = 90 * initial / 100;
+    }
+    return initial;
+}
+
+static float getHeightRatio(uint8_t scalar) {
+    return (scalar / 255.0f) * 0.40000004f + 0.8f;
+}
+
+static float getWeightRatio(uint8_t scalar) {
+    return (scalar / 255.0f) * 0.40000004f + 0.8f;
+}
+
+Pokemon WA8::convertToPA8(const TrainerInfo& trainer) const {
+    static bool seeded = false;
+    if (!seeded) { std::srand(static_cast<unsigned>(std::time(nullptr))); seeded = true; }
+
+    Pokemon pk;
+    pk.gameType_ = GameType::LA; // PA8 format
+    pk.data.fill(0);
+
+    uint16_t specNat = species(); // WA8 species is already national dex
+    uint8_t formVal = form();
+    uint8_t curLevel = level() > 0 ? level() : static_cast<uint8_t>(1 + std::rand() % 100);
+    uint8_t mLevel = metLevel() > 0 ? metLevel() : curLevel;
+    int langIdx = getLanguageIndex(trainer.language);
+    bool hasOT = getHasOT(langIdx);
+    bool isEggWC = isEgg();
+    bool homeGift = isHOMEGift();
+
+    // EncryptionConstant (0x00)
+    uint32_t ec = encryptionConst() != 0 ? encryptionConst() : randU32();
+    pk.writeU32(0x00, ec);
+
+    // Species (0x08) — national dex ID directly
+    pk.writeU16(0x08, specNat);
+
+    // HeldItem (0x0A)
+    pk.writeU16(0x0A, heldItem());
+
+    // TID16/SID16 (0x0C-0x0F) — start with WA8 values
+    uint16_t pkTid16 = tid16();
+    uint16_t pkSid16 = sid16();
+
+    // Ability (0x14, 0x16) — PA8 AbilityNumber at 0x16, no Gigantamax
+    // PKHeX default (no criteria): types 3 and 4 both pick random 0 or 1
+    int abIdx = abilityType();
+    if (abIdx >= 3) abIdx = std::rand() % 2;
+    uint16_t abilityId = PersonalLA::getAbility(specNat, formVal, abIdx);
+    pk.writeU16(0x14, abilityId);
+    pk.data[0x16] = static_cast<uint8_t>(1 << abIdx); // no Gigantamax, no IsAlpha for wondercards
+
+    // Nature (0x20, 0x21)
+    uint8_t nat = nature();
+    if (nat == 255) nat = static_cast<uint8_t>(std::rand() % 25);
+    pk.data[0x20] = nat;
+    pk.data[0x21] = nat;
+
+    // Gender + FatefulEncounter (0x22) — PA8: bit0=fateful, bits 2-3=gender
+    uint8_t genderVal = gender();
+    if (genderVal == 3) {
+        uint8_t ratio = PersonalLA::getGenderRatio(specNat, formVal);
+        if (ratio == 0xFF) genderVal = 2;
+        else if (ratio == 0xFE) genderVal = 1;
+        else if (ratio == 0x00) genderVal = 0;
+        else genderVal = (std::rand() % 256) >= ratio ? 0 : 1;
+    }
+    pk.data[0x22] = static_cast<uint8_t>((genderVal << 2) | 1);
+
+    // Form (0x24) — Meowstic special case (species 678)
+    if (specNat == 678)
+        pk.data[0x24] = static_cast<uint8_t>(genderVal & 1);
+    else
+        pk.data[0x24] = formVal;
+
+    // EVs (0x26-0x2B)
+    pk.data[0x26] = evHp();
+    pk.data[0x27] = evAtk();
+    pk.data[0x28] = evDef();
+    pk.data[0x29] = evSpe();
+    pk.data[0x2A] = evSpA();
+    pk.data[0x2B] = evSpD();
+
+    // Ribbons (0x34+): same bitfield layout as PK8
+    for (int i = 0; i < RIBBON_SIZE; i++) {
+        uint8_t ribbon = data[RIBBON_OFS + i];
+        if (ribbon == 0xFF) continue;
+        int byteIdx = ribbon < 64 ? 0x34 + (ribbon >> 3) : 0x40 + ((ribbon - 64) >> 3);
+        int bitIdx = ribbon & 7;
+        if (byteIdx < static_cast<int>(pk.data.size()))
+            pk.data[byteIdx] |= (1 << bitIdx);
+    }
+
+    // GV values (0xA4-0xA9) — PA8-unique, copied from WA8
+    pk.data[0xA4] = gvHp();
+    pk.data[0xA5] = gvAtk();
+    pk.data[0xA6] = gvDef();
+    pk.data[0xA7] = gvSpe();
+    pk.data[0xA8] = gvSpA();
+    pk.data[0xA9] = gvSpD();
+
+    // Scale/HeightScalar/WeightScalar (PA8: 0x50, 0x51, 0x52)
+    if (cardID() == 9027) {
+        // Shiny Enamorus: fixed scalar 127
+        pk.data[0x52] = 127; // Scale
+        pk.data[0x50] = 127; // HeightScalar
+        pk.data[0x51] = 127; // WeightScalar
+    } else {
+        pk.data[0x52] = static_cast<uint8_t>((std::rand() % 0x81) + (std::rand() % 0x80)); // Scale
+        pk.data[0x50] = pk.data[0x52]; // HeightScalar = Scale
+        pk.data[0x51] = static_cast<uint8_t>((std::rand() % 0x81) + (std::rand() % 0x80)); // WeightScalar
+    }
+
+    // HeightAbsolute (0xAC, float) and WeightAbsolute (0xB0, float) from PersonalLA
+    {
+        uint16_t persHeight = PersonalLA::getHeight(specNat, formVal);
+        uint16_t persWeight = PersonalLA::getWeight(specNat, formVal);
+        float hRatio = getHeightRatio(pk.data[0x50]);
+        float wRatio = getWeightRatio(pk.data[0x51]);
+        float heightAbs = hRatio * persHeight;
+        float weightAbs = hRatio * wRatio * persWeight;
+        std::memcpy(pk.data.data() + 0xAC, &heightAbs, 4);
+        std::memcpy(pk.data.data() + 0xB0, &weightAbs, 4);
+    }
+
+    // Distribution date
+    MetDate md = getDistributionDateWA8(cardID());
+
+    // Language from wondercard or trainer
+    uint8_t pkLang;
+    {
+        int lo = 0x28 + langIdx * 0x1C + 0x1A;
+        uint8_t wcLang = data[lo];
+        pkLang = wcLang != 0 ? wcLang : trainer.language;
+    }
+
+    // IsDateLockJapanese: cards 9018/9019/9020 (HOME Hisui starters)
+    // Uses trainer.language (not pkLang) per PKHeX WA8.cs
+    {
+        uint16_t cid = cardID();
+        if ((cid == 9018 || cid == 9019 || cid == 9020) &&
+            trainer.language != 1 /* Japanese */ &&
+            (md.year < 22 || (md.year == 22 && (md.month < 5 || (md.month == 5 && md.day < 20))))) {
+            md = { 22, 5, 20 };
+        }
+    }
+
+    // MetDate (0x134-0x136) — PA8 offset
+    pk.data[0x134] = md.year;
+    pk.data[0x135] = md.month;
+    pk.data[0x136] = md.day;
+
+    // Nickname (0x60) — PA8 offset, NOT 0x58
+    {
+        std::u16string nick;
+        bool isNicknamed = hasNickname(langIdx);
+        if (isEggWC) {
+            const std::string& eggName = getLocalizedSpeciesName(0, pkLang);
+            if (!eggName.empty())
+                nick = utf8to16(eggName);
+            else
+                nick = utf8to16("Egg");
+            isNicknamed = true; // WA8 eggs: IsNicknamed = true (like WC8)
+        } else if (isNicknamed) {
+            nick = getNickname(langIdx);
+        } else {
+            const std::string& name = getLocalizedSpeciesName(specNat, pkLang);
+            if (!name.empty())
+                nick = utf8to16(name);
+            else
+                nick = utf8to16(SpeciesName::get(specNat));
+        }
+        for (size_t i = 0; i < nick.size() && i < 13; i++) {
+            uint16_t ch = static_cast<uint16_t>(nick[i]);
+            std::memcpy(pk.data.data() + 0x60 + i * 2, &ch, 2);
+        }
+
+        // Moves (0x54-0x5A) — PA8 offset, NOT 0x72
+        pk.writeU16(0x54, move1());
+        pk.writeU16(0x56, move2());
+        pk.writeU16(0x58, move3());
+        pk.writeU16(0x5A, move4());
+
+        // Move PP (0x5C-0x5F) — PA8 offset, NOT 0x7A
+        pk.data[0x5C] = getMovePP(move1());
+        pk.data[0x5D] = getMovePP(move2());
+        pk.data[0x5E] = getMovePP(move3());
+        pk.data[0x5F] = getMovePP(move4());
+
+        // Relearn Moves (0x8A-0x90) — PA8 offset, NOT 0x82
+        pk.writeU16(0x8A, relearnMove1());
+        pk.writeU16(0x8C, relearnMove2());
+        pk.writeU16(0x8E, relearnMove3());
+        pk.writeU16(0x90, relearnMove4());
+
+        // IVs (0x94) — PA8 offset, NOT 0x8C — packed u32
+        uint8_t ivs[6] = { ivHp(), ivAtk(), ivDef(), ivSpe(), ivSpA(), ivSpD() };
+        int perfectCount = 0;
+        for (int i = 0; i < 6; i++) {
+            if (ivs[i] >= 0xFC && ivs[i] <= 0xFE) {
+                perfectCount = ivs[i] - 0xFB; // 0xFC=1, 0xFD=2, 0xFE=3
+                break;
+            }
+        }
+        if (perfectCount > 0) {
+            for (int i = 0; i < 6; i++)
+                ivs[i] = static_cast<uint8_t>(std::rand() % 32);
+            int placed = 0;
+            while (placed < perfectCount) {
+                int idx = std::rand() % 6;
+                if (ivs[idx] != 31) {
+                    ivs[idx] = 31;
+                    placed++;
+                }
+            }
+        } else {
+            for (int i = 0; i < 6; i++) {
+                if (ivs[i] > 31)
+                    ivs[i] = static_cast<uint8_t>(std::rand() % 32);
+            }
+        }
+        uint32_t iv32 = (ivs[0]) | (ivs[1] << 5) | (ivs[2] << 10)
+                       | (ivs[3] << 15) | (ivs[4] << 20) | (ivs[5] << 25);
+        if (isEggWC)
+            iv32 |= (1u << 30);
+        if (isNicknamed)
+            iv32 |= (1u << 31);
+        pk.writeU32(0x94, iv32);
+    }
+
+    // HT Name (0xB8) — PA8 offset, NOT 0xA8
+    if (hasOT) {
+        for (size_t i = 0; i < trainer.otName.size() && i < 13; i++) {
+            uint16_t ch = static_cast<uint16_t>(trainer.otName[i]);
+            std::memcpy(pk.data.data() + 0xB8 + i * 2, &ch, 2);
+        }
+        pk.data[0xD2] = trainer.gender;    // HT Gender — PA8 offset
+        pk.data[0xD3] = trainer.language;   // HT Language — PA8 offset
+    }
+
+    // CurrentHandler (0xD4) — PA8 offset, NOT 0xC4
+    pk.data[0xD4] = hasOT ? 1 : 0;
+
+    // Version (0xEE) — PA8 offset, NOT 0xDE
+    {
+        uint8_t ver;
+        int32_t origGame = originGame();
+        if (origGame != 0) {
+            ver = static_cast<uint8_t>(origGame);
+        } else if (trainer.gameVersion == 47) {
+            ver = trainer.gameVersion;
+        } else {
+            ver = 47; // fallback to PLA
+        }
+        pk.data[0xEE] = ver;
+    }
+
+    // Language (0xF2) — PA8 offset, NOT 0xE2
+    pk.data[0xF2] = pkLang;
+
+    // AffixedRibbon (0xF8) — PA8 offset, NOT 0xE8 — set to -1 (none)
+    pk.data[0xF8] = 0xFF;
+
+    // OT Name (0x110) — PA8 offset, NOT 0xF8
+    {
+        const std::u16string& otStr = hasOT ? getOTName(langIdx) : trainer.otName;
+        for (size_t i = 0; i < otStr.size() && i < 13; i++) {
+            uint16_t ch = static_cast<uint16_t>(otStr[i]);
+            std::memcpy(pk.data.data() + 0x110 + i * 2, &ch, 2);
+        }
+    }
+
+    // EXP (0x10)
+    {
+        uint8_t growth = PersonalLA::getGrowthRate(specNat, formVal);
+        if (growth > 5) growth = 0;
+        uint32_t exp = (curLevel >= 1 && curLevel <= 100) ? EXP_TABLE[growth][curLevel - 1] : 0;
+        pk.writeU32(0x10, exp);
+    }
+
+    // ID32 handling — WA8: only override when otGender >= 2 (no modulo, no zero-TID fallback)
+    if (otGender() >= 2) {
+        pk.writeU32(0x0C, trainer.id32);
+        pkTid16 = static_cast<uint16_t>(trainer.id32 & 0xFFFF);
+        pkSid16 = static_cast<uint16_t>(trainer.id32 >> 16);
+    } else {
+        pk.writeU16(0x0C, pkTid16);
+        pk.writeU16(0x0E, pkSid16);
+    }
+
+    // OTFriendship (0x12A) — PA8 offset, NOT 0x112
+    {
+        uint8_t baseFriend = PersonalLA::getBaseFriendship(specNat, formVal);
+        uint8_t curFriend = isEggWC ? PersonalLA::getHatchCycles(specNat, formVal) : baseFriend;
+        pk.data[0x12A] = baseFriend;
+        if (hasOT)
+            pk.data[0xD8] = curFriend; // HT Friendship — PA8 offset
+        else
+            pk.data[0x12A] = curFriend;
+    }
+
+    // OT Memory fields (PA8: 0x12B-0x130) — PA8 offset, NOT 0x113+
+    pk.data[0x12B] = otMemoryIntensity();
+    pk.data[0x12C] = otMemory();
+    pk.writeU16(0x12E, otMemoryVariable());
+    pk.data[0x130] = otMemoryFeeling();
+
+    // EggLocation (0x138) — PA8 offset, NOT 0x120
+    pk.writeU16(0x138, eggLocation());
+
+    // MetLocation (0x13A) — PA8 offset, NOT 0x122
+    pk.writeU16(0x13A, metLocation());
+
+    // Ball (0x137) — PA8 offset, NOT 0x124 — default LAPoke (28)
+    uint8_t ballVal = ball() != 0 ? static_cast<uint8_t>(ball()) : 28;
+    pk.data[0x137] = ballVal;
+
+    // MetLevel+OTGender (0x13D) — PA8 offset, NOT 0x125
+    uint8_t otGenderBit = otGender() < 2 ? otGender() : trainer.gender;
+    pk.data[0x13D] = static_cast<uint8_t>((mLevel & 0x7F) | ((otGenderBit & 1) << 7));
+
+    // Egg handling — PA8 SetEggMetData: IsEgg via IV32 bit 30, EggMetDate = current date
+    // EggLocation already set above from card data; do NOT overwrite
+    if (isEggWC) {
+        // EggMetDate = current date (not distribution date)
+        std::time_t now = std::time(nullptr);
+        std::tm* tm = std::localtime(&now);
+        pk.data[0x131] = static_cast<uint8_t>(tm->tm_year - 100); // year - 2000
+        pk.data[0x132] = static_cast<uint8_t>(tm->tm_mon + 1);
+        pk.data[0x133] = static_cast<uint8_t>(tm->tm_mday);
+    }
+
+    // PID (0x1C) — ShinyType8: same enum as WC8/WB8
+    {
+        uint8_t pType = pidType();
+        uint32_t pidVal;
+        switch (pType) {
+            case 0: { // Never shiny (antishiny)
+                pidVal = randU32();
+                uint32_t xorVal = (pidVal >> 16) ^ (pidVal & 0xFFFF) ^ pkTid16 ^ pkSid16;
+                if (xorVal < 16)
+                    pidVal ^= 0x10000000;
+                break;
+            }
+            case 1: // Random
+                pidVal = randU32();
+                break;
+            case 2: { // Always Star shiny
+                uint16_t low = static_cast<uint16_t>(pid() & 0xFFFF);
+                uint16_t high = 1u ^ low ^ pkTid16 ^ pkSid16;
+                pidVal = (static_cast<uint32_t>(high) << 16) | low;
+                break;
+            }
+            case 3: { // Always Square shiny
+                uint16_t low = static_cast<uint16_t>(pid() & 0xFFFF);
+                uint16_t high = 0u ^ low ^ pkTid16 ^ pkSid16;
+                pidVal = (static_cast<uint32_t>(high) << 16) | low;
+                break;
+            }
+            case 4: { // Fixed value — PKHeX GetFixedPID logic
+                pidVal = pid();
+                if (pidVal != 0 && id32() != 0) {
+                    break;
+                }
+                uint32_t xorVal = (pidVal >> 16) ^ (pidVal & 0xFFFF) ^ pkTid16 ^ pkSid16;
+                if (xorVal >= 16) {
+                    break; // not shiny: use PID as-is
+                }
+                // HOME antishiny: tr.ID32 ^ 0x10u (XOR, NOT add like WB8)
+                if (homeGift) {
+                    uint32_t trId32 = (static_cast<uint32_t>(pkSid16) << 16) | pkTid16;
+                    pidVal = trId32 ^ 0x10u;
+                }
+                break;
+            }
+            default:
+                pidVal = pid();
+                break;
+        }
+        pk.writeU32(0x1C, pidVal);
+    }
+
+    // Party stats: PA8 uses Ganbaru formula — Level at 0x168
+    pk.data[0x168] = curLevel;
+
+    {
+        auto bs = PersonalLA::getBaseStats(specNat, formVal);
+        uint32_t storedIV32 = pk.readU32(0x94);
+        int iv_hp  = storedIV32 & 0x1F;
+        int iv_atk = (storedIV32 >> 5) & 0x1F;
+        int iv_def = (storedIV32 >> 10) & 0x1F;
+        int iv_spe = (storedIV32 >> 15) & 0x1F;
+        int iv_spa = (storedIV32 >> 20) & 0x1F;
+        int iv_spd = (storedIV32 >> 25) & 0x1F;
+
+        // HP = ganbaruStat(base.HP, iv_hp, gv_hp, level) + statHp(base.HP, level)
+        int hp = getGanbaruStat(bs.hp, iv_hp, gvHp(), curLevel) + plaStatHp(bs.hp, curLevel);
+        pk.writeU16(0x16A, static_cast<uint16_t>(hp));
+        pk.writeU16(0x92, static_cast<uint16_t>(hp)); // Stat_HPCurrent — PA8 offset
+
+        // ATK = ganbaruStat + plaStatOther(ATK, level, nature, 0)
+        int atk = getGanbaruStat(bs.atk, iv_atk, gvAtk(), curLevel) + plaStatOther(bs.atk, curLevel, nat, 0);
+        pk.writeU16(0x16C, static_cast<uint16_t>(atk));
+
+        // DEF = ganbaruStat + plaStatOther(DEF, level, nature, 1)
+        int def = getGanbaruStat(bs.def_, iv_def, gvDef(), curLevel) + plaStatOther(bs.def_, curLevel, nat, 1);
+        pk.writeU16(0x16E, static_cast<uint16_t>(def));
+
+        // SPE = ganbaruStat + plaStatOther(SPE, level, nature, 2)
+        int spe = getGanbaruStat(bs.spe, iv_spe, gvSpe(), curLevel) + plaStatOther(bs.spe, curLevel, nat, 2);
+        pk.writeU16(0x170, static_cast<uint16_t>(spe));
+
+        // SPA = ganbaruStat + plaStatOther(SPA, level, nature, 3)
+        int spa = getGanbaruStat(bs.spa, iv_spa, gvSpA(), curLevel) + plaStatOther(bs.spa, curLevel, nat, 3);
+        pk.writeU16(0x172, static_cast<uint16_t>(spa));
+
+        // SPD = ganbaruStat + plaStatOther(SPD, level, nature, 4)
+        int spd = getGanbaruStat(bs.spd, iv_spd, gvSpD(), curLevel) + plaStatOther(bs.spd, curLevel, nat, 4);
+        pk.writeU16(0x174, static_cast<uint16_t>(spd));
+    }
+
+    pk.refreshChecksum();
+
+    return pk;
+}
+
 // --- File scanner ---
 
 std::vector<WCInfo> scanWondercards(const std::string& basePath, GameType game) {
@@ -2104,7 +2627,8 @@ std::vector<WCInfo> scanWondercards(const std::string& basePath, GameType game) 
     bool swsh = isSwSh(game);
     bool za   = (game == GameType::ZA);
     bool bdsp = isBDSP(game);
-    const char* targetExt = swsh ? ".wc8" : (za ? ".wa9" : (bdsp ? ".wb8" : ".wc9"));
+    bool la   = (game == GameType::LA);
+    const char* targetExt = swsh ? ".wc8" : (za ? ".wa9" : (bdsp ? ".wb8" : (la ? ".wa8" : ".wc9")));
 
     DIR* dir = opendir(wcDir.c_str());
     if (!dir) return results;
@@ -2182,6 +2706,36 @@ std::vector<WCInfo> scanWondercards(const std::string& basePath, GameType game) 
             });
         } else if (bdsp) {
             WB8 wc;
+            if (!wc.loadFromFile(fullPath) || !wc.isPokemon()) {
+                results.push_back({ name, fullPath, 0, 0, 0, false, false, false });
+                continue;
+            }
+
+            uint16_t specNat = wc.species(); // already national dex
+
+            bool isShiny = false;
+            uint8_t pType = wc.pidType();
+            if (pType == 2 || pType == 3) {
+                isShiny = true;
+            } else if (pType == 4) {
+                uint32_t wid = wc.id32();
+                uint32_t wpid = wc.pid();
+                if (wid != 0) {
+                    uint16_t t = static_cast<uint16_t>(wid & 0xFFFF);
+                    uint16_t s = static_cast<uint16_t>(wid >> 16);
+                    uint32_t xor_val = (wpid >> 16) ^ (wpid & 0xFFFF) ^ t ^ s;
+                    isShiny = xor_val < 16;
+                }
+            }
+
+            bool hasOT = wc.getHasOT(getLanguageIndex(2));
+
+            results.push_back({
+                name, fullPath, wc.cardID(), specNat, wc.level(),
+                isShiny, hasOT, true
+            });
+        } else if (la) {
+            WA8 wc;
             if (!wc.loadFromFile(fullPath) || !wc.isPokemon()) {
                 results.push_back({ name, fullPath, 0, 0, 0, false, false, false });
                 continue;

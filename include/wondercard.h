@@ -476,5 +476,110 @@ struct WB8 {
     bool loadFromFile(const std::string& path);
 };
 
-// Scan wondercard directory for .wc9/.wc8/.wa9/.wb8 files
+// WA8 wondercard parser (0x2C8 bytes) — Legends: Arceus
+// Ported from PKHeX.Core/MysteryGifts/WA8.cs
+struct WA8 {
+    static constexpr int SIZE = 0x2C8;
+    std::array<uint8_t, SIZE> data{};
+
+    uint16_t readU16(int ofs) const { return data[ofs] | (data[ofs+1] << 8); }
+    uint32_t readU32(int ofs) const { return data[ofs] | (data[ofs+1]<<8) | (data[ofs+2]<<16) | (data[ofs+3]<<24); }
+    int32_t readI32(int ofs) const { uint32_t v = readU32(ofs); return static_cast<int32_t>(v); }
+
+    // Card metadata
+    uint16_t cardID() const { return readU16(0x08); }
+    uint8_t cardType() const { return data[0x0F]; }
+
+    // Trainer / ID
+    uint32_t id32() const { return readU32(0x18); }
+    uint16_t tid16() const { return readU16(0x18); }
+    uint16_t sid16() const { return readU16(0x1A); }
+    int32_t originGame() const { return readI32(0x1C); }
+    uint32_t encryptionConst() const { return readU32(0x20); }
+    uint32_t pid() const { return readU32(0x24); }
+
+    // Locations
+    uint16_t eggLocation() const { return readU16(0x220); }
+    uint16_t metLocation() const { return readU16(0x222); }
+    uint16_t ball() const { return readU16(0x224); }
+    uint16_t heldItem() const { return readU16(0x226); }
+
+    // Moves
+    uint16_t move1() const { return readU16(0x228); }
+    uint16_t move2() const { return readU16(0x22A); }
+    uint16_t move3() const { return readU16(0x22C); }
+    uint16_t move4() const { return readU16(0x22E); }
+    uint16_t relearnMove1() const { return readU16(0x230); }
+    uint16_t relearnMove2() const { return readU16(0x232); }
+    uint16_t relearnMove3() const { return readU16(0x234); }
+    uint16_t relearnMove4() const { return readU16(0x236); }
+
+    // Pokemon attributes
+    uint16_t species() const { return readU16(0x238); } // National dex
+    uint8_t form() const { return data[0x23A]; }
+    uint8_t gender() const { return data[0x23B]; }
+    uint8_t level() const { return data[0x23C]; }
+    uint8_t nature() const { return data[0x23E]; }
+    uint8_t abilityType() const { return data[0x23F]; }
+    uint8_t pidType() const { return data[0x240]; }
+    uint8_t metLevel() const { return data[0x241]; }
+
+    // Ribbons (byte-indexed array at 0x244, 0x20 bytes, 0xFF = end)
+    static constexpr int RIBBON_OFS = 0x244;
+    static constexpr int RIBBON_SIZE = 0x20;
+
+    // IVs (each i8, 0xFC/0xFD/0xFE = flawless count)
+    uint8_t ivHp() const { return data[0x264]; }
+    uint8_t ivAtk() const { return data[0x265]; }
+    uint8_t ivDef() const { return data[0x266]; }
+    uint8_t ivSpe() const { return data[0x267]; }
+    uint8_t ivSpA() const { return data[0x268]; }
+    uint8_t ivSpD() const { return data[0x269]; }
+
+    // OT Gender / EVs
+    uint8_t otGender() const { return data[0x26A]; }
+    uint8_t evHp() const { return data[0x26B]; }
+    uint8_t evAtk() const { return data[0x26C]; }
+    uint8_t evDef() const { return data[0x26D]; }
+    uint8_t evSpe() const { return data[0x26E]; }
+    uint8_t evSpA() const { return data[0x26F]; }
+    uint8_t evSpD() const { return data[0x270]; }
+
+    // OT Memory
+    uint8_t otMemoryIntensity() const { return data[0x271]; }
+    uint8_t otMemory() const { return data[0x272]; }
+    uint8_t otMemoryFeeling() const { return data[0x273]; }
+    uint16_t otMemoryVariable() const { return readU16(0x274); }
+
+    // Ganbaru Values (unique to WA8/PA8)
+    uint8_t gvHp() const { return data[0x276]; }
+    uint8_t gvAtk() const { return data[0x277]; }
+    uint8_t gvDef() const { return data[0x278]; }
+    uint8_t gvSpe() const { return data[0x279]; }
+    uint8_t gvSpA() const { return data[0x27A]; }
+    uint8_t gvSpD() const { return data[0x27B]; }
+
+    // Nickname: 0x28 + langIdx * 0x1C (UTF-16LE, stride 0x1C)
+    std::u16string getNickname(int langIdx) const;
+    bool hasNickname(int langIdx) const;
+
+    // OT Name: 0x124 + langIdx * 0x1C (UTF-16LE, stride 0x1C)
+    std::u16string getOTName(int langIdx) const;
+
+    bool isEgg() const { return data[0x23D] == 1; }
+    bool isHOMEGift() const { return cardID() >= 9000; }
+
+    // --- Key methods ---
+    bool isPokemon() const { return cardType() == 1; }
+    bool getHasOT(int langIdx) const;
+    bool canInjectToBank(int langIdx) const { return getHasOT(langIdx); }
+
+    // Convert to PA8 data
+    Pokemon convertToPA8(const TrainerInfo& trainer) const;
+
+    // Load from file
+    bool loadFromFile(const std::string& path);
+};
+
+// Scan wondercard directory for .wc9/.wc8/.wa9/.wb8/.wa8 files
 std::vector<WCInfo> scanWondercards(const std::string& basePath, GameType game);

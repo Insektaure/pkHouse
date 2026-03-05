@@ -9,6 +9,7 @@ Bank::Bank() {
 
 void Bank::setGameType(GameType g) {
     gameType_ = g;
+    isUniversal_ = false;
     if (isFRLG(g)) {
         boxCount_ = 14;
         slotsPerBox_ = 30;
@@ -34,6 +35,16 @@ void Bank::setGameType(GameType g) {
     boxNames_.resize(boxCount_);
 }
 
+void Bank::setUniversal() {
+    isUniversal_ = true;
+    gameType_ = GameType::ZA; // default, not used for universal
+    boxCount_ = 32;
+    slotsPerBox_ = 30;
+    slotSize_ = PokeCrypto::MAX_PARTY_SIZE; // 376 bytes (data portion)
+    slots_.resize(boxCount_ * slotsPerBox_);
+    boxNames_.resize(boxCount_);
+}
+
 bool Bank::load(const std::string& path) {
     std::ifstream file(path, std::ios::binary);
     if (!file.is_open()) {
@@ -54,7 +65,13 @@ bool Bank::load(const std::string& path) {
     int fileBoxCount;
     int fileSlotSize;
     int fileSlotsPerBox;
-    if (version == VERSION_FRLG) {
+    bool fileUniversal = false;
+    if (version == VERSION_UNIVERSAL) {
+        fileBoxCount = 32;
+        fileSlotSize = PokeCrypto::MAX_PARTY_SIZE;
+        fileSlotsPerBox = 30;
+        fileUniversal = true;
+    } else if (version == VERSION_FRLG) {
         fileBoxCount = 14;
         fileSlotSize = PokeCrypto::SIZE_3STORED;
         fileSlotsPerBox = 30;
@@ -79,6 +96,7 @@ bool Bank::load(const std::string& path) {
     }
 
     // Use the file's parameters
+    isUniversal_ = fileUniversal;
     boxCount_ = fileBoxCount;
     slotSize_ = fileSlotSize;
     slotsPerBox_ = fileSlotsPerBox;
@@ -90,6 +108,13 @@ bool Bank::load(const std::string& path) {
     // Read all slots (decrypted data)
     int total = totalSlots();
     for (int i = 0; i < total; i++) {
+        if (isUniversal_) {
+            // Universal format: [gameType:u8][pad:3][data:MAX_PARTY_SIZE]
+            uint8_t header[4] = {};
+            file.read(reinterpret_cast<char*>(header), 4);
+            if (header[0] != 0xFF)
+                slots_[i].gameType_ = static_cast<GameType>(header[0]);
+        }
         file.read(reinterpret_cast<char*>(slots_[i].data.data()), slotSize_);
     }
 
@@ -123,6 +148,13 @@ bool Bank::save(const std::string& path) {
     // Write all slots
     int total = totalSlots();
     for (int i = 0; i < total; i++) {
+        if (isUniversal_) {
+            // Universal format: [gameType:u8][pad:3][data:MAX_PARTY_SIZE]
+            uint8_t header[4] = {0xFF, 0, 0, 0};
+            if (!slots_[i].isEmpty())
+                header[0] = static_cast<uint8_t>(slots_[i].gameType_);
+            file.write(reinterpret_cast<const char*>(header), 4);
+        }
         file.write(reinterpret_cast<const char*>(slots_[i].data.data()), slotSize_);
     }
 
@@ -144,7 +176,9 @@ Pokemon Bank::getSlot(int box, int slot) const {
     if (idx < 0 || idx >= totalSlots())
         return Pokemon{};
     Pokemon pkm = slots_[idx];
-    pkm.gameType_ = gameType_;
+    if (!isUniversal_)
+        pkm.gameType_ = gameType_;
+    // Universal: preserve the Pokemon's own gameType_
     return pkm;
 }
 

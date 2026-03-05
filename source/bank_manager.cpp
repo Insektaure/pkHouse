@@ -15,14 +15,18 @@ bool BankManager::init(const std::string& basePath, GameType game) {
 
     // Game-specific subdirectory (paired games share a folder)
     banksDir_ = banksParent + bankFolderNameOf(game) + "/";
-
     mkdir(banksDir_.c_str(), 0755);
+
+    // Universal bank subdirectory
+    universalDir_ = banksParent + "Universal/";
+    mkdir(universalDir_.c_str(), 0755);
 
     // Migrate legacy bank.bin only for ZA
     if (game == GameType::ZA)
         migrateLegacy();
 
     refresh();
+    refreshUniversal();
     return true;
 }
 
@@ -184,6 +188,135 @@ std::string BankManager::pathFor(const std::string& name) const {
             return info.fullPath;
     }
     return "";
+}
+
+// ============================================================================
+// Universal bank management
+// ============================================================================
+
+void BankManager::refreshUniversal() {
+    universalBankList_.clear();
+
+    DIR* dir = opendir(universalDir_.c_str());
+    if (!dir)
+        return;
+
+    struct dirent* entry;
+    while ((entry = readdir(dir)) != nullptr) {
+        std::string name = entry->d_name;
+        if (name.size() < 5 || name.substr(name.size() - 4) != ".bin")
+            continue;
+
+        std::string stem = name.substr(0, name.size() - 4);
+        std::string fullPath = universalDir_ + name;
+
+        BankInfo info;
+        info.name = stem;
+        info.fullPath = fullPath;
+        info.occupiedSlots = countOccupied(fullPath);
+        universalBankList_.push_back(info);
+    }
+    closedir(dir);
+
+    std::sort(universalBankList_.begin(), universalBankList_.end(),
+              [](const BankInfo& a, const BankInfo& b) {
+        std::string la = a.name, lb = b.name;
+        std::transform(la.begin(), la.end(), la.begin(), ::tolower);
+        std::transform(lb.begin(), lb.end(), lb.begin(), ::tolower);
+        return la < lb;
+    });
+}
+
+const std::vector<BankInfo>& BankManager::universalList() const {
+    return universalBankList_;
+}
+
+bool BankManager::createUniversalBank(const std::string& name) {
+    std::string safe = sanitizeName(name);
+    if (safe.empty())
+        return false;
+
+    std::string path = universalDir_ + safe + ".bin";
+
+    struct stat st;
+    if (stat(path.c_str(), &st) == 0)
+        return false; // already exists
+
+    Bank empty;
+    empty.setUniversal();
+    if (!empty.save(path))
+        return false;
+
+    refreshUniversal();
+    return true;
+}
+
+bool BankManager::deleteUniversalBank(const std::string& name) {
+    std::string path = universalPathFor(name);
+    if (path.empty())
+        return false;
+
+    if (std::remove(path.c_str()) != 0)
+        return false;
+
+    refreshUniversal();
+    return true;
+}
+
+bool BankManager::renameUniversalBank(const std::string& oldName, const std::string& newName) {
+    std::string safe = sanitizeName(newName);
+    if (safe.empty())
+        return false;
+
+    std::string oldPath = universalPathFor(oldName);
+    if (oldPath.empty())
+        return false;
+
+    std::string newPath = universalDir_ + safe + ".bin";
+
+    struct stat st;
+    if (stat(newPath.c_str(), &st) == 0)
+        return false;
+
+    if (std::rename(oldPath.c_str(), newPath.c_str()) != 0)
+        return false;
+
+    refreshUniversal();
+    return true;
+}
+
+std::string BankManager::loadUniversalBank(const std::string& name, Bank& bank) {
+    std::string path = universalPathFor(name);
+    if (path.empty())
+        return "";
+
+    bank.setUniversal(); // configure defaults (auto-detected on load if file exists)
+    bank.load(path);
+    return path;
+}
+
+std::string BankManager::universalPathFor(const std::string& name) const {
+    for (const auto& info : universalBankList_) {
+        if (info.name == name)
+            return info.fullPath;
+    }
+    return "";
+}
+
+int BankManager::countUniversalBanks(const std::string& basePath) {
+    std::string dir = basePath + "banks/Universal/";
+    DIR* d = opendir(dir.c_str());
+    if (!d) return 0;
+
+    int count = 0;
+    struct dirent* entry;
+    while ((entry = readdir(d)) != nullptr) {
+        std::string name = entry->d_name;
+        if (name.size() >= 5 && name.substr(name.size() - 4) == ".bin")
+            count++;
+    }
+    closedir(d);
+    return count;
 }
 
 std::string BankManager::sanitizeName(const std::string& raw) {

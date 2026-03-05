@@ -1,4 +1,5 @@
 #include "ui.h"
+#include "pk_convert.h"
 #include "species_converter.h"
 #include <algorithm>
 #include <cmath>
@@ -720,6 +721,46 @@ void UI::clearPokemonAt(int box, int slot, Panel panel) {
     }
 }
 
+Pokemon UI::convertIfNeeded(const Pokemon& pkm, Panel targetPanel) {
+    if (pkm.isEmpty()) return pkm;
+
+    // Determine if target is a universal bank (no conversion needed)
+    if (targetPanel == Panel::Bank && bank_.isUniversal())
+        return pkm;
+    if (targetPanel == Panel::Game && appletMode_ && bankLeft_.isUniversal())
+        return pkm;
+
+    // Check if format families match (no conversion needed)
+    GameType targetGame = selectedGame_;
+    if (formatFamilyOf(pkm.gameType_) == formatFamilyOf(targetGame))
+        return pkm;
+
+    // Check if transfer is possible
+    if (!PKConvert::canTransfer(pkm, targetGame)) {
+        showMessageAndWait("Transfer Error",
+            "This Pokemon can't be sent to " +
+            std::string(gameDisplayNameOf(targetGame)) + ".");
+        return Pokemon{};
+    }
+
+    // One-way confirmation for LGPE transfers
+    if (PKConvert::isOneWayTransfer(pkm.gameType_, targetGame)) {
+        if (!showConfirmDialog("One-Way Transfer",
+                "This is a one-way transfer from LGPE.\n"
+                "The Pokemon cannot be sent back.\n"
+                "Continue?")) {
+            return Pokemon{}; // user cancelled
+        }
+    }
+
+    // Convert
+    Pokemon converted = PKConvert::convertTo(pkm, targetGame);
+    if (converted.isEmpty()) {
+        showMessageAndWait("Transfer Error", "Conversion failed.");
+    }
+    return converted;
+}
+
 void UI::actionSelect() {
     // Block interaction on empty left panel in applet mode
     if (appletMode_ && cursor_.panel == Panel::Game && leftBankName_.empty())
@@ -770,6 +811,14 @@ void UI::actionSelect() {
                 "Can't move party Pokemon to bank.");
             return;
         }
+        // Cross-format conversion for all held Pokemon
+        std::vector<Pokemon> converted;
+        converted.reserve(heldMulti_.size());
+        for (auto& pkm : heldMulti_) {
+            Pokemon c = convertIfNeeded(pkm, cursor_.panel);
+            if (c.isEmpty()) return; // conversion failed, abort all
+            converted.push_back(c);
+        }
         // Helper: update LGPE party pointer when a Pokemon is placed at a new slot
         auto updatePartyPtr = [&](int origSlot, int newBox, int newSlot) {
             if (!heldFromLGPEParty_ || cursor_.panel != Panel::Game) return;
@@ -788,7 +837,7 @@ void UI::actionSelect() {
 
         if (positionPreserve_) {
             // Position-preserving: place each Pokemon at its original slot index
-            for (int i = 0; i < (int)heldMulti_.size(); i++) {
+            for (int i = 0; i < (int)converted.size(); i++) {
                 int targetSlot = heldMultiSlots_[i];
                 if (!getPokemonAt(box, targetSlot, cursor_.panel).isEmpty()) {
                     showMessageAndWait("Slots occupied",
@@ -796,8 +845,8 @@ void UI::actionSelect() {
                     return;
                 }
             }
-            for (int i = 0; i < (int)heldMulti_.size(); i++) {
-                setPokemonAt(box, heldMultiSlots_[i], cursor_.panel, heldMulti_[i]);
+            for (int i = 0; i < (int)converted.size(); i++) {
+                setPokemonAt(box, heldMultiSlots_[i], cursor_.panel, converted[i]);
                 updatePartyPtr(heldMultiSlots_[i], box, heldMultiSlots_[i]);
             }
         } else {
@@ -808,16 +857,16 @@ void UI::actionSelect() {
                 if (getPokemonAt(box, s, cursor_.panel).isEmpty())
                     emptyCount++;
             }
-            if (emptyCount < (int)heldMulti_.size()) {
+            if (emptyCount < (int)converted.size()) {
                 showMessageAndWait("Not enough space",
-                    "Need " + std::to_string(heldMulti_.size()) + " empty slots, only " +
+                    "Need " + std::to_string(converted.size()) + " empty slots, only " +
                     std::to_string(emptyCount) + " available.");
                 return;
             }
             int placed = 0;
-            for (int s = 0; s < slotsInBox && placed < (int)heldMulti_.size(); s++) {
+            for (int s = 0; s < slotsInBox && placed < (int)converted.size(); s++) {
                 if (getPokemonAt(box, s, cursor_.panel).isEmpty()) {
-                    setPokemonAt(box, s, cursor_.panel, heldMulti_[placed]);
+                    setPokemonAt(box, s, cursor_.panel, converted[placed]);
                     updatePartyPtr(heldMultiSlots_[placed], box, s);
                     placed++;
                 }
@@ -858,9 +907,13 @@ void UI::actionSelect() {
 
         Pokemon target = getPokemonAt(box, slot, cursor_.panel);
 
+        // Cross-format conversion for universal bank transfers
+        Pokemon toPlace = convertIfNeeded(heldPkm_, cursor_.panel);
+        if (toPlace.isEmpty()) return; // conversion failed or blocked
+
         if (target.isEmpty()) {
             // Place on empty — commit, clear history
-            setPokemonAt(box, slot, cursor_.panel, heldPkm_);
+            setPokemonAt(box, slot, cursor_.panel, toPlace);
             // Update party pointer to follow the Pokemon
             if (lgpeHeldPartyIdx_ >= 0 && cursor_.panel == Panel::Game) {
                 uint16_t newFlat = static_cast<uint16_t>(
@@ -878,7 +931,7 @@ void UI::actionSelect() {
                 ? save_.lgpePartyIndexOf(box, slot) : -1;
 
             swapHistory_.push_back({target, cursor_.panel, box, slot});
-            setPokemonAt(box, slot, cursor_.panel, heldPkm_);
+            setPokemonAt(box, slot, cursor_.panel, toPlace);
 
             // Update party pointer for the placed Pokemon
             if (lgpeHeldPartyIdx_ >= 0 && cursor_.panel == Panel::Game) {

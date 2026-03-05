@@ -218,6 +218,7 @@ private:
     int  bankSelCursor_ = 0;
     int  bankSelScroll_ = 0;
     bool showDeleteConfirm_ = false;
+    bool bankSelUniversal_ = false;  // true = viewing universal banks
 
     // Text input (PC only; Switch uses swkbd)
     bool showTextInput_ = false;
@@ -363,4 +364,9 @@ private:
     Pokemon getPokemonAt(int box, int slot, Panel panel) const;
     void setPokemonAt(int box, int slot, Panel panel, const Pokemon& pkm);
     void clearPokemonAt(int box, int slot, Panel panel);
+
+    // Cross-format conversion for universal bank transfers.
+    // Returns converted Pokemon, or empty if conversion is impossible (shows error).
+    // Returns pkm unchanged if no conversion needed.
+    Pokemon convertIfNeeded(const Pokemon& pkm, Panel targetPanel);
 };

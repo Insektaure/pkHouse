@@ -428,4 +428,9 @@ inline BaseStatEntry getBaseStats(uint16_t species, uint8_t form) {
     return BASE_STATS[getEntryIndex(species, form)];
 }
 
+inline bool isPresentInGame(uint16_t species, uint8_t form) {
+    int idx = getEntryIndex(species, form);
+    return idx >= 0 && idx < 560;
+}
+
 } // namespace PersonalBDSP

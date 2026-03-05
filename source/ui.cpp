@@ -622,6 +622,7 @@ void UI::selectGame(GameType game) {
     // Reset bank selector state
     bankSelCursor_ = 0;
     bankSelScroll_ = 0;
+    bankSelUniversal_ = false;
 
     screen_ = AppScreen::BankSelector;
 }

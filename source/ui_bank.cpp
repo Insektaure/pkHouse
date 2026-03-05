@@ -66,14 +66,26 @@ void UI::drawBankSelectorFrame() {
     // Title
     if (appletMode_) {
         const char* side = (bankSelTarget_ == Panel::Game) ? "Left" : "Right";
-        drawTextCentered(std::string("Select ") + side + " Bank",
-                         selCenterX, 25, T().text, font_);
+        std::string title = bankSelUniversal_
+            ? std::string("Select ") + side + " Universal Bank"
+            : std::string("Select ") + side + " Bank";
+        drawTextCentered(title, selCenterX, 25, T().text, font_);
     } else {
-        drawTextCentered("Select Bank", selCenterX,
+        const char* title = bankSelUniversal_ ? "Select Universal Bank" : "Select Bank";
+        drawTextCentered(title, selCenterX,
                          splitView ? 25 : 40, T().text, font_);
     }
 
-    const auto& banks = bankManager_.list();
+    // L/R tab indicator
+    {
+        std::string tabHint = bankSelUniversal_ ? "L/R: Game Banks" : "L/R: Universal";
+        int tw = 0, th = 0;
+        TTF_SizeUTF8(fontSmall_, tabHint.c_str(), &tw, &th);
+        drawText(tabHint, selCenterX - tw / 2, splitView ? 45 : 60, T().goldLabel, fontSmall_);
+    }
+
+    const auto& banks = bankSelUniversal_
+        ? bankManager_.universalList() : bankManager_.list();
 
     if (banks.empty()) {
         drawTextCentered("No banks found.",
@@ -117,7 +129,8 @@ void UI::drawBankSelectorFrame() {
                      T().text, font_);
 
             // Slot count (right-aligned)
-            int maxSlots = isLGPE(selectedGame_) ? 1000 : isBDSP(selectedGame_) ? 1200 : 960;
+            int maxSlots = bankSelUniversal_ ? 960
+                : isLGPE(selectedGame_) ? 1000 : isBDSP(selectedGame_) ? 1200 : 960;
             std::string slotStr = std::to_string(banks[idx].occupiedSlots) + "/" + std::to_string(maxSlots);
             int tw = 0, th = 0;
             TTF_SizeUTF8(font_, slotStr.c_str(), &tw, &th);
@@ -127,7 +140,7 @@ void UI::drawBankSelectorFrame() {
     }
 
     // Status bar
-    drawStatusBar("A:Open  X:New  Y:Rename  +:Delete  B:Back  -:About");
+    drawStatusBar("A:Open  X:New  Y:Rename  +:Delete  L/R:Toggle  B:Back");
 
     // Profile | Game name (bottom right, gold)
     {
@@ -154,7 +167,8 @@ void UI::drawBankSelectorFrame() {
 }
 
 void UI::handleBankSelectorInput(bool& running) {
-    const auto& banks = bankManager_.list();
+    const auto& banks = bankSelUniversal_
+        ? bankManager_.universalList() : bankManager_.list();
     int bankCount = (int)banks.size();
 
     SDL_Event event;
@@ -237,6 +251,13 @@ void UI::handleBankSelectorInput(bool& running) {
                     if (bankCount > 0)
                         showDeleteConfirm_ = true;
                     break;
+                case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
+                case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:
+                    // Toggle between game-specific and universal banks
+                    bankSelUniversal_ = !bankSelUniversal_;
+                    bankSelCursor_ = 0;
+                    bankSelScroll_ = 0;
+                    break;
             }
         }
 
@@ -276,6 +297,11 @@ void UI::handleBankSelectorInput(bool& running) {
                     break;
                 case SDLK_MINUS:
                     showAbout_ = true;
+                    break;
+                case SDLK_TAB:
+                    bankSelUniversal_ = !bankSelUniversal_;
+                    bankSelCursor_ = 0;
+                    bankSelScroll_ = 0;
                     break;
                 case SDLK_b:
                 case SDLK_ESCAPE:
@@ -319,7 +345,8 @@ void UI::handleBankSelectorInput(bool& running) {
 }
 
 void UI::openSelectedBank() {
-    const auto& banks = bankManager_.list();
+    const auto& banks = bankSelUniversal_
+        ? bankManager_.universalList() : bankManager_.list();
     if (bankSelCursor_ < 0 || bankSelCursor_ >= (int)banks.size())
         return;
 
@@ -342,12 +369,20 @@ void UI::openSelectedBank() {
     showWorking("Loading bank...");
 
     if (appletMode_ && bankSelTarget_ == Panel::Game) {
-        leftBankPath_ = bankManager_.loadBank(name, bankLeft_);
-        bankLeft_.setGameType(selectedGame_);
+        if (bankSelUniversal_) {
+            leftBankPath_ = bankManager_.loadUniversalBank(name, bankLeft_);
+        } else {
+            leftBankPath_ = bankManager_.loadBank(name, bankLeft_);
+            bankLeft_.setGameType(selectedGame_);
+        }
         leftBankName_ = name;
     } else {
-        activeBankPath_ = bankManager_.loadBank(name, bank_);
-        bank_.setGameType(selectedGame_);
+        if (bankSelUniversal_) {
+            activeBankPath_ = bankManager_.loadUniversalBank(name, bank_);
+        } else {
+            activeBankPath_ = bankManager_.loadBank(name, bank_);
+            bank_.setGameType(selectedGame_);
+        }
         activeBankName_ = name;
     }
 
@@ -390,7 +425,8 @@ void UI::drawDeleteConfirmPopup() {
     drawRect(popX, popY, POP_W, POP_H, T().panelBg);
     drawRectOutline(popX, popY, POP_W, POP_H, T().red, 2);
 
-    const auto& banks = bankManager_.list();
+    const auto& banks = bankSelUniversal_
+        ? bankManager_.universalList() : bankManager_.list();
     std::string bankName = (bankSelCursor_ >= 0 && bankSelCursor_ < (int)banks.size())
         ? banks[bankSelCursor_].name : "";
 
@@ -404,7 +440,8 @@ void UI::drawDeleteConfirmPopup() {
 
 void UI::handleDeleteConfirmEvent(const SDL_Event& event) {
     auto tryDelete = [&]() {
-        const auto& banks = bankManager_.list();
+        const auto& banks = bankSelUniversal_
+            ? bankManager_.universalList() : bankManager_.list();
         if (bankSelCursor_ < 0 || bankSelCursor_ >= (int)banks.size())
             return;
         const std::string& name = banks[bankSelCursor_].name;
@@ -415,8 +452,13 @@ void UI::handleDeleteConfirmEvent(const SDL_Event& event) {
             return;
         }
         showWorking("Deleting bank...");
-        bankManager_.deleteBank(name);
-        int newCount = (int)bankManager_.list().size();
+        if (bankSelUniversal_)
+            bankManager_.deleteUniversalBank(name);
+        else
+            bankManager_.deleteBank(name);
+        const auto& updated = bankSelUniversal_
+            ? bankManager_.universalList() : bankManager_.list();
+        int newCount = (int)updated.size();
         if (bankSelCursor_ >= newCount && newCount > 0)
             bankSelCursor_ = newCount - 1;
         showDeleteConfirm_ = false;
@@ -454,7 +496,8 @@ void UI::beginTextInput(TextInputPurpose purpose) {
     textInputCursorPos_ = 0;
 
     if (purpose == TextInputPurpose::RenameBank) {
-        const auto& banks = bankManager_.list();
+        const auto& banks = bankSelUniversal_
+            ? bankManager_.universalList() : bankManager_.list();
         if (bankSelCursor_ >= 0 && bankSelCursor_ < (int)banks.size()) {
             renamingBankName_ = banks[bankSelCursor_].name;
             textInputBuffer_ = renamingBankName_;
@@ -626,7 +669,10 @@ void UI::commitTextInput(const std::string& text) {
 #ifdef __SWITCH__
         {
             Bank temp;
-            temp.setGameType(selectedGame_);
+            if (bankSelUniversal_)
+                temp.setUniversal();
+            else
+                temp.setGameType(selectedGame_);
             size_t needed = temp.fileSize();
             struct statvfs vfs;
             if (statvfs("sdmc:/", &vfs) == 0) {
@@ -641,9 +687,12 @@ void UI::commitTextInput(const std::string& text) {
         }
 #endif
         showWorking("Creating bank...");
-        if (bankManager_.createBank(text)) {
-            // Select the newly created bank
-            const auto& banks = bankManager_.list();
+        bool ok = bankSelUniversal_
+            ? bankManager_.createUniversalBank(text)
+            : bankManager_.createBank(text);
+        if (ok) {
+            const auto& banks = bankSelUniversal_
+                ? bankManager_.universalList() : bankManager_.list();
             for (int i = 0; i < (int)banks.size(); i++) {
                 if (banks[i].name == text) {
                     bankSelCursor_ = i;
@@ -653,9 +702,12 @@ void UI::commitTextInput(const std::string& text) {
         }
     } else if (textInputPurpose_ == TextInputPurpose::RenameBank) {
         showWorking("Renaming bank...");
-        if (bankManager_.renameBank(renamingBankName_, text)) {
-            // Select the renamed bank
-            const auto& banks = bankManager_.list();
+        bool ok = bankSelUniversal_
+            ? bankManager_.renameUniversalBank(renamingBankName_, text)
+            : bankManager_.renameBank(renamingBankName_, text);
+        if (ok) {
+            const auto& banks = bankSelUniversal_
+                ? bankManager_.universalList() : bankManager_.list();
             for (int i = 0; i < (int)banks.size(); i++) {
                 if (banks[i].name == text) {
                     bankSelCursor_ = i;

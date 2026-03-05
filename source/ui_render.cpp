@@ -1,4 +1,5 @@
 #include "ui.h"
+#include "pk_convert.h"
 #include "species_converter.h"
 #include <algorithm>
 #include <cmath>
@@ -266,6 +267,24 @@ void UI::drawPanel(int panelX, const std::string& boxName, int boxIdx,
                 hlState = isSearchMatch(panelId, box, slot) ? 1 : -1;
             bool partySlot = save && save->isLGPEPartySlot(box, slot);
             drawSlot(cellX, cellY, pkm, isCursor, selOrder, hlState, partySlot);
+
+            // Universal bank: origin badge + dim if can't transfer
+            if (bank && bank->isUniversal() && !pkm.isEmpty()) {
+                // Dim overlay for Pokemon that can't transfer to current game
+                if (!appletMode_ && !PKConvert::canTransfer(pkm, selectedGame_)) {
+                    SDL_Color dim = {0, 0, 0, 140};
+                    drawRect(cellX, cellY, CELL_W, CELL_H, dim);
+                }
+
+                // Origin game badge
+                const char* tag = formatFamilyShortName(formatFamilyOf(pkm.gameType_));
+                int tw2 = 0, th2 = 0;
+                TTF_SizeUTF8(fontSmall_, tag, &tw2, &th2);
+                int badgeX = cellX + CELL_W - tw2 - 4;
+                int badgeY = cellY + CELL_H - 12;
+                drawRect(badgeX - 1, badgeY - 1, tw2 + 2, th2 + 2, T().panelBg);
+                drawText(tag, badgeX, badgeY, T().goldLabel, fontSmall_);
+            }
         }
     }
 }
@@ -637,6 +656,20 @@ void UI::drawDetailPopup(const Pokemon& pkm) {
     // Ability
     std::string abilityStr = "Ability: " + AbilityName::get(pkm.ability());
     drawText(abilityStr, infoX, infoY, T().textDim, font_);
+
+    // Origin game (shown for universal bank Pokemon)
+    {
+        bool fromUniversal = false;
+        if (cursor_.panel == Panel::Bank && bank_.isUniversal())
+            fromUniversal = true;
+        else if (cursor_.panel == Panel::Game && appletMode_ && bankLeft_.isUniversal())
+            fromUniversal = true;
+        if (fromUniversal) {
+            infoY += 28;
+            std::string originStr = std::string("Origin: ") + gameDisplayNameOf(pkm.gameType_);
+            drawText(originStr, infoX, infoY, T().goldLabel, font_);
+        }
+    }
 
     // --- Below sprite: Moves ---
     int movesX = popX + 30;

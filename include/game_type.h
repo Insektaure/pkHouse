@@ -85,6 +85,38 @@ inline const char* bankFolderNameOf(GameType g) {
     return "LegendsZA";
 }
 
+// Format family for cross-generation conversion routing
+enum class FormatFamily { LGPE, SwSh, BDSP, PLA, SV, ZA, FRLG };
+
+inline FormatFamily formatFamilyOf(GameType g) {
+    if (isLGPE(g)) return FormatFamily::LGPE;
+    if (isSwSh(g)) return FormatFamily::SwSh;
+    if (isBDSP(g)) return FormatFamily::BDSP;
+    if (g == GameType::LA) return FormatFamily::PLA;
+    if (isSV(g))   return FormatFamily::SV;
+    if (isFRLG(g)) return FormatFamily::FRLG;
+    return FormatFamily::ZA; // GameType::ZA
+}
+
+// Short display name for format family (used in universal bank badges)
+inline const char* formatFamilyShortName(FormatFamily f) {
+    switch (f) {
+        case FormatFamily::LGPE: return "LGPE";
+        case FormatFamily::SwSh: return "SwSh";
+        case FormatFamily::BDSP: return "BDSP";
+        case FormatFamily::PLA:  return "PLA";
+        case FormatFamily::SV:   return "SV";
+        case FormatFamily::ZA:   return "ZA";
+        case FormatFamily::FRLG: return "FRLG";
+    }
+    return "?";
+}
+
+// Whether a game family supports cross-generation transfers
+inline bool supportsUniversalBank(GameType g) {
+    return !isFRLG(g); // FRLG too different (Gen3)
+}
+
 // Filesystem-safe game name for backup paths
 inline const char* gamePathNameOf(GameType g) {
     switch (g) {

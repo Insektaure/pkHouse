@@ -13,6 +13,10 @@ public:
 
     void setGameType(GameType g);
 
+    // Configure as universal bank (cross-game, stores gameType per slot).
+    void setUniversal();
+    bool isUniversal() const { return isUniversal_; }
+
     // Load bank from file. Returns true on success; creates empty bank if file missing.
     bool load(const std::string& path);
 
@@ -29,7 +33,10 @@ public:
     int boxCount() const { return boxCount_; }
     int slotsPerBox() const { return slotsPerBox_; }
     int totalSlots() const { return boxCount_ * slotsPerBox_; }
-    size_t fileSize() const { return HEADER_SIZE + (size_t)totalSlots() * slotSize_ + (size_t)boxCount_ * BOX_NAME_SIZE; }
+    size_t fileSize() const {
+        size_t perSlot = isUniversal_ ? (4 + slotSize_) : slotSize_;
+        return HEADER_SIZE + (size_t)totalSlots() * perSlot + (size_t)boxCount_ * BOX_NAME_SIZE;
+    }
 
 private:
     // File format:
@@ -42,13 +49,15 @@ private:
     static constexpr int BOX_NAME_SIZE = 16;
 
     static constexpr char MAGIC[8] = {'P','K','H','O','U','S','E','\0'};
-    static constexpr uint32_t VERSION_32BOX = 1;
-    static constexpr uint32_t VERSION_40BOX = 2;
-    static constexpr uint32_t VERSION_LA    = 3;
-    static constexpr uint32_t VERSION_LGPE  = 4;
-    static constexpr uint32_t VERSION_FRLG  = 5;
+    static constexpr uint32_t VERSION_32BOX    = 1;
+    static constexpr uint32_t VERSION_40BOX    = 2;
+    static constexpr uint32_t VERSION_LA       = 3;
+    static constexpr uint32_t VERSION_LGPE     = 4;
+    static constexpr uint32_t VERSION_FRLG     = 5;
+    static constexpr uint32_t VERSION_UNIVERSAL = 6;
 
     GameType gameType_ = GameType::ZA;
+    bool isUniversal_ = false;
     int boxCount_ = 32;
     int slotsPerBox_ = 30;
     int slotSize_ = PokeCrypto::SIZE_9PARTY;
@@ -56,6 +65,7 @@ private:
     std::vector<std::string> boxNames_;
 
     uint32_t fileVersion() const {
+        if (isUniversal_) return VERSION_UNIVERSAL;
         if (isFRLG(gameType_)) return VERSION_FRLG;
         if (isLGPE(gameType_)) return VERSION_LGPE;
         if (gameType_ == GameType::LA) return VERSION_LA;

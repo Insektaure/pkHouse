@@ -328,6 +328,9 @@ Place `pkHouse.nro` on your Switch SD card (`sdmc:/switch/pkHouse/`) and launch 
     <img src="screenshots/011_2.jpg">
     <img src="screenshots/012.jpg">
     <img src="screenshots/013.jpg">
+    <img src="screenshots/013_1.jpg">
+    <img src="screenshots/013_2.jpg">
+    <img src="screenshots/013_3.jpg">
     <img src="screenshots/014.jpg">
 </div>
 

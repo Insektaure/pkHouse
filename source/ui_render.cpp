@@ -742,7 +742,7 @@ void UI::drawDetailPopup(const Pokemon& pkm) {
     drawRadarChart(chartCX, popY + 415, CHART_RADIUS, evsRadar, 252);
 
     // Close hint at bottom
-    drawTextCentered("A:Release   B / X: Close", popX + POP_W / 2, popY + POP_H - 20, T().textDim, fontSmall_);
+    drawTextCentered("L/R:Prev/Next   A:Release   B / X: Close", popX + POP_W / 2, popY + POP_H - 20, T().textDim, fontSmall_);
 }
 
 void UI::drawMenuPopup() {

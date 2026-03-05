@@ -320,6 +320,21 @@ void UI::handleInput(bool& running) {
                     refreshHighlightSet();
                 }
             };
+            // Navigate to prev/next non-empty Pokemon in the box
+            auto detailNav = [&](int dir) {
+                int cols = gridCols();
+                int slots = maxSlots();
+                int cur = cursor_.slot(cols);
+                for (int step = 1; step < slots; step++) {
+                    int next = (cur + dir * step % slots + slots) % slots;
+                    Pokemon pkm = getPokemonAt(cursor_.box, next, cursor_.panel);
+                    if (!pkm.isEmpty()) {
+                        cursor_.col = next % cols;
+                        cursor_.row = next / cols;
+                        return;
+                    }
+                }
+            };
             if (event.type == SDL_CONTROLLERBUTTONDOWN) {
                 switch (event.cbutton.button) {
                     case SDL_CONTROLLER_BUTTON_A: // Switch B
@@ -328,6 +343,12 @@ void UI::handleInput(bool& running) {
                         break;
                     case SDL_CONTROLLER_BUTTON_B: // Switch A
                         tryRelease();
+                        break;
+                    case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
+                        detailNav(-1);
+                        break;
+                    case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:
+                        detailNav(1);
                         break;
                 }
             }
@@ -340,6 +361,12 @@ void UI::handleInput(bool& running) {
                         break;
                     case SDLK_a:
                         tryRelease();
+                        break;
+                    case SDLK_q:
+                        detailNav(-1);
+                        break;
+                    case SDLK_e:
+                        detailNav(1);
                         break;
                 }
             }

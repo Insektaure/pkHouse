@@ -360,8 +360,12 @@ static MetDate getDistributionDate(uint16_t cardId, uint16_t checksum) {
             return { static_cast<uint8_t>(year - 2000), static_cast<uint8_t>(month), static_cast<uint8_t>(day) };
         }
     }
-    // Fallback: SV release date 2022-11-18
-    return { 22, 11, 18 };
+    // Fallback: current date (matches PKHeX GetSuggestedDate -> EncounterDate.GetDateSwitch())
+    std::time_t now = std::time(nullptr);
+    std::tm* tm = std::localtime(&now);
+    return { static_cast<uint8_t>(tm->tm_year - 100),
+             static_cast<uint8_t>(tm->tm_mon + 1),
+             static_cast<uint8_t>(tm->tm_mday) };
 }
 
 static MetDate getDistributionDateWC8(uint16_t cardId, uint16_t checksum) {
@@ -383,8 +387,12 @@ static MetDate getDistributionDateWC8(uint16_t cardId, uint16_t checksum) {
             return { static_cast<uint8_t>(year - 2000), static_cast<uint8_t>(month), static_cast<uint8_t>(day) };
         }
     }
-    // Fallback: SwSh release date 2019-11-15
-    return { 19, 11, 15 };
+    // Fallback: current date (matches PKHeX GetSuggestedDate -> EncounterDate.GetDateSwitch())
+    std::time_t now = std::time(nullptr);
+    std::tm* tm = std::localtime(&now);
+    return { static_cast<uint8_t>(tm->tm_year - 100),
+             static_cast<uint8_t>(tm->tm_mon + 1),
+             static_cast<uint8_t>(tm->tm_mday) };
 }
 
 static MetDate getDistributionDateWA9(uint16_t cardId) {
@@ -397,8 +405,12 @@ static MetDate getDistributionDateWA9(uint16_t cardId) {
             return { static_cast<uint8_t>(year - 2000), static_cast<uint8_t>(month), static_cast<uint8_t>(day) };
         }
     }
-    // Fallback: ZA release date 2025-10-14
-    return { 25, 10, 14 };
+    // Fallback: current date (matches PKHeX GetSuggestedDate -> EncounterDate.GetDateSwitch())
+    std::time_t now = std::time(nullptr);
+    std::tm* tm = std::localtime(&now);
+    return { static_cast<uint8_t>(tm->tm_year - 100),
+             static_cast<uint8_t>(tm->tm_mon + 1),
+             static_cast<uint8_t>(tm->tm_mday) };
 }
 
 static MetDate getDistributionDateWB8(uint16_t cardId) {
@@ -411,8 +423,12 @@ static MetDate getDistributionDateWB8(uint16_t cardId) {
             return { static_cast<uint8_t>(year - 2000), static_cast<uint8_t>(month), static_cast<uint8_t>(day) };
         }
     }
-    // Fallback: BDSP release date 2021-11-19
-    return { 21, 11, 19 };
+    // Fallback: current date (matches PKHeX EncounterDate.GetDateSwitch())
+    std::time_t now = std::time(nullptr);
+    std::tm* tm = std::localtime(&now);
+    return { static_cast<uint8_t>(tm->tm_year - 100),
+             static_cast<uint8_t>(tm->tm_mon + 1),
+             static_cast<uint8_t>(tm->tm_mday) };
 }
 
 static MetDate getDistributionDateWA8(uint16_t cardId) {
@@ -425,8 +441,12 @@ static MetDate getDistributionDateWA8(uint16_t cardId) {
             return { static_cast<uint8_t>(year - 2000), static_cast<uint8_t>(month), static_cast<uint8_t>(day) };
         }
     }
-    // Fallback: PLA release date 2022-01-28
-    return { 22, 1, 28 };
+    // Fallback: current date (matches PKHeX GetSuggestedDate -> EncounterDate.GetDateSwitch())
+    std::time_t now = std::time(nullptr);
+    std::tm* tm = std::localtime(&now);
+    return { static_cast<uint8_t>(tm->tm_year - 100),
+             static_cast<uint8_t>(tm->tm_mon + 1),
+             static_cast<uint8_t>(tm->tm_mday) };
 }
 
 // --- RNG helpers ---
@@ -704,11 +724,14 @@ Pokemon WC9::convertToPK9(const TrainerInfo& trainer) const {
     pk.data[0x11D] = md.month;
     pk.data[0x11E] = md.day;
 
-    // EggMetDate (0x119-0x11B) - for egg wondercards, use same date
+    // EggMetDate (0x119-0x11B) — for egg wondercards, uses current date (not distribution date)
+    // PKHeX WC9.cs SetEggMetData: pk.EggMetDate = EncounterDate.GetDateSwitch()
     if (isEggWC) {
-        pk.data[0x119] = md.year;
-        pk.data[0x11A] = md.month;
-        pk.data[0x11B] = md.day;
+        std::time_t now = std::time(nullptr);
+        std::tm* tm = std::localtime(&now);
+        pk.data[0x119] = static_cast<uint8_t>(tm->tm_year - 100);
+        pk.data[0x11A] = static_cast<uint8_t>(tm->tm_mon + 1);
+        pk.data[0x11B] = static_cast<uint8_t>(tm->tm_mday);
     }
 
     // Now finalize ID32 based on date
@@ -1123,11 +1146,14 @@ Pokemon WC8::convertToPK8(const TrainerInfo& trainer) const {
     pk.writeU16(0x116, otMemoryVariable());
     pk.data[0x118] = otMemoryFeeling();
 
-    // EggMetDate (0x119-0x11B) — for egg wondercards
+    // EggMetDate (0x119-0x11B) — for egg wondercards, uses current date (not distribution date)
+    // PKHeX WC8.cs SetEggMetData: pk.EggMetDate = EncounterDate.GetDateSwitch()
     if (isEggWC) {
-        pk.data[0x119] = md.year;
-        pk.data[0x11A] = md.month;
-        pk.data[0x11B] = md.day;
+        std::time_t now = std::time(nullptr);
+        std::tm* tm = std::localtime(&now);
+        pk.data[0x119] = static_cast<uint8_t>(tm->tm_year - 100);
+        pk.data[0x11A] = static_cast<uint8_t>(tm->tm_mon + 1);
+        pk.data[0x11B] = static_cast<uint8_t>(tm->tm_mday);
     }
 
     // ObedienceLevel — PK8 doesn't have this field (PK9 only at 0x11F)
@@ -1672,11 +1698,14 @@ Pokemon WA9::convertToPA9(const TrainerInfo& trainer) const {
     pk.data[0x11D] = md.month;
     pk.data[0x11E] = md.day;
 
-    // EggMetDate (0x119-0x11B) — for egg wondercards
+    // EggMetDate (0x119-0x11B) — for egg wondercards, uses current date (not distribution date)
+    // PKHeX WA9.cs SetEggMetData: pk.EggMetDate = EncounterDate.GetDateSwitch()
     if (isEggWC) {
-        pk.data[0x119] = md.year;
-        pk.data[0x11A] = md.month;
-        pk.data[0x11B] = md.day;
+        std::time_t now = std::time(nullptr);
+        std::tm* tm = std::localtime(&now);
+        pk.data[0x119] = static_cast<uint8_t>(tm->tm_year - 100);
+        pk.data[0x11A] = static_cast<uint8_t>(tm->tm_mon + 1);
+        pk.data[0x11B] = static_cast<uint8_t>(tm->tm_mday);
     }
 
     // ObedienceLevel (0x11F)
@@ -1873,11 +1902,6 @@ Pokemon WB8::convertToPB8(const TrainerInfo& trainer) const {
         }
     }
 
-    // MetDate (0x11C-0x11E) — write after date lock adjustment
-    pk.data[0x11C] = md.year;
-    pk.data[0x11D] = md.month;
-    pk.data[0x11E] = md.day;
-
     {
         std::u16string nick;
         bool isNicknamed = hasNickname(langIdx);
@@ -1924,8 +1948,8 @@ Pokemon WB8::convertToPB8(const TrainerInfo& trainer) const {
         uint8_t ivs[6] = { ivHp(), ivAtk(), ivDef(), ivSpe(), ivSpA(), ivSpD() };
         int perfectCount = 0;
         for (int i = 0; i < 6; i++) {
-            if (ivs[i] >= 0xFC) {
-                perfectCount = ivs[i] - 0xFB;
+            if (ivs[i] >= 0xFC && ivs[i] <= 0xFE) {
+                perfectCount = ivs[i] - 0xFB; // 0xFC=1, 0xFD=2, 0xFE=3
                 break;
             }
         }
@@ -2042,15 +2066,21 @@ Pokemon WB8::convertToPB8(const TrainerInfo& trainer) const {
     pk.data[0x124] = ballVal;
     pk.data[0x125] = static_cast<uint8_t>((mLevel & 0x7F) | ((otGenderBit & 1) << 7));
 
-    // EggMetDate (0x119-0x11B) and egg handling
+    // Egg vs MetDate handling — PKHeX: if(IsEgg) SetEggMetData(); else pk.MetDate = date;
     if (isEggWC) {
-        // SetEggMetData: eggLoc = metLoc, metLoc = 0xFFFE
+        // SetEggMetData: eggLoc = metLoc, metLoc = Default8bNone
         // IsEgg bit is already set via IV32 bit 30 in the IV section above
         pk.writeU16(0x120, metLocation()); // eggLocation = original metLocation
         pk.writeU16(0x122, 0xFFFF);        // metLocation = Default8bNone (0xFFFF)
-        pk.data[0x119] = md.year;
+        pk.data[0x119] = md.year;          // EggMetDate
         pk.data[0x11A] = md.month;
         pk.data[0x11B] = md.day;
+        // MetDate stays 0 for eggs (PKHeX SetEggMetData doesn't set MetDate)
+    } else {
+        // MetDate (0x11C-0x11E) — only for non-eggs
+        pk.data[0x11C] = md.year;
+        pk.data[0x11D] = md.month;
+        pk.data[0x11E] = md.day;
     }
 
     // PID (0x1C) — ShinyType8: same as WC8

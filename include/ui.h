@@ -28,6 +28,7 @@ enum class TextInputPurpose {
 // Search filter enums
 enum class GenderFilter { Any, Male, Female, Genderless };
 enum class PerfectIVFilter { Off, AtLeastOne, All6 };
+enum class RibbonFilter { Off, HasRibbon, HasMark, HasAny };
 enum class SearchMode { List, Highlight };
 
 // Search filter criteria
@@ -39,6 +40,7 @@ struct SearchFilter {
     bool filterAlpha  = false;
     GenderFilter gender = GenderFilter::Any;
     PerfectIVFilter perfectIVs = PerfectIVFilter::Off;
+    RibbonFilter ribbonFilter = RibbonFilter::Off;
     int levelMin = 0;
     int levelMax = 0;
     SearchMode mode = SearchMode::Highlight;

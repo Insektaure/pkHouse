@@ -563,13 +563,13 @@ void UI::handleInput(bool& running) {
                 bool alpha = (selectedGame_ == GameType::LA || selectedGame_ == GameType::ZA);
                 if (stickDirY_ != 0) {
                     int dir = stickDirY_ > 0 ? 1 : -1;
-                    searchFilterCursor_ = (searchFilterCursor_ + dir + 11) % 11;
+                    searchFilterCursor_ = (searchFilterCursor_ + dir + 12) % 12;
                     if (!alpha && searchFilterCursor_ == 4)
-                        searchFilterCursor_ = (searchFilterCursor_ + dir + 11) % 11;
+                        searchFilterCursor_ = (searchFilterCursor_ + dir + 12) % 12;
                 }
                 if (stickDirX_ != 0 && searchFilterCursor_ == 6)
                     searchLevelFocus_ = stickDirX_ > 0 ? 1 : 0;
-                if (stickDirX_ != 0 && searchFilterCursor_ == 8)
+                if (stickDirX_ != 0 && searchFilterCursor_ == 9)
                     searchFilter_.mode = stickDirX_ > 0 ? SearchMode::Highlight : SearchMode::List;
             } else if (showSearchResults_) {
                 if (stickDirY_ != 0 && !searchResults_.empty()) {
@@ -1109,9 +1109,9 @@ void UI::handleSearchFilterInput(const SDL_Event& event) {
     bool hasAlpha = (selectedGame_ == GameType::LA || selectedGame_ == GameType::ZA);
 
     auto moveFilterCursor = [&](int dir) {
-        searchFilterCursor_ = (searchFilterCursor_ + dir + 11) % 11;
+        searchFilterCursor_ = (searchFilterCursor_ + dir + 12) % 12;
         if (!hasAlpha && searchFilterCursor_ == 4)
-            searchFilterCursor_ = (searchFilterCursor_ + dir + 11) % 11;
+            searchFilterCursor_ = (searchFilterCursor_ + dir + 12) % 12;
     };
 
     auto confirmAction = [&]() {
@@ -1136,11 +1136,15 @@ void UI::handleSearchFilterInput(const SDL_Event& event) {
                     (static_cast<int>(searchFilter_.perfectIVs) + 1) % 3);
                 break;
             case 8:
+                searchFilter_.ribbonFilter = static_cast<RibbonFilter>(
+                    (static_cast<int>(searchFilter_.ribbonFilter) + 1) % 4);
+                break;
+            case 9:
                 searchFilter_.mode = (searchFilter_.mode == SearchMode::List)
                     ? SearchMode::Highlight : SearchMode::List;
                 break;
-            case 9: searchFilter_ = SearchFilter{}; break;
-            case 10: executeSearch(); break;
+            case 10: searchFilter_ = SearchFilter{}; break;
+            case 11: executeSearch(); break;
         }
     };
 
@@ -1154,11 +1158,11 @@ void UI::handleSearchFilterInput(const SDL_Event& event) {
                 break;
             case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
                 if (searchFilterCursor_ == 6) searchLevelFocus_ = 0;
-                else if (searchFilterCursor_ == 8) searchFilter_.mode = SearchMode::List;
+                else if (searchFilterCursor_ == 9) searchFilter_.mode = SearchMode::List;
                 break;
             case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
                 if (searchFilterCursor_ == 6) searchLevelFocus_ = 1;
-                else if (searchFilterCursor_ == 8) searchFilter_.mode = SearchMode::Highlight;
+                else if (searchFilterCursor_ == 9) searchFilter_.mode = SearchMode::Highlight;
                 break;
             case SDL_CONTROLLER_BUTTON_B: // Switch A = confirm
                 confirmAction();
@@ -1178,11 +1182,11 @@ void UI::handleSearchFilterInput(const SDL_Event& event) {
                 break;
             case SDLK_LEFT:
                 if (searchFilterCursor_ == 6) searchLevelFocus_ = 0;
-                else if (searchFilterCursor_ == 8) searchFilter_.mode = SearchMode::List;
+                else if (searchFilterCursor_ == 9) searchFilter_.mode = SearchMode::List;
                 break;
             case SDLK_RIGHT:
                 if (searchFilterCursor_ == 6) searchLevelFocus_ = 1;
-                else if (searchFilterCursor_ == 8) searchFilter_.mode = SearchMode::Highlight;
+                else if (searchFilterCursor_ == 9) searchFilter_.mode = SearchMode::Highlight;
                 break;
             case SDLK_a:
             case SDLK_RETURN:
@@ -1340,6 +1344,21 @@ bool UI::matchesSearchFilter(const Pokemon& pkm,
         if (pkm.ivSpD() == 31) perfect++;
         if (searchFilter_.perfectIVs == PerfectIVFilter::AtLeastOne && perfect == 0) return false;
         if (searchFilter_.perfectIVs == PerfectIVFilter::All6 && perfect < 6) return false;
+    }
+
+    if (searchFilter_.ribbonFilter != RibbonFilter::Off) {
+        auto ribbons = pkm.getRibbonsAndMarks();
+        if (searchFilter_.ribbonFilter == RibbonFilter::HasAny) {
+            if (ribbons.empty()) return false;
+        } else if (searchFilter_.ribbonFilter == RibbonFilter::HasRibbon) {
+            bool found = false;
+            for (const auto& r : ribbons) { if (!r.isMark) { found = true; break; } }
+            if (!found) return false;
+        } else if (searchFilter_.ribbonFilter == RibbonFilter::HasMark) {
+            bool found = false;
+            for (const auto& r : ribbons) { if (r.isMark) { found = true; break; } }
+            if (!found) return false;
+        }
     }
 
     return true;

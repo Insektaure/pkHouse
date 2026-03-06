@@ -846,7 +846,7 @@ void UI::drawSearchFilterPopup() {
     drawRect(0, 0, SCREEN_W, SCREEN_H, T().overlay);
 
     bool hasAlpha = (selectedGame_ == GameType::LA || selectedGame_ == GameType::ZA);
-    int rowCount = hasAlpha ? 11 : 10;
+    int rowCount = hasAlpha ? 12 : 11;
 
     constexpr int POP_W = 600;
     constexpr int ROW_H = 36;
@@ -864,7 +864,7 @@ void UI::drawSearchFilterPopup() {
     int valueX = popX + 230;
 
     int visualRow = 0;
-    for (int i = 0; i < 11; i++) {
+    for (int i = 0; i < 12; i++) {
         if (i == 4 && !hasAlpha) continue;
 
         int rowY = startY + visualRow * ROW_H;
@@ -931,6 +931,16 @@ void UI::drawSearchFilterPopup() {
                 break;
             }
             case 8: {
+                drawText("Ribbons/Marks:", labelX, textY, T().text, font_);
+                const char* rf = "Off";
+                if (searchFilter_.ribbonFilter == RibbonFilter::HasRibbon) rf = "Has Ribbon";
+                else if (searchFilter_.ribbonFilter == RibbonFilter::HasMark) rf = "Has Mark";
+                else if (searchFilter_.ribbonFilter == RibbonFilter::HasAny)  rf = "Has Any";
+                drawText(rf, valueX, textY,
+                         searchFilter_.ribbonFilter != RibbonFilter::Off ? T().text : T().textDim, font_);
+                break;
+            }
+            case 9: {
                 drawText("Mode:", labelX, textY, T().text, font_);
                 bool isList = (searchFilter_.mode == SearchMode::List);
                 drawText(isList ? "[x] List" : "[ ] List",
@@ -939,10 +949,10 @@ void UI::drawSearchFilterPopup() {
                          valueX + 100, textY, !isList ? T().searchMatch : T().textDim, font_);
                 break;
             }
-            case 9:
+            case 10:
                 drawTextCentered("[ Reset ]", popX + POP_W / 2, rowY + (ROW_H - 4) / 2, T().textDim, font_);
                 break;
-            case 10:
+            case 11:
                 drawTextCentered("[ Search ]", popX + POP_W / 2, rowY + (ROW_H - 4) / 2, T().text, font_);
                 break;
         }

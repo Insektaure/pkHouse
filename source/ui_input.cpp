@@ -107,7 +107,8 @@ void UI::handleInput(bool& running) {
         // While menu is open, handle menu input only
         if (showMenu_) {
             bool hasWC = isSV(selectedGame_) || isSwSh(selectedGame_) || selectedGame_ == GameType::ZA || isBDSP(selectedGame_) || selectedGame_ == GameType::LA || isLGPE(selectedGame_);
-            int menuCount = appletMode_ ? (hasWC ? 8 : 7) : (hasWC ? 7 : 6);
+            bool hasExport = !selectedSlots_.empty();
+            int menuCount = (appletMode_ ? (hasWC ? 8 : 7) : (hasWC ? 7 : 6)) + (hasExport ? 1 : 0);
             auto menuConfirm = [&]() {
                 // 0=Theme, 1=Search (both modes)
                 if (menuSelection_ == 0) {
@@ -133,7 +134,23 @@ void UI::handleInput(bool& running) {
                     showWondercardList_ = true;
                     return;
                 }
-                int sel = menuSelection_ - (hasWC ? 3 : 2); // shift past Theme + Search [+ Wondercard]
+                // Export Selected (after Wondercard)
+                int exportIdx = hasWC ? 3 : 2;
+                if (hasExport && menuSelection_ == exportIdx) {
+                    showMenu_ = false;
+                    int exported = 0;
+                    for (int slot : selectedSlots_) {
+                        Pokemon pkm = getPokemonAt(selectedBox_, slot, selectedPanel_);
+                        if (!pkm.isEmpty()) {
+                            exportPokemon(pkm);
+                            exported++;
+                        }
+                    }
+                    showMessageAndWait("Export Complete",
+                        std::to_string(exported) + " Pokemon exported.");
+                    return;
+                }
+                int sel = menuSelection_ - (hasWC ? 3 : 2) - (hasExport ? 1 : 0);
                 if (appletMode_) {
                     // sel: 0=Switch Left Bank, 1=Switch Right Bank, 2=Change Game,
                     // 3=Save Banks, 4=Quit
@@ -616,8 +633,9 @@ void UI::handleInput(bool& running) {
                 if (stickDirY_ != 0)
                 {
                     bool hasWC = isSV(selectedGame_) || isSwSh(selectedGame_) || selectedGame_ == GameType::ZA || isBDSP(selectedGame_) || selectedGame_ == GameType::LA || isLGPE(selectedGame_);
-                    int mc = appletMode_ ? (hasWC ? 8 : 7) : (hasWC ? 7 : 6);
-                    menuSelection_ = (menuSelection_ + (stickDirY_ > 0 ? 1 : mc - 1)) % mc;
+                    bool hasExport = !selectedSlots_.empty();
+                    int menuCount = (appletMode_ ? (hasWC ? 8 : 7) : (hasWC ? 7 : 6)) + (hasExport ? 1 : 0);
+                    menuSelection_ = (menuSelection_ + (stickDirY_ > 0 ? 1 : menuCount - 1)) % menuCount;
                 }
             } else if (!showDetail_) {
                 if (stickDirX_ != 0) moveCursor(stickDirX_, 0);

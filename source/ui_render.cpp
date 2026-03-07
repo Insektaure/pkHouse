@@ -752,11 +752,13 @@ void UI::drawMenuPopup() {
     // Menu items differ by mode and game
     // SV/SwSh games get a "Wondercard" item after Search
     bool hasWC = isSV(selectedGame_) || isSwSh(selectedGame_) || selectedGame_ == GameType::ZA || isBDSP(selectedGame_) || selectedGame_ == GameType::LA || isLGPE(selectedGame_);
+    bool hasExport = !selectedSlots_.empty();
     int menuCount;
     if (appletMode_)
         menuCount = hasWC ? 8 : 7;
     else
         menuCount = hasWC ? 7 : 6;
+    if (hasExport) menuCount++;
 
     constexpr int POP_W = 380;
     int POP_H = 50 + menuCount * 36 + 30;
@@ -768,10 +770,15 @@ void UI::drawMenuPopup() {
 
     drawTextCentered("Menu", popX + POP_W / 2, popY + 22, T().text, font_);
 
+    static char exportBuf[64];
+    if (hasExport)
+        std::snprintf(exportBuf, sizeof(exportBuf), "Export Selected (%d)", (int)selectedSlots_.size());
+
     const char* labelsNormal[] = {
         "Theme",
         "Search",
         "Wondercard",
+        exportBuf,
         "Switch Bank",
         "Change Game",
         "Save & Quit",
@@ -781,19 +788,21 @@ void UI::drawMenuPopup() {
         "Theme",
         "Search",
         "Wondercard",
+        exportBuf,
         "Switch Left Bank",
         "Switch Right Bank",
         "Change Game",
         "Save Banks",
         "Quit"
     };
-    // Build label list, skipping "Wondercard" if not SV/SwSh
-    const char* visibleLabels[8];
+    // Build label list, skipping conditional items
+    const char* visibleLabels[10];
     const char** allLabels = appletMode_ ? labelsApplet : labelsNormal;
-    int allCount = appletMode_ ? 8 : 7;
+    int allCount = appletMode_ ? 9 : 8;
     int vi = 0;
     for (int i = 0; i < allCount; i++) {
-        if (!hasWC && i == 2) continue; // skip Wondercard
+        if (!hasWC && i == 2) continue;     // skip Wondercard
+        if (!hasExport && i == 3) continue; // skip Export Selected
         visibleLabels[vi++] = allLabels[i];
     }
 

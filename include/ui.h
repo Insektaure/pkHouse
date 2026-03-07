@@ -98,6 +98,10 @@ private:
     std::unordered_map<std::string, SDL_Texture*> ribbonSpriteCache_;
     SDL_Texture* getRibbonSprite(const std::string& filename);
 
+    // Ball sprite cache: ball ID -> texture
+    std::unordered_map<uint8_t, SDL_Texture*> ballSpriteCache_;
+    SDL_Texture* getBallSprite(uint8_t ballId);
+
     // Status icons
     SDL_Texture* iconShiny_      = nullptr;
     SDL_Texture* iconAlpha_      = nullptr;

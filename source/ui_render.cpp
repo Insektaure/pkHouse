@@ -48,6 +48,11 @@ void UI::freeSprites() {
             SDL_DestroyTexture(tex);
     }
     ribbonSpriteCache_.clear();
+    for (auto& [id, tex] : ballSpriteCache_) {
+        if (tex)
+            SDL_DestroyTexture(tex);
+    }
+    ballSpriteCache_.clear();
     if (iconShiny_)      { SDL_DestroyTexture(iconShiny_);      iconShiny_ = nullptr; }
     if (iconAlpha_)      { SDL_DestroyTexture(iconAlpha_);      iconAlpha_ = nullptr; }
     if (iconShinyAlpha_) { SDL_DestroyTexture(iconShinyAlpha_); iconShinyAlpha_ = nullptr; }
@@ -66,6 +71,22 @@ SDL_Texture* UI::getRibbonSprite(const std::string& filename) {
 #endif
     SDL_Texture* tex = IMG_LoadTexture(renderer_, path.c_str());
     ribbonSpriteCache_[filename] = tex; // cache even if null
+    return tex;
+}
+
+SDL_Texture* UI::getBallSprite(uint8_t ballId) {
+    auto it = ballSpriteCache_.find(ballId);
+    if (it != ballSpriteCache_.end())
+        return it->second;
+
+    std::string path;
+#ifdef __SWITCH__
+    path = "romfs:/balls/_ball" + std::to_string(ballId) + ".png";
+#else
+    path = basePath_ + "/romfs/balls/_ball" + std::to_string(ballId) + ".png";
+#endif
+    SDL_Texture* tex = IMG_LoadTexture(renderer_, path.c_str());
+    ballSpriteCache_[ballId] = tex;
     return tex;
 }
 
@@ -616,19 +637,32 @@ void UI::drawDetailPopup(const Pokemon& pkm) {
     int infoX = sprX + LARGE_SPRITE + 30;
     int infoY = sprY + 4;
 
-    // Species name + level + gender
+    // Ball icon + Species name + level + gender
+    constexpr int BALL_SZ = 24;
+    int nameStartX = infoX;
+    uint8_t ballId = pkm.ball();
+    if (ballId > 0) {
+        SDL_Texture* ballTex = getBallSprite(ballId);
+        if (ballTex) {
+            int textH = TTF_FontHeight(font_);
+            int by = infoY + (textH - BALL_SZ) / 2;
+            SDL_Rect ballDst = {infoX, by, BALL_SZ, BALL_SZ};
+            SDL_RenderCopy(renderer_, ballTex, nullptr, &ballDst);
+            nameStartX += BALL_SZ + 4;
+        }
+    }
     std::string specName = SpeciesName::get(pkm.species());
     SDL_Color nameColor = pkm.isShiny() ? T().shiny : T().text;
-    drawText(specName, infoX, infoY, nameColor, font_);
+    drawText(specName, nameStartX, infoY, nameColor, font_);
 
     std::string lvlStr = "  Lv." + std::to_string(pkm.level());
     int nameW = 0, nameH = 0;
     TTF_SizeUTF8(font_, specName.c_str(), &nameW, &nameH);
-    drawText(lvlStr, infoX + nameW, infoY, T().text, font_);
+    drawText(lvlStr, nameStartX + nameW, infoY, T().text, font_);
 
     // Gender symbol
     uint8_t g = pkm.gender();
-    int afterLvl = infoX + nameW;
+    int afterLvl = nameStartX + nameW;
     int lvlW = 0;
     TTF_SizeUTF8(font_, lvlStr.c_str(), &lvlW, nullptr);
     afterLvl += lvlW + 4;

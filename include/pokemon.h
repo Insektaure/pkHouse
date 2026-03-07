@@ -81,6 +81,14 @@ struct Pokemon {
         return isLGPE(gameType_) ? (data[0x1D] >> 3) : data[0x24];
     }
 
+    // Ball: bits 11-14 of u16@0x46 (PK3), 0xDC (PB7), 0x137 (PA8), 0x124 (PK8/PA9)
+    uint8_t ball() const {
+        if (isFRLG(gameType_)) return (readU16(0x46) >> 11) & 0xF;
+        if (isLGPE(gameType_)) return data[0xDC];
+        if (gameType_ == GameType::LA) return data[0x137];
+        return data[0x124];
+    }
+
     // Ability: 0 for PK3 (not stored), 0x14 u8 (PB7), 0x14 u16 (PK8/PA8/PA9)
     uint16_t ability() const {
         if (isFRLG(gameType_)) return 0;

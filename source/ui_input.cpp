@@ -1853,8 +1853,17 @@ void UI::exportPokemon(const Pokemon& pkm) {
     uint16_t chk = isFRLG(selectedGame_) ? pkm.readU16(0x1C) : pkm.readU16(0x06);
     uint32_t ec = pkm.encryptionConstant();
 
-    std::snprintf(buf, sizeof(buf), "%04u%s%s - %s - %04X%08X.%s",
-                  sp, formStr.c_str(), tags.c_str(), nick.c_str(), chk, ec, ext);
+    // Short game tag
+    const char* gameTag = "ZA";
+    if (isSV(selectedGame_))   gameTag = "SV";
+    else if (isSwSh(selectedGame_)) gameTag = "SwSh";
+    else if (isBDSP(selectedGame_)) gameTag = "BDSP";
+    else if (selectedGame_ == GameType::LA) gameTag = "LA";
+    else if (isLGPE(selectedGame_)) gameTag = "LGPE";
+    else if (isFRLG(selectedGame_)) gameTag = "FRLG";
+
+    std::snprintf(buf, sizeof(buf), "%s - %04u%s%s - %s - %04X%08X.%s",
+                  gameTag, sp, formStr.c_str(), tags.c_str(), nick.c_str(), chk, ec, ext);
 
     // Sanitize filename: replace filesystem-unsafe chars
     std::string filename = buf;

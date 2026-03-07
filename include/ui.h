@@ -350,6 +350,7 @@ private:
     void handleSearchResultsInput(const SDL_Event& event);
     void handleWondercardListInput(const SDL_Event& event);
     void injectWondercard(const WCInfo& info);
+    void exportPokemon(const Pokemon& pkm);
     void executeSearch();
     bool matchesSearchFilter(const Pokemon& pkm, const std::string& filterSpecies,
                              const std::string& filterOT) const;

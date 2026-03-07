@@ -1,8 +1,11 @@
 #include "ui.h"
 #include "species_converter.h"
+#include "form_names.h"
 #include <algorithm>
 #include <cmath>
 #include <cctype>
+#include <cstdio>
+#include <sys/stat.h>
 
 // --- Joystick ---
 
@@ -338,9 +341,14 @@ void UI::handleInput(bool& running) {
             if (event.type == SDL_CONTROLLERBUTTONDOWN) {
                 switch (event.cbutton.button) {
                     case SDL_CONTROLLER_BUTTON_A: // Switch B
-                    case SDL_CONTROLLER_BUTTON_Y: // Switch X
                         showDetail_ = false;
                         break;
+                    case SDL_CONTROLLER_BUTTON_Y: { // Switch X — export
+                        Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(gridCols()), cursor_.panel);
+                        if (!pkm.isEmpty())
+                            exportPokemon(pkm);
+                        break;
+                    }
                     case SDL_CONTROLLER_BUTTON_B: // Switch A
                         tryRelease();
                         break;
@@ -356,9 +364,14 @@ void UI::handleInput(bool& running) {
                 switch (event.key.keysym.sym) {
                     case SDLK_b:
                     case SDLK_ESCAPE:
-                    case SDLK_x:
                         showDetail_ = false;
                         break;
+                    case SDLK_x: { // Export
+                        Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(gridCols()), cursor_.panel);
+                        if (!pkm.isEmpty())
+                            exportPokemon(pkm);
+                        break;
+                    }
                     case SDLK_a:
                         tryRelease();
                         break;
@@ -1799,4 +1812,74 @@ void UI::injectWondercard(const WCInfo& info) {
         + (panel == Panel::Game ? (appletMode_ ? "Left" : "Save") : (appletMode_ ? "Right" : "Bank"))
         + " Box " + std::to_string(box + 1)
         + " Slot " + std::to_string(slot + 1) + ".");
+}
+
+void UI::exportPokemon(const Pokemon& pkm) {
+    if (pkm.isEmpty()) return;
+
+    // Build export directory: basePath/export/{bankFolder}/
+    std::string dir = basePath_ + "export/";
+    std::string gameDir = dir + bankFolderNameOf(selectedGame_) + "/";
+
+    // PKHeX naming: {species:0000} - {form} - {flags} - {name} - {checksum:X4}{EC:X8}.{ext}
+    char buf[512];
+    uint16_t sp = pkm.species();
+    uint8_t fm = pkm.form();
+    const char* ext = pkFileExtension(selectedGame_);
+
+    std::string formStr;
+    if (fm != 0) {
+        const char* formName = getFormName(sp, fm);
+        if (formName)
+            formStr = std::string(" - ") + formName;
+        else {
+            char fb[16];
+            std::snprintf(fb, sizeof(fb), " - %02u", fm);
+            formStr = fb;
+        }
+    }
+
+    std::string tags;
+    {
+        std::string flags;
+        if (pkm.isShiny()) flags += "S";
+        if (pkm.isAlpha()) flags += "A";
+        if (pkm.isEgg())   flags += "E";
+        if (!flags.empty()) tags = " - [" + flags + "]";
+    }
+    std::string nick = SpeciesName::get(sp);
+
+    // Checksum at 0x06 for modern, 0x1C for PK3
+    uint16_t chk = isFRLG(selectedGame_) ? pkm.readU16(0x1C) : pkm.readU16(0x06);
+    uint32_t ec = pkm.encryptionConstant();
+
+    std::snprintf(buf, sizeof(buf), "%04u%s%s - %s - %04X%08X.%s",
+                  sp, formStr.c_str(), tags.c_str(), nick.c_str(), chk, ec, ext);
+
+    // Sanitize filename: replace filesystem-unsafe chars
+    std::string filename = buf;
+    for (char& c : filename) {
+        if (c == '/' || c == '\\' || c == ':' || c == '*' ||
+            c == '?' || c == '"' || c == '<' || c == '>' || c == '|')
+            c = '_';
+    }
+
+    std::string fullPath = gameDir + filename;
+
+    // Create directories only when we're about to write
+    mkdir(dir.c_str(), 0755);
+    mkdir(gameDir.c_str(), 0755);
+
+    // Write decrypted party-size data
+    int size = pkPartySize(selectedGame_);
+    FILE* f = std::fopen(fullPath.c_str(), "wb");
+    if (!f) {
+        showMessageAndWait("Export Failed", "Could not write file:\n" + fullPath);
+        return;
+    }
+    std::fwrite(pkm.data.data(), 1, size, f);
+    std::fclose(f);
+
+    showMessageAndWait("Exported!",
+        SpeciesName::get(sp) + " saved to:\n" + filename);
 }

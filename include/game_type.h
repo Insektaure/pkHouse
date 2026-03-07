@@ -103,3 +103,23 @@ inline const char* gamePathNameOf(GameType g) {
     }
     return "Unknown";
 }
+
+// PKHeX-compatible file extension for exported Pokemon
+inline const char* pkFileExtension(GameType g) {
+    if (g == GameType::ZA) return "pa9";
+    if (isSV(g))   return "pk9";
+    if (isSwSh(g)) return "pk8";
+    if (isBDSP(g)) return "pb8";
+    if (g == GameType::LA) return "pa8";
+    if (isLGPE(g)) return "pb7";
+    if (isFRLG(g)) return "pk3";
+    return "pk9";
+}
+
+// Party size in bytes for export
+inline int pkPartySize(GameType g) {
+    if (g == GameType::LA) return 0x178;
+    if (isLGPE(g)) return 0x104;
+    if (isFRLG(g)) return 100;
+    return 0x158; // PK8/PB8/PK9/PA9
+}

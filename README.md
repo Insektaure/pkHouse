@@ -88,6 +88,7 @@ Press **X** on any Pokemon to view detailed information:
 - National Pokedex number
 - Original Trainer (OT) and Trainer ID
 - Nature and Ability
+- Held item
 - All 4 moves
 - IVs displayed as a hexagonal radar chart (perfect 31s highlighted in gold)
 - EVs displayed as a hexagonal radar chart

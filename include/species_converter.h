@@ -49,3 +49,9 @@ namespace AbilityName {
     void load(const std::string& path);
     const std::string& get(uint16_t abilityId);
 } // namespace AbilityName
+
+// Item name lookup (loaded from romfs text file).
+namespace ItemName {
+    void load(const std::string& path);
+    const std::string& get(uint16_t itemId);
+} // namespace ItemName

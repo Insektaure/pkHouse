@@ -658,10 +658,18 @@ void UI::drawDetailPopup(const Pokemon& pkm) {
     // Ability
     std::string abilityStr = "Ability: " + AbilityName::get(pkm.ability());
     drawText(abilityStr, infoX, infoY, T().textDim, font_);
+    infoY += 28;
+
+    // Held item
+    uint16_t item = pkm.heldItem();
+    if (item != 0) {
+        std::string itemStr = "Held Item: " + ItemName::get(item);
+        drawText(itemStr, infoX, infoY, T().textDim, font_);
+    }
 
     // --- Below sprite: Moves ---
     int movesX = popX + 30;
-    int movesY = sprY + LARGE_SPRITE + 20;
+    int movesY = sprY + LARGE_SPRITE + 46;
 
     drawText("Moves", movesX, movesY, T().text, font_);
     movesY += 30;

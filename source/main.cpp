@@ -41,11 +41,13 @@ int main(int argc, char* argv[]) {
     MoveName::load("romfs:/data/moves_en.txt");
     NatureName::load("romfs:/data/natures_en.txt");
     AbilityName::load("romfs:/data/abilities_en.txt");
+    ItemName::load("romfs:/data/items_en.txt");
 #else
     SpeciesName::load("romfs/data/species_en.txt");
     MoveName::load("romfs/data/moves_en.txt");
     NatureName::load("romfs/data/natures_en.txt");
     AbilityName::load("romfs/data/abilities_en.txt");
+    ItemName::load("romfs/data/items_en.txt");
 #endif
 
     // Initialize UI first so we can show errors

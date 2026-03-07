@@ -201,3 +201,24 @@ const std::string& AbilityName::get(uint16_t abilityId) {
         return s_abilityNames[abilityId];
     return s_unknown;
 }
+
+// Item name data
+static std::vector<std::string> s_itemNames;
+
+void ItemName::load(const std::string& path) {
+    std::ifstream file(path);
+    if (!file.is_open())
+        return;
+    std::string line;
+    while (std::getline(file, line)) {
+        if (!line.empty() && line.back() == '\r')
+            line.pop_back();
+        s_itemNames.push_back(std::move(line));
+    }
+}
+
+const std::string& ItemName::get(uint16_t itemId) {
+    if (itemId < s_itemNames.size())
+        return s_itemNames[itemId];
+    return s_unknown;
+}

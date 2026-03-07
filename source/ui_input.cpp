@@ -139,15 +139,18 @@ void UI::handleInput(bool& running) {
                 if (hasExport && menuSelection_ == exportIdx) {
                     showMenu_ = false;
                     int exported = 0;
+                    int failed = 0;
                     for (int slot : selectedSlots_) {
                         Pokemon pkm = getPokemonAt(selectedBox_, slot, selectedPanel_);
                         if (!pkm.isEmpty()) {
-                            exportPokemon(pkm);
-                            exported++;
+                            std::string name = exportPokemon(pkm);
+                            if (!name.empty()) exported++;
+                            else failed++;
                         }
                     }
-                    showMessageAndWait("Export Complete",
-                        std::to_string(exported) + " Pokemon exported.");
+                    std::string body = std::to_string(exported) + " Pokemon exported.";
+                    if (failed > 0) body += "\n" + std::to_string(failed) + " failed.";
+                    showMessageAndWait("Export Complete", body);
                     return;
                 }
                 int sel = menuSelection_ - (hasWC ? 3 : 2) - (hasExport ? 1 : 0);
@@ -362,8 +365,13 @@ void UI::handleInput(bool& running) {
                         break;
                     case SDL_CONTROLLER_BUTTON_Y: { // Switch X — export
                         Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(gridCols()), cursor_.panel);
-                        if (!pkm.isEmpty())
-                            exportPokemon(pkm);
+                        if (!pkm.isEmpty()) {
+                            std::string name = exportPokemon(pkm);
+                            if (!name.empty())
+                                showMessageAndWait("Exported!", name);
+                            else
+                                showMessageAndWait("Export Failed", "Could not write file.");
+                        }
                         break;
                     }
                     case SDL_CONTROLLER_BUTTON_B: // Switch A
@@ -385,8 +393,13 @@ void UI::handleInput(bool& running) {
                         break;
                     case SDLK_x: { // Export
                         Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(gridCols()), cursor_.panel);
-                        if (!pkm.isEmpty())
-                            exportPokemon(pkm);
+                        if (!pkm.isEmpty()) {
+                            std::string name = exportPokemon(pkm);
+                            if (!name.empty())
+                                showMessageAndWait("Exported!", name);
+                            else
+                                showMessageAndWait("Export Failed", "Could not write file.");
+                        }
                         break;
                     }
                     case SDLK_a:
@@ -1832,8 +1845,8 @@ void UI::injectWondercard(const WCInfo& info) {
         + " Slot " + std::to_string(slot + 1) + ".");
 }
 
-void UI::exportPokemon(const Pokemon& pkm) {
-    if (pkm.isEmpty()) return;
+std::string UI::exportPokemon(const Pokemon& pkm) {
+    if (pkm.isEmpty()) return "";
 
     // Build export directory: basePath/export/{bankFolder}/
     std::string dir = basePath_ + "export/";
@@ -1900,13 +1913,9 @@ void UI::exportPokemon(const Pokemon& pkm) {
     // Write decrypted party-size data
     int size = pkPartySize(selectedGame_);
     FILE* f = std::fopen(fullPath.c_str(), "wb");
-    if (!f) {
-        showMessageAndWait("Export Failed", "Could not write file:\n" + fullPath);
-        return;
-    }
+    if (!f) return "";
     std::fwrite(pkm.data.data(), 1, size, f);
     std::fclose(f);
 
-    showMessageAndWait("Exported!",
-        SpeciesName::get(sp) + " saved to:\n" + filename);
+    return filename;
 }

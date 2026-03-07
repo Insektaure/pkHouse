@@ -91,8 +91,11 @@ Press **X** on any Pokemon to view detailed information:
 - All 4 moves
 - IVs displayed as a hexagonal radar chart (perfect 31s highlighted in gold)
 - EVs displayed as a hexagonal radar chart
+- Ribbons and marks (displayed as sprite icons with names)
 
 Shiny Pokemon names are displayed in gold. Alpha Pokemon (Legends: Arceus / Z-A) show a dedicated icon.
+
+Use **L/R** in the detail view to navigate to the next or previous non-empty slot without closing the popup.
 
 ### Bank System
 
@@ -168,6 +171,7 @@ Available filters:
 | Gender | Cycle: Any / Male / Female / Genderless |
 | Level | Min and max level range |
 | Perfect IVs | Off / 1+ (at least one 31 IV) / 6IV (all 31) |
+| Ribbons/Marks | Off / Has Ribbon / Has Mark / Has Any |
 
 Two result modes are available (selectable in the filter with Left/Right, defaults to Highlight):
 
@@ -194,6 +198,28 @@ The wondercard list shows each card's species, level, and shiny status. Select a
 The injected Pokemon is fully generated from the wondercard data — PID, IVs, nature, ability, moves, OT, and all metadata are set according to the event's rules, matching official distribution behavior.
 
 Wondercard files can be downloaded from the [Project Pokemon EventsGallery](https://github.com/projectpokemon/EventsGallery) repository.
+
+### Export Pokemon
+
+Export Pokemon as decrypted `.pk` files compatible with PKHeX. Access from the **detail view** (single export) or the **menu** (batch export of selected Pokemon).
+
+Exported files are saved to:
+
+```
+export/<GameFamily>/<filename>
+```
+
+Filenames follow the PKHeX naming convention: game tag, national dex number, form name, status flags (`[S]`hiny/`[A]`lpha/`[E]`gg), species name, and checksum.
+
+| Game Family | File Extension |
+|-------------|----------------|
+| Let's Go Pikachu / Eevee | `.pb7` |
+| Sword / Shield | `.pk8` |
+| Brilliant Diamond / Shining Pearl | `.pb8` |
+| Legends: Arceus | `.pa8` |
+| Scarlet / Violet | `.pk9` |
+| Legends: Z-A | `.pa9` |
+| FireRed / LeafGreen | `.pk3` |
 
 ### Save Integrity
 
@@ -250,7 +276,7 @@ When switching banks, the selector appears on the side being switched while the 
 | A | Pick up / Place Pokemon |
 | B | Cancel / Return held Pokemon |
 | Y | Toggle multi-select |
-| X | View Pokemon details / Delete held Pokemon |
+| X | View Pokemon details / Delete held Pokemon / Export (in detail view) |
 | + | Open menu |
 | - | About |
 
@@ -261,6 +287,7 @@ When switching banks, the selector appears on the side being switched while the 
 | Theme | Open the theme selector |
 | Search | Search for Pokemon across both panels |
 | Wondercard | Inject event wondercards as Pokemon (supported games only) |
+| Export Selected | Export selected Pokemon as `.pk` files (shown when Pokemon are selected) |
 | Switch Bank | Save game and bank, return to bank selector |
 | Change Game | Save everything, return to game selector |
 | Save & Quit | Save everything and exit |
@@ -273,6 +300,7 @@ When switching banks, the selector appears on the side being switched while the 
 | Theme | Open the theme selector |
 | Search | Search for Pokemon across both panels |
 | Wondercard | Inject event wondercards as Pokemon (supported games only) |
+| Export Selected | Export selected Pokemon as `.pk` files (shown when Pokemon are selected) |
 | Switch Left Bank | Save both banks, switch the left bank |
 | Switch Right Bank | Save both banks, switch the right bank |
 | Change Game | Save both banks, return to game selector |

@@ -720,10 +720,8 @@ void UI::drawDetailPopup(const Pokemon& pkm) {
 
     // Held item
     uint16_t item = pkm.heldItem();
-    if (item != 0) {
-        std::string itemStr = "Held Item: " + ItemName::get(item);
-        drawText(itemStr, infoX, infoY, T().textDim, font_);
-    }
+    std::string itemStr = "Held Item: " + (item != 0 ? ItemName::get(item) : std::string("---"));
+    drawText(itemStr, infoX, infoY, T().textDim, font_);
 
     // --- Below sprite: Moves ---
     int movesX = popX + 30;
@@ -734,20 +732,24 @@ void UI::drawDetailPopup(const Pokemon& pkm) {
 
     constexpr int TYPE_ICON_W = 25;
     constexpr int TYPE_ICON_H = 25;
+    constexpr int MOVE_ROW_H = 28;
+    int textH = TTF_FontHeight(font_);
     uint16_t moves[4] = {pkm.move1(), pkm.move2(), pkm.move3(), pkm.move4()};
     for (int i = 0; i < 4; i++) {
+        int iconY = movesY + (MOVE_ROW_H - TYPE_ICON_H) / 2;
+        int txtY  = movesY + (MOVE_ROW_H - textH) / 2;
         if (moves[i] != 0) {
             uint8_t mtype = getMoveType(moves[i], selectedGame_);
             SDL_Texture* typeTex = getTypeSprite(mtype);
             if (typeTex) {
-                SDL_Rect typeDst = {movesX + 10, movesY, TYPE_ICON_W, TYPE_ICON_H};
+                SDL_Rect typeDst = {movesX + 10, iconY, TYPE_ICON_W, TYPE_ICON_H};
                 SDL_RenderCopy(renderer_, typeTex, nullptr, &typeDst);
             }
-            drawText(MoveName::get(moves[i]), movesX + 10 + TYPE_ICON_W + 6, movesY + 2, T().textDim, font_);
+            drawText(MoveName::get(moves[i]), movesX + 10 + TYPE_ICON_W + 6, txtY, T().textDim, font_);
         } else {
-            drawText("- ---", movesX + 10, movesY, T().textDim, font_);
+            drawText("---", movesX + 10 + TYPE_ICON_W + 6, txtY, T().textDim, font_);
         }
-        movesY += 26;
+        movesY += MOVE_ROW_H;
     }
 
     // --- Ribbons & Marks below moves ---

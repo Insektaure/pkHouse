@@ -71,7 +71,7 @@ void UI::drawProfileSelectorFrame() {
         drawTextCentered(name, cardX + CARD_W / 2, cardY + ICON_SIZE + 24, T().text, fontSmall_);
     }
 
-    drawStatusBar("A:Select  Y:Theme  -:About  +:Quit");
+    drawStatusBar("A: Select  Y: Theme  -: About  +: Quit");
 }
 
 void UI::handleProfileSelectorInput(bool& running) {
@@ -361,13 +361,13 @@ void UI::drawGameSelectorFrame() {
     }
 
     if (selectedProfile_ >= 0) {
-        drawStatusBar("A:Select  B:Back  Y:Theme  -:About  +:Quit");
+        drawStatusBar("A: Select  B: Back  Y: Theme  -: About  +: Quit");
         std::string profileLabel = account_.profiles()[selectedProfile_].nickname;
         int tw = 0, th = 0;
         TTF_SizeUTF8(fontSmall_, profileLabel.c_str(), &tw, &th);
         drawText(profileLabel, SCREEN_W - tw - 15, SCREEN_H - 26, T().goldLabel, fontSmall_);
     } else {
-        drawStatusBar("A:Select  B:Quit  Y:Theme  -:About");
+        drawStatusBar("A: Select  B: Quit  Y: Theme  -: About");
     }
     if (appletMode_) {
         const char* modeLabel = "Dual Bank Mode";

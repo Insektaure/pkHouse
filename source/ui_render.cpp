@@ -734,7 +734,7 @@ void UI::drawDetailPopup(const Pokemon& pkm) {
         constexpr int RIB_ROW_H = 26;
         constexpr int ICON_SZ = 18;
         constexpr int ICON_PAD = 4;
-        int maxY = popY + POP_H - 30;
+        int maxY = popY + POP_H - 74;
         int col = 0;
 
         for (size_t i = 0; i < ribbons.size(); i++) {
@@ -782,6 +782,16 @@ void UI::drawDetailPopup(const Pokemon& pkm) {
     drawTextCentered("EVs", chartCX, popY + 283, T().text, font_);
     int evsRadar[] = {pkm.evHp(), pkm.evAtk(), pkm.evDef(), pkm.evSpe(), pkm.evSpD(), pkm.evSpA()};
     drawRadarChart(chartCX, popY + 415, CHART_RADIUS, evsRadar, 252);
+
+    // PID, EC, ID, TSV (bottom-left, small font, two lines)
+    uint16_t tsv = (pkm.tid() ^ pkm.sid()) >> 4;
+    char techBuf1[64], techBuf2[64];
+    snprintf(techBuf1, sizeof(techBuf1), "PID: %08X   EC: %08X",
+             pkm.pid(), pkm.encryptionConstant());
+    snprintf(techBuf2, sizeof(techBuf2), "ID: %05u/%05u   TSV: %04u",
+             pkm.tid(), pkm.sid(), tsv);
+    drawText(techBuf1, popX + 20, popY + POP_H - 66, T().textDim, fontSmall_);
+    drawText(techBuf2, popX + 20, popY + POP_H - 50, T().textDim, fontSmall_);
 
     // Close hint at bottom
     drawTextCentered("L/R:Prev/Next   A:Release   X:Export   B: Close", popX + POP_W / 2, popY + POP_H - 20, T().textDim, fontSmall_);

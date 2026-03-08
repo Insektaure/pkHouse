@@ -760,10 +760,10 @@ void UI::drawDetailPopup(const Pokemon& pkm) {
     // --- Ribbons & Marks below moves ---
     auto ribbons = pkm.getRibbonsAndMarks();
     if (!ribbons.empty()) {
-        movesY += 6;
+        movesY += 16;
         std::string ribTitle = "Ribbons & Marks (" + std::to_string(ribbons.size()) + ")";
         drawText(ribTitle, movesX, movesY, T().text, font_);
-        movesY += 24;
+        movesY += 30;
 
         // Two columns, small font with sprite icons
         int col1X = movesX + 4;

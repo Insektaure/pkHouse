@@ -379,10 +379,22 @@ void UI::handleInput(bool& running) {
                         break;
                     case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
                         detailNav(-1);
+                        lHeld_ = true;
+                        bumperRepeatTime_ = SDL_GetTicks();
+                        bumperMoved_ = false;
                         break;
                     case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:
                         detailNav(1);
+                        rHeld_ = true;
+                        bumperRepeatTime_ = SDL_GetTicks();
+                        bumperMoved_ = false;
                         break;
+                }
+            }
+            if (event.type == SDL_CONTROLLERBUTTONUP) {
+                switch (event.cbutton.button) {
+                    case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:  lHeld_ = false; break;
+                    case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: rHeld_ = false; break;
                 }
             }
             if (event.type == SDL_KEYDOWN) {
@@ -676,7 +688,22 @@ void UI::handleInput(bool& running) {
                     searchResultScroll_ = searchResultCursor_;
                 if (searchResultCursor_ >= searchResultScroll_ + visibleRows)
                     searchResultScroll_ = searchResultCursor_ - visibleRows + 1;
-            } else if (!showDetail_ && !showMenu_ && !showSearchFilter_ &&
+            } else if (showDetail_) {
+                // Navigate to prev/next non-empty slot
+                int dir = lHeld_ ? -1 : 1;
+                int cols = gridCols();
+                int slots = maxSlots();
+                int cur = cursor_.slot(cols);
+                for (int step = 1; step < slots; step++) {
+                    int next = (cur + dir * step % slots + slots) % slots;
+                    Pokemon pkm = getPokemonAt(cursor_.box, next, cursor_.panel);
+                    if (!pkm.isEmpty()) {
+                        cursor_.col = next % cols;
+                        cursor_.row = next / cols;
+                        break;
+                    }
+                }
+            } else if (!showMenu_ && !showSearchFilter_ &&
                        !showBoxView_) {
                 // Box switching
                 if (lHeld_) switchBox(-1);

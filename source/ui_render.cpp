@@ -733,24 +733,29 @@ void UI::drawDetailPopup(const Pokemon& pkm) {
     constexpr int TYPE_ICON_W = 25;
     constexpr int TYPE_ICON_H = 25;
     constexpr int MOVE_ROW_H = 28;
+    constexpr int MOVE_COL_W = 230;
     int textH = TTF_FontHeight(font_);
     uint16_t moves[4] = {pkm.move1(), pkm.move2(), pkm.move3(), pkm.move4()};
     for (int i = 0; i < 4; i++) {
-        int iconY = movesY + (MOVE_ROW_H - TYPE_ICON_H) / 2;
-        int txtY  = movesY + (MOVE_ROW_H - textH) / 2;
+        int col = i % 2;
+        int row = i / 2;
+        int mx = movesX + 10 + col * MOVE_COL_W;
+        int my = movesY + row * MOVE_ROW_H;
+        int iconY = my + (MOVE_ROW_H - TYPE_ICON_H) / 2;
+        int txtY  = my + (MOVE_ROW_H - textH) / 2;
         if (moves[i] != 0) {
             uint8_t mtype = getMoveType(moves[i], selectedGame_);
             SDL_Texture* typeTex = getTypeSprite(mtype);
             if (typeTex) {
-                SDL_Rect typeDst = {movesX + 10, iconY, TYPE_ICON_W, TYPE_ICON_H};
+                SDL_Rect typeDst = {mx, iconY, TYPE_ICON_W, TYPE_ICON_H};
                 SDL_RenderCopy(renderer_, typeTex, nullptr, &typeDst);
             }
-            drawText(MoveName::get(moves[i]), movesX + 10 + TYPE_ICON_W + 6, txtY, T().textDim, font_);
+            drawText(MoveName::get(moves[i]), mx + TYPE_ICON_W + 6, txtY, T().textDim, font_);
         } else {
-            drawText("---", movesX + 10 + TYPE_ICON_W + 6, txtY, T().textDim, font_);
+            drawText("---", mx + TYPE_ICON_W + 6, txtY, T().textDim, font_);
         }
-        movesY += MOVE_ROW_H;
     }
+    movesY += MOVE_ROW_H * 2;
 
     // --- Ribbons & Marks below moves ---
     auto ribbons = pkm.getRibbonsAndMarks();

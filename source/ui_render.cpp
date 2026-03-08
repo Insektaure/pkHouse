@@ -388,19 +388,19 @@ void UI::drawFrame() {
     }
 
     // Status bar
-    std::string statusMsg = "D-Pad:Move  L/R:Box  A:Pick/Place  Y:Select  YY:All  B:Cancel  X:Detail";
+    std::string statusMsg = "D-Pad: Move  L/R: Box  A: Pick/Place  Y: Select  YY: All  B: Cancel  X: Detail";
     if (searchHighlightActive_ && !holding_ && selectedSlots_.empty() && !yHeld_) {
         statusMsg = "Search: " + std::to_string(searchResults_.size()) +
-                    " matches  |  B:Clear  +:Menu";
+                    " matches  |  B: Clear  +: Menu";
     } else if (holding_ && !heldMulti_.empty()) {
         statusMsg = "Holding " + std::to_string(heldMulti_.size()) +
                     " Pokemon" + (positionPreserve_ ? " (keep positions)" : "") +
-                    "  |  A:Place  B:Return  X:Delete";
+                    "  |  A: Place  B: Return  X: Delete";
     } else if (holding_) {
         std::string heldName = heldPkm_.displayName();
         if (!heldName.empty()) {
             statusMsg = "Holding: " + heldName + " Lv." + std::to_string(heldPkm_.level()) +
-                        "  |  A:Place  B:Return  X:Delete";
+                        "  |  A: Place  B: Return  X: Delete";
         }
     } else if (yHeld_ && yDragActive_) {
         statusMsg = "Drag selecting: " + std::to_string(selectedSlots_.size()) +
@@ -408,7 +408,7 @@ void UI::drawFrame() {
     } else if (!selectedSlots_.empty()) {
         statusMsg = std::to_string(selectedSlots_.size()) +
                     " selected" + (positionPreserve_ ? " (keep positions)" : "") +
-                    "  |  A:Pick up  Y:Toggle/Drag  B:Clear";
+                    "  |  A: Pick up  Y: Toggle/Drag  B: Clear";
     }
     drawStatusBar(statusMsg);
 
@@ -832,7 +832,7 @@ void UI::drawDetailPopup(const Pokemon& pkm) {
     drawText(techBuf2, popX + 20, popY + POP_H - 50, T().textDim, fontSmall_);
 
     // Close hint at bottom
-    drawTextCentered("L/R:Prev/Next   A:Release   X:Export   B: Close", popX + POP_W / 2, popY + POP_H - 20, T().textDim, fontSmall_);
+    drawTextCentered("L/R: Prev/Next   A: Release   X: Export   B: Close", popX + POP_W / 2, popY + POP_H - 20, T().textDim, fontSmall_);
 }
 
 void UI::drawMenuPopup() {
@@ -908,7 +908,7 @@ void UI::drawMenuPopup() {
         drawTextCentered(visibleLabels[i], popX + POP_W / 2, rowY + (rowH - 4) / 2, T().text, font_);
     }
 
-    drawTextCentered("A:Confirm  B:Cancel", popX + POP_W / 2, popY + POP_H - 18, T().textDim, fontSmall_);
+    drawTextCentered("A: Confirm  B: Cancel", popX + POP_W / 2, popY + POP_H - 18, T().textDim, fontSmall_);
 }
 
 void UI::drawThemeSelectorPopup() {
@@ -938,7 +938,7 @@ void UI::drawThemeSelectorPopup() {
         drawTextCentered(label, popX + POP_W / 2, rowY + (rowH - 4) / 2, T().text, font_);
     }
 
-    drawTextCentered("A:Select  B:Cancel", popX + POP_W / 2, popY + POP_H - 18, T().textDim, fontSmall_);
+    drawTextCentered("A: Select  B: Cancel", popX + POP_W / 2, popY + POP_H - 18, T().textDim, fontSmall_);
 }
 
 void UI::drawSearchFilterPopup() {
@@ -1058,7 +1058,7 @@ void UI::drawSearchFilterPopup() {
         visualRow++;
     }
 
-    drawTextCentered("A:Edit/Toggle  B:Cancel", popX + POP_W / 2, popY + POP_H - 18, T().textDim, fontSmall_);
+    drawTextCentered("A: Edit/Toggle  B: Cancel", popX + POP_W / 2, popY + POP_H - 18, T().textDim, fontSmall_);
 }
 
 void UI::drawSearchResultsPopup() {
@@ -1145,8 +1145,8 @@ void UI::drawSearchResultsPopup() {
     }
 
     std::string footer = searchResults_.empty()
-        ? "B:Close  X:Back to Filter"
-        : "A:Go to  L/R:Skip 10  B:Close  X:Filter";
+        ? "B: Close  X: Back to Filter"
+        : "A: Go to  L/R: Skip 10  B: Close  X: Filter";
     drawTextCentered(footer, popX + POP_W / 2, popY + POP_H - 18, T().textDim, fontSmall_);
 }
 
@@ -1264,8 +1264,8 @@ void UI::drawWondercardListPopup() {
     }
 
     std::string footer = wcList_.empty()
-        ? "B:Close"
-        : "A:Inject  L/R:Skip 10  B:Cancel";
+        ? "B: Close"
+        : "A: Inject  L/R: Skip 10  B: Cancel";
     drawTextCentered(footer, popX + POP_W / 2, popY + POP_H - 18, T().textDim, fontSmall_);
 }
 
@@ -1435,8 +1435,8 @@ void UI::drawBoxViewOverlay() {
     // Footer hint
     bool canRename = appletMode_ || (boxViewPanel_ == Panel::Bank);
     const char* footer = canRename
-        ? "A:Go to Box  Y:Rename  B:Cancel  D-Pad:Navigate"
-        : "A:Go to Box  B:Cancel  D-Pad:Navigate";
+        ? "A: Go to Box  Y: Rename  B: Cancel  D-Pad: Navigate"
+        : "A: Go to Box  B: Cancel  D-Pad: Navigate";
     drawTextCentered(footer, popX + popW / 2, popY + popH - 15, T().textDim, fontSmall_);
 
     // Box preview for cursor box (drawn last so it appears on top)

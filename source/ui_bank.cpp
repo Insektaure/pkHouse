@@ -127,7 +127,7 @@ void UI::drawBankSelectorFrame() {
     }
 
     // Status bar
-    drawStatusBar("A:Open  X:New  Y:Rename  +:Delete  B:Back  -:About");
+    drawStatusBar("A: Open  X: New  Y: Rename  +: Delete  B: Back  -: About");
 
     // Profile | Game name (bottom right, gold)
     {
@@ -571,7 +571,7 @@ void UI::drawTextInputPopup() {
         drawRect(cursorX, fieldY + 6, 2, fieldH - 12, T().text);
     }
 
-    drawTextCentered("Enter:Confirm  Escape:Cancel",
+    drawTextCentered("Enter: Confirm  Escape: Cancel",
                      popX + POP_W / 2, popY + POP_H - 25, T().textDim, fontSmall_);
 }
 

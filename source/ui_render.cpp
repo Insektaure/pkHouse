@@ -1,5 +1,6 @@
 #include "ui.h"
 #include "species_converter.h"
+#include "move_types.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -53,6 +54,11 @@ void UI::freeSprites() {
             SDL_DestroyTexture(tex);
     }
     ballSpriteCache_.clear();
+    for (auto& [id, tex] : typeSpriteCache_) {
+        if (tex)
+            SDL_DestroyTexture(tex);
+    }
+    typeSpriteCache_.clear();
     if (iconShiny_)      { SDL_DestroyTexture(iconShiny_);      iconShiny_ = nullptr; }
     if (iconAlpha_)      { SDL_DestroyTexture(iconAlpha_);      iconAlpha_ = nullptr; }
     if (iconShinyAlpha_) { SDL_DestroyTexture(iconShinyAlpha_); iconShinyAlpha_ = nullptr; }
@@ -87,6 +93,24 @@ SDL_Texture* UI::getBallSprite(uint8_t ballId) {
 #endif
     SDL_Texture* tex = IMG_LoadTexture(renderer_, path.c_str());
     ballSpriteCache_[ballId] = tex;
+    return tex;
+}
+
+SDL_Texture* UI::getTypeSprite(uint8_t typeId) {
+    auto it = typeSpriteCache_.find(typeId);
+    if (it != typeSpriteCache_.end())
+        return it->second;
+
+    char filename[32];
+    std::snprintf(filename, sizeof(filename), "type_icon_s_%02d.png", typeId);
+    std::string path;
+#ifdef __SWITCH__
+    path = std::string("romfs:/types/") + filename;
+#else
+    path = basePath_ + "/romfs/types/" + filename;
+#endif
+    SDL_Texture* tex = IMG_LoadTexture(renderer_, path.c_str());
+    typeSpriteCache_[typeId] = tex;
     return tex;
 }
 
@@ -708,11 +732,18 @@ void UI::drawDetailPopup(const Pokemon& pkm) {
     drawText("Moves", movesX, movesY, T().text, font_);
     movesY += 30;
 
+    constexpr int TYPE_ICON_W = 25;
+    constexpr int TYPE_ICON_H = 25;
     uint16_t moves[4] = {pkm.move1(), pkm.move2(), pkm.move3(), pkm.move4()};
     for (int i = 0; i < 4; i++) {
         if (moves[i] != 0) {
-            std::string moveStr = "- " + MoveName::get(moves[i]);
-            drawText(moveStr, movesX + 10, movesY, T().textDim, font_);
+            uint8_t mtype = getMoveType(moves[i], selectedGame_);
+            SDL_Texture* typeTex = getTypeSprite(mtype);
+            if (typeTex) {
+                SDL_Rect typeDst = {movesX + 10, movesY, TYPE_ICON_W, TYPE_ICON_H};
+                SDL_RenderCopy(renderer_, typeTex, nullptr, &typeDst);
+            }
+            drawText(MoveName::get(moves[i]), movesX + 10 + TYPE_ICON_W + 6, movesY + 2, T().textDim, font_);
         } else {
             drawText("- ---", movesX + 10, movesY, T().textDim, font_);
         }

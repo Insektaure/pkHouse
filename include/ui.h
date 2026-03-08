@@ -102,6 +102,10 @@ private:
     std::unordered_map<uint8_t, SDL_Texture*> ballSpriteCache_;
     SDL_Texture* getBallSprite(uint8_t ballId);
 
+    // Type icon cache: type ID -> texture
+    std::unordered_map<uint8_t, SDL_Texture*> typeSpriteCache_;
+    SDL_Texture* getTypeSprite(uint8_t typeId);
+
     // Status icons
     SDL_Texture* iconShiny_      = nullptr;
     SDL_Texture* iconAlpha_      = nullptr;

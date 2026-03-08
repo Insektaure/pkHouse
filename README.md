@@ -84,15 +84,16 @@ Press **A** to jump directly to that box, **Y** to rename the box (bank boxes on
 
 Press **X** on any Pokemon to view detailed information:
 
-- Species, level, gender
+- Catch ball icon and species name, level, gender
 - National Pokedex number
 - Original Trainer (OT) and Trainer ID
 - Nature and Ability
-- Held item
-- All 4 moves
+- Held item (or "---" if none)
+- All 4 moves with type icons (2x2 grid layout)
 - IVs displayed as a hexagonal radar chart (perfect 31s highlighted in gold)
 - EVs displayed as a hexagonal radar chart
 - Ribbons and marks (displayed as sprite icons with names)
+- Technical data: PID, EC, raw TID/SID, and TSV
 
 Shiny Pokemon names are displayed in gold. Alpha Pokemon (Legends: Arceus / Z-A) show a dedicated icon.
 

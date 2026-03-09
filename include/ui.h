@@ -269,6 +269,35 @@ private:
     int renamingBoxIdx_ = 0;
     Bank* renamingBoxBank_ = nullptr;
 
+    // Pre-computed display attributes for a single slot (avoids repeated
+    // species lookups, string formatting, and accessor calls during rendering).
+    struct SlotDisplay {
+        bool     empty    = true;
+        bool     egg      = false;
+        bool     shiny    = false;
+        bool     alpha    = false;
+        uint8_t  gender   = 2;  // 0=male, 1=female, 2=none
+        uint16_t species  = 0;  // national dex ID (for sprite lookup)
+        uint8_t  level    = 0;
+        std::string name;       // truncated display name (≤10 chars)
+    };
+
+    // Cache of SlotDisplay per (panel, box). Invalidated on mutations.
+    struct BoxDisplayKey {
+        Panel panel;
+        int   box;
+        bool operator==(const BoxDisplayKey& o) const { return panel == o.panel && box == o.box; }
+    };
+    struct BoxDisplayKeyHash {
+        size_t operator()(const BoxDisplayKey& k) const {
+            return std::hash<int>{}(static_cast<int>(k.panel) * 10000 + k.box);
+        }
+    };
+    std::unordered_map<BoxDisplayKey, std::vector<SlotDisplay>, BoxDisplayKeyHash> slotDisplayCache_;
+    const std::vector<SlotDisplay>& getSlotDisplays(Panel panel, int box);
+    void invalidateSlotDisplay(Panel panel, int box);
+    void invalidateAllSlotDisplays() { slotDisplayCache_.clear(); }
+
     // Dirty flag: when true the next frame will be redrawn, then reset.
     // Call markDirty() from any code that changes visible state.
     bool dirty_ = true;
@@ -366,7 +395,7 @@ private:
     void drawPanel(int panelX, const std::string& boxName, int boxIdx,
                    int totalBoxes, bool isActive, SaveFile* save, Bank* bank, int box,
                    Panel panelId);
-    void drawSlot(int x, int y, const Pokemon& pkm, bool isCursor, int selectOrder,
+    void drawSlot(int x, int y, const SlotDisplay& sd, bool isCursor, int selectOrder,
                   int highlightState = 0, bool isParty = false);
     void drawText(const std::string& text, int x, int y, SDL_Color color, TTF_Font* f);
     void drawTextCentered(const std::string& text, int cx, int cy, SDL_Color color, TTF_Font* f);

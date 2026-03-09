@@ -559,6 +559,7 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
 
 void UI::selectGame(GameType game) {
     selectedGame_ = game;
+    invalidateAllSlotDisplays();
     save_.setGameType(game);
     bankLeft_.setGameType(game);
 

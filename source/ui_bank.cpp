@@ -365,6 +365,7 @@ void UI::openSelectedBank() {
     }
 
     screen_ = AppScreen::MainView;
+    invalidateAllSlotDisplays();
 
     // Reset main view state
     cursor_ = Cursor{};

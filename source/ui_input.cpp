@@ -814,6 +814,7 @@ void UI::setPokemonAt(int box, int slot, Panel panel, const Pokemon& pkm) {
     } else {
         bank_.setSlot(box, slot, pkm);
     }
+    invalidateSlotDisplay(panel, box);
 }
 
 void UI::clearPokemonAt(int box, int slot, Panel panel) {
@@ -825,6 +826,7 @@ void UI::clearPokemonAt(int box, int slot, Panel panel) {
     } else {
         bank_.clearSlot(box, slot);
     }
+    invalidateSlotDisplay(panel, box);
 }
 
 void UI::actionSelect() {

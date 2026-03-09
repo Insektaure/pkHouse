@@ -184,12 +184,49 @@ void UI::drawStatusBar(const std::string& msg) {
     drawText(msg, 15, SCREEN_H - 26, T().statusText, fontSmall_);
 }
 
-void UI::drawSlot(int x, int y, const Pokemon& pkm, bool isCursor, int selectOrder,
+const std::vector<UI::SlotDisplay>& UI::getSlotDisplays(Panel panel, int box) {
+    BoxDisplayKey key{panel, box};
+    auto it = slotDisplayCache_.find(key);
+    if (it != slotDisplayCache_.end())
+        return it->second;
+
+    // Cap cache size
+    if (slotDisplayCache_.size() >= 8)
+        slotDisplayCache_.clear();
+
+    int slots = maxSlots();
+    std::vector<SlotDisplay> displays(slots);
+    for (int s = 0; s < slots; s++) {
+        Pokemon pkm = getPokemonAt(box, s, panel);
+        auto& sd = displays[s];
+        if (pkm.isEmpty()) {
+            sd.empty = true;
+            continue;
+        }
+        sd.empty   = false;
+        sd.egg     = pkm.isEgg();
+        sd.shiny   = pkm.isShiny();
+        sd.alpha   = pkm.isAlpha();
+        sd.gender  = pkm.gender();
+        sd.species = pkm.species();
+        sd.level   = pkm.level();
+        sd.name    = pkm.displayName();
+        if (sd.name.length() > 10)
+            sd.name = sd.name.substr(0, 9) + ".";
+    }
+    return slotDisplayCache_.emplace(key, std::move(displays)).first->second;
+}
+
+void UI::invalidateSlotDisplay(Panel panel, int box) {
+    slotDisplayCache_.erase(BoxDisplayKey{panel, box});
+}
+
+void UI::drawSlot(int x, int y, const SlotDisplay& sd, bool isCursor, int selectOrder,
                   int highlightState, bool isParty) {
     SDL_Color bgColor;
-    if (pkm.isEmpty()) {
+    if (sd.empty) {
         bgColor = T().slotEmpty;
-    } else if (pkm.isEgg()) {
+    } else if (sd.egg) {
         bgColor = T().slotEgg;
     } else {
         bgColor = T().slotFull;
@@ -216,16 +253,9 @@ void UI::drawSlot(int x, int y, const Pokemon& pkm, bool isCursor, int selectOrd
     if (isCursor)
         drawRectOutline(x, y, CELL_W, CELL_H, T().cursor, 3);
 
-    if (!pkm.isEmpty()) {
-        uint16_t species = pkm.species();
-
+    if (!sd.empty) {
         // Draw sprite centered in top portion of cell
-        SDL_Texture* sprite = nullptr;
-        if (pkm.isEgg()) {
-            sprite = getSprite(0);
-        } else {
-            sprite = getSprite(species);
-        }
+        SDL_Texture* sprite = sd.egg ? getSprite(0) : getSprite(sd.species);
 
         if (sprite) {
             int texW, texH;
@@ -249,33 +279,28 @@ void UI::drawSlot(int x, int y, const Pokemon& pkm, bool isCursor, int selectOrd
         }
 
         // Species name below sprite
-        std::string name = pkm.displayName();
-        if (name.length() > 10)
-            name = name.substr(0, 9) + ".";
-
-        SDL_Color nameColor = pkm.isShiny() ? T().shiny : T().text;
-        drawTextCentered(name, x + CELL_W / 2, y + SPRITE_SIZE + 10, nameColor, fontSmall_);
+        SDL_Color nameColor = sd.shiny ? T().shiny : T().text;
+        drawTextCentered(sd.name, x + CELL_W / 2, y + SPRITE_SIZE + 10, nameColor, fontSmall_);
 
         // Level at the bottom
-        if (!pkm.isEgg()) {
-            std::string lvlStr = "Lv." + std::to_string(pkm.level());
+        if (!sd.egg) {
+            std::string lvlStr = "Lv." + std::to_string(sd.level);
             drawTextCentered(lvlStr, x + CELL_W / 2, y + CELL_H - 12, T().textDim, fontSmall_);
         }
 
         // Gender indicator (top-right corner)
-        uint8_t g = pkm.gender();
-        if (g == 0)
+        if (sd.gender == 0)
             drawText("\xe2\x99\x82", x + CELL_W - 16, y + 2, T().genderMale, fontSmall_);
-        else if (g == 1)
+        else if (sd.gender == 1)
             drawText("\xe2\x99\x80", x + CELL_W - 16, y + 2, T().genderFemale, fontSmall_);
 
         // Shiny / Alpha icon (top-left corner)
         SDL_Texture* statusIcon = nullptr;
-        if (pkm.isShiny() && pkm.isAlpha())
+        if (sd.shiny && sd.alpha)
             statusIcon = iconShinyAlpha_;
-        else if (pkm.isShiny())
+        else if (sd.shiny)
             statusIcon = iconShiny_;
-        else if (pkm.isAlpha())
+        else if (sd.alpha)
             statusIcon = iconAlpha_;
 
         if (statusIcon) {
@@ -334,17 +359,15 @@ void UI::drawPanel(int panelX, const std::string& boxName, int boxIdx,
     int gridStartX = panelX + (PANEL_W - (cols * (CELL_W + CELL_PAD) - CELL_PAD)) / 2;
     int gridStartY = GRID_Y;
 
+    const auto& displays = getSlotDisplays(panelId, box);
+
     for (int row = 0; row < 5; row++) {
         for (int col = 0; col < cols; col++) {
             int slot = row * cols + col;
             int cellX = gridStartX + col * (CELL_W + CELL_PAD);
             int cellY = gridStartY + row * (CELL_H + CELL_PAD);
 
-            Pokemon pkm;
-            if (save)
-                pkm = save->getBoxSlot(box, slot);
-            else if (bank)
-                pkm = bank->getSlot(box, slot);
+            const auto& sd = displays[slot];
 
             bool isCursor = isActive && cursor_.col == col && cursor_.row == row;
             int selOrder = 0;
@@ -358,10 +381,10 @@ void UI::drawPanel(int panelX, const std::string& boxName, int boxIdx,
                 }
             }
             int hlState = 0;
-            if (searchHighlightActive_ && !pkm.isEmpty())
+            if (searchHighlightActive_ && !sd.empty)
                 hlState = isSearchMatch(panelId, box, slot) ? 1 : -1;
             bool partySlot = save && save->isLGPEPartySlot(box, slot);
-            drawSlot(cellX, cellY, pkm, isCursor, selOrder, hlState, partySlot);
+            drawSlot(cellX, cellY, sd, isCursor, selOrder, hlState, partySlot);
         }
     }
 }
@@ -1514,25 +1537,22 @@ void UI::drawBoxPreview(int boxIdx, int anchorX, int anchorY) {
     int gridX = prevX + BV_PREVIEW_PAD;
     int gridY = prevY + BV_PREVIEW_HDR;
 
+    const auto& prevDisplays = getSlotDisplays(boxViewPanel_, boxIdx);
+
     for (int r = 0; r < rows; r++) {
         for (int c = 0; c < cols; c++) {
             int slot = r * cols + c;
             int sx = gridX + c * (BV_MINI_CELL + BV_MINI_PAD);
             int sy = gridY + r * (BV_MINI_CELL + BV_MINI_PAD);
 
-            Pokemon pkm;
-            if (boxViewPanel_ == Panel::Game)
-                pkm = (appletMode_) ? bankLeft_.getSlot(boxIdx, slot)
-                                    : save_.getBoxSlot(boxIdx, slot);
-            else
-                pkm = bank_.getSlot(boxIdx, slot);
+            const auto& psd = prevDisplays[slot];
 
-            if (pkm.isEmpty()) {
+            if (psd.empty) {
                 drawRect(sx, sy, BV_MINI_CELL, BV_MINI_CELL, T().miniCellEmpty);
             } else {
                 drawRect(sx, sy, BV_MINI_CELL, BV_MINI_CELL, T().miniCellFull);
 
-                SDL_Texture* sprite = getSprite(pkm.isEgg() ? 0 : pkm.species());
+                SDL_Texture* sprite = getSprite(psd.egg ? 0 : psd.species);
                 if (sprite) {
                     int texW, texH;
                     SDL_QueryTexture(sprite, nullptr, nullptr, &texW, &texH);

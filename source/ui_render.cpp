@@ -312,8 +312,8 @@ void UI::drawSlot(int x, int y, const SlotDisplay& sd, bool isCursor, int select
     // Numbered badge on top of everything
     if (selectOrder > 0) {
         std::string num = std::to_string(selectOrder);
-        int tw = 0, th = 0;
-        TTF_SizeUTF8(font_, num.c_str(), &tw, &th);
+        auto& numEntry = getTextEntry(num, font_, positionPreserve_ ? T().selectedPos : T().selected);
+        int tw = numEntry.w, th = numEntry.h;
         int badgeR = std::max(tw, th) / 2 + 6;
         int cx = x + CELL_W / 2;
         int cy = y + CELL_H / 2;
@@ -638,10 +638,10 @@ void UI::drawRadarChart(int cx, int cy, int radius, const int values[6], int max
                            : (values[i] == 0)      ? T().textDim
                            :                          T().text;
 
-        int nw, nh;
-        TTF_SizeUTF8(fontSmall_, name, &nw, &nh);
-        int vw, vh;
-        TTF_SizeUTF8(fontSmall_, valStr.c_str(), &vw, &vh);
+        auto& ne = getTextEntry(name, fontSmall_, nameColor);
+        int nw = ne.w, nh = ne.h;
+        auto& ve = getTextEntry(valStr, fontSmall_, valColor);
+        int vw = ve.w, vh = ve.h;
 
         if (i == 0) { // Top: centered, name then value downward
             drawText(name, lx - nw / 2, ly - nh * 2 - 2, nameColor, fontSmall_);
@@ -733,15 +733,13 @@ void UI::drawDetailPopup(const Pokemon& pkm) {
     drawText(specName, nameStartX, infoY, nameColor, font_);
 
     std::string lvlStr = "  Lv." + std::to_string(pkm.level());
-    int nameW = 0, nameH = 0;
-    TTF_SizeUTF8(font_, specName.c_str(), &nameW, &nameH);
+    int nameW = getTextEntry(specName, font_, nameColor).w;
     drawText(lvlStr, nameStartX + nameW, infoY, T().text, font_);
 
     // Gender symbol
     uint8_t g = pkm.gender();
     int afterLvl = nameStartX + nameW;
-    int lvlW = 0;
-    TTF_SizeUTF8(font_, lvlStr.c_str(), &lvlW, nullptr);
+    int lvlW = getTextEntry(lvlStr, font_, T().text).w;
     afterLvl += lvlW + 4;
     if (g == 0)
         drawText("\xe2\x99\x82", afterLvl, infoY, T().genderMale, font_);
@@ -1306,8 +1304,7 @@ void UI::drawWondercardListPopup() {
                 int maxW = listX + listW - x - 5;
                 std::string fn = wc.filename;
                 while (fn.size() > 4) {
-                    int tw = 0, th = 0;
-                    TTF_SizeUTF8(fontSmall_, fn.c_str(), &tw, &th);
+                    int tw = getTextEntry(fn, fontSmall_, T().textDim).w;
                     if (tw <= maxW) break;
                     fn = fn.substr(0, fn.size() - 5) + "..";
                 }
@@ -1630,8 +1627,8 @@ void UI::drawHeldOverlay() {
     // Multi-hold: draw count badge
     if (!heldMulti_.empty() && heldMulti_.size() > 1) {
         std::string num = std::to_string(heldMulti_.size());
-        int tw = 0, th = 0;
-        TTF_SizeUTF8(font_, num.c_str(), &tw, &th);
+        auto& numE = getTextEntry(num, font_, T().textOnBadge);
+        int tw = numE.w, th = numE.h;
         int badgeR = std::max(tw, th) / 2 + 6;
         int cx = cellX + CELL_W / 2;
         int cy = cellY + CELL_H / 2;

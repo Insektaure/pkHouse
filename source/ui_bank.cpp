@@ -568,9 +568,7 @@ void UI::drawTextInputPopup() {
     int cursorX = fieldX + 8;
     if (!textInputBuffer_.empty() && textInputCursorPos_ > 0) {
         std::string beforeCursor = textInputBuffer_.substr(0, textInputCursorPos_);
-        int tw = 0, th = 0;
-        TTF_SizeUTF8(font_, beforeCursor.c_str(), &tw, &th);
-        cursorX += tw;
+        cursorX += getTextEntry(beforeCursor, font_, T().text).w;
     }
     // Blink every 500ms
     if ((SDL_GetTicks() / 500) % 2 == 0) {

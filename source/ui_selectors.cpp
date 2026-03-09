@@ -85,6 +85,10 @@ void UI::handleProfileSelectorInput(bool& running) {
             return;
         }
 
+        if (event.type == SDL_CONTROLLERBUTTONDOWN ||
+            event.type == SDL_KEYDOWN)
+            markDirty();
+
         if (event.type == SDL_CONTROLLERAXISMOTION) {
             if (event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX ||
                 event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY) {
@@ -157,6 +161,7 @@ void UI::handleProfileSelectorInput(bool& running) {
                 profileSelCursor_ = (profileSelCursor_ + 1) % count;
             stickMoveTime_ = now;
             stickMoved_ = true;
+            markDirty();
         }
     }
 }
@@ -414,6 +419,10 @@ void UI::handleGameSelectorInput(bool& running) {
             return;
         }
 
+        if (event.type == SDL_CONTROLLERBUTTONDOWN ||
+            event.type == SDL_KEYDOWN)
+            markDirty();
+
         if (event.type == SDL_CONTROLLERAXISMOTION) {
             if (event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX ||
                 event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY) {
@@ -509,6 +518,7 @@ void UI::handleGameSelectorInput(bool& running) {
             if (stickDirY_ != 0) moveGrid(0, stickDirY_);
             stickMoveTime_ = now;
             stickMoved_ = true;
+            markDirty();
         }
     }
 }

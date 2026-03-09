@@ -242,6 +242,11 @@ private:
     int renamingBoxIdx_ = 0;
     Bank* renamingBoxBank_ = nullptr;
 
+    // Dirty flag: when true the next frame will be redrawn, then reset.
+    // Call markDirty() from any code that changes visible state.
+    bool dirty_ = true;
+    void markDirty() { dirty_ = true; }
+
     // Main view state
     Cursor cursor_;
     int    gameBox_ = 0;

@@ -164,6 +164,10 @@ void UI::handleBankSelectorInput(bool& running) {
             return;
         }
 
+        if (event.type == SDL_CONTROLLERBUTTONDOWN ||
+            event.type == SDL_KEYDOWN)
+            markDirty();
+
         // Text input popup takes priority
         if (showTextInput_) {
             handleTextInputEvent(event);
@@ -314,6 +318,7 @@ void UI::handleBankSelectorInput(bool& running) {
             }
             stickMoveTime_ = now;
             stickMoved_ = true;
+            markDirty();
         }
     }
 }
@@ -576,6 +581,7 @@ void UI::drawTextInputPopup() {
 }
 
 void UI::handleTextInputEvent(const SDL_Event& event) {
+    markDirty();
     if (event.type == SDL_TEXTINPUT) {
         int maxLen = (textInputPurpose_ == TextInputPurpose::RenameBoxName) ? 16 : 32;
         if ((int)textInputBuffer_.size() < maxLen) {

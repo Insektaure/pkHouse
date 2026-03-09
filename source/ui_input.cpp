@@ -104,6 +104,13 @@ void UI::handleInput(bool& running) {
             return;
         }
 
+        // Any button/key event dirties the screen
+        if (event.type == SDL_CONTROLLERBUTTONDOWN ||
+            event.type == SDL_CONTROLLERBUTTONUP ||
+            event.type == SDL_KEYDOWN ||
+            event.type == SDL_KEYUP)
+            markDirty();
+
         // While menu is open, handle menu input only
         if (showMenu_) {
             bool hasWC = isSV(selectedGame_) || isSwSh(selectedGame_) || selectedGame_ == GameType::ZA || isBDSP(selectedGame_) || selectedGame_ == GameType::LA || isLGPE(selectedGame_);
@@ -614,6 +621,7 @@ void UI::handleInput(bool& running) {
         uint32_t now = SDL_GetTicks();
         uint32_t delay = stickMoved_ ? STICK_REPEAT_DELAY : STICK_INITIAL_DELAY;
         if (now - stickMoveTime_ >= delay) {
+            markDirty();
             if (showSearchFilter_) {
                 bool alpha = (selectedGame_ == GameType::LA || selectedGame_ == GameType::ZA);
                 if (stickDirY_ != 0) {
@@ -676,6 +684,7 @@ void UI::handleInput(bool& running) {
         uint32_t now = SDL_GetTicks();
         uint32_t delay = bumperMoved_ ? BUMPER_REPEAT_DELAY : BUMPER_INITIAL_DELAY;
         if (now - bumperRepeatTime_ >= delay) {
+            markDirty();
             if (showSearchResults_ && !searchResults_.empty()) {
                 // Page through search results
                 int dir = lHeld_ ? -10 : 10;

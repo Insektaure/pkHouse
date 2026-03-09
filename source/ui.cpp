@@ -213,6 +213,7 @@ int UI::drawBodyText(const std::string& body, int startY, const std::string& foo
 
 void UI::showMessageAndWait(const std::string& title, const std::string& body) {
     if (!renderer_) return;
+    markDirty(); // Force redraw after modal returns
 
     bool waiting = true;
     while (waiting) {
@@ -244,6 +245,7 @@ void UI::showMessageAndWait(const std::string& title, const std::string& body) {
 
 bool UI::showConfirmDialog(const std::string& title, const std::string& body) {
     if (!renderer_) return false;
+    markDirty(); // Force redraw after modal returns
 
     int result = -1; // -1 = undecided
     while (result < 0) {
@@ -280,6 +282,7 @@ bool UI::showConfirmDialog(const std::string& title, const std::string& body) {
 
 void UI::showWorking(const std::string& msg) {
     if (!renderer_) return;
+    markDirty(); // Force redraw after modal returns
 
     SDL_SetRenderDrawColor(renderer_, T().bg.r, T().bg.g, T().bg.b, 255);
     SDL_RenderClear(renderer_);
@@ -388,22 +391,25 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
                 if (event.type == SDL_CONTROLLERBUTTONDOWN) {
                     if (event.cbutton.button == SDL_CONTROLLER_BUTTON_BACK ||
                         event.cbutton.button == SDL_CONTROLLER_BUTTON_A)
-                        showAbout_ = false;
+                        { showAbout_ = false; markDirty(); }
                 }
                 if (event.type == SDL_KEYDOWN) {
                     if (event.key.keysym.sym == SDLK_MINUS ||
                         event.key.keysym.sym == SDLK_b ||
                         event.key.keysym.sym == SDLK_ESCAPE)
-                        showAbout_ = false;
+                        { showAbout_ = false; markDirty(); }
                 }
             }
-            // Draw the underlying screen, then about popup on top
-            if (screen_ == AppScreen::ProfileSelector) drawProfileSelectorFrame();
-            else if (screen_ == AppScreen::GameSelector) drawGameSelectorFrame();
-            else if (screen_ == AppScreen::BankSelector) drawBankSelectorFrame();
-            else drawFrame();
-            drawAboutPopup();
-            SDL_RenderPresent(renderer_);
+            if (dirty_) {
+                // Draw the underlying screen, then about popup on top
+                if (screen_ == AppScreen::ProfileSelector) drawProfileSelectorFrame();
+                else if (screen_ == AppScreen::GameSelector) drawGameSelectorFrame();
+                else if (screen_ == AppScreen::BankSelector) drawBankSelectorFrame();
+                else drawFrame();
+                drawAboutPopup();
+                SDL_RenderPresent(renderer_);
+                dirty_ = false;
+            }
             SDL_Delay(16);
             continue;
         }
@@ -422,6 +428,7 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
                     }
                 }
                 if (event.type == SDL_CONTROLLERBUTTONDOWN) {
+                    markDirty();
                     switch (event.cbutton.button) {
                         case SDL_CONTROLLER_BUTTON_DPAD_UP:
                             themeSelCursor_ = (themeSelCursor_ + THEME_COUNT - 1) % THEME_COUNT;
@@ -447,6 +454,7 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
                     }
                 }
                 if (event.type == SDL_KEYDOWN) {
+                    markDirty();
                     switch (event.key.keysym.sym) {
                         case SDLK_UP:
                             themeSelCursor_ = (themeSelCursor_ + THEME_COUNT - 1) % THEME_COUNT;
@@ -483,15 +491,19 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
                     theme_ = &getTheme(themeSelCursor_);
                     stickMoveTime_ = now;
                     stickMoved_ = true;
+                    markDirty();
                 }
             }
-            // Draw the underlying screen, then theme popup on top
-            if (screen_ == AppScreen::ProfileSelector) drawProfileSelectorFrame();
-            else if (screen_ == AppScreen::GameSelector) drawGameSelectorFrame();
-            else if (screen_ == AppScreen::BankSelector) drawBankSelectorFrame();
-            else drawFrame();
-            drawThemeSelectorPopup();
-            SDL_RenderPresent(renderer_);
+            if (dirty_) {
+                // Draw the underlying screen, then theme popup on top
+                if (screen_ == AppScreen::ProfileSelector) drawProfileSelectorFrame();
+                else if (screen_ == AppScreen::GameSelector) drawGameSelectorFrame();
+                else if (screen_ == AppScreen::BankSelector) drawBankSelectorFrame();
+                else drawFrame();
+                drawThemeSelectorPopup();
+                SDL_RenderPresent(renderer_);
+                dirty_ = false;
+            }
             SDL_Delay(16);
             continue;
         }
@@ -499,13 +511,10 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
         AppScreen screenBefore = screen_;
         if (screen_ == AppScreen::ProfileSelector) {
             handleProfileSelectorInput(running);
-            if (screen_ == screenBefore) drawProfileSelectorFrame();
         } else if (screen_ == AppScreen::GameSelector) {
             handleGameSelectorInput(running);
-            if (screen_ == screenBefore) drawGameSelectorFrame();
         } else if (screen_ == AppScreen::BankSelector) {
             handleBankSelectorInput(running);
-            if (screen_ == screenBefore) drawBankSelectorFrame();
         } else {
             handleInput(running);
             if (saveNow_) {
@@ -522,9 +531,18 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
                     saveNow_ = false;
                 }
             }
-            if (screen_ == screenBefore) drawFrame();
         }
-        SDL_RenderPresent(renderer_);
+        // Screen transition always triggers redraw
+        if (screen_ != screenBefore)
+            markDirty();
+        if (dirty_) {
+            if (screen_ == AppScreen::ProfileSelector) drawProfileSelectorFrame();
+            else if (screen_ == AppScreen::GameSelector) drawGameSelectorFrame();
+            else if (screen_ == AppScreen::BankSelector) drawBankSelectorFrame();
+            else drawFrame();
+            SDL_RenderPresent(renderer_);
+            dirty_ = false;
+        }
         SDL_Delay(16);
     }
 

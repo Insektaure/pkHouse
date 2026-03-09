@@ -6,6 +6,7 @@
 
 void SaveFile::setGameType(GameType game) {
     gameType_ = game;
+    invalidateAllBoxCache();
     kbox_ = 0x0d66012c; // Reset to default; LA overrides below
     slotsPerBox_ = 30;   // Default; LGPE overrides below
     if (game == GameType::ZA) {
@@ -51,6 +52,7 @@ bool SaveFile::load(const std::string& path) {
     loaded_ = false;
     boxData_ = nullptr;
     boxLayoutData_ = nullptr;
+    invalidateAllBoxCache();
 
     if (isFRLG(gameType_))
         return loadGBA(path);
@@ -186,20 +188,35 @@ bool SaveFile::saveBDSP(const std::string& path) {
     return written == rawData_.size();
 }
 
-Pokemon SaveFile::getBoxSlot(int box, int slot) const {
-    Pokemon pkm;
-    if (!loaded_ || !boxData_)
-        return pkm;
+const std::vector<Pokemon>& SaveFile::getCachedBox(int box) const {
+    auto it = boxCache_.find(box);
+    if (it != boxCache_.end())
+        return it->second;
 
-    int offset = getBoxSlotOffset(box, slot);
-    if (offset + sizeBoxSlot_ > static_cast<int>(boxDataLen_))
-        return pkm;
+    // Evict oldest if cache is full
+    if (static_cast<int>(boxCache_.size()) >= BOX_CACHE_MAX)
+        boxCache_.clear();
 
-    // gameType_ must be set before decrypt (selects correct algorithm)
-    pkm.gameType_ = gameType_;
+    std::vector<Pokemon> slots(slotsPerBox_);
     int dataSize = sizeBoxSlot_ - gapBoxSlot_;
-    pkm.loadFromEncrypted(boxData_ + offset, dataSize);
-    return pkm;
+    for (int s = 0; s < slotsPerBox_; s++) {
+        int offset = getBoxSlotOffset(box, s);
+        if (offset + sizeBoxSlot_ > static_cast<int>(boxDataLen_))
+            continue;
+        slots[s].gameType_ = gameType_;
+        slots[s].loadFromEncrypted(boxData_ + offset, dataSize);
+    }
+    return boxCache_.emplace(box, std::move(slots)).first->second;
+}
+
+Pokemon SaveFile::getBoxSlot(int box, int slot) const {
+    if (!loaded_ || !boxData_)
+        return Pokemon{};
+    if (box < 0 || box >= boxCount_ || slot < 0 || slot >= slotsPerBox_)
+        return Pokemon{};
+
+    const auto& cached = getCachedBox(box);
+    return cached[slot];
 }
 
 void SaveFile::setBoxSlot(int box, int slot, Pokemon pkm) {
@@ -216,6 +233,8 @@ void SaveFile::setBoxSlot(int box, int slot, Pokemon pkm) {
     // Zero the gap bytes (if any)
     if (gapBoxSlot_ > 0)
         std::memset(boxData_ + offset + (sizeBoxSlot_ - gapBoxSlot_), 0, gapBoxSlot_);
+
+    invalidateBoxCache(box);
 }
 
 void SaveFile::clearBoxSlot(int box, int slot) {
@@ -240,6 +259,8 @@ void SaveFile::clearBoxSlot(int box, int slot) {
         if (gapBoxSlot_ > 0)
             std::memset(boxData_ + offset + (sizeBoxSlot_ - gapBoxSlot_), 0, gapBoxSlot_);
     }
+
+    invalidateBoxCache(box);
 }
 
 bool SaveFile::isLGPEPartySlot(int box, int slot) const {

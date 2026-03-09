@@ -134,6 +134,14 @@ private:
     // Original file data for round-trip verification (cleared after verify)
     std::vector<uint8_t> originalFileData_;
 
+    // Decrypted Pokemon cache: avoids re-decrypting on every getBoxSlot() call.
+    // Maps box index -> vector of decrypted Pokemon (one per slot).
+    static constexpr int BOX_CACHE_MAX = 4; // max cached boxes
+    mutable std::unordered_map<int, std::vector<Pokemon>> boxCache_;
+    void invalidateBoxCache(int box) const { boxCache_.erase(box); }
+    void invalidateAllBoxCache() const { boxCache_.clear(); }
+    const std::vector<Pokemon>& getCachedBox(int box) const;
+
     bool loadSCBlock(const std::string& path);
     bool saveSCBlock(const std::string& path);
     bool loadBDSP(const std::string& path);

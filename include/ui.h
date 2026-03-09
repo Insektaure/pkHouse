@@ -12,6 +12,7 @@
 #include <unordered_map>
 #include <vector>
 #include <unordered_set>
+#include <functional>
 
 // Which panel the cursor is on
 enum class Panel { Game, Bank };
@@ -106,6 +107,31 @@ private:
     std::unordered_map<uint8_t, SDL_Texture*> typeSpriteCache_;
     SDL_Texture* getTypeSprite(uint8_t typeId);
 
+    // Text texture cache: avoids re-rasterising identical strings every frame
+    struct TextCacheKey {
+        std::string text;
+        TTF_Font*   font;
+        uint32_t    colorVal; // packed RGBA
+        bool operator==(const TextCacheKey& o) const {
+            return text == o.text && font == o.font && colorVal == o.colorVal;
+        }
+    };
+    struct TextCacheKeyHash {
+        size_t operator()(const TextCacheKey& k) const {
+            size_t h = std::hash<std::string>{}(k.text);
+            h ^= std::hash<uintptr_t>{}(reinterpret_cast<uintptr_t>(k.font)) + 0x9e3779b9 + (h << 6) + (h >> 2);
+            h ^= std::hash<uint32_t>{}(k.colorVal) + 0x9e3779b9 + (h << 6) + (h >> 2);
+            return h;
+        }
+    };
+    struct TextCacheEntry {
+        SDL_Texture* tex;
+        int w, h;
+    };
+    std::unordered_map<TextCacheKey, TextCacheEntry, TextCacheKeyHash> textCache_;
+    const TextCacheEntry& getTextEntry(const std::string& text, TTF_Font* f, SDL_Color color);
+    void clearTextCache();
+
     // Status icons
     SDL_Texture* iconShiny_      = nullptr;
     SDL_Texture* iconAlpha_      = nullptr;
@@ -148,6 +174,7 @@ private:
     // Theme
     int themeIndex_ = 0;
     const Theme* theme_ = nullptr;
+    const Theme* lastTheme_ = nullptr; // tracks theme changes for text cache invalidation
     const Theme& T() const { return *theme_; }
 
     // Theme selector state

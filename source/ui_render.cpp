@@ -130,22 +130,53 @@ void UI::drawRectOutline(int x, int y, int w, int h, SDL_Color color, int thickn
     }
 }
 
+static uint32_t packColor(SDL_Color c) {
+    return (uint32_t(c.r) << 24) | (uint32_t(c.g) << 16) | (uint32_t(c.b) << 8) | c.a;
+}
+
+const UI::TextCacheEntry& UI::getTextEntry(const std::string& text, TTF_Font* f, SDL_Color color) {
+    TextCacheKey key{text, f, packColor(color)};
+    auto it = textCache_.find(key);
+    if (it != textCache_.end())
+        return it->second;
+
+    // Cap cache size to limit GPU memory on Switch
+    if (textCache_.size() >= 512)
+        clearTextCache();
+
+    SDL_Surface* surf = TTF_RenderUTF8_Blended(f, text.c_str(), color);
+    TextCacheEntry entry{};
+    if (surf) {
+        entry.tex = SDL_CreateTextureFromSurface(renderer_, surf);
+        entry.w = surf->w;
+        entry.h = surf->h;
+        SDL_FreeSurface(surf);
+    }
+    return textCache_.emplace(std::move(key), entry).first->second;
+}
+
+void UI::clearTextCache() {
+    for (auto& [k, e] : textCache_) {
+        if (e.tex)
+            SDL_DestroyTexture(e.tex);
+    }
+    textCache_.clear();
+}
+
 void UI::drawText(const std::string& text, int x, int y, SDL_Color color, TTF_Font* f) {
     if (!f || text.empty()) return;
-    SDL_Surface* surf = TTF_RenderUTF8_Blended(f, text.c_str(), color);
-    if (!surf) return;
-    SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer_, surf);
-    SDL_Rect dst = {x, y, surf->w, surf->h};
-    SDL_RenderCopy(renderer_, tex, nullptr, &dst);
-    SDL_DestroyTexture(tex);
-    SDL_FreeSurface(surf);
+    const auto& entry = getTextEntry(text, f, color);
+    if (!entry.tex) return;
+    SDL_Rect dst = {x, y, entry.w, entry.h};
+    SDL_RenderCopy(renderer_, entry.tex, nullptr, &dst);
 }
 
 void UI::drawTextCentered(const std::string& text, int cx, int cy, SDL_Color color, TTF_Font* f) {
     if (!f || text.empty()) return;
-    int tw, th;
-    TTF_SizeUTF8(f, text.c_str(), &tw, &th);
-    drawText(text, cx - tw/2, cy - th/2, color, f);
+    const auto& entry = getTextEntry(text, f, color);
+    if (!entry.tex) return;
+    SDL_Rect dst = {cx - entry.w/2, cy - entry.h/2, entry.w, entry.h};
+    SDL_RenderCopy(renderer_, entry.tex, nullptr, &dst);
 }
 
 void UI::drawStatusBar(const std::string& msg) {
@@ -288,12 +319,11 @@ void UI::drawPanel(int panelX, const std::string& boxName, int boxIdx,
     std::string hdrText = boxName + " (" + std::to_string(boxIdx + 1) + "/" + std::to_string(totalBoxes) + ")";
     // Truncate if too wide for panel (leave room for arrows)
     int maxHdrW = PANEL_W - 80;
-    int tw = 0, th = 0;
-    TTF_SizeUTF8(font_, hdrText.c_str(), &tw, &th);
+    int tw = getTextEntry(hdrText, font_, hdrColor).w;
     if (tw > maxHdrW) {
         while (hdrText.size() > 5 && tw > maxHdrW) {
             hdrText = hdrText.substr(0, hdrText.size() - 5) + "(..)";
-            TTF_SizeUTF8(font_, hdrText.c_str(), &tw, &th);
+            tw = getTextEntry(hdrText, font_, hdrColor).w;
         }
     }
     drawTextCentered(hdrText, panelX + PANEL_W / 2, BOX_HDR_Y + BOX_HDR_H / 2, hdrColor, font_);
@@ -420,9 +450,9 @@ void UI::drawFrame() {
         else if (selectedProfile_ >= 0 && selectedProfile_ < account_.profileCount())
             label = account_.profiles()[selectedProfile_].nickname + " | ";
         label += gameDisplayNameOf(selectedGame_);
-        int tw = 0, th = 0;
-        TTF_SizeUTF8(fontSmall_, label.c_str(), &tw, &th);
-        drawText(label, SCREEN_W - tw - 15, SCREEN_H - 26, T().goldLabel, fontSmall_);
+        const auto& entry = getTextEntry(label, fontSmall_, T().goldLabel);
+        if (entry.tex)
+            drawText(label, SCREEN_W - entry.w - 15, SCREEN_H - 26, T().goldLabel, fontSmall_);
     }
 
     // Held Pokemon overlay (draw on top of panels, under popups)

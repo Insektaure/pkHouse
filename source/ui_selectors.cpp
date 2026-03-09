@@ -368,17 +368,15 @@ void UI::drawGameSelectorFrame() {
     if (selectedProfile_ >= 0) {
         drawStatusBar("A: Select  B: Back  Y: Theme  -: About  +: Quit");
         std::string profileLabel = account_.profiles()[selectedProfile_].nickname;
-        int tw = 0, th = 0;
-        TTF_SizeUTF8(fontSmall_, profileLabel.c_str(), &tw, &th);
-        drawText(profileLabel, SCREEN_W - tw - 15, SCREEN_H - 26, T().goldLabel, fontSmall_);
+        const auto& e = getTextEntry(profileLabel, fontSmall_, T().goldLabel);
+        if (e.tex) drawText(profileLabel, SCREEN_W - e.w - 15, SCREEN_H - 26, T().goldLabel, fontSmall_);
     } else {
         drawStatusBar("A: Select  B: Quit  Y: Theme  -: About");
     }
     if (appletMode_) {
-        const char* modeLabel = "Dual Bank Mode";
-        int tw = 0, th = 0;
-        TTF_SizeUTF8(fontSmall_, modeLabel, &tw, &th);
-        drawText(modeLabel, SCREEN_W - tw - 15, SCREEN_H - 26, T().goldLabel, fontSmall_);
+        std::string modeLabel = "Dual Bank Mode";
+        const auto& e = getTextEntry(modeLabel, fontSmall_, T().goldLabel);
+        if (e.tex) drawText(modeLabel, SCREEN_W - e.w - 15, SCREEN_H - 26, T().goldLabel, fontSmall_);
     }
 }
 

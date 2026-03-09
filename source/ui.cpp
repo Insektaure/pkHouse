@@ -107,6 +107,7 @@ bool UI::init() {
 }
 
 void UI::shutdown() {
+    clearTextCache();
     freeGameIcons();
     account_.freeTextures();
     freeSprites();
@@ -401,6 +402,7 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
                 }
             }
             if (dirty_) {
+                if (theme_ != lastTheme_) { clearTextCache(); lastTheme_ = theme_; }
                 // Draw the underlying screen, then about popup on top
                 if (screen_ == AppScreen::ProfileSelector) drawProfileSelectorFrame();
                 else if (screen_ == AppScreen::GameSelector) drawGameSelectorFrame();
@@ -495,6 +497,7 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
                 }
             }
             if (dirty_) {
+                if (theme_ != lastTheme_) { clearTextCache(); lastTheme_ = theme_; }
                 // Draw the underlying screen, then theme popup on top
                 if (screen_ == AppScreen::ProfileSelector) drawProfileSelectorFrame();
                 else if (screen_ == AppScreen::GameSelector) drawGameSelectorFrame();
@@ -536,6 +539,10 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
         if (screen_ != screenBefore)
             markDirty();
         if (dirty_) {
+            if (theme_ != lastTheme_) {
+                clearTextCache();
+                lastTheme_ = theme_;
+            }
             if (screen_ == AppScreen::ProfileSelector) drawProfileSelectorFrame();
             else if (screen_ == AppScreen::GameSelector) drawGameSelectorFrame();
             else if (screen_ == AppScreen::BankSelector) drawBankSelectorFrame();

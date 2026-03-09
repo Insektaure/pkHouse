@@ -119,9 +119,8 @@ void UI::drawBankSelectorFrame() {
             // Slot count (right-aligned)
             int maxSlots = isLGPE(selectedGame_) ? 1000 : isBDSP(selectedGame_) ? 1200 : 960;
             std::string slotStr = std::to_string(banks[idx].occupiedSlots) + "/" + std::to_string(maxSlots);
-            int tw = 0, th = 0;
-            TTF_SizeUTF8(font_, slotStr.c_str(), &tw, &th);
-            drawText(slotStr, LIST_X + LIST_W - 20 - tw, rowY + (ROW_H - 4) / 2 - 9,
+            const auto& se = getTextEntry(slotStr, font_, T().textDim);
+            if (se.tex) drawText(slotStr, LIST_X + LIST_W - 20 - se.w, rowY + (ROW_H - 4) / 2 - 9,
                      T().textDim, font_);
         }
     }
@@ -137,9 +136,8 @@ void UI::drawBankSelectorFrame() {
         else if (selectedProfile_ >= 0 && selectedProfile_ < account_.profileCount())
             label = account_.profiles()[selectedProfile_].nickname + " | ";
         label += gameDisplayNameOf(selectedGame_);
-        int tw = 0, th = 0;
-        TTF_SizeUTF8(fontSmall_, label.c_str(), &tw, &th);
-        drawText(label, SCREEN_W - tw - 15, SCREEN_H - 26, T().goldLabel, fontSmall_);
+        const auto& e = getTextEntry(label, fontSmall_, T().goldLabel);
+        if (e.tex) drawText(label, SCREEN_W - e.w - 15, SCREEN_H - 26, T().goldLabel, fontSmall_);
     }
 
     // Delete confirmation overlay

@@ -445,14 +445,18 @@ void UI::handleInput(bool& running) {
             if (event.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERLEFT) {
                 bool pressed = event.caxis.value > TRIGGER_DEADZONE;
                 if (pressed && !zlPressed_ &&
-                    !(appletMode_ && leftBankName_.empty()))
+                    !(appletMode_ && leftBankName_.empty())) {
                     openBoxView(Panel::Game);
+                    markDirty();
+                }
                 zlPressed_ = pressed;
             }
             if (event.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERRIGHT) {
                 bool pressed = event.caxis.value > TRIGGER_DEADZONE;
-                if (pressed && !zrPressed_)
+                if (pressed && !zrPressed_) {
                     openBoxView(Panel::Bank);
+                    markDirty();
+                }
                 zrPressed_ = pressed;
             }
         }

@@ -4,6 +4,7 @@
 #include "game_type.h"
 #include "wondercard.h"
 #include <array>
+#include <unordered_map>
 #include <vector>
 #include <string>
 

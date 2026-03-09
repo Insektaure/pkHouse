@@ -30,8 +30,9 @@ void UI::drawBankSelectorFrame() {
             selAreaX = PANEL_X_L;
             auto truncName = [](const std::string& s, size_t max) -> std::string {
                 if (s.size() <= max) return s;
-                return s.substr(0, max - 3) + "(..)";
-
+                std::string t = s.substr(0, max - 3);
+                t += "(..)";
+                return t;
             };
             std::string rightBoxName = truncName(activeBankName_, 16) + " - " + bank_.getBoxName(bankBox_);
             drawPanel(PANEL_X_R, rightBoxName, bankBox_, bank_.boxCount(),
@@ -42,8 +43,9 @@ void UI::drawBankSelectorFrame() {
             selAreaX = PANEL_X_R;
             auto truncName = [](const std::string& s, size_t max) -> std::string {
                 if (s.size() <= max) return s;
-                return s.substr(0, max - 3) + "(..)";
-
+                std::string t = s.substr(0, max - 3);
+                t += "(..)";
+                return t;
             };
             // Draw left panel (save or left bank)
             if (appletMode_) {

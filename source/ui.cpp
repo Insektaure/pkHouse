@@ -401,6 +401,7 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
                         { showAbout_ = false; markDirty(); }
                 }
             }
+            if (!showAbout_) continue; // dismissed — let main draw section handle it
             if (dirty_) {
                 if (theme_ != lastTheme_) { clearTextCache(); lastTheme_ = theme_; }
                 // Draw the underlying screen, then about popup on top
@@ -496,6 +497,7 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
                     markDirty();
                 }
             }
+            if (!showThemeSelector_) continue; // dismissed — let main draw section handle it
             if (dirty_) {
                 if (theme_ != lastTheme_) { clearTextCache(); lastTheme_ = theme_; }
                 // Draw the underlying screen, then theme popup on top

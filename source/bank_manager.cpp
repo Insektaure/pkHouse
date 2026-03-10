@@ -15,8 +15,11 @@ bool BankManager::init(const std::string& basePath, GameType game) {
 
     // Game-specific subdirectory (paired games share a folder)
     banksDir_ = banksParent + bankFolderNameOf(game) + "/";
-
     mkdir(banksDir_.c_str(), 0755);
+
+    // Universal banks subdirectory (shared across all games)
+    std::string universalDir = banksParent + "Universal/";
+    mkdir(universalDir.c_str(), 0755);
 
     // Migrate legacy bank.bin only for ZA
     if (game == GameType::ZA)
@@ -42,35 +45,53 @@ bool BankManager::migrateLegacy() {
     return std::rename(legacyPath.c_str(), newPath.c_str()) == 0;
 }
 
+static BankMode detectBankMode(const std::string& filePath) {
+    Bank temp;
+    if (!temp.load(filePath))
+        return BankMode::Game;
+    return temp.mode();
+}
+
 void BankManager::refresh() {
     bankList_.clear();
 
-    DIR* dir = opendir(banksDir_.c_str());
-    if (!dir)
-        return;
+    // Scan game-specific directory
+    auto scanDir = [&](const std::string& dirPath) {
+        DIR* dir = opendir(dirPath.c_str());
+        if (!dir)
+            return;
 
-    struct dirent* entry;
-    while ((entry = readdir(dir)) != nullptr) {
-        std::string name = entry->d_name;
-        // Only .bin files
-        if (name.size() < 5)
-            continue;
-        if (name.substr(name.size() - 4) != ".bin")
-            continue;
+        struct dirent* entry;
+        while ((entry = readdir(dir)) != nullptr) {
+            std::string name = entry->d_name;
+            if (name.size() < 5)
+                continue;
+            if (name.substr(name.size() - 4) != ".bin")
+                continue;
 
-        std::string stem = name.substr(0, name.size() - 4);
-        std::string fullPath = banksDir_ + name;
+            std::string stem = name.substr(0, name.size() - 4);
+            std::string fullPath = dirPath + name;
 
-        BankInfo info;
-        info.name = stem;
-        info.fullPath = fullPath;
-        info.occupiedSlots = countOccupied(fullPath);
-        bankList_.push_back(info);
-    }
-    closedir(dir);
+            BankInfo info;
+            info.name = stem;
+            info.fullPath = fullPath;
+            info.occupiedSlots = countOccupied(fullPath);
+            info.mode = detectBankMode(fullPath);
+            bankList_.push_back(info);
+        }
+        closedir(dir);
+    };
 
-    // Sort alphabetically (case-insensitive)
+    scanDir(banksDir_);
+
+    // Also scan Universal directory (shared across all games)
+    std::string universalDir = basePath_ + "banks/Universal/";
+    scanDir(universalDir);
+
+    // Sort: universal banks first, then alphabetically (case-insensitive)
     std::sort(bankList_.begin(), bankList_.end(), [](const BankInfo& a, const BankInfo& b) {
+        if (a.mode != b.mode)
+            return a.mode == BankMode::Universal; // universal first
         std::string la = a.name, lb = b.name;
         std::transform(la.begin(), la.end(), la.begin(), ::tolower);
         std::transform(lb.begin(), lb.end(), lb.begin(), ::tolower);
@@ -98,27 +119,33 @@ int BankManager::countOccupied(const std::string& filePath) {
 }
 
 int BankManager::countBanks(const std::string& basePath, GameType game) {
-    std::string dir = basePath + "banks/" + bankFolderNameOf(game) + "/";
-    DIR* d = opendir(dir.c_str());
-    if (!d) return 0;
-
     int count = 0;
-    struct dirent* entry;
-    while ((entry = readdir(d)) != nullptr) {
-        std::string name = entry->d_name;
-        if (name.size() >= 5 && name.substr(name.size() - 4) == ".bin")
-            count++;
-    }
-    closedir(d);
+    auto countIn = [&](const std::string& dir) {
+        DIR* d = opendir(dir.c_str());
+        if (!d) return;
+        struct dirent* entry;
+        while ((entry = readdir(d)) != nullptr) {
+            std::string name = entry->d_name;
+            if (name.size() >= 5 && name.substr(name.size() - 4) == ".bin")
+                count++;
+        }
+        closedir(d);
+    };
+
+    countIn(basePath + "banks/" + bankFolderNameOf(game) + "/");
+    countIn(basePath + "banks/Universal/");
     return count;
 }
 
-bool BankManager::createBank(const std::string& name) {
+bool BankManager::createBank(const std::string& name, BankMode mode) {
     std::string safe = sanitizeName(name);
     if (safe.empty())
         return false;
 
-    std::string path = banksDir_ + safe + ".bin";
+    std::string dir = (mode == BankMode::Universal)
+        ? basePath_ + "banks/Universal/"
+        : banksDir_;
+    std::string path = dir + safe + ".bin";
 
     // Don't overwrite existing bank
     struct stat st;
@@ -127,6 +154,10 @@ bool BankManager::createBank(const std::string& name) {
 
     // Create an empty bank file
     Bank empty;
+    if (mode == BankMode::Universal)
+        empty.setUniversal();
+    else
+        empty.setGameType(game_);
     if (!empty.save(path))
         return false;
 
@@ -155,7 +186,9 @@ bool BankManager::renameBank(const std::string& oldName, const std::string& newN
     if (oldPath.empty())
         return false;
 
-    std::string newPath = banksDir_ + safe + ".bin";
+    // Keep the bank in its original directory
+    std::string oldDir = oldPath.substr(0, oldPath.find_last_of('/') + 1);
+    std::string newPath = oldDir + safe + ".bin";
 
     // Don't overwrite existing bank
     struct stat st;

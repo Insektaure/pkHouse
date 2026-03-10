@@ -259,6 +259,9 @@ private:
     int  bankSelCursor_ = 0;
     int  bankSelScroll_ = 0;
     bool showDeleteConfirm_ = false;
+    bool showBankModeChoice_ = false;  // choosing Game vs Universal on bank create
+    int  bankModeChoiceCursor_ = 0;
+    BankMode pendingBankMode_ = BankMode::Game; // mode chosen for bank creation
 
     // Text input (PC only; Switch uses swkbd)
     bool showTextInput_ = false;
@@ -319,6 +322,8 @@ private:
     bool   zrPressed_     = false;
     bool   holding_    = false;
     Pokemon heldPkm_;
+    GameType heldSrcGame_ = GameType::ZA;  // game context of held Pokemon
+    bool   heldFromUniversal_ = false;       // held Pokemon is already PA9 canonical
     bool   heldFromLGPEParty_ = false;       // block save→bank moves for LGPE party
     int    lgpeHeldPartyIdx_ = -1;          // which party pointer (0-5) held Pokemon belongs to
     std::array<uint16_t, 6> lgpePartyBackup_{};  // backup for cancel/undo
@@ -338,8 +343,10 @@ private:
     int           selectedBox_   = 0;
     std::vector<Pokemon> heldMulti_;           // multi-held Pokemon
     std::vector<int>     heldMultiSlots_;      // original slot indices (for cancel)
+    std::vector<GameType> heldMultiOrigins_;   // origin game per held Pokemon (universal banks)
     Panel         heldMultiSource_ = Panel::Game;
     int           heldMultiBox_    = 0;
+    GameType      heldMultiSrcGame_ = GameType::ZA; // game context of multi-held source
     bool          positionPreserve_ = false; // place at original slot positions
 
     // Rectangle drag-select state
@@ -439,4 +446,9 @@ private:
     Pokemon getPokemonAt(int box, int slot, Panel panel) const;
     void setPokemonAt(int box, int slot, Panel panel, const Pokemon& pkm);
     void clearPokemonAt(int box, int slot, Panel panel);
+
+    // Cross-gen transfer helpers
+    GameType panelGameType(Panel panel) const;
+    bool tryConvertForPlace(const Pokemon& src, GameType srcGame,
+                            Panel destPanel, Pokemon& out);
 };

@@ -1,4 +1,5 @@
 #include "ui.h"
+#include "entity_converter.h"
 #include "species_converter.h"
 #include "form_names.h"
 #include <algorithm>
@@ -821,6 +822,56 @@ void UI::setPokemonAt(int box, int slot, Panel panel, const Pokemon& pkm) {
     invalidateSlotDisplay(panel, box);
 }
 
+// Determine the GameType context for a panel
+GameType UI::panelGameType(Panel panel) const {
+    if (panel == Panel::Bank && bank_.isUniversal())
+        return GameType::ZA; // universal bank stores PA9
+    if (panel == Panel::Game && appletMode_ && bankLeft_.isUniversal())
+        return GameType::ZA;
+    return selectedGame_;
+}
+
+// Check if placing requires cross-gen conversion and perform it.
+// Returns the (possibly converted) Pokemon, or empty if blocked.
+bool UI::tryConvertForPlace(const Pokemon& src, GameType srcGame,
+                            Panel destPanel, Pokemon& out) {
+    GameType destGame = panelGameType(destPanel);
+    Bank* destBank = (destPanel == Panel::Bank) ? &bank_
+                   : (appletMode_ ? &bankLeft_ : nullptr);
+    bool destIsUniversal = destBank && destBank->isUniversal();
+
+    // Same game context — no conversion needed
+    if (srcGame == destGame && !destIsUniversal) {
+        out = src;
+        return true;
+    }
+
+    // Placing into a universal bank: convert to canonical (PA9)
+    if (destIsUniversal) {
+        out = EntityConverter::toCanonical(src, srcGame);
+        out.gameType_ = GameType::ZA;
+        return true;
+    }
+
+    // Legality check
+    ConvertResult r = EntityConverter::canTransfer(src, srcGame, destGame);
+    if (r != ConvertResult::Success) {
+        std::string species = src.displayName();
+        std::string msg = species + ": " + EntityConverter::resultString(r);
+        showMessageAndWait("Transfer Blocked", msg);
+        out = Pokemon{};
+        return false;
+    }
+
+    // If source is from a universal bank, data is already PA9 canonical —
+    // convert directly from canonical to avoid double-conversion corruption.
+    if (heldFromUniversal_)
+        out = EntityConverter::fromCanonical(src, destGame);
+    else
+        out = EntityConverter::convert(src, srcGame, destGame);
+    return true;
+}
+
 void UI::clearPokemonAt(int box, int slot, Panel panel) {
     if (panel == Panel::Game) {
         if (appletMode_)
@@ -845,8 +896,17 @@ void UI::actionSelect() {
     if (!holding_ && !selectedSlots_.empty()) {
         heldMulti_.clear();
         heldMultiSlots_.clear();
+        heldMultiOrigins_.clear();
         heldMultiSource_ = selectedPanel_;
         heldMultiBox_ = selectedBox_;
+        heldMultiSrcGame_ = panelGameType(selectedPanel_);
+
+        // Track if source is a universal bank (data already PA9 canonical)
+        {
+            Bank* srcBankCheck = (selectedPanel_ == Panel::Bank) ? &bank_
+                               : (appletMode_ ? &bankLeft_ : nullptr);
+            heldFromUniversal_ = srcBankCheck && srcBankCheck->isUniversal();
+        }
 
         // Check if any selected slot is an LGPE party member; backup indices
         heldFromLGPEParty_ = false;
@@ -861,11 +921,18 @@ void UI::actionSelect() {
         }
 
         // Collect in selection order
+        Bank* srcBank = (selectedPanel_ == Panel::Bank) ? &bank_
+                      : (appletMode_ ? &bankLeft_ : nullptr);
         for (int s : selectedSlots_) {
             Pokemon pkm = getPokemonAt(selectedBox_, s, selectedPanel_);
             if (!pkm.isEmpty()) {
                 heldMulti_.push_back(pkm);
                 heldMultiSlots_.push_back(s);
+                // Track per-slot origin for universal banks
+                GameType origin = heldMultiSrcGame_;
+                if (srcBank && srcBank->isUniversal())
+                    origin = srcBank->getSlotOrigin(selectedBox_, s);
+                heldMultiOrigins_.push_back(origin);
                 clearPokemonAt(selectedBox_, s, selectedPanel_);
             }
         }
@@ -899,9 +966,24 @@ void UI::actionSelect() {
             }
         };
 
+        // Pre-convert all held Pokemon for the destination
+        std::vector<Pokemon> converted(heldMulti_.size());
+        Bank* destBank = (cursor_.panel == Panel::Bank) ? &bank_
+                       : (appletMode_ ? &bankLeft_ : nullptr);
+        bool destIsUniversal = destBank && destBank->isUniversal();
+
+        for (int i = 0; i < (int)heldMulti_.size(); i++) {
+            GameType srcGame = (i < (int)heldMultiOrigins_.size())
+                ? heldMultiOrigins_[i] : heldMultiSrcGame_;
+            if (!tryConvertForPlace(heldMulti_[i], srcGame, cursor_.panel, converted[i])) {
+                // One Pokemon blocked — abort entire multi-place
+                return;
+            }
+        }
+
         if (positionPreserve_) {
             // Position-preserving: place each Pokemon at its original slot index
-            for (int i = 0; i < (int)heldMulti_.size(); i++) {
+            for (int i = 0; i < (int)converted.size(); i++) {
                 int targetSlot = heldMultiSlots_[i];
                 if (!getPokemonAt(box, targetSlot, cursor_.panel).isEmpty()) {
                     showMessageAndWait("Slots occupied",
@@ -909,8 +991,13 @@ void UI::actionSelect() {
                     return;
                 }
             }
-            for (int i = 0; i < (int)heldMulti_.size(); i++) {
-                setPokemonAt(box, heldMultiSlots_[i], cursor_.panel, heldMulti_[i]);
+            for (int i = 0; i < (int)converted.size(); i++) {
+                setPokemonAt(box, heldMultiSlots_[i], cursor_.panel, converted[i]);
+                if (destIsUniversal) {
+                    GameType origin = (i < (int)heldMultiOrigins_.size())
+                        ? heldMultiOrigins_[i] : heldMultiSrcGame_;
+                    destBank->setSlotOrigin(box, heldMultiSlots_[i], origin);
+                }
                 updatePartyPtr(heldMultiSlots_[i], box, heldMultiSlots_[i]);
             }
         } else {
@@ -921,16 +1008,21 @@ void UI::actionSelect() {
                 if (getPokemonAt(box, s, cursor_.panel).isEmpty())
                     emptyCount++;
             }
-            if (emptyCount < (int)heldMulti_.size()) {
+            if (emptyCount < (int)converted.size()) {
                 showMessageAndWait("Not enough space",
-                    "Need " + std::to_string(heldMulti_.size()) + " empty slots, only " +
+                    "Need " + std::to_string(converted.size()) + " empty slots, only " +
                     std::to_string(emptyCount) + " available.");
                 return;
             }
             int placed = 0;
-            for (int s = 0; s < slotsInBox && placed < (int)heldMulti_.size(); s++) {
+            for (int s = 0; s < slotsInBox && placed < (int)converted.size(); s++) {
                 if (getPokemonAt(box, s, cursor_.panel).isEmpty()) {
-                    setPokemonAt(box, s, cursor_.panel, heldMulti_[placed]);
+                    setPokemonAt(box, s, cursor_.panel, converted[placed]);
+                    if (destIsUniversal) {
+                        GameType origin = (placed < (int)heldMultiOrigins_.size())
+                            ? heldMultiOrigins_[placed] : heldMultiSrcGame_;
+                        destBank->setSlotOrigin(box, s, origin);
+                    }
                     updatePartyPtr(heldMultiSlots_[placed], box, s);
                     placed++;
                 }
@@ -938,6 +1030,7 @@ void UI::actionSelect() {
         }
         heldMulti_.clear();
         heldMultiSlots_.clear();
+        heldMultiOrigins_.clear();
         holding_ = false;
         positionPreserve_ = false;
         heldFromLGPEParty_ = false;
@@ -952,6 +1045,17 @@ void UI::actionSelect() {
             return;
 
         heldPkm_ = pkm;
+        heldSrcGame_ = panelGameType(cursor_.panel);
+        heldFromUniversal_ = false;
+        // For universal banks, use the stored origin game (data is already PA9 canonical)
+        if (cursor_.panel == Panel::Bank && bank_.isUniversal()) {
+            heldSrcGame_ = bank_.getSlotOrigin(box, slot);
+            heldFromUniversal_ = true;
+        } else if (cursor_.panel == Panel::Game && appletMode_ && bankLeft_.isUniversal()) {
+            heldSrcGame_ = bankLeft_.getSlotOrigin(box, slot);
+            heldFromUniversal_ = true;
+        }
+
         holding_ = true;
         lgpeHeldPartyIdx_ = (cursor_.panel == Panel::Game)
             ? save_.lgpePartyIndexOf(box, slot) : -1;
@@ -972,8 +1076,20 @@ void UI::actionSelect() {
         Pokemon target = getPokemonAt(box, slot, cursor_.panel);
 
         if (target.isEmpty()) {
+            // Convert if needed (cross-gen transfer)
+            Pokemon converted;
+            if (!tryConvertForPlace(heldPkm_, heldSrcGame_, cursor_.panel, converted))
+                return; // blocked by legality
+
             // Place on empty — commit, clear history
-            setPokemonAt(box, slot, cursor_.panel, heldPkm_);
+            setPokemonAt(box, slot, cursor_.panel, converted);
+
+            // Set origin in universal bank
+            if (cursor_.panel == Panel::Bank && bank_.isUniversal())
+                bank_.setSlotOrigin(box, slot, heldSrcGame_);
+            else if (cursor_.panel == Panel::Game && appletMode_ && bankLeft_.isUniversal())
+                bankLeft_.setSlotOrigin(box, slot, heldSrcGame_);
+
             // Update party pointer to follow the Pokemon
             if (lgpeHeldPartyIdx_ >= 0 && cursor_.panel == Panel::Game) {
                 uint16_t newFlat = static_cast<uint16_t>(
@@ -986,12 +1102,33 @@ void UI::actionSelect() {
             heldFromLGPEParty_ = false;
             lgpeHeldPartyIdx_ = -1;
         } else {
-            // Swap: check if target is also a party member BEFORE modifying
+            // Swap: convert both directions if needed
+            Pokemon convertedHeld, convertedTarget;
+            if (!tryConvertForPlace(heldPkm_, heldSrcGame_, cursor_.panel, convertedHeld))
+                return; // blocked
+
+            // For swap, also need to convert the target back to the held source context
+            // (the target becomes the new held Pokemon)
+            // We don't convert the target yet — it stays in its original format
+            // and gets the source game from its current panel
+            GameType targetSrcGame = panelGameType(cursor_.panel);
+            if (cursor_.panel == Panel::Bank && bank_.isUniversal())
+                targetSrcGame = bank_.getSlotOrigin(box, slot);
+            else if (cursor_.panel == Panel::Game && appletMode_ && bankLeft_.isUniversal())
+                targetSrcGame = bankLeft_.getSlotOrigin(box, slot);
+
+            // Check if target is also a party member BEFORE modifying
             int targetPartyIdx = (cursor_.panel == Panel::Game)
                 ? save_.lgpePartyIndexOf(box, slot) : -1;
 
             swapHistory_.push_back({target, cursor_.panel, box, slot});
-            setPokemonAt(box, slot, cursor_.panel, heldPkm_);
+            setPokemonAt(box, slot, cursor_.panel, convertedHeld);
+
+            // Set origin in universal bank for the placed Pokemon
+            if (cursor_.panel == Panel::Bank && bank_.isUniversal())
+                bank_.setSlotOrigin(box, slot, heldSrcGame_);
+            else if (cursor_.panel == Panel::Game && appletMode_ && bankLeft_.isUniversal())
+                bankLeft_.setSlotOrigin(box, slot, heldSrcGame_);
 
             // Update party pointer for the placed Pokemon
             if (lgpeHeldPartyIdx_ >= 0 && cursor_.panel == Panel::Game) {
@@ -1006,6 +1143,9 @@ void UI::actionSelect() {
             }
 
             heldPkm_ = target;
+            heldSrcGame_ = targetSrcGame;
+            heldFromUniversal_ = (cursor_.panel == Panel::Bank && bank_.isUniversal())
+                || (cursor_.panel == Panel::Game && appletMode_ && bankLeft_.isUniversal());
             lgpeHeldPartyIdx_ = targetPartyIdx;
             heldFromLGPEParty_ = (targetPartyIdx >= 0);
         }
@@ -1025,6 +1165,7 @@ void UI::actionCancel() {
             setPokemonAt(heldMultiBox_, heldMultiSlots_[i], heldMultiSource_, heldMulti_[i]);
         heldMulti_.clear();
         heldMultiSlots_.clear();
+        heldMultiOrigins_.clear();
         holding_ = false;
         positionPreserve_ = false;
         heldFromLGPEParty_ = false;

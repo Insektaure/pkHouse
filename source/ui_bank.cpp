@@ -1,5 +1,6 @@
 #include "ui.h"
 #include "ui_util.h"
+#include "entity_converter.h"
 #include <algorithm>
 #include <cstring>
 #include <cstdlib>
@@ -114,12 +115,16 @@ void UI::drawBankSelectorFrame() {
                 drawRectOutline(LIST_X, rowY, LIST_W, ROW_H - 4, T().cursor, 2);
             }
 
-            // Bank name (left-aligned)
-            drawText(banks[idx].name, LIST_X + 20, rowY + (ROW_H - 4) / 2 - 9,
+            // Bank name (left-aligned) — prefix [U] for universal banks
+            std::string displayName = banks[idx].name;
+            if (banks[idx].mode == BankMode::Universal)
+                displayName = "[U] " + displayName;
+            drawText(displayName, LIST_X + 20, rowY + (ROW_H - 4) / 2 - 9,
                      T().text, font_);
 
             // Slot count (right-aligned)
-            int maxSlots = isLGPE(selectedGame_) ? 1000 : isBDSP(selectedGame_) ? 1200 : 960;
+            int maxSlots = banks[idx].mode == BankMode::Universal ? 960
+                : isLGPE(selectedGame_) ? 1000 : isBDSP(selectedGame_) ? 1200 : 960;
             std::string slotStr = std::to_string(banks[idx].occupiedSlots) + "/" + std::to_string(maxSlots);
             const auto& se = getTextEntry(slotStr, font_, T().textDim);
             if (se.tex) drawText(slotStr, LIST_X + LIST_W - 20 - se.w, rowY + (ROW_H - 4) / 2 - 9,
@@ -145,6 +150,32 @@ void UI::drawBankSelectorFrame() {
     // Delete confirmation overlay
     if (showDeleteConfirm_) {
         drawDeleteConfirmPopup();
+    }
+
+    // Bank mode choice overlay (Game vs Universal)
+    if (showBankModeChoice_) {
+        drawRect(0, 0, SCREEN_W, SCREEN_H, T().overlay);
+
+        constexpr int POP_W = 460;
+        constexpr int POP_H = 200;
+        int popX = (SCREEN_W - POP_W) / 2;
+        int popY = (SCREEN_H - POP_H) / 2;
+        drawRect(popX, popY, POP_W, POP_H, T().panelBg);
+        drawRectOutline(popX, popY, POP_W, POP_H, T().cursor, 2);
+
+        drawTextCentered("New Bank Type", popX + POP_W / 2, popY + 25, T().text, font_);
+
+        const char* options[] = { "Game Bank (native format)", "Universal Bank (cross-gen)" };
+        for (int i = 0; i < 2; i++) {
+            int oy = popY + 65 + i * 40;
+            if (i == bankModeChoiceCursor_) {
+                drawRect(popX + 20, oy - 4, POP_W - 40, 32, T().menuHighlight);
+                drawRectOutline(popX + 20, oy - 4, POP_W - 40, 32, T().cursor, 2);
+            }
+            drawTextCentered(options[i], popX + POP_W / 2, oy + 4, T().text, font_);
+        }
+        drawTextCentered("A: Select  B: Cancel",
+                         popX + POP_W / 2, popY + POP_H - 25, T().textDim, fontSmall_);
     }
 
     // Text input overlay
@@ -177,6 +208,52 @@ void UI::handleBankSelectorInput(bool& running) {
         // Delete confirmation takes priority
         if (showDeleteConfirm_) {
             handleDeleteConfirmEvent(event);
+            continue;
+        }
+
+        // Bank mode choice popup
+        if (showBankModeChoice_) {
+            if (event.type == SDL_CONTROLLERBUTTONDOWN) {
+                markDirty();
+                switch (event.cbutton.button) {
+                    case SDL_CONTROLLER_BUTTON_DPAD_UP:
+                    case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+                        bankModeChoiceCursor_ = 1 - bankModeChoiceCursor_;
+                        break;
+                    case SDL_CONTROLLER_BUTTON_B: { // Switch A = confirm
+                        showBankModeChoice_ = false;
+                        BankMode mode = (bankModeChoiceCursor_ == 0) ? BankMode::Game : BankMode::Universal;
+                        // Store chosen mode, then open text input for name
+                        pendingBankMode_ = mode;
+                        beginTextInput(TextInputPurpose::CreateBank);
+                        break;
+                    }
+                    case SDL_CONTROLLER_BUTTON_A: // Switch B = cancel
+                        showBankModeChoice_ = false;
+                        break;
+                }
+            }
+            if (event.type == SDL_KEYDOWN) {
+                markDirty();
+                switch (event.key.keysym.sym) {
+                    case SDLK_UP:
+                    case SDLK_DOWN:
+                        bankModeChoiceCursor_ = 1 - bankModeChoiceCursor_;
+                        break;
+                    case SDLK_a:
+                    case SDLK_RETURN: {
+                        showBankModeChoice_ = false;
+                        BankMode mode = (bankModeChoiceCursor_ == 0) ? BankMode::Game : BankMode::Universal;
+                        pendingBankMode_ = mode;
+                        beginTextInput(TextInputPurpose::CreateBank);
+                        break;
+                    }
+                    case SDLK_b:
+                    case SDLK_ESCAPE:
+                        showBankModeChoice_ = false;
+                        break;
+                }
+            }
             continue;
         }
 
@@ -228,7 +305,8 @@ void UI::handleBankSelectorInput(bool& running) {
                     }
                     break;
                 case SDL_CONTROLLER_BUTTON_Y: // Switch X = new
-                    beginTextInput(TextInputPurpose::CreateBank);
+                    showBankModeChoice_ = true;
+                    bankModeChoiceCursor_ = 0;
                     break;
                 case SDL_CONTROLLER_BUTTON_X: // Switch Y = rename
                     if (bankCount > 0)
@@ -267,7 +345,8 @@ void UI::handleBankSelectorInput(bool& running) {
                         openSelectedBank();
                     break;
                 case SDLK_x:
-                    beginTextInput(TextInputPurpose::CreateBank);
+                    showBankModeChoice_ = true;
+                    bankModeChoiceCursor_ = 0;
                     break;
                 case SDLK_y:
                     if (bankCount > 0)
@@ -348,11 +427,13 @@ void UI::openSelectedBank() {
 
     if (appletMode_ && bankSelTarget_ == Panel::Game) {
         leftBankPath_ = bankManager_.loadBank(name, bankLeft_);
-        bankLeft_.setGameType(selectedGame_);
+        if (!bankLeft_.isUniversal())
+            bankLeft_.setGameType(selectedGame_);
         leftBankName_ = name;
     } else {
         activeBankPath_ = bankManager_.loadBank(name, bank_);
-        bank_.setGameType(selectedGame_);
+        if (!bank_.isUniversal())
+            bank_.setGameType(selectedGame_);
         activeBankName_ = name;
     }
 
@@ -633,7 +714,10 @@ void UI::commitTextInput(const std::string& text) {
 #ifdef __SWITCH__
         {
             Bank temp;
-            temp.setGameType(selectedGame_);
+            if (pendingBankMode_ == BankMode::Universal)
+                temp.setUniversal();
+            else
+                temp.setGameType(selectedGame_);
             size_t needed = temp.fileSize();
             struct statvfs vfs;
             if (statvfs("sdmc:/", &vfs) == 0) {
@@ -648,7 +732,7 @@ void UI::commitTextInput(const std::string& text) {
         }
 #endif
         showWorking("Creating bank...");
-        if (bankManager_.createBank(text)) {
+        if (bankManager_.createBank(text, pendingBankMode_)) {
             // Select the newly created bank
             const auto& banks = bankManager_.list();
             for (int i = 0; i < (int)banks.size(); i++) {

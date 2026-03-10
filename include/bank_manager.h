@@ -8,6 +8,7 @@ struct BankInfo {
     std::string name;       // filename without .bin
     std::string fullPath;
     int occupiedSlots;      // 0..960
+    BankMode mode;          // Game or Universal
 };
 
 class BankManager {
@@ -16,7 +17,7 @@ public:
     void refresh();
     const std::vector<BankInfo>& list() const;
 
-    bool createBank(const std::string& name);
+    bool createBank(const std::string& name, BankMode mode = BankMode::Game);
     bool deleteBank(const std::string& name);
     bool renameBank(const std::string& oldName, const std::string& newName);
     std::string loadBank(const std::string& name, Bank& bank);

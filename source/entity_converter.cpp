@@ -166,6 +166,218 @@ static void wr32(uint8_t* d, int ofs, uint32_t v) {
     std::memcpy(d + ofs, &v, 4);
 }
 
+// --- Dummied move bitfields per game (from PKHeX.Core MoveInfo*.cs) ---
+// If a bit is set, the move is not usable in that game.
+
+// SwSh (Gen8) — MoveInfo8.cs
+static const uint8_t SWSH_DUMMIED_MOVES[93] = {
+    0x1C, 0x20, 0x00, 0x0C, 0x00, 0x02, 0x02, 0x00, 0x00, 0x00,
+    0x04, 0x00, 0x09, 0x00, 0xA1, 0x22, 0x19, 0x10, 0x36, 0xC0,
+    0x40, 0x0A, 0x00, 0x02, 0x02, 0x00, 0x00, 0x45, 0x10, 0x20,
+    0x00, 0x00, 0x00, 0x02, 0x04, 0x80, 0x66, 0x70, 0x00, 0x50,
+    0x91, 0x00, 0x00, 0x04, 0x64, 0x08, 0x20, 0x67, 0x84, 0x00,
+    0x00, 0x00, 0x00, 0xA4, 0x00, 0x28, 0x03, 0x01, 0x07, 0x20,
+    0x22, 0x00, 0x04, 0x08, 0x10, 0x00, 0x08, 0x02, 0x08, 0x00,
+    0x08, 0x02, 0x00, 0x00, 0x02, 0x01, 0x00, 0xE2, 0xFF, 0xFF,
+    0xFF, 0xFF, 0x07, 0x82, 0x01, 0x40, 0x84, 0xFF, 0x00, 0x80,
+    0xF8, 0xFF, 0x3F,
+};
+
+// BDSP (Gen8b) — MoveInfo8b.cs
+static const uint8_t BDSP_DUMMIED_MOVES[104] = {
+    0x1C, 0x20, 0x00, 0x0C, 0x00, 0x02, 0x02, 0x00, 0x00, 0x00,
+    0x04, 0x00, 0x09, 0x00, 0xA1, 0x22, 0x19, 0x10, 0x26, 0xC0,
+    0x00, 0x0A, 0x00, 0x02, 0x02, 0x00, 0x00, 0x45, 0x10, 0x00,
+    0x00, 0x00, 0x00, 0x02, 0x04, 0x80, 0x26, 0x70, 0x00, 0x50,
+    0x91, 0x00, 0x00, 0x04, 0x60, 0x08, 0x20, 0x67, 0x04, 0x00,
+    0x00, 0x00, 0x00, 0x24, 0x00, 0x28, 0x00, 0x01, 0x04, 0x20,
+    0x22, 0x00, 0x04, 0x18, 0xD0, 0x81, 0xB8, 0xAA, 0xFF, 0xE7,
+    0x8B, 0x0E, 0x45, 0x98, 0x07, 0xCB, 0xE4, 0xE3, 0xFF, 0xFF,
+    0xFF, 0xFF, 0xFF, 0xA7, 0x74, 0xEB, 0xAF, 0xFF, 0xB7, 0xF7,
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFE, 0x7F, 0xFF,
+    0xFF, 0xFF, 0xFF, 0x07,
+};
+
+// PLA (Gen8a) — MoveInfo8a.cs
+static const uint8_t PLA_DUMMIED_MOVES[104] = {
+    0x7E, 0xBC, 0xFE, 0xFF, 0xBD, 0xEA, 0xCF, 0x72, 0x7F, 0x1F,
+    0x0E, 0x1F, 0xAB, 0xFD, 0xEF, 0xBE, 0x7D, 0xD7, 0x35, 0xCF,
+    0xD5, 0xEF, 0x5F, 0x0F, 0xEF, 0x9E, 0xFD, 0xFF, 0x7E, 0x5F,
+    0x3B, 0xFD, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xDF, 0xBF, 0xB3,
+    0xBF, 0xAF, 0xF5, 0xE4, 0xF6, 0xFF, 0xFB, 0xFF, 0xFF, 0x2B,
+    0x84, 0x8C, 0x08, 0xA0, 0xDB, 0xAA, 0xC5, 0x21, 0xF0, 0xFB,
+    0xFF, 0xF7, 0xFF, 0xFB, 0xFF, 0xF3, 0xFE, 0xBF, 0xFF, 0xE7,
+    0xFF, 0xFF, 0x7D, 0xFC, 0xF7, 0xDF, 0xFE, 0xFF, 0xFF, 0xFF,
+    0xFF, 0xFF, 0xFF, 0xB7, 0xFF, 0xFF, 0xFF, 0xFF, 0xBF, 0xFF,
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xEF,
+    0xFF, 0xFF, 0xFF, 0x07,
+};
+
+// SV/ZA (Gen9) — MoveInfo9.cs
+static const uint8_t SV_DUMMIED_MOVES[100] = {
+    0x1C, 0x20, 0x00, 0x0C, 0x00, 0x02, 0x02, 0x00, 0x04, 0x00,
+    0x04, 0x00, 0x09, 0x00, 0xA1, 0x22, 0x5D, 0x50, 0x36, 0xC8,
+    0x00, 0x0E, 0x00, 0x42, 0x02, 0x00, 0x00, 0x45, 0x10, 0x22,
+    0x00, 0x00, 0x04, 0x0A, 0xA4, 0x80, 0x27, 0x70, 0x00, 0x51,
+    0x91, 0x00, 0x00, 0x04, 0x60, 0x08, 0xA0, 0x67, 0x04, 0x00,
+    0x00, 0x00, 0x00, 0xA4, 0x00, 0x28, 0x01, 0x01, 0x04, 0x28,
+    0x23, 0x00, 0x04, 0x08, 0x10, 0x00, 0x0C, 0x83, 0x07, 0x00,
+    0x8A, 0x02, 0x4C, 0x10, 0x80, 0x03, 0xF0, 0xC3, 0xFF, 0xFF,
+    0xFF, 0xFF, 0x07, 0x80, 0x26, 0xA0, 0x80, 0xFF, 0x11, 0xE1,
+    0xFB, 0xFF, 0xFF, 0x00, 0xEE, 0xFF, 0x7F, 0x08, 0x00, 0x0D,
+};
+
+// LGPE (Gen7b) — AllowedMoves whitelist from MoveInfo7b.cs (converted to bitfield)
+// Moves 0-164 are all allowed, plus selected higher moves.
+static const uint16_t LGPE_ALLOWED_MOVES[] = {
+    182, 188, 200, 224, 227, 231, 242, 243, 247, 252,
+    257, 261, 263, 269, 270, 276, 280, 281, 339, 347,
+    355, 364, 369, 389, 394, 398, 399, 403, 404, 405,
+    406, 417, 420, 430, 438, 446, 453, 483, 492, 499,
+    503, 504, 525, 529, 583, 585, 603, 605, 606, 607,
+    729, 730, 731, 733, 734, 735, 736, 737, 738, 739,
+    740, 742,
+};
+
+static bool isMoveDummiedInBitfield(uint16_t moveId, const uint8_t* bf, int bfSize) {
+    int byteIdx = moveId >> 3;
+    int bitIdx  = moveId & 7;
+    if (byteIdx >= bfSize)
+        return true; // out of range = invalid
+    return (bf[byteIdx] >> bitIdx) & 1;
+}
+
+static bool isMoveDummiedInPLA(uint16_t moveId) {
+    return isMoveDummiedInBitfield(moveId, PLA_DUMMIED_MOVES, sizeof(PLA_DUMMIED_MOVES));
+}
+
+static bool isMoveAllowedInLGPE(uint16_t moveId) {
+    if (moveId <= 164) return true;
+    for (auto m : LGPE_ALLOWED_MOVES)
+        if (m == moveId) return true;
+    return false;
+}
+
+static bool isMoveDummiedForGame(uint16_t moveId, GameType game) {
+    if (moveId == 0) return false; // empty slot is fine
+    if (isSwSh(game))
+        return isMoveDummiedInBitfield(moveId, SWSH_DUMMIED_MOVES, sizeof(SWSH_DUMMIED_MOVES));
+    if (isBDSP(game))
+        return isMoveDummiedInBitfield(moveId, BDSP_DUMMIED_MOVES, sizeof(BDSP_DUMMIED_MOVES));
+    if (game == GameType::LA)
+        return isMoveDummiedInBitfield(moveId, PLA_DUMMIED_MOVES, sizeof(PLA_DUMMIED_MOVES));
+    if (isLGPE(game))
+        return !isMoveAllowedInLGPE(moveId);
+    // SV/ZA (Gen9)
+    if (isSV(game) || game == GameType::ZA)
+        return isMoveDummiedInBitfield(moveId, SV_DUMMIED_MOVES, sizeof(SV_DUMMIED_MOVES));
+    return false;
+}
+
+// Filter dummied moves for any game (PK9-format: moves at moveOfs, PP at moveOfs+8)
+static void filterDummiedMoves(uint8_t* data, int moveOfs, GameType game) {
+    for (int i = 0; i < 4; i++) {
+        uint16_t move = rd16(data, moveOfs + i * 2);
+        if (move != 0 && isMoveDummiedForGame(move, game)) {
+            wr16(data, moveOfs + i * 2, 0);
+            data[moveOfs + 8 + i] = 0;
+        }
+    }
+    // Compact: shift non-zero moves to front
+    uint16_t moves[4];
+    uint8_t pp[4];
+    for (int i = 0; i < 4; i++) {
+        moves[i] = rd16(data, moveOfs + i * 2);
+        pp[i] = data[moveOfs + 8 + i];
+    }
+    int w = 0;
+    for (int r = 0; r < 4; r++) {
+        if (moves[r] != 0) {
+            moves[w] = moves[r];
+            pp[w] = pp[r];
+            w++;
+        }
+    }
+    for (int i = w; i < 4; i++) { moves[i] = 0; pp[i] = 0; }
+    for (int i = 0; i < 4; i++) {
+        wr16(data, moveOfs + i * 2, moves[i]);
+        data[moveOfs + 8 + i] = pp[i];
+    }
+}
+
+// PLA PP table (from PKHeX MoveInfo8a.cs) — correct PP for PLA context
+static const uint8_t PLA_MOVE_PP[] = {
+    0, 35, 25, 10, 15, 20, 20, 10, 10, 10, 35, 30,  5, 10, 20, 30, 25, 35, 20, 15,
+   20, 20, 25, 20, 30,  5, 10, 15, 15, 15, 25, 20,  5, 30, 15, 20, 20, 10,  5, 30,
+   20, 20, 20, 30, 20, 40, 20, 15, 20, 20, 20, 30, 25, 10, 30, 25,  5, 15, 10,  5,
+   20, 20, 20,  5, 35, 20, 20, 20, 20, 20, 15, 20, 15, 10, 20, 25, 10, 20, 20, 20,
+   10, 40, 10, 15, 25, 10, 20,  5, 15, 10,  5, 10, 10, 20, 10, 20, 40, 30, 20, 20,
+   20, 15, 10, 40, 15, 10, 30, 10, 20, 10, 40, 40, 20, 30, 30, 20, 20, 10, 10, 20,
+    5, 10, 30, 20, 20, 20,  5, 15, 15, 20, 10, 15, 35, 20, 15, 10, 10, 30, 15, 20,
+   20, 10, 10,  5, 10, 25, 10, 10, 20, 15, 40, 20, 10,  5, 15, 10, 10, 10, 15, 30,
+   30, 10, 10, 15, 10,  1,  1, 10, 25, 10,  5, 15, 20, 15, 10, 15, 30,  5, 40, 15,
+   10, 25, 10, 20, 10, 20, 10, 10, 10, 20, 15, 20,  5, 40,  5,  5, 20,  5, 10,  5,
+   10, 10, 10, 10, 20, 20, 30, 15, 10, 20, 20, 25,  5, 15, 10,  5, 20, 15, 20, 25,
+   20,  5, 30,  5,  5, 20, 40,  5, 20, 40, 20,  5, 35, 10,  5,  5,  5, 15,  5, 25,
+    5,  5, 10, 20, 10,  5, 15, 10, 10, 20, 15, 10, 10, 10, 20, 10, 10, 10, 10, 15,
+   15, 15, 10, 20, 20, 10, 20, 20, 20, 20, 20, 10, 10, 10, 20, 20,  5, 15, 10, 10,
+   15, 10, 20,  5,  5, 10, 10, 20,  5, 10, 20, 10, 20, 20, 20,  5,  5, 15, 20, 10,
+   15, 20, 15, 10, 10, 15, 10,  5,  5, 10, 25, 10,  5, 20, 15,  5, 40, 15, 15, 40,
+   15, 20, 20,  5, 15, 20, 15, 15, 15,  5, 10, 30, 20, 30, 20,  5, 40, 10,  5, 10,
+    5, 15, 25, 25,  5, 20, 15, 10, 10, 20, 10, 20, 20,  5,  5, 10,  5, 40, 10, 10,
+    5, 10, 10, 15, 10, 20, 15, 30, 10, 20,  5, 10, 10, 15, 10, 10,  5, 15,  5, 10,
+   10, 30, 20, 20, 10, 10,  5,  5, 10,  5, 20, 10, 20, 10,  5, 10, 10, 20, 10, 10,
+};
+
+// Get the correct PLA PP for a move
+static uint8_t getMovePP_PLA(uint16_t moveId) {
+    if (moveId == 0) return 0;
+    if (moveId < static_cast<uint16_t>(sizeof(PLA_MOVE_PP)))
+        return PLA_MOVE_PP[moveId];
+    return 0;
+}
+
+// Sanitize moves for PLA: remove dummied moves, fix PP to PLA values
+static void sanitizeMovesForPLA(uint8_t* data, int moveOfs) {
+    for (int i = 0; i < 4; i++) {
+        uint16_t move = rd16(data, moveOfs + i * 2);
+        if (move == 0) {
+            data[moveOfs + 8 + i] = 0;
+            continue;
+        }
+        if (move > 826 || isMoveDummiedInPLA(move)) {
+            wr16(data, moveOfs + i * 2, 0);
+            data[moveOfs + 8 + i] = 0;
+        } else {
+            // Fix PP to PLA values
+            data[moveOfs + 8 + i] = getMovePP_PLA(move);
+        }
+    }
+    // Compact moves: shift non-zero moves to front
+    uint16_t moves[4];
+    uint8_t pp[4];
+    for (int i = 0; i < 4; i++) {
+        moves[i] = rd16(data, moveOfs + i * 2);
+        pp[i] = data[moveOfs + 8 + i];
+    }
+    int w = 0;
+    for (int r = 0; r < 4; r++) {
+        if (moves[r] != 0) {
+            moves[w] = moves[r];
+            pp[w] = pp[r];
+            w++;
+        }
+    }
+    for (int i = w; i < 4; i++) {
+        moves[i] = 0;
+        pp[i] = 0;
+    }
+    for (int i = 0; i < 4; i++) {
+        wr16(data, moveOfs + i * 2, moves[i]);
+        data[moveOfs + 8 + i] = pp[i];
+    }
+}
+
 // Sanitize moves: clear any move > maxMoveID
 static void sanitizeMoves(uint8_t* data, int moveOfs, uint16_t maxMoveID) {
     for (int i = 0; i < 4; i++) {
@@ -326,6 +538,7 @@ static Pokemon convertSameSize(const Pokemon& src, GameType srcGame, GameType de
     else if (isBDSP(destGame)) { maxMove = 826; maxItem = 1822; }
 
     sanitizeMoves(d, 0x72, maxMove);
+    filterDummiedMoves(d, 0x72, destGame);
     sanitizeItem(d, 0x0A, maxItem);
 
     dst.refreshChecksum();
@@ -450,8 +663,12 @@ static Pokemon convertPA8toPA9(const Pokemon& src) {
     // OT Friendship: PA8 0x12A -> PA9 0x112
     d[0x112] = s[0x12A];
 
-    // OT Memory: PA8 0x12B-0x130 -> PA9 0x113-0x118
-    std::memcpy(d + 0x113, s + 0x12B, 6);
+    // OT Memory: PA8 layout [Intensity][Memory][gap][TextVar(2)][Feeling]
+    //            PA9 layout [Intensity][Memory][Feeling][TextVar(2)]
+    d[0x113] = s[0x12B]; // OT Intensity
+    d[0x114] = s[0x12C]; // OT Memory
+    d[0x115] = s[0x130]; // OT Feeling
+    std::memcpy(d + 0x116, s + 0x12E, 2); // OT TextVar
 
     // Egg date: PA8 0x131-0x133 -> PA9 0x119-0x11B
     std::memcpy(d + 0x119, s + 0x131, 3);
@@ -586,7 +803,13 @@ static Pokemon convertPA9toPA8(const Pokemon& src) {
     // OT Name: PA9 0xF8 -> PA8 0x110
     std::memcpy(d + 0x110, s + 0xF8, 26);
     d[0x12A] = s[0x112]; // OT Friendship
-    std::memcpy(d + 0x12B, s + 0x113, 6); // OT Memory
+    // OT Memory: PA9 layout [Intensity][Memory][Feeling][TextVar(2)]
+    //            PA8 layout [Intensity][Memory][gap][TextVar(2)][Feeling]
+    d[0x12B] = s[0x113]; // OT Intensity
+    d[0x12C] = s[0x114]; // OT Memory
+    // 0x12D is unused alignment in PA8
+    std::memcpy(d + 0x12E, s + 0x116, 2); // OT TextVar
+    d[0x130] = s[0x115]; // OT Feeling
     std::memcpy(d + 0x131, s + 0x119, 3); // Egg date
     std::memcpy(d + 0x134, s + 0x11C, 3); // Met date
     std::memcpy(d + 0x138, s + 0x120, 2); // Egg location
@@ -599,8 +822,8 @@ static Pokemon convertPA9toPA8(const Pokemon& src) {
     // Level: PA9 0x148 -> PA8 0x168
     d[0x168] = s[0x148];
 
-    // Sanitize for LA
-    sanitizeMoves(d, 0x54, 826);
+    // Sanitize for LA: remove dummied moves, fix PP to PLA values
+    sanitizeMovesForPLA(d, 0x54);
     sanitizeItem(d, 0x0A, 1828);
 
     dst.refreshChecksum();
@@ -834,7 +1057,7 @@ static Pokemon convertPA9toPB7(const Pokemon& src) {
     d[0xEC] = s[0x148];
 
     // Sanitize for LGPE (move max ~742, item max ~959)
-    // PB7 moves are at 0x5A
+    // PB7 moves are at 0x5A, PP at 0x62
     for (int i = 0; i < 4; i++) {
         uint16_t move = rd16(d, 0x5A + i * 2);
         if (move > 742) {
@@ -842,6 +1065,7 @@ static Pokemon convertPA9toPB7(const Pokemon& src) {
             d[0x62 + i] = 0; // PP
         }
     }
+    filterDummiedMoves(d, 0x5A, GameType::GP);
     sanitizeItem(d, 0x0A, 959);
 
     dst.refreshChecksum();

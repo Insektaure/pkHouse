@@ -283,6 +283,7 @@ private:
         uint16_t species  = 0;  // national dex ID (for sprite lookup)
         uint8_t  level    = 0;
         std::string name;       // truncated display name (≤10 chars)
+        const char* gameTag = nullptr; // origin game short tag (universal bank only)
     };
 
     // Cache of SlotDisplay per (panel, box). Invalidated on mutations.
@@ -323,7 +324,7 @@ private:
     bool   holding_    = false;
     Pokemon heldPkm_;
     GameType heldSrcGame_ = GameType::ZA;  // game context of held Pokemon
-    bool   heldFromUniversal_ = false;       // held Pokemon is already PA9 canonical
+
     bool   heldFromLGPEParty_ = false;       // block save→bank moves for LGPE party
     int    lgpeHeldPartyIdx_ = -1;          // which party pointer (0-5) held Pokemon belongs to
     std::array<uint16_t, 6> lgpePartyBackup_{};  // backup for cancel/undo

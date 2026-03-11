@@ -194,6 +194,11 @@ const std::vector<UI::SlotDisplay>& UI::getSlotDisplays(Panel panel, int box) {
     if (slotDisplayCache_.size() >= 8)
         slotDisplayCache_.clear();
 
+    // Check if this panel is a universal bank (for origin game badges)
+    Bank* panelBank = (panel == Panel::Bank) ? &bank_
+                    : (appletMode_ ? &bankLeft_ : nullptr);
+    bool showOrigin = panelBank && panelBank->isUniversal();
+
     int slots = maxSlots();
     std::vector<SlotDisplay> displays(slots);
     for (int s = 0; s < slots; s++) {
@@ -213,6 +218,8 @@ const std::vector<UI::SlotDisplay>& UI::getSlotDisplays(Panel panel, int box) {
         sd.name    = pkm.displayName();
         if (sd.name.length() > 10)
             sd.name = sd.name.substr(0, 9) + ".";
+        if (showOrigin)
+            sd.gameTag = gameShortTagOf(panelBank->getSlotOrigin(box, s));
     }
     return slotDisplayCache_.emplace(key, std::move(displays)).first->second;
 }
@@ -286,6 +293,16 @@ void UI::drawSlot(int x, int y, const SlotDisplay& sd, bool isCursor, int select
         if (!sd.egg) {
             std::string lvlStr = "Lv." + std::to_string(sd.level);
             drawTextCentered(lvlStr, x + CELL_W / 2, y + CELL_H - 12, T().textDim, fontSmall_);
+        }
+
+        // Origin game tag (bottom-right with background, universal bank only)
+        if (sd.gameTag && !sd.egg) {
+            const auto& te = getTextEntry(sd.gameTag, fontSmall_, T().text);
+            int pad = 2;
+            int tx = x + CELL_W - te.w - pad - 2;
+            int ty = y + CELL_H - te.h - 2;
+            drawRect(tx - pad, ty - 1, te.w + pad * 2, te.h + 2, T().slotEmpty);
+            drawText(sd.gameTag, tx, ty, T().textDim, fontSmall_);
         }
 
         // Gender indicator (top-right corner)

@@ -840,16 +840,15 @@ bool UI::tryConvertForPlace(const Pokemon& src, GameType srcGame,
                    : (appletMode_ ? &bankLeft_ : nullptr);
     bool destIsUniversal = destBank && destBank->isUniversal();
 
-    // Same game context — no conversion needed
-    if (srcGame == destGame && !destIsUniversal) {
+    // Placing into a universal bank: store original format, no conversion
+    if (destIsUniversal) {
         out = src;
         return true;
     }
 
-    // Placing into a universal bank: convert to canonical (PA9)
-    if (destIsUniversal) {
-        out = EntityConverter::toCanonical(src, srcGame);
-        out.gameType_ = GameType::ZA;
+    // Same game context — no conversion needed
+    if (srcGame == destGame) {
+        out = src;
         return true;
     }
 
@@ -863,12 +862,8 @@ bool UI::tryConvertForPlace(const Pokemon& src, GameType srcGame,
         return false;
     }
 
-    // If source is from a universal bank, data is already PA9 canonical —
-    // convert directly from canonical to avoid double-conversion corruption.
-    if (heldFromUniversal_)
-        out = EntityConverter::fromCanonical(src, destGame);
-    else
-        out = EntityConverter::convert(src, srcGame, destGame);
+    // Cross-game conversion (universal bank data is in original format)
+    out = EntityConverter::convert(src, srcGame, destGame);
     return true;
 }
 
@@ -901,12 +896,7 @@ void UI::actionSelect() {
         heldMultiBox_ = selectedBox_;
         heldMultiSrcGame_ = panelGameType(selectedPanel_);
 
-        // Track if source is a universal bank (data already PA9 canonical)
-        {
-            Bank* srcBankCheck = (selectedPanel_ == Panel::Bank) ? &bank_
-                               : (appletMode_ ? &bankLeft_ : nullptr);
-            heldFromUniversal_ = srcBankCheck && srcBankCheck->isUniversal();
-        }
+
 
         // Check if any selected slot is an LGPE party member; backup indices
         heldFromLGPEParty_ = false;
@@ -1046,15 +1036,12 @@ void UI::actionSelect() {
 
         heldPkm_ = pkm;
         heldSrcGame_ = panelGameType(cursor_.panel);
-        heldFromUniversal_ = false;
-        // For universal banks, use the stored origin game (data is already PA9 canonical)
-        if (cursor_.panel == Panel::Bank && bank_.isUniversal()) {
+
+        // For universal banks, use the stored origin game
+        if (cursor_.panel == Panel::Bank && bank_.isUniversal())
             heldSrcGame_ = bank_.getSlotOrigin(box, slot);
-            heldFromUniversal_ = true;
-        } else if (cursor_.panel == Panel::Game && appletMode_ && bankLeft_.isUniversal()) {
+        else if (cursor_.panel == Panel::Game && appletMode_ && bankLeft_.isUniversal())
             heldSrcGame_ = bankLeft_.getSlotOrigin(box, slot);
-            heldFromUniversal_ = true;
-        }
 
         holding_ = true;
         lgpeHeldPartyIdx_ = (cursor_.panel == Panel::Game)
@@ -1144,8 +1131,7 @@ void UI::actionSelect() {
 
             heldPkm_ = target;
             heldSrcGame_ = targetSrcGame;
-            heldFromUniversal_ = (cursor_.panel == Panel::Bank && bank_.isUniversal())
-                || (cursor_.panel == Panel::Game && appletMode_ && bankLeft_.isUniversal());
+    
             lgpeHeldPartyIdx_ = targetPartyIdx;
             heldFromLGPEParty_ = (targetPartyIdx >= 0);
         }

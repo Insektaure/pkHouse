@@ -4,15 +4,17 @@
 #include <string>
 #include <vector>
 
-// Bank mode: per-game (native format) or universal (PA9 canonical + origin tag)
+// Bank mode: per-game (native format) or universal (original format + origin tag)
 enum class BankMode { Game, Universal };
 
 // Bank - persistent storage for extracted Pokemon.
 // Stores decrypted Pokemon data in a simple binary file format.
 //
 // Game mode: stores Pokemon in their native format (existing behavior).
-// Universal mode: stores all Pokemon as PA9 (0x158) with a 1-byte origin
-// game tag per slot. Conversion happens on import/export via EntityConverter.
+// Universal mode: stores Pokemon in their original decrypted format using
+// MAX_PARTY_SIZE (0x178) bytes per slot (zero-padded for smaller formats),
+// with a 1-byte origin game tag per slot. Conversion only happens when
+// placing into a different game than the origin.
 class Bank {
 public:
 
@@ -53,7 +55,7 @@ private:
     //   [4 bytes]  Version (u32 LE): 1-5 = game banks, 6 = universal
     //   [4 bytes]  Reserved
     //   Game mode:      [N bytes] totalSlots * slotSize_ decrypted data
-    //   Universal mode: [N bytes] totalSlots * (1 + SIZE_9PARTY) data
+    //   Universal mode: [N bytes] totalSlots * (1 + MAX_PARTY_SIZE) data
     //   Then: [boxCount * 16 bytes] box names
     static constexpr int HEADER_SIZE   = 16;
     static constexpr int SLOT_SIZE     = PokeCrypto::SIZE_9PARTY;

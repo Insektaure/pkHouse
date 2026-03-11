@@ -74,6 +74,25 @@ inline const char* gameDisplayNameOf(GameType g) {
     return "";
 }
 
+// Short tag for UI badges (universal bank slot origin)
+inline const char* gameShortTagOf(GameType g) {
+    switch (g) {
+        case GameType::Sw: return "Sw";
+        case GameType::Sh: return "Sh";
+        case GameType::BD: return "BD";
+        case GameType::SP: return "SP";
+        case GameType::LA: return "PLA";
+        case GameType::S:  return "S";
+        case GameType::V:  return "V";
+        case GameType::ZA: return "ZA";
+        case GameType::GP: return "GP";
+        case GameType::GE: return "GE";
+        case GameType::FR: return "FR";
+        case GameType::LG: return "LG";
+    }
+    return "";
+}
+
 // Shared bank folder name (paired games share a folder)
 inline const char* bankFolderNameOf(GameType g) {
     if (isSwSh(g)) return "SwordShield";

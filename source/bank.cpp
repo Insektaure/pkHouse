@@ -39,10 +39,10 @@ void Bank::setGameType(GameType g) {
 
 void Bank::setUniversal() {
     mode_ = BankMode::Universal;
-    gameType_ = GameType::ZA; // canonical format
+    gameType_ = GameType::ZA;
     boxCount_ = 32;
     slotsPerBox_ = 30;
-    slotSize_ = PokeCrypto::SIZE_9PARTY;
+    slotSize_ = PokeCrypto::MAX_PARTY_SIZE; // original format, zero-padded
     slots_.resize(boxCount_ * slotsPerBox_);
     slotOrigins_.resize(boxCount_ * slotsPerBox_, GameType::ZA);
     boxNames_.resize(boxCount_);
@@ -50,8 +50,8 @@ void Bank::setUniversal() {
 
 size_t Bank::fileSize() const {
     if (mode_ == BankMode::Universal) {
-        // Each slot: 1 byte origin + SIZE_9PARTY bytes data
-        return HEADER_SIZE + (size_t)totalSlots() * (1 + PokeCrypto::SIZE_9PARTY)
+        // Each slot: 1 byte origin + MAX_PARTY_SIZE bytes data
+        return HEADER_SIZE + (size_t)totalSlots() * (1 + PokeCrypto::MAX_PARTY_SIZE)
                + (size_t)boxCount_ * BOX_NAME_SIZE;
     }
     return HEADER_SIZE + (size_t)totalSlots() * slotSize_
@@ -121,7 +121,7 @@ bool Bank::load(const std::string& path) {
         gameType_ = GameType::ZA;
         boxCount_ = 32;
         slotsPerBox_ = 30;
-        slotSize_ = PokeCrypto::SIZE_9PARTY;
+        slotSize_ = PokeCrypto::MAX_PARTY_SIZE;
 
         slots_.resize(boxCount_ * slotsPerBox_);
         slotOrigins_.resize(boxCount_ * slotsPerBox_, GameType::ZA);
@@ -133,7 +133,7 @@ bool Bank::load(const std::string& path) {
             uint8_t originByte = 0;
             file.read(reinterpret_cast<char*>(&originByte), 1);
             slotOrigins_[i] = decodeGameType(originByte);
-            file.read(reinterpret_cast<char*>(slots_[i].data.data()), PokeCrypto::SIZE_9PARTY);
+            file.read(reinterpret_cast<char*>(slots_[i].data.data()), PokeCrypto::MAX_PARTY_SIZE);
         }
 
         // Read box names
@@ -226,13 +226,13 @@ bool Bank::save(const std::string& path) {
     int total = totalSlots();
 
     if (mode_ == BankMode::Universal) {
-        // Universal: [1 byte origin][SIZE_9PARTY bytes data] per slot
+        // Universal: [1 byte origin][MAX_PARTY_SIZE bytes data] per slot
         for (int i = 0; i < total; i++) {
             uint8_t originByte = encodeGameType(
                 i < (int)slotOrigins_.size() ? slotOrigins_[i] : GameType::ZA);
             file.write(reinterpret_cast<const char*>(&originByte), 1);
             file.write(reinterpret_cast<const char*>(slots_[i].data.data()),
-                       PokeCrypto::SIZE_9PARTY);
+                       PokeCrypto::MAX_PARTY_SIZE);
         }
     } else {
         // Game bank: slotSize_ bytes per slot
@@ -262,7 +262,7 @@ Pokemon Bank::getSlot(int box, int slot) const {
         return Pokemon{};
     Pokemon pkm = slots_[idx];
     if (mode_ == BankMode::Universal)
-        pkm.gameType_ = GameType::ZA; // canonical format for display
+        pkm.gameType_ = slotOrigins_[idx]; // original game format
     else
         pkm.gameType_ = gameType_;
     return pkm;

@@ -237,6 +237,8 @@ The controller notification LED blinks during save and backup operations (save w
 
 This works automatically with no configuration required.
 
+> To disable the LED Indicator, place a `noled.cfg` file in the pkHouse folder (next to the NRO). Remove it to re-enable. The file can be empty — only its presence is checked.
+
 ### Save Integrity
 
 - **SCBlock saves** (ZA, SV, SwSh, PLA): Decrypted, modified, and re-encrypted. A round-trip verification runs on load to confirm the cycle is lossless.

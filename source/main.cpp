@@ -13,7 +13,6 @@ int main(int argc, char* argv[]) {
 #ifdef __SWITCH__
     romfsInit();
 #endif
-    ledInit();
 
     // Determine base path
     // On Switch, the NRO runs from sdmc:/switch/pkHouse/
@@ -34,6 +33,7 @@ int main(int argc, char* argv[]) {
 #else
     basePath = "./";
 #endif
+    ledInitWithPath(basePath.c_str());
 
     std::string savePath = basePath + "main";
 

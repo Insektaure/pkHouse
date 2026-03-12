@@ -3,17 +3,36 @@
 #ifdef __SWITCH__
 #include <switch.h>
 #include <cstring>
+#include <string>
+#include <sys/stat.h>
 
 // GPIO device code for the Switch Lite motherboard notification LED.
 #define LITE_GPIO_DEVICE_CODE 0x35000065U
 #define LITE_GPIO_ACCESS_MODE 3U
 
+static bool sDisabled    = false;
 static bool sHidsysReady = false;
 static bool sIsLite      = false;
 static bool sGpioReady   = false;
 static GpioPadSession sGpioSession;
 
-void ledInit() {
+// Check basePath for noled.cfg; called before NRO path is known,
+// so we use argv[0] from ledInitWithPath, or fall back to the
+// default app directory.
+static bool hasNoLedFile(const char* basePath) {
+    std::string path = std::string(basePath) + "noled.cfg";
+    struct stat st;
+    return stat(path.c_str(), &st) == 0;
+}
+
+void ledInit() { ledInitWithPath("sdmc:/switch/pkHouse/"); }
+
+void ledInitWithPath(const char* basePath) {
+    if (hasNoLedFile(basePath)) {
+        sDisabled = true;
+        return;
+    }
+
     // Detect Switch Lite (Hoag).
     setsysInitialize();
     SetSysProductModel model = SetSysProductModel_Invalid;
@@ -40,6 +59,7 @@ void ledInit() {
 }
 
 void ledExit() {
+    if (sDisabled) return;
     if (sGpioReady) {
         gpioPadSetValue(&sGpioSession, GpioValue_Low);
         gpioPadClose(&sGpioSession);
@@ -100,6 +120,7 @@ static void liteOff() {
 // --- Public API ---
 
 void ledBlink() {
+    if (sDisabled) return;
     // Controller LEDs: hardware-driven blink pattern.
     HidsysNotificationLedPattern pat{};
     pat.baseMiniCycleDuration = 0x04;
@@ -122,6 +143,7 @@ void ledBlink() {
 }
 
 void ledOff() {
+    if (sDisabled) return;
     // Controller LEDs: clear pattern.
     HidsysNotificationLedPattern pat{};
     applyPattern(pat);
@@ -133,6 +155,7 @@ void ledOff() {
 #else
 // Stubs for non-Switch builds.
 void ledInit() {}
+void ledInitWithPath(const char*) {}
 void ledExit() {}
 void ledBlink() {}
 void ledOff() {}

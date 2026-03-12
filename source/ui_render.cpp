@@ -38,12 +38,46 @@ SDL_Texture* UI::getSprite(uint16_t nationalId) {
     return tex;
 }
 
+SDL_Texture* UI::getShinySprite(uint16_t nationalId) {
+    auto it = shinySpriteCache_.find(nationalId);
+    if (it != shinySpriteCache_.end())
+        return it->second;
+
+    char filename[64];
+    std::snprintf(filename, sizeof(filename), "%03d.png", nationalId);
+
+    std::string path;
+#ifdef __SWITCH__
+    path = std::string("romfs:/sprites_shiny/") + filename;
+#else
+    path = std::string("romfs/sprites_shiny/") + filename;
+#endif
+
+    SDL_Surface* surf = IMG_Load(path.c_str());
+    if (!surf) {
+        // No shiny sprite available — fall back to normal
+        shinySpriteCache_[nationalId] = nullptr;
+        return nullptr;
+    }
+
+    SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer_, surf);
+    SDL_FreeSurface(surf);
+
+    shinySpriteCache_[nationalId] = tex;
+    return tex;
+}
+
 void UI::freeSprites() {
     for (auto& [id, tex] : spriteCache_) {
         if (tex)
             SDL_DestroyTexture(tex);
     }
     spriteCache_.clear();
+    for (auto& [id, tex] : shinySpriteCache_) {
+        if (tex)
+            SDL_DestroyTexture(tex);
+    }
+    shinySpriteCache_.clear();
     for (auto& [name, tex] : ribbonSpriteCache_) {
         if (tex)
             SDL_DestroyTexture(tex);
@@ -254,8 +288,16 @@ void UI::drawSlot(int x, int y, const SlotDisplay& sd, bool isCursor, int select
         drawRectOutline(x, y, CELL_W, CELL_H, T().cursor, 3);
 
     if (!sd.empty) {
-        // Draw sprite centered in top portion of cell
-        SDL_Texture* sprite = sd.egg ? getSprite(0) : getSprite(sd.species);
+        // Draw sprite centered in top portion of cell (shiny variant if available)
+        SDL_Texture* sprite = nullptr;
+        if (sd.egg) {
+            sprite = getSprite(0);
+        } else if (sd.shiny) {
+            sprite = getShinySprite(sd.species);
+            if (!sprite) sprite = getSprite(sd.species);
+        } else {
+            sprite = getSprite(sd.species);
+        }
 
         if (sprite) {
             int texW, texH;
@@ -677,7 +719,15 @@ void UI::drawDetailPopup(const Pokemon& pkm) {
     int sprX = popX + 20;
     int sprY = popY + 20;
 
-    SDL_Texture* sprite = getSprite(pkm.isEgg() ? 0 : pkm.species());
+    SDL_Texture* sprite = nullptr;
+    if (pkm.isEgg()) {
+        sprite = getSprite(0);
+    } else if (pkm.isShiny()) {
+        sprite = getShinySprite(pkm.species());
+        if (!sprite) sprite = getSprite(pkm.species());
+    } else {
+        sprite = getSprite(pkm.species());
+    }
     if (sprite) {
         int texW, texH;
         SDL_QueryTexture(sprite, nullptr, nullptr, &texW, &texH);
@@ -1268,8 +1318,14 @@ void UI::drawWondercardListPopup() {
                 }
                 x += 40;
 
-                // Sprite
-                SDL_Texture* sprite = getSprite(wc.species);
+                // Sprite (shiny variant if wondercard is shiny)
+                SDL_Texture* sprite = nullptr;
+                if (wc.isShiny) {
+                    sprite = getShinySprite(wc.species);
+                    if (!sprite) sprite = getSprite(wc.species);
+                } else {
+                    sprite = getSprite(wc.species);
+                }
                 if (sprite) {
                     int tw = 0, th = 0;
                     SDL_QueryTexture(sprite, nullptr, nullptr, &tw, &th);
@@ -1549,7 +1605,15 @@ void UI::drawBoxPreview(int boxIdx, int anchorX, int anchorY) {
             } else {
                 drawRect(sx, sy, BV_MINI_CELL, BV_MINI_CELL, T().miniCellFull);
 
-                SDL_Texture* sprite = getSprite(psd.egg ? 0 : psd.species);
+                SDL_Texture* sprite = nullptr;
+                if (psd.egg) {
+                    sprite = getSprite(0);
+                } else if (psd.shiny) {
+                    sprite = getShinySprite(psd.species);
+                    if (!sprite) sprite = getSprite(psd.species);
+                } else {
+                    sprite = getSprite(psd.species);
+                }
                 if (sprite) {
                     int texW, texH;
                     SDL_QueryTexture(sprite, nullptr, nullptr, &texW, &texH);
@@ -1587,7 +1651,15 @@ void UI::drawHeldOverlay() {
     if (species == 0)
         return;
 
-    SDL_Texture* sprite = getSprite(pkm.isEgg() ? 0 : species);
+    SDL_Texture* sprite = nullptr;
+    if (pkm.isEgg()) {
+        sprite = getSprite(0);
+    } else if (pkm.isShiny()) {
+        sprite = getShinySprite(species);
+        if (!sprite) sprite = getSprite(species);
+    } else {
+        sprite = getSprite(species);
+    }
     if (!sprite)
         return;
 

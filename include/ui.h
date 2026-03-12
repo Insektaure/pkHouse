@@ -94,6 +94,7 @@ private:
 
     // Sprite cache: national dex ID -> texture
     std::unordered_map<uint16_t, SDL_Texture*> spriteCache_;
+    std::unordered_map<uint16_t, SDL_Texture*> shinySpriteCache_;
 
     // Ribbon sprite cache: filename -> texture
     std::unordered_map<std::string, SDL_Texture*> ribbonSpriteCache_;
@@ -354,6 +355,7 @@ private:
 
     // Sprites
     SDL_Texture* getSprite(uint16_t nationalId);
+    SDL_Texture* getShinySprite(uint16_t nationalId);
     void freeSprites();
 
     // Profile selector

@@ -223,6 +223,15 @@ Filenames follow the PKHeX naming convention: game tag, national dex number, for
 | Legends: Z-A | `.pa9` |
 | FireRed / LeafGreen | `.pk3` |
 
+### LED Activity Indicator
+
+The controller notification LED blinks during save and backup operations (save writes, bank saves, backup creation) to provide visual feedback that data is being written.
+
+- **Standard / OLED Switch**: The Joy-Con or Pro Controller LED pulses briefly during writes.
+- **Switch Lite**: The built-in motherboard notification LED lights up during writes and turns off when the operation completes.
+
+This works automatically with no configuration required.
+
 ### Save Integrity
 
 - **SCBlock saves** (ZA, SV, SwSh, PLA): Decrypted, modified, and re-encrypted. A round-trip verification runs on load to confirm the cycle is lossless.

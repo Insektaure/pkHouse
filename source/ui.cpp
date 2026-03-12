@@ -1,5 +1,6 @@
 #include "ui.h"
 #include "ui_util.h"
+#include "led.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -529,9 +530,11 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
                 } else {
                     if (!appletMode_) {
                         showWorking("Saving...");
+                        ledBlink();
                         if (save_.isLoaded())
                             save_.save(savePath_);
                         account_.commitSave();
+                        ledOff();
                     }
                     saveNow_ = false;
                 }
@@ -607,7 +610,9 @@ void UI::selectGame(GameType game) {
 
             if (doBackup) {
                 std::string backupDir = buildBackupDir(game);
+                ledBlink();
                 bool ok = AccountManager::backupSaveDir(mountPath, backupDir);
+                ledOff();
                 if (!ok) {
                     if (!showConfirmDialog("Backup Failed",
                             "Could not back up save data.\nContinue without backup?")) {
@@ -682,11 +687,13 @@ std::string UI::buildBackupDir(GameType game) const {
 
 bool UI::saveBankFiles() {
     showWorking("Saving...");
+    ledBlink();
     if (appletMode_) {
         if (!leftBankPath_.empty()) bankLeft_.save(leftBankPath_);
         if (!activeBankPath_.empty()) bank_.save(activeBankPath_);
     } else {
         if (!activeBankPath_.empty()) bank_.save(activeBankPath_);
     }
+    ledOff();
     return true;
 }

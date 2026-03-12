@@ -1,4 +1,5 @@
 #include "ui.h"
+#include "led.h"
 #include "species_converter.h"
 #include "form_names.h"
 #include <algorithm>
@@ -226,9 +227,11 @@ void UI::handleInput(bool& running) {
                     if (sel == 0) {
                         if (!saveBankFiles()) { showMenu_ = false; return; }
                         showWorking("Saving...");
+                        ledBlink();
                         if (save_.isLoaded())
                             save_.save(savePath_);
                         account_.commitSave();
+                        ledOff();
                         bankManager_.refresh();
                         screen_ = AppScreen::BankSelector;
                         showMenu_ = false;
@@ -236,9 +239,11 @@ void UI::handleInput(bool& running) {
                         // Change Game — save everything, unmount, go to game selector
                         if (!saveBankFiles()) { showMenu_ = false; return; }
                         showWorking("Saving...");
+                        ledBlink();
                         if (save_.isLoaded())
                             save_.save(savePath_);
                         account_.commitSave();
+                        ledOff();
                         account_.unmountSave();
                         activeBankName_.clear();
                         activeBankPath_.clear();

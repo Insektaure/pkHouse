@@ -1,4 +1,5 @@
 #include "ui.h"
+#include "led.h"
 #include "species_converter.h"
 
 #ifdef __SWITCH__
@@ -12,6 +13,7 @@ int main(int argc, char* argv[]) {
 #ifdef __SWITCH__
     romfsInit();
 #endif
+    ledInit();
 
     // Determine base path
     // On Switch, the NRO runs from sdmc:/switch/pkHouse/
@@ -76,6 +78,7 @@ int main(int argc, char* argv[]) {
 
     // Cleanup
     ui.shutdown();
+    ledExit();
 
 #ifdef __SWITCH__
     romfsExit();

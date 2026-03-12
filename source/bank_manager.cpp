@@ -8,6 +8,7 @@
 bool BankManager::init(const std::string& basePath, GameType game) {
     basePath_ = basePath;
     game_ = game;
+    isUniversal_ = false;
 
     // Create banks/ parent directory
     std::string banksParent = basePath + "banks/";
@@ -21,6 +22,20 @@ bool BankManager::init(const std::string& basePath, GameType game) {
     // Migrate legacy bank.bin only for ZA
     if (game == GameType::ZA)
         migrateLegacy();
+
+    refresh();
+    return true;
+}
+
+bool BankManager::initUniversal(const std::string& basePath) {
+    basePath_ = basePath;
+    isUniversal_ = true;
+
+    std::string banksParent = basePath + "banks/";
+    mkdir(banksParent.c_str(), 0755);
+
+    banksDir_ = banksParent + "Universal/";
+    mkdir(banksDir_.c_str(), 0755);
 
     refresh();
     return true;
@@ -113,6 +128,22 @@ int BankManager::countBanks(const std::string& basePath, GameType game) {
     return count;
 }
 
+int BankManager::countUniversalBanks(const std::string& basePath) {
+    std::string dir = basePath + "banks/Universal/";
+    DIR* d = opendir(dir.c_str());
+    if (!d) return 0;
+
+    int count = 0;
+    struct dirent* entry;
+    while ((entry = readdir(d)) != nullptr) {
+        std::string name = entry->d_name;
+        if (name.size() >= 5 && name.substr(name.size() - 4) == ".bin")
+            count++;
+    }
+    closedir(d);
+    return count;
+}
+
 bool BankManager::createBank(const std::string& name) {
     std::string safe = sanitizeName(name);
     if (safe.empty())
@@ -127,6 +158,8 @@ bool BankManager::createBank(const std::string& name) {
 
     // Create an empty bank file
     Bank empty;
+    if (isUniversal_)
+        empty.setUniversal();
     if (!empty.save(path))
         return false;
 

@@ -648,10 +648,12 @@ void UI::selectGame(GameType game) {
     }
 
     bankManager_.init(basePath_, game);
+    universalBankManager_.initUniversal(basePath_);
 
     // Reset bank selector state
     bankSelCursor_ = 0;
     bankSelScroll_ = 0;
+    bankListMode_ = BankListMode::GameBanks;
 
     screen_ = AppScreen::BankSelector;
 }

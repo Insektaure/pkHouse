@@ -2,6 +2,7 @@
 #include "save_file.h"
 #include "bank.h"
 #include "bank_manager.h"
+#include "cross_gen.h"
 #include "account.h"
 #include "theme.h"
 #include "wondercard.h"
@@ -25,6 +26,9 @@ enum class TextInputPurpose {
     CreateBank, RenameBank, RenameBoxName,
     SearchSpecies, SearchOT, SearchLevelMin, SearchLevelMax
 };
+
+// Bank type for creation
+enum class BankListMode { GameBanks, UniversalBanks };
 
 // Search filter enums
 enum class GenderFilter { Any, Male, Female, Genderless };
@@ -245,20 +249,26 @@ private:
     // Owned save + bank manager (initialized after game selection)
     SaveFile save_;
     BankManager bankManager_;
+    BankManager universalBankManager_;
     Bank bank_;
     std::string activeBankName_;
     std::string activeBankPath_;
+    bool bankIsUniversal_ = false;
 
     // Dual-bank state (applet mode: left panel shows bankLeft_ instead of save_)
     Bank bankLeft_;
     std::string leftBankName_;
     std::string leftBankPath_;
+    bool leftBankIsUniversal_ = false;
     Panel bankSelTarget_ = Panel::Bank;
 
     // Bank selector state
     int  bankSelCursor_ = 0;
     int  bankSelScroll_ = 0;
     bool showDeleteConfirm_ = false;
+    BankListMode bankListMode_ = BankListMode::GameBanks;
+    bool showBankTypeChoice_ = false;
+    int  bankTypeChoice_ = 0; // 0=game, 1=universal
 
     // Text input (PC only; Switch uses swkbd)
     bool showTextInput_ = false;
@@ -280,6 +290,8 @@ private:
         uint16_t species  = 0;  // national dex ID (for sprite lookup)
         uint8_t  level    = 0;
         std::string name;       // truncated display name (≤10 chars)
+        bool     hasOriginTag = false;
+        GameType origin  = GameType::ZA; // origin game (universal bank only)
     };
 
     // Cache of SlotDisplay per (panel, box). Invalidated on mutations.
@@ -374,10 +386,17 @@ private:
     void openSelectedBank();
     void drawDeleteConfirmPopup();
     void handleDeleteConfirmEvent(const SDL_Event& event);
+    void drawBankTypeChoicePopup();
+    void handleBankTypeChoiceEvent(const SDL_Event& event);
     void drawTextInputPopup();
     void handleTextInputEvent(const SDL_Event& event);
     void beginTextInput(TextInputPurpose purpose);
     void commitTextInput(const std::string& text);
+
+    // Cross-gen conversion helpers
+    GameType getSourceGameType(Panel panel, int box, int slot) const;
+    GameType getTargetGameType(Panel panel) const;
+    bool tryConvertForPlace(Pokemon& pkm, Panel srcPanel, Panel dstPanel);
 
     // Rendering helpers
     void drawFrame();

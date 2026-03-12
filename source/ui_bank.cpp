@@ -65,17 +65,27 @@ void UI::drawBankSelectorFrame() {
         }
     }
 
-    // Title
-    if (appletMode_) {
-        const char* side = (bankSelTarget_ == Panel::Game) ? "Left" : "Right";
-        drawTextCentered(std::string("Select ") + side + " Bank",
-                         selCenterX, 25, T().text, font_);
-    } else {
-        drawTextCentered("Select Bank", selCenterX,
+    // Title — show current list mode
+    {
+        std::string title;
+        if (appletMode_) {
+            const char* side = (bankSelTarget_ == Panel::Game) ? "Left" : "Right";
+            title = std::string("Select ") + side + " Bank";
+        } else {
+            title = "Select Bank";
+        }
+        if (bankListMode_ == BankListMode::UniversalBanks)
+            title += " [Universal]";
+        drawTextCentered(title, selCenterX,
                          splitView ? 25 : 40, T().text, font_);
     }
 
-    const auto& banks = bankManager_.list();
+    // L/R toggle hint
+    drawTextCentered("L/R: Toggle Game/Universal",
+                     selCenterX, splitView ? 42 : 58, T().textDim, fontSmall_);
+
+    const auto& banks = (bankListMode_ == BankListMode::UniversalBanks)
+        ? universalBankManager_.list() : bankManager_.list();
 
     if (banks.empty()) {
         drawTextCentered("No banks found.",
@@ -127,6 +137,11 @@ void UI::drawBankSelectorFrame() {
         }
     }
 
+    // Bank type choice overlay
+    if (showBankTypeChoice_) {
+        drawBankTypeChoicePopup();
+    }
+
     // Status bar
     drawStatusBar("A: Open  X: New  Y: Rename  +: Delete  B: Back  -: About");
 
@@ -154,7 +169,8 @@ void UI::drawBankSelectorFrame() {
 }
 
 void UI::handleBankSelectorInput(bool& running) {
-    const auto& banks = bankManager_.list();
+    const auto& banks = (bankListMode_ == BankListMode::UniversalBanks)
+        ? universalBankManager_.list() : bankManager_.list();
     int bankCount = (int)banks.size();
 
     SDL_Event event;
@@ -167,6 +183,12 @@ void UI::handleBankSelectorInput(bool& running) {
         if (event.type == SDL_CONTROLLERBUTTONDOWN ||
             event.type == SDL_KEYDOWN)
             markDirty();
+
+        // Bank type choice popup takes priority
+        if (showBankTypeChoice_) {
+            handleBankTypeChoiceEvent(event);
+            continue;
+        }
 
         // Text input popup takes priority
         if (showTextInput_) {
@@ -228,7 +250,16 @@ void UI::handleBankSelectorInput(bool& running) {
                     }
                     break;
                 case SDL_CONTROLLER_BUTTON_Y: // Switch X = new
-                    beginTextInput(TextInputPurpose::CreateBank);
+                    showBankTypeChoice_ = true;
+                    bankTypeChoice_ = (bankListMode_ == BankListMode::UniversalBanks) ? 1 : 0;
+                    break;
+                case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
+                case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:
+                    // Toggle between game and universal bank lists
+                    bankListMode_ = (bankListMode_ == BankListMode::GameBanks)
+                        ? BankListMode::UniversalBanks : BankListMode::GameBanks;
+                    bankSelCursor_ = 0;
+                    bankSelScroll_ = 0;
                     break;
                 case SDL_CONTROLLER_BUTTON_X: // Switch Y = rename
                     if (bankCount > 0)
@@ -267,7 +298,15 @@ void UI::handleBankSelectorInput(bool& running) {
                         openSelectedBank();
                     break;
                 case SDLK_x:
-                    beginTextInput(TextInputPurpose::CreateBank);
+                    showBankTypeChoice_ = true;
+                    bankTypeChoice_ = (bankListMode_ == BankListMode::UniversalBanks) ? 1 : 0;
+                    break;
+                case SDLK_l:
+                case SDLK_r:
+                    bankListMode_ = (bankListMode_ == BankListMode::GameBanks)
+                        ? BankListMode::UniversalBanks : BankListMode::GameBanks;
+                    bankSelCursor_ = 0;
+                    bankSelScroll_ = 0;
                     break;
                 case SDLK_y:
                     if (bankCount > 0)
@@ -324,7 +363,8 @@ void UI::handleBankSelectorInput(bool& running) {
 }
 
 void UI::openSelectedBank() {
-    const auto& banks = bankManager_.list();
+    bool isUniv = (bankListMode_ == BankListMode::UniversalBanks);
+    const auto& banks = isUniv ? universalBankManager_.list() : bankManager_.list();
     if (bankSelCursor_ < 0 || bankSelCursor_ >= (int)banks.size())
         return;
 
@@ -332,12 +372,12 @@ void UI::openSelectedBank() {
 
     // Prevent loading same bank on both sides in applet mode
     if (appletMode_) {
-        if (bankSelTarget_ == Panel::Game && name == activeBankName_) {
+        if (bankSelTarget_ == Panel::Game && name == activeBankName_ && isUniv == bankIsUniversal_) {
             showMessageAndWait("Already Open",
                 "This bank is already open on the right panel.");
             return;
         }
-        if (bankSelTarget_ == Panel::Bank && name == leftBankName_) {
+        if (bankSelTarget_ == Panel::Bank && name == leftBankName_ && isUniv == leftBankIsUniversal_) {
             showMessageAndWait("Already Open",
                 "This bank is already open on the left panel.");
             return;
@@ -346,14 +386,20 @@ void UI::openSelectedBank() {
 
     showWorking("Loading bank...");
 
+    auto& mgr = isUniv ? universalBankManager_ : bankManager_;
+
     if (appletMode_ && bankSelTarget_ == Panel::Game) {
-        leftBankPath_ = bankManager_.loadBank(name, bankLeft_);
-        bankLeft_.setGameType(selectedGame_);
+        leftBankPath_ = mgr.loadBank(name, bankLeft_);
+        if (!isUniv)
+            bankLeft_.setGameType(selectedGame_);
         leftBankName_ = name;
+        leftBankIsUniversal_ = isUniv;
     } else {
-        activeBankPath_ = bankManager_.loadBank(name, bank_);
-        bank_.setGameType(selectedGame_);
+        activeBankPath_ = mgr.loadBank(name, bank_);
+        if (!isUniv)
+            bank_.setGameType(selectedGame_);
         activeBankName_ = name;
+        bankIsUniversal_ = isUniv;
     }
 
     // In applet mode, after loading the right bank, chain to left bank selector
@@ -396,7 +442,8 @@ void UI::drawDeleteConfirmPopup() {
     drawRect(popX, popY, POP_W, POP_H, T().panelBg);
     drawRectOutline(popX, popY, POP_W, POP_H, T().red, 2);
 
-    const auto& banks = bankManager_.list();
+    const auto& banks = (bankListMode_ == BankListMode::UniversalBanks)
+        ? universalBankManager_.list() : bankManager_.list();
     std::string bankName = (bankSelCursor_ >= 0 && bankSelCursor_ < (int)banks.size())
         ? banks[bankSelCursor_].name : "";
 
@@ -410,19 +457,23 @@ void UI::drawDeleteConfirmPopup() {
 
 void UI::handleDeleteConfirmEvent(const SDL_Event& event) {
     auto tryDelete = [&]() {
-        const auto& banks = bankManager_.list();
+        bool isUniv = (bankListMode_ == BankListMode::UniversalBanks);
+        auto& mgr = isUniv ? universalBankManager_ : bankManager_;
+        const auto& banks = mgr.list();
         if (bankSelCursor_ < 0 || bankSelCursor_ >= (int)banks.size())
             return;
         const std::string& name = banks[bankSelCursor_].name;
         // Cannot delete a bank that is currently loaded
-        if (name == activeBankName_ || (appletMode_ && name == leftBankName_)) {
+        bool isLoaded = (name == activeBankName_ && isUniv == bankIsUniversal_) ||
+                        (appletMode_ && name == leftBankName_ && isUniv == leftBankIsUniversal_);
+        if (isLoaded) {
             showDeleteConfirm_ = false;
             showMessageAndWait("Cannot Delete", "This bank is currently loaded.");
             return;
         }
         showWorking("Deleting bank...");
-        bankManager_.deleteBank(name);
-        int newCount = (int)bankManager_.list().size();
+        mgr.deleteBank(name);
+        int newCount = (int)mgr.list().size();
         if (bankSelCursor_ >= newCount && newCount > 0)
             bankSelCursor_ = newCount - 1;
         showDeleteConfirm_ = false;
@@ -630,10 +681,15 @@ void UI::handleTextInputEvent(const SDL_Event& event) {
 
 void UI::commitTextInput(const std::string& text) {
     if (textInputPurpose_ == TextInputPurpose::CreateBank) {
+        bool createUniversal = (bankListMode_ == BankListMode::UniversalBanks);
+        auto& mgr = createUniversal ? universalBankManager_ : bankManager_;
 #ifdef __SWITCH__
         {
             Bank temp;
-            temp.setGameType(selectedGame_);
+            if (createUniversal)
+                temp.setUniversal();
+            else
+                temp.setGameType(selectedGame_);
             size_t needed = temp.fileSize();
             struct statvfs vfs;
             if (statvfs("sdmc:/", &vfs) == 0) {
@@ -648,9 +704,9 @@ void UI::commitTextInput(const std::string& text) {
         }
 #endif
         showWorking("Creating bank...");
-        if (bankManager_.createBank(text)) {
+        if (mgr.createBank(text)) {
             // Select the newly created bank
-            const auto& banks = bankManager_.list();
+            const auto& banks = mgr.list();
             for (int i = 0; i < (int)banks.size(); i++) {
                 if (banks[i].name == text) {
                     bankSelCursor_ = i;
@@ -659,10 +715,11 @@ void UI::commitTextInput(const std::string& text) {
             }
         }
     } else if (textInputPurpose_ == TextInputPurpose::RenameBank) {
+        bool isUniv = (bankListMode_ == BankListMode::UniversalBanks);
+        auto& mgr = isUniv ? universalBankManager_ : bankManager_;
         showWorking("Renaming bank...");
-        if (bankManager_.renameBank(renamingBankName_, text)) {
-            // Select the renamed bank
-            const auto& banks = bankManager_.list();
+        if (mgr.renameBank(renamingBankName_, text)) {
+            const auto& banks = mgr.list();
             for (int i = 0; i < (int)banks.size(); i++) {
                 if (banks[i].name == text) {
                     bankSelCursor_ = i;
@@ -684,4 +741,151 @@ void UI::commitTextInput(const std::string& text) {
         int val = text.empty() ? 0 : std::atoi(text.c_str());
         searchFilter_.levelMax = (val < 0) ? 0 : (val > 100 ? 100 : val);
     }
+}
+
+// --- Bank Type Choice Popup ---
+
+void UI::drawBankTypeChoicePopup() {
+    drawRect(0, 0, SCREEN_W, SCREEN_H, T().overlay);
+
+    constexpr int POP_W = 420;
+    constexpr int POP_H = 200;
+    int popX = (SCREEN_W - POP_W) / 2;
+    int popY = (SCREEN_H - POP_H) / 2;
+
+    drawRect(popX, popY, POP_W, POP_H, T().panelBg);
+    drawRectOutline(popX, popY, POP_W, POP_H, T().cursor, 2);
+
+    drawTextCentered("New Bank Type", popX + POP_W / 2, popY + 25, T().text, font_);
+
+    const char* options[] = {"Game Bank", "Universal Bank"};
+    for (int i = 0; i < 2; i++) {
+        int rowY = popY + 65 + i * 45;
+        if (i == bankTypeChoice_) {
+            drawRect(popX + 30, rowY, POP_W - 60, 38, T().menuHighlight);
+            drawRectOutline(popX + 30, rowY, POP_W - 60, 38, T().cursor, 2);
+        }
+        drawTextCentered(options[i], popX + POP_W / 2, rowY + 10, T().text, font_);
+    }
+
+    drawTextCentered("A:Select  B:Cancel",
+                     popX + POP_W / 2, popY + POP_H - 25, T().textDim, fontSmall_);
+}
+
+void UI::handleBankTypeChoiceEvent(const SDL_Event& event) {
+    auto confirm = [&]() {
+        showBankTypeChoice_ = false;
+        // Switch to the selected bank list mode then open name input
+        bankListMode_ = (bankTypeChoice_ == 1) ? BankListMode::UniversalBanks : BankListMode::GameBanks;
+        bankSelCursor_ = 0;
+        bankSelScroll_ = 0;
+        beginTextInput(TextInputPurpose::CreateBank);
+    };
+    auto cancel = [&]() {
+        showBankTypeChoice_ = false;
+    };
+
+    if (event.type == SDL_CONTROLLERBUTTONDOWN) {
+        switch (event.cbutton.button) {
+            case SDL_CONTROLLER_BUTTON_DPAD_UP:
+                bankTypeChoice_ = (bankTypeChoice_ - 1 + 2) % 2;
+                markDirty();
+                break;
+            case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+                bankTypeChoice_ = (bankTypeChoice_ + 1) % 2;
+                markDirty();
+                break;
+            case SDL_CONTROLLER_BUTTON_B: // Switch A = confirm
+                confirm();
+                break;
+            case SDL_CONTROLLER_BUTTON_A: // Switch B = cancel
+                cancel();
+                break;
+        }
+    }
+    if (event.type == SDL_KEYDOWN) {
+        switch (event.key.keysym.sym) {
+            case SDLK_UP:
+                bankTypeChoice_ = (bankTypeChoice_ - 1 + 2) % 2;
+                markDirty();
+                break;
+            case SDLK_DOWN:
+                bankTypeChoice_ = (bankTypeChoice_ + 1) % 2;
+                markDirty();
+                break;
+            case SDLK_a:
+            case SDLK_RETURN:
+                confirm();
+                break;
+            case SDLK_b:
+            case SDLK_ESCAPE:
+                cancel();
+                break;
+        }
+    }
+}
+
+// --- Cross-gen conversion helpers ---
+
+GameType UI::getSourceGameType(Panel panel, int box, int slot) const {
+    if (panel == Panel::Bank) {
+        if (bank_.isUniversal())
+            return bank_.getSlotOrigin(box, slot);
+        return selectedGame_;
+    }
+    // Game panel
+    if (appletMode_) {
+        if (bankLeft_.isUniversal())
+            return bankLeft_.getSlotOrigin(box, slot);
+        return selectedGame_;
+    }
+    return selectedGame_; // save file
+}
+
+GameType UI::getTargetGameType(Panel panel) const {
+    if (panel == Panel::Bank) {
+        if (bank_.isUniversal())
+            return GameType::ZA; // placeholder — universal stores as-is
+        return selectedGame_;
+    }
+    // Game panel
+    if (appletMode_) {
+        if (bankLeft_.isUniversal())
+            return GameType::ZA; // universal stores as-is
+        return selectedGame_;
+    }
+    return selectedGame_; // save file
+}
+
+bool UI::tryConvertForPlace(Pokemon& pkm, Panel srcPanel, Panel dstPanel) {
+    GameType srcGame = pkm.gameType_;
+
+    // Determine destination context
+    bool dstIsUniversal = false;
+    if (dstPanel == Panel::Bank)
+        dstIsUniversal = bank_.isUniversal();
+    else if (appletMode_)
+        dstIsUniversal = bankLeft_.isUniversal();
+
+    // Into universal bank: no conversion, store as-is
+    if (dstIsUniversal)
+        return true;
+
+    // Destination is a game-specific bank or save
+    GameType dstGame = selectedGame_;
+
+    // Same game family: no conversion needed
+    if (srcGame == dstGame || pairedGame(srcGame) == dstGame)
+        return true;
+
+    // Check if transfer is allowed
+    std::string err = CrossGen::canTransfer(pkm, srcGame, dstGame);
+    if (!err.empty()) {
+        showMessageAndWait("Cannot Transfer", err);
+        return false;
+    }
+
+    // Convert
+    pkm = CrossGen::convert(pkm, srcGame, dstGame);
+    return true;
 }

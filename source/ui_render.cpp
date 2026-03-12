@@ -1,6 +1,7 @@
 #include "ui.h"
 #include "species_converter.h"
 #include "move_types.h"
+#include "cross_gen.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -213,6 +214,14 @@ const std::vector<UI::SlotDisplay>& UI::getSlotDisplays(Panel panel, int box) {
         sd.name    = pkm.displayName();
         if (sd.name.length() > 10)
             sd.name = sd.name.substr(0, 9) + ".";
+        // Tag origin game for universal bank slots
+        if (panel == Panel::Bank && bankIsUniversal_ && bank_.isUniversal()) {
+            sd.hasOriginTag = true;
+            sd.origin = bank_.getSlotOrigin(box, s);
+        } else if (panel == Panel::Game && appletMode_ && leftBankIsUniversal_ && bankLeft_.isUniversal()) {
+            sd.hasOriginTag = true;
+            sd.origin = bankLeft_.getSlotOrigin(box, s);
+        }
     }
     return slotDisplayCache_.emplace(key, std::move(displays)).first->second;
 }
@@ -286,6 +295,12 @@ void UI::drawSlot(int x, int y, const SlotDisplay& sd, bool isCursor, int select
         if (!sd.egg) {
             std::string lvlStr = "Lv." + std::to_string(sd.level);
             drawTextCentered(lvlStr, x + CELL_W / 2, y + CELL_H - 12, T().textDim, fontSmall_);
+        }
+
+        // Origin game tag (bottom-left, universal bank only)
+        if (sd.hasOriginTag) {
+            const char* tag = CrossGen::gameTag(sd.origin);
+            drawText(tag, x + 2, y + CELL_H - 12, T().textDim, fontSmall_);
         }
 
         // Gender indicator (top-right corner)

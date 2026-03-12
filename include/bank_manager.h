@@ -12,7 +12,11 @@ struct BankInfo {
 
 class BankManager {
 public:
+    // Initialize for game-specific banks
     bool init(const std::string& basePath, GameType game);
+    // Initialize for universal banks (game-agnostic)
+    bool initUniversal(const std::string& basePath);
+
     void refresh();
     const std::vector<BankInfo>& list() const;
 
@@ -23,11 +27,15 @@ public:
     std::string pathFor(const std::string& name) const;
     static int countOccupied(const std::string& filePath);
     static int countBanks(const std::string& basePath, GameType game);
+    static int countUniversalBanks(const std::string& basePath);
+
+    bool isUniversal() const { return isUniversal_; }
 
 private:
-    std::string banksDir_;   // basePath + "banks/sv/" or "banks/za/"
+    std::string banksDir_;   // basePath + "banks/sv/" or "banks/Universal/"
     std::string basePath_;
     GameType game_ = GameType::ZA;
+    bool isUniversal_ = false;
     std::vector<BankInfo> bankList_;
     static std::string sanitizeName(const std::string& raw);
     bool migrateLegacy();    // move basePath/bank.bin -> banks/za/Default.bin (ZA only)

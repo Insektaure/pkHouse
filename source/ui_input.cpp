@@ -910,7 +910,11 @@ void UI::actionSelect() {
                 }
             }
             for (int i = 0; i < (int)heldMulti_.size(); i++) {
-                setPokemonAt(box, heldMultiSlots_[i], cursor_.panel, heldMulti_[i]);
+                Pokemon conv = heldMulti_[i];
+                if (!tryConvertForPlace(conv, cursor_.panel, cursor_.panel)) {
+                    return;
+                }
+                setPokemonAt(box, heldMultiSlots_[i], cursor_.panel, conv);
                 updatePartyPtr(heldMultiSlots_[i], box, heldMultiSlots_[i]);
             }
         } else {
@@ -930,7 +934,11 @@ void UI::actionSelect() {
             int placed = 0;
             for (int s = 0; s < slotsInBox && placed < (int)heldMulti_.size(); s++) {
                 if (getPokemonAt(box, s, cursor_.panel).isEmpty()) {
-                    setPokemonAt(box, s, cursor_.panel, heldMulti_[placed]);
+                    Pokemon conv = heldMulti_[placed];
+                    if (!tryConvertForPlace(conv, cursor_.panel, cursor_.panel)) {
+                        return;
+                    }
+                    setPokemonAt(box, s, cursor_.panel, conv);
                     updatePartyPtr(heldMultiSlots_[placed], box, s);
                     placed++;
                 }
@@ -969,11 +977,18 @@ void UI::actionSelect() {
             return;
         }
 
+        // Cross-gen conversion: convert held Pokemon for the destination
+        Pokemon placeCandidate = heldPkm_;
+        if (!tryConvertForPlace(placeCandidate, cursor_.panel, cursor_.panel)) {
+            // Conversion rejected — put Pokemon back where it came from
+            return;
+        }
+
         Pokemon target = getPokemonAt(box, slot, cursor_.panel);
 
         if (target.isEmpty()) {
             // Place on empty — commit, clear history
-            setPokemonAt(box, slot, cursor_.panel, heldPkm_);
+            setPokemonAt(box, slot, cursor_.panel, placeCandidate);
             // Update party pointer to follow the Pokemon
             if (lgpeHeldPartyIdx_ >= 0 && cursor_.panel == Panel::Game) {
                 uint16_t newFlat = static_cast<uint16_t>(
@@ -991,7 +1006,7 @@ void UI::actionSelect() {
                 ? save_.lgpePartyIndexOf(box, slot) : -1;
 
             swapHistory_.push_back({target, cursor_.panel, box, slot});
-            setPokemonAt(box, slot, cursor_.panel, heldPkm_);
+            setPokemonAt(box, slot, cursor_.panel, placeCandidate);
 
             // Update party pointer for the placed Pokemon
             if (lgpeHeldPartyIdx_ >= 0 && cursor_.panel == Panel::Game) {

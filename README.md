@@ -95,7 +95,12 @@ Press **X** on any Pokemon to view detailed information:
 - Ribbons and marks (displayed as sprite icons with names)
 - Technical data: PID, EC, raw TID/SID, and TSV
 
-Shiny Pokemon are displayed with their shiny color sprites throughout the app — in the box grid, detail popup, held overlay, box view preview, and wondercard list. If a shiny sprite is not available (shiny-locked species), the normal sprite is used as fallback. Shiny names are displayed in gold. Alpha Pokemon (Legends: Arceus / Z-A) show a dedicated icon.
+Sprites are form-aware — alternate forms like Alolan, Galarian, Hisuian, Paldean, Origin, Therian, and many others display their correct sprite.\
+Shiny Pokemon use their shiny color sprites. Both apply everywhere: box grid, detail popup, held overlay, box view preview, and wondercard list.\
+If a form or shiny sprite is not available, the base sprite is used as fallback.
+
+Shiny names are displayed in gold.\
+Alpha Pokemon (Legends: Arceus / Z-A) show a dedicated icon.
 
 Use **L/R** in the detail view to navigate to the next or previous non-empty slot without closing the popup.
 

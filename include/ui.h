@@ -92,9 +92,9 @@ private:
     TTF_Font*            fontSmall_ = nullptr;
     TTF_Font*            fontLarge_ = nullptr;
 
-    // Sprite cache: national dex ID -> texture
-    std::unordered_map<uint16_t, SDL_Texture*> spriteCache_;
-    std::unordered_map<uint16_t, SDL_Texture*> shinySpriteCache_;
+    // Sprite cache: (national dex ID | form << 16) -> texture
+    std::unordered_map<uint32_t, SDL_Texture*> spriteCache_;
+    std::unordered_map<uint32_t, SDL_Texture*> shinySpriteCache_;
 
     // Ribbon sprite cache: filename -> texture
     std::unordered_map<std::string, SDL_Texture*> ribbonSpriteCache_;
@@ -279,6 +279,7 @@ private:
         bool     alpha    = false;
         uint8_t  gender   = 2;  // 0=male, 1=female, 2=none
         uint16_t species  = 0;  // national dex ID (for sprite lookup)
+        uint8_t  form     = 0;  // form index (for form-aware sprites)
         uint8_t  level    = 0;
         std::string name;       // truncated display name (≤10 chars)
     };
@@ -354,8 +355,8 @@ private:
     static constexpr uint32_t DOUBLE_TAP_MS = 300;
 
     // Sprites
-    SDL_Texture* getSprite(uint16_t nationalId);
-    SDL_Texture* getShinySprite(uint16_t nationalId);
+    SDL_Texture* getSprite(uint16_t nationalId, uint8_t form = 0);
+    SDL_Texture* getShinySprite(uint16_t nationalId, uint8_t form = 0);
     void freeSprites();
 
     // Profile selector

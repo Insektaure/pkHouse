@@ -7,63 +7,64 @@
 
 // --- Sprites ---
 
-SDL_Texture* UI::getSprite(uint16_t nationalId) {
-    // Check cache
-    auto it = spriteCache_.find(nationalId);
-    if (it != spriteCache_.end())
-        return it->second;
+static uint32_t spriteKey(uint16_t id, uint8_t form) {
+    return uint32_t(id) | (uint32_t(form) << 16);
+}
 
-    // Build path: sprites are named 001.png to 1025.png
+static SDL_Texture* loadSprite(const char* dir, uint16_t nationalId, uint8_t form,
+                               SDL_Renderer* renderer) {
     char filename[64];
-    std::snprintf(filename, sizeof(filename), "%03d.png", nationalId);
-
-    std::string path;
+    // Try form-specific sprite first (e.g. 019-1.png)
+    if (form != 0) {
+        std::snprintf(filename, sizeof(filename), "%03d-%d.png", nationalId, form);
+        std::string path;
 #ifdef __SWITCH__
-    path = std::string("romfs:/sprites/") + filename;
+        path = std::string("romfs:/") + dir + "/" + filename;
 #else
-    path = std::string("romfs/sprites/") + filename;
+        path = std::string("romfs/") + dir + "/" + filename;
 #endif
-
-    SDL_Surface* surf = IMG_Load(path.c_str());
-    if (!surf) {
-        // Cache nullptr so we don't retry
-        spriteCache_[nationalId] = nullptr;
-        return nullptr;
+        SDL_Surface* surf = IMG_Load(path.c_str());
+        if (surf) {
+            SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer, surf);
+            SDL_FreeSurface(surf);
+            return tex;
+        }
     }
 
-    SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer_, surf);
+    // Fall back to base sprite (e.g. 019.png)
+    std::snprintf(filename, sizeof(filename), "%03d.png", nationalId);
+    std::string path;
+#ifdef __SWITCH__
+    path = std::string("romfs:/") + dir + "/" + filename;
+#else
+    path = std::string("romfs/") + dir + "/" + filename;
+#endif
+    SDL_Surface* surf = IMG_Load(path.c_str());
+    if (!surf) return nullptr;
+    SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer, surf);
     SDL_FreeSurface(surf);
-
-    spriteCache_[nationalId] = tex;
     return tex;
 }
 
-SDL_Texture* UI::getShinySprite(uint16_t nationalId) {
-    auto it = shinySpriteCache_.find(nationalId);
+SDL_Texture* UI::getSprite(uint16_t nationalId, uint8_t form) {
+    uint32_t key = spriteKey(nationalId, form);
+    auto it = spriteCache_.find(key);
+    if (it != spriteCache_.end())
+        return it->second;
+
+    SDL_Texture* tex = loadSprite("sprites", nationalId, form, renderer_);
+    spriteCache_[key] = tex;
+    return tex;
+}
+
+SDL_Texture* UI::getShinySprite(uint16_t nationalId, uint8_t form) {
+    uint32_t key = spriteKey(nationalId, form);
+    auto it = shinySpriteCache_.find(key);
     if (it != shinySpriteCache_.end())
         return it->second;
 
-    char filename[64];
-    std::snprintf(filename, sizeof(filename), "%03d.png", nationalId);
-
-    std::string path;
-#ifdef __SWITCH__
-    path = std::string("romfs:/sprites_shiny/") + filename;
-#else
-    path = std::string("romfs/sprites_shiny/") + filename;
-#endif
-
-    SDL_Surface* surf = IMG_Load(path.c_str());
-    if (!surf) {
-        // No shiny sprite available — fall back to normal
-        shinySpriteCache_[nationalId] = nullptr;
-        return nullptr;
-    }
-
-    SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer_, surf);
-    SDL_FreeSurface(surf);
-
-    shinySpriteCache_[nationalId] = tex;
+    SDL_Texture* tex = loadSprite("sprites_shiny", nationalId, form, renderer_);
+    shinySpriteCache_[key] = tex;
     return tex;
 }
 
@@ -243,6 +244,7 @@ const std::vector<UI::SlotDisplay>& UI::getSlotDisplays(Panel panel, int box) {
         sd.alpha   = pkm.isAlpha();
         sd.gender  = pkm.gender();
         sd.species = pkm.species();
+        sd.form    = pkm.form();
         sd.level   = pkm.level();
         sd.name    = pkm.displayName();
         if (sd.name.length() > 10)
@@ -288,15 +290,15 @@ void UI::drawSlot(int x, int y, const SlotDisplay& sd, bool isCursor, int select
         drawRectOutline(x, y, CELL_W, CELL_H, T().cursor, 3);
 
     if (!sd.empty) {
-        // Draw sprite centered in top portion of cell (shiny variant if available)
+        // Draw sprite centered in top portion of cell (form-aware, shiny variant if available)
         SDL_Texture* sprite = nullptr;
         if (sd.egg) {
             sprite = getSprite(0);
         } else if (sd.shiny) {
-            sprite = getShinySprite(sd.species);
-            if (!sprite) sprite = getSprite(sd.species);
+            sprite = getShinySprite(sd.species, sd.form);
+            if (!sprite) sprite = getSprite(sd.species, sd.form);
         } else {
-            sprite = getSprite(sd.species);
+            sprite = getSprite(sd.species, sd.form);
         }
 
         if (sprite) {
@@ -720,13 +722,14 @@ void UI::drawDetailPopup(const Pokemon& pkm) {
     int sprY = popY + 20;
 
     SDL_Texture* sprite = nullptr;
+    uint8_t pkmForm = pkm.form();
     if (pkm.isEgg()) {
         sprite = getSprite(0);
     } else if (pkm.isShiny()) {
-        sprite = getShinySprite(pkm.species());
-        if (!sprite) sprite = getSprite(pkm.species());
+        sprite = getShinySprite(pkm.species(), pkmForm);
+        if (!sprite) sprite = getSprite(pkm.species(), pkmForm);
     } else {
-        sprite = getSprite(pkm.species());
+        sprite = getSprite(pkm.species(), pkmForm);
     }
     if (sprite) {
         int texW, texH;
@@ -1609,10 +1612,10 @@ void UI::drawBoxPreview(int boxIdx, int anchorX, int anchorY) {
                 if (psd.egg) {
                     sprite = getSprite(0);
                 } else if (psd.shiny) {
-                    sprite = getShinySprite(psd.species);
-                    if (!sprite) sprite = getSprite(psd.species);
+                    sprite = getShinySprite(psd.species, psd.form);
+                    if (!sprite) sprite = getSprite(psd.species, psd.form);
                 } else {
-                    sprite = getSprite(psd.species);
+                    sprite = getSprite(psd.species, psd.form);
                 }
                 if (sprite) {
                     int texW, texH;
@@ -1651,14 +1654,15 @@ void UI::drawHeldOverlay() {
     if (species == 0)
         return;
 
+    uint8_t heldForm = pkm.form();
     SDL_Texture* sprite = nullptr;
     if (pkm.isEgg()) {
         sprite = getSprite(0);
     } else if (pkm.isShiny()) {
-        sprite = getShinySprite(species);
-        if (!sprite) sprite = getSprite(species);
+        sprite = getShinySprite(species, heldForm);
+        if (!sprite) sprite = getSprite(species, heldForm);
     } else {
-        sprite = getSprite(species);
+        sprite = getSprite(species, heldForm);
     }
     if (!sprite)
         return;

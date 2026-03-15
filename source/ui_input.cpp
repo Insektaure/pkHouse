@@ -761,15 +761,19 @@ void UI::moveCursor(int dx, int dy) {
     if (cursor_.row < 0) cursor_.row = 4;
     if (cursor_.row > 4) cursor_.row = 0;
 
-    // Horizontal: crossing panel boundary
+    // Horizontal: crossing panel boundary or wrapping within single panel
     if (cursor_.col < 0) {
         if (cursor_.panel == Panel::Bank &&
             !(isDualBankMode() && leftBankName_.empty())) {
             cursor_.panel = Panel::Game;
             cursor_.col = maxCol;
             cursor_.box = gameBox_;
+        } else if (cursor_.panel == Panel::Game) {
+            cursor_.panel = Panel::Bank;
+            cursor_.col = maxCol;
+            cursor_.box = bankBox_;
         } else {
-            cursor_.col = 0;
+            cursor_.col = maxCol; // wrap within same panel
         }
     }
     if (cursor_.col > maxCol) {
@@ -777,8 +781,12 @@ void UI::moveCursor(int dx, int dy) {
             cursor_.panel = Panel::Bank;
             cursor_.col = 0;
             cursor_.box = bankBox_;
+        } else if (!(isDualBankMode() && leftBankName_.empty())) {
+            cursor_.panel = Panel::Game;
+            cursor_.col = 0;
+            cursor_.box = gameBox_;
         } else {
-            cursor_.col = maxCol;
+            cursor_.col = 0; // wrap within same panel
         }
     }
 

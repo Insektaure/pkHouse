@@ -50,6 +50,12 @@ In **title override mode**, the main view displays your **game save** on the lef
 In **applet mode** (bank-only), both panels show **banks**, allowing bank-to-bank transfers.\
 Navigate freely between both panels to move Pokemon back and forth.
 
+### View All Banks
+
+Browse banks across all your games from a single screen. On the game selector, navigate below the game cards to the **"View All Banks"** option.\
+Banks are displayed in a grouped list organized by game family (e.g. "Sword / Shield", "Scarlet / Violet"), in the same order as the game cards.\
+Selecting a bank opens it in dual-bank mode — no save file needed. After picking your first bank, you're prompted to pick a second bank from the same game for side-by-side management.
+
 ### Pick & Place
 
 Press **A** on a Pokemon to pick it up, navigate to any slot (in either panel), and press **A** again to place it.\
@@ -263,8 +269,8 @@ This works automatically with no configuration required.
 
 | Button | Action |
 |--------|--------|
-| D-Pad | Navigate game grid |
-| A | Select game |
+| D-Pad | Navigate game grid and "View All Banks" option |
+| A | Select game / View All Banks |
 | B | Back to profile selector |
 | Y | Theme selector |
 | - | About |

@@ -91,8 +91,109 @@ void UI::drawBankSelectorFrame() {
                          selCenterX, SCREEN_H / 2 - 10, T().textDim, font_);
         drawTextCentered("Press X to create one.",
                          selCenterX, SCREEN_H / 2 + 15, T().textDim, fontSmall_);
+    } else if (bankManager_.isAllMode()) {
+        // All-banks mode: grouped list with game headers
+        int LIST_W = splitView ? (PANEL_W - 30) : 800;
+        int LIST_X = splitView ? (selAreaX + 15) : (SCREEN_W - LIST_W) / 2;
+        int LIST_Y = splitView ? 50 : 80;
+        int LIST_BOTTOM = 580;
+        int ROW_H = 50;
+        int HDR_H = 32;
+        int visiblePixels = LIST_BOTTOM - LIST_Y;
+
+        // Build visual row list: headers interleaved with bank entries
+        struct VisualRow { bool isHeader; int bankIdx; GameType game; };
+        std::vector<VisualRow> vrows;
+        for (int i = 0; i < (int)banks.size(); i++) {
+            if (i == 0 || banks[i].game != banks[i - 1].game)
+                vrows.push_back({true, -1, banks[i].game});
+            vrows.push_back({false, i, banks[i].game});
+        }
+
+        // Find visual row of cursor
+        int cursorVisRow = 0;
+        for (int r = 0; r < (int)vrows.size(); r++) {
+            if (!vrows[r].isHeader && vrows[r].bankIdx == bankSelCursor_) {
+                cursorVisRow = r;
+                break;
+            }
+        }
+
+        // Pre-compute pixel Y positions for all visual rows
+        std::vector<int> rowYPositions(vrows.size() + 1);
+        rowYPositions[0] = 0;
+        for (int i = 0; i < (int)vrows.size(); i++)
+            rowYPositions[i + 1] = rowYPositions[i] + (vrows[i].isHeader ? HDR_H : ROW_H);
+        int totalPixels = rowYPositions.back();
+
+        // Clamp scroll to keep cursor visible
+        int cursorY = rowYPositions[cursorVisRow];
+        int cursorH = ROW_H;
+        if (bankSelScroll_ > cursorY)
+            bankSelScroll_ = cursorY;
+        if (cursorY + cursorH > bankSelScroll_ + visiblePixels)
+            bankSelScroll_ = cursorY + cursorH - visiblePixels;
+
+        // If cursor's group header is just above and close, scroll up to show it
+        if (cursorVisRow > 0 && vrows[cursorVisRow - 1].isHeader) {
+            int hdrY = rowYPositions[cursorVisRow - 1];
+            if (hdrY >= bankSelScroll_ - HDR_H && hdrY < bankSelScroll_)
+                bankSelScroll_ = hdrY;
+        }
+
+        if (bankSelScroll_ > totalPixels - visiblePixels)
+            bankSelScroll_ = std::max(0, totalPixels - visiblePixels);
+        if (bankSelScroll_ < 0) bankSelScroll_ = 0;
+
+        // Scroll arrows
+        if (bankSelScroll_ > 0)
+            drawTextCentered("^", selCenterX, LIST_Y - 12, T().arrow, font_);
+        if (bankSelScroll_ + visiblePixels < totalPixels)
+            drawTextCentered("v", selCenterX, LIST_BOTTOM + 4, T().arrow, font_);
+
+        // Render visible rows
+        for (int r = 0; r < (int)vrows.size(); r++) {
+            int rowY = rowYPositions[r] - bankSelScroll_ + LIST_Y;
+            int rowH = vrows[r].isHeader ? HDR_H : ROW_H;
+
+            if (rowY + rowH <= LIST_Y) continue;  // above visible area
+            if (rowY >= LIST_BOTTOM) break;        // below visible area
+
+            if (vrows[r].isHeader) {
+                // Group header: game name with separator line
+                std::string gameName = bankGroupNameOf(vrows[r].game);
+                drawText(gameName, LIST_X + 10, rowY + HDR_H / 2 - 7,
+                         T().textDim, fontSmall_);
+                // Separator line under the text
+                int textW = getTextEntry(gameName, fontSmall_, T().textDim).w;
+                drawRect(LIST_X + 10 + textW + 10, rowY + HDR_H / 2,
+                         LIST_W - 30 - textW, 1, T().textDim);
+            } else {
+                int idx = vrows[r].bankIdx;
+
+                // Highlighted row
+                if (idx == bankSelCursor_) {
+                    drawRect(LIST_X, rowY, LIST_W, ROW_H - 4, T().menuHighlight);
+                    drawRectOutline(LIST_X, rowY, LIST_W, ROW_H - 4, T().cursor, 2);
+                }
+
+                // Bank name (left-aligned, indented under header)
+                drawText(banks[idx].name, LIST_X + 30, rowY + (ROW_H - 4) / 2 - 9,
+                         T().text, font_);
+
+                // Slot count (right-aligned)
+                int maxSlots = isLGPE(banks[idx].game) ? 1000 :
+                               isBDSP(banks[idx].game) ? 1200 : 960;
+                std::string slotStr = std::to_string(banks[idx].occupiedSlots) +
+                                      "/" + std::to_string(maxSlots);
+                const auto& se = getTextEntry(slotStr, font_, T().textDim);
+                if (se.tex)
+                    drawText(slotStr, LIST_X + LIST_W - 20 - se.w,
+                             rowY + (ROW_H - 4) / 2 - 9, T().textDim, font_);
+            }
+        }
     } else {
-        // List area
+        // Normal mode: flat bank list
         int LIST_W = splitView ? (PANEL_W - 30) : 800;
         int LIST_X = splitView ? (selAreaX + 15) : (SCREEN_W - LIST_W) / 2;
         int LIST_Y = splitView ? 50 : 80;
@@ -123,19 +224,11 @@ void UI::drawBankSelectorFrame() {
                 drawRectOutline(LIST_X, rowY, LIST_W, ROW_H - 4, T().cursor, 2);
             }
 
-            // Bank name (left-aligned), with game label in all-banks mode
-            if (bankManager_.isAllMode()) {
-                std::string label = std::string(bankFolderNameOf(banks[idx].game)) + " / " + banks[idx].name;
-                drawText(label, LIST_X + 20, rowY + (ROW_H - 4) / 2 - 9,
-                         T().text, font_);
-            } else {
-                drawText(banks[idx].name, LIST_X + 20, rowY + (ROW_H - 4) / 2 - 9,
-                         T().text, font_);
-            }
+            drawText(banks[idx].name, LIST_X + 20, rowY + (ROW_H - 4) / 2 - 9,
+                     T().text, font_);
 
             // Slot count (right-aligned)
-            GameType bankGame = bankManager_.isAllMode() ? banks[idx].game : selectedGame_;
-            int maxSlots = isLGPE(bankGame) ? 1000 : isBDSP(bankGame) ? 1200 : 960;
+            int maxSlots = isLGPE(selectedGame_) ? 1000 : isBDSP(selectedGame_) ? 1200 : 960;
             std::string slotStr = std::to_string(banks[idx].occupiedSlots) + "/" + std::to_string(maxSlots);
             const auto& se = getTextEntry(slotStr, font_, T().textDim);
             if (se.tex) drawText(slotStr, LIST_X + LIST_W - 20 - se.w, rowY + (ROW_H - 4) / 2 - 9,
@@ -219,12 +312,16 @@ void UI::handleBankSelectorInput(bool& running) {
                     if (bankCount > 0) {
                         int prev = bankSelCursor_;
                         bankSelCursor_ = (bankSelCursor_ - 1 + bankCount) % bankCount;
-                        if (bankSelCursor_ > prev) {
-                            // Wrapped to bottom
-                            int visibleRows = (580 - 80) / 50;
-                            bankSelScroll_ = std::max(0, bankSelCursor_ - visibleRows + 1);
-                        } else if (bankSelCursor_ < bankSelScroll_) {
-                            bankSelScroll_ = bankSelCursor_;
+                        if (bankManager_.isAllMode()) {
+                            if (bankSelCursor_ > prev)
+                                bankSelScroll_ = bankManager_.totalVisualRows() * 50; // wrap to bottom, draw clamps
+                        } else {
+                            if (bankSelCursor_ > prev) {
+                                int visibleRows = (580 - 80) / 50;
+                                bankSelScroll_ = std::max(0, bankSelCursor_ - visibleRows + 1);
+                            } else if (bankSelCursor_ < bankSelScroll_) {
+                                bankSelScroll_ = bankSelCursor_;
+                            }
                         }
                     }
                     break;
@@ -232,13 +329,17 @@ void UI::handleBankSelectorInput(bool& running) {
                     if (bankCount > 0) {
                         int prev = bankSelCursor_;
                         bankSelCursor_ = (bankSelCursor_ + 1) % bankCount;
-                        if (bankSelCursor_ < prev) {
-                            // Wrapped to top
-                            bankSelScroll_ = 0;
+                        if (bankManager_.isAllMode()) {
+                            if (bankSelCursor_ < prev)
+                                bankSelScroll_ = 0; // wrap to top
                         } else {
-                            int visibleRows = (580 - 80) / 50;
-                            if (bankSelCursor_ >= bankSelScroll_ + visibleRows)
-                                bankSelScroll_ = bankSelCursor_ - visibleRows + 1;
+                            if (bankSelCursor_ < prev) {
+                                bankSelScroll_ = 0;
+                            } else {
+                                int visibleRows = (580 - 80) / 50;
+                                if (bankSelCursor_ >= bankSelScroll_ + visibleRows)
+                                    bankSelScroll_ = bankSelCursor_ - visibleRows + 1;
+                            }
                         }
                     }
                     break;
@@ -289,11 +390,16 @@ void UI::handleBankSelectorInput(bool& running) {
                     if (bankCount > 0) {
                         int prev = bankSelCursor_;
                         bankSelCursor_ = (bankSelCursor_ - 1 + bankCount) % bankCount;
-                        if (bankSelCursor_ > prev) {
-                            int visibleRows = (580 - 80) / 50;
-                            bankSelScroll_ = std::max(0, bankSelCursor_ - visibleRows + 1);
-                        } else if (bankSelCursor_ < bankSelScroll_) {
-                            bankSelScroll_ = bankSelCursor_;
+                        if (bankManager_.isAllMode()) {
+                            if (bankSelCursor_ > prev)
+                                bankSelScroll_ = bankManager_.totalVisualRows() * 50;
+                        } else {
+                            if (bankSelCursor_ > prev) {
+                                int visibleRows = (580 - 80) / 50;
+                                bankSelScroll_ = std::max(0, bankSelCursor_ - visibleRows + 1);
+                            } else if (bankSelCursor_ < bankSelScroll_) {
+                                bankSelScroll_ = bankSelCursor_;
+                            }
                         }
                     }
                     break;
@@ -301,12 +407,17 @@ void UI::handleBankSelectorInput(bool& running) {
                     if (bankCount > 0) {
                         int prev = bankSelCursor_;
                         bankSelCursor_ = (bankSelCursor_ + 1) % bankCount;
-                        if (bankSelCursor_ < prev) {
-                            bankSelScroll_ = 0;
+                        if (bankManager_.isAllMode()) {
+                            if (bankSelCursor_ < prev)
+                                bankSelScroll_ = 0;
                         } else {
-                            int visibleRows = (580 - 80) / 50;
-                            if (bankSelCursor_ >= bankSelScroll_ + visibleRows)
-                                bankSelScroll_ = bankSelCursor_ - visibleRows + 1;
+                            if (bankSelCursor_ < prev) {
+                                bankSelScroll_ = 0;
+                            } else {
+                                int visibleRows = (580 - 80) / 50;
+                                if (bankSelCursor_ >= bankSelScroll_ + visibleRows)
+                                    bankSelScroll_ = bankSelCursor_ - visibleRows + 1;
+                            }
                         }
                     }
                     break;
@@ -362,21 +473,31 @@ void UI::handleBankSelectorInput(bool& running) {
             if (stickDirY_ < 0) {
                 int prev = bankSelCursor_;
                 bankSelCursor_ = (bankSelCursor_ - 1 + bankCount) % bankCount;
-                if (bankSelCursor_ > prev) {
-                    int visibleRows = (580 - 80) / 50;
-                    bankSelScroll_ = std::max(0, bankSelCursor_ - visibleRows + 1);
-                } else if (bankSelCursor_ < bankSelScroll_) {
-                    bankSelScroll_ = bankSelCursor_;
+                if (bankManager_.isAllMode()) {
+                    if (bankSelCursor_ > prev)
+                        bankSelScroll_ = bankManager_.totalVisualRows() * 50;
+                } else {
+                    if (bankSelCursor_ > prev) {
+                        int visibleRows = (580 - 80) / 50;
+                        bankSelScroll_ = std::max(0, bankSelCursor_ - visibleRows + 1);
+                    } else if (bankSelCursor_ < bankSelScroll_) {
+                        bankSelScroll_ = bankSelCursor_;
+                    }
                 }
             } else {
                 int prev = bankSelCursor_;
                 bankSelCursor_ = (bankSelCursor_ + 1) % bankCount;
-                if (bankSelCursor_ < prev) {
-                    bankSelScroll_ = 0;
+                if (bankManager_.isAllMode()) {
+                    if (bankSelCursor_ < prev)
+                        bankSelScroll_ = 0;
                 } else {
-                    int visibleRows = (580 - 80) / 50;
-                    if (bankSelCursor_ >= bankSelScroll_ + visibleRows)
-                        bankSelScroll_ = bankSelCursor_ - visibleRows + 1;
+                    if (bankSelCursor_ < prev) {
+                        bankSelScroll_ = 0;
+                    } else {
+                        int visibleRows = (580 - 80) / 50;
+                        if (bankSelCursor_ >= bankSelScroll_ + visibleRows)
+                            bankSelScroll_ = bankSelCursor_ - visibleRows + 1;
+                    }
                 }
             }
             stickMoveTime_ = now;

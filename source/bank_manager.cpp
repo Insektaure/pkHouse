@@ -32,10 +32,10 @@ bool BankManager::initAll(const std::string& basePath) {
     allMode_ = true;
     bankList_.clear();
 
-    // One representative game per unique bank folder
+    // One representative game per unique bank folder (matches game card order)
     constexpr GameType folderGames[] = {
-        GameType::ZA, GameType::S, GameType::Sw, GameType::BD,
-        GameType::LA, GameType::GP, GameType::FR
+        GameType::GP, GameType::Sw, GameType::BD,
+        GameType::LA, GameType::S, GameType::ZA, GameType::FR
     };
 
     std::string banksParent = basePath + "banks/";
@@ -61,13 +61,21 @@ bool BankManager::initAll(const std::string& basePath) {
         closedir(d);
     }
 
-    // Sort by game folder then alphabetically by name
-    std::sort(bankList_.begin(), bankList_.end(), [](const BankInfo& a, const BankInfo& b) {
-        if (a.game != b.game) {
-            // Compare by folder name for stable grouping
-            int cmp = std::strcmp(bankFolderNameOf(a.game), bankFolderNameOf(b.game));
-            if (cmp != 0) return cmp < 0;
-        }
+    // Sort by game card order then alphabetically by name
+    auto gameOrder = [](GameType g) -> int {
+        // Paired games share the same order index
+        if (isLGPE(g)) return 0;
+        if (isSwSh(g)) return 1;
+        if (isBDSP(g)) return 2;
+        if (g == GameType::LA) return 3;
+        if (isSV(g))   return 4;
+        if (g == GameType::ZA) return 5;
+        if (isFRLG(g)) return 6;
+        return 7;
+    };
+    std::sort(bankList_.begin(), bankList_.end(), [&](const BankInfo& a, const BankInfo& b) {
+        int oa = gameOrder(a.game), ob = gameOrder(b.game);
+        if (oa != ob) return oa < ob;
         std::string la = a.name, lb = b.name;
         std::transform(la.begin(), la.end(), la.begin(), ::tolower);
         std::transform(lb.begin(), lb.end(), lb.begin(), ::tolower);
@@ -236,6 +244,26 @@ std::string BankManager::pathFor(const std::string& name) const {
             return info.fullPath;
     }
     return "";
+}
+
+int BankManager::bankToVisualRow(int bankIdx) const {
+    if (!allMode_ || bankList_.empty()) return bankIdx;
+    int headers = 0;
+    for (int i = 0; i <= bankIdx && i < (int)bankList_.size(); i++) {
+        if (i == 0 || bankList_[i].game != bankList_[i - 1].game)
+            headers++;
+    }
+    return bankIdx + headers;
+}
+
+int BankManager::totalVisualRows() const {
+    if (!allMode_ || bankList_.empty()) return (int)bankList_.size();
+    int headers = 0;
+    for (int i = 0; i < (int)bankList_.size(); i++) {
+        if (i == 0 || bankList_[i].game != bankList_[i - 1].game)
+            headers++;
+    }
+    return (int)bankList_.size() + headers;
 }
 
 std::string BankManager::sanitizeName(const std::string& raw) {

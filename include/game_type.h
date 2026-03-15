@@ -74,6 +74,17 @@ inline const char* gameDisplayNameOf(GameType g) {
     return "";
 }
 
+// Display name for bank folder group headers (paired games show both names)
+inline const char* bankGroupNameOf(GameType g) {
+    if (isLGPE(g)) return "Let's Go Pikachu / Let's Go Eevee";
+    if (isSwSh(g)) return "Sword / Shield";
+    if (isBDSP(g)) return "Brilliant Diamond / Shining Pearl";
+    if (g == GameType::LA) return "Legends: Arceus";
+    if (isSV(g))   return "Scarlet / Violet";
+    if (isFRLG(g)) return "FireRed / LeafGreen";
+    return "Legends: Z-A";
+}
+
 // Shared bank folder name (paired games share a folder)
 inline const char* bankFolderNameOf(GameType g) {
     if (isSwSh(g)) return "SwordShield";

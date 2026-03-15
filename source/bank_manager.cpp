@@ -8,6 +8,7 @@
 bool BankManager::init(const std::string& basePath, GameType game) {
     basePath_ = basePath;
     game_ = game;
+    allMode_ = false;
 
     // Create banks/ parent directory
     std::string banksParent = basePath + "banks/";
@@ -23,6 +24,56 @@ bool BankManager::init(const std::string& basePath, GameType game) {
         migrateLegacy();
 
     refresh();
+    return true;
+}
+
+bool BankManager::initAll(const std::string& basePath) {
+    basePath_ = basePath;
+    allMode_ = true;
+    bankList_.clear();
+
+    // One representative game per unique bank folder
+    constexpr GameType folderGames[] = {
+        GameType::ZA, GameType::S, GameType::Sw, GameType::BD,
+        GameType::LA, GameType::GP, GameType::FR
+    };
+
+    std::string banksParent = basePath + "banks/";
+
+    for (GameType g : folderGames) {
+        std::string dir = banksParent + bankFolderNameOf(g) + "/";
+        DIR* d = opendir(dir.c_str());
+        if (!d) continue;
+
+        struct dirent* entry;
+        while ((entry = readdir(d)) != nullptr) {
+            std::string name = entry->d_name;
+            if (name.size() < 5 || name.substr(name.size() - 4) != ".bin")
+                continue;
+
+            BankInfo info;
+            info.name = name.substr(0, name.size() - 4);
+            info.fullPath = dir + name;
+            info.occupiedSlots = countOccupied(info.fullPath);
+            info.game = g;
+            bankList_.push_back(info);
+        }
+        closedir(d);
+    }
+
+    // Sort by game folder then alphabetically by name
+    std::sort(bankList_.begin(), bankList_.end(), [](const BankInfo& a, const BankInfo& b) {
+        if (a.game != b.game) {
+            // Compare by folder name for stable grouping
+            int cmp = std::strcmp(bankFolderNameOf(a.game), bankFolderNameOf(b.game));
+            if (cmp != 0) return cmp < 0;
+        }
+        std::string la = a.name, lb = b.name;
+        std::transform(la.begin(), la.end(), la.begin(), ::tolower);
+        std::transform(lb.begin(), lb.end(), lb.begin(), ::tolower);
+        return la < lb;
+    });
+
     return true;
 }
 
@@ -65,6 +116,7 @@ void BankManager::refresh() {
         info.name = stem;
         info.fullPath = fullPath;
         info.occupiedSlots = countOccupied(fullPath);
+        info.game = game_;
         bankList_.push_back(info);
     }
     closedir(dir);

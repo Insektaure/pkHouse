@@ -190,6 +190,7 @@ void UI::selectProfile(int index) {
     refreshBankCounts();
 
     gameSelCursor_ = 0;
+    gameSelOnAllBanks_ = false;
     showWorking("Loading game icons...");
     loadGameIcons();
     screen_ = AppScreen::GameSelector;
@@ -311,7 +312,7 @@ void UI::drawGameSelectorFrame() {
         int cardY = gridStartY + r * (CARD_H + CARD_GAP);
 
         // Card background
-        if (i == gameSelCursor_) {
+        if (i == gameSelCursor_ && !gameSelOnAllBanks_) {
             drawRect(cardX, cardY, CARD_W, CARD_H, T().menuHighlight);
             drawRectOutline(cardX, cardY, CARD_W, CARD_H, T().cursor, 3);
         } else {
@@ -365,6 +366,26 @@ void UI::drawGameSelectorFrame() {
                          T().textDim, fontSmall_);
     }
 
+    // "View All Banks" option below the grid
+    {
+        int lastRow = (numGames - 1) / COLS;
+        int gridBottomY = gridStartY + (lastRow + 1) * (CARD_H + CARD_GAP);
+        int allBanksY = gridBottomY + 10;
+
+        std::string label = "View All Banks";
+        const auto& te = getTextEntry(label, font_, T().text);
+        int labelW = te.w + 40;  // padding
+        int labelH = 36;
+        int labelX = (SCREEN_W - labelW) / 2;
+
+        if (gameSelOnAllBanks_) {
+            drawRect(labelX, allBanksY, labelW, labelH, T().menuHighlight);
+            drawRectOutline(labelX, allBanksY, labelW, labelH, T().cursor, 2);
+        }
+        drawTextCentered(label, SCREEN_W / 2, allBanksY + labelH / 2,
+                         gameSelOnAllBanks_ ? T().text : T().textDim, font_);
+    }
+
     if (selectedProfile_ >= 0) {
         drawStatusBar("A: Select  B: Back  Y: Theme  -: About  +: Quit");
         std::string profileLabel = account_.profiles()[selectedProfile_].nickname;
@@ -387,6 +408,21 @@ void UI::handleGameSelectorInput(bool& running) {
     constexpr int COLS = 6;
 
     auto moveGrid = [&](int dx, int dy) {
+        if (gameSelOnAllBanks_) {
+            // On "All Banks" row: up goes back to grid, left/right ignored
+            if (dy < 0) {
+                gameSelOnAllBanks_ = false;
+                // Place cursor on bottom row
+                int totalRows = (numGames + COLS - 1) / COLS;
+                int lastRowStart = (totalRows - 1) * COLS;
+                int lastRowItems = numGames - lastRowStart;
+                int col = gameSelCursor_ % COLS;
+                if (col >= lastRowItems) col = lastRowItems - 1;
+                gameSelCursor_ = lastRowStart + col;
+            }
+            return;
+        }
+
         int col = gameSelCursor_ % COLS;
         int row = gameSelCursor_ / COLS;
         int totalRows = (numGames + COLS - 1) / COLS;
@@ -394,15 +430,23 @@ void UI::handleGameSelectorInput(bool& running) {
         col += dx;
         row += dy;
 
+        // Moving down past the last row goes to "All Banks"
+        if (row >= totalRows) {
+            gameSelOnAllBanks_ = true;
+            return;
+        }
+
         // Wrap columns within the row
         int rowItems = std::min(COLS, numGames - row * COLS);
         if (rowItems <= 0) rowItems = COLS; // fallback for row wrap
         if (col < 0) col = rowItems - 1;
         if (col >= rowItems) col = 0;
 
-        // Wrap rows
-        if (row < 0) row = totalRows - 1;
-        if (row >= totalRows) row = 0;
+        // Wrap rows (up from top goes to "All Banks")
+        if (row < 0) {
+            gameSelOnAllBanks_ = true;
+            return;
+        }
 
         int newCursor = row * COLS + col;
         if (newCursor >= numGames)
@@ -445,7 +489,10 @@ void UI::handleGameSelectorInput(bool& running) {
                     moveGrid(0, 1);
                     break;
                 case SDL_CONTROLLER_BUTTON_B: // Switch A = select
-                    selectGame(availableGames_[gameSelCursor_]);
+                    if (gameSelOnAllBanks_)
+                        enterAllBanksMode();
+                    else
+                        selectGame(availableGames_[gameSelCursor_]);
                     break;
                 case SDL_CONTROLLER_BUTTON_A: // Switch B = back
                     if (selectedProfile_ >= 0) {
@@ -486,7 +533,10 @@ void UI::handleGameSelectorInput(bool& running) {
                     break;
                 case SDLK_a:
                 case SDLK_RETURN:
-                    selectGame(availableGames_[gameSelCursor_]);
+                    if (gameSelOnAllBanks_)
+                        enterAllBanksMode();
+                    else
+                        selectGame(availableGames_[gameSelCursor_]);
                     break;
                 case SDLK_y:
                     showThemeSelector_ = true;
@@ -519,4 +569,25 @@ void UI::handleGameSelectorInput(bool& running) {
             markDirty();
         }
     }
+}
+
+void UI::enterAllBanksMode() {
+    allBanksMode_ = true;
+    bankManager_.initAll(basePath_);
+
+    if (bankManager_.list().empty()) {
+        allBanksMode_ = false;
+        showMessageAndWait("No Banks", "No banks found for any game.");
+        return;
+    }
+
+    bankSelCursor_ = 0;
+    bankSelScroll_ = 0;
+    bankSelTarget_ = Panel::Bank;
+    leftBankName_.clear();
+    leftBankPath_.clear();
+    activeBankName_.clear();
+    activeBankPath_.clear();
+
+    screen_ = AppScreen::BankSelector;
 }

@@ -17,15 +17,15 @@ void UI::drawBankSelectorFrame() {
 
     // Show split view: bank selector on one side, other panel visible
     // - Normal mode: save on left, selector on right (when save is loaded)
-    // - Applet mode: other bank on opposite side (when a bank is loaded)
-    bool splitView = appletMode_ ? !activeBankName_.empty() : save_.isLoaded();
+    // - Applet/All-banks mode: other bank on opposite side (when a bank is loaded)
+    bool splitView = isDualBankMode() ? !activeBankName_.empty() : save_.isLoaded();
 
     // Determine selector area
     int selCenterX = SCREEN_W / 2;
     int selAreaX = 0;
     if (splitView) {
-        if (appletMode_ && bankSelTarget_ == Panel::Game) {
-            // Applet: selector on left, keep right bank visible
+        if (isDualBankMode() && bankSelTarget_ == Panel::Game) {
+            // Dual mode: selector on left, keep right bank visible
             selCenterX = PANEL_X_L + PANEL_W / 2;
             selAreaX = PANEL_X_L;
             auto truncName = [](const std::string& s, size_t max) -> std::string {
@@ -38,7 +38,7 @@ void UI::drawBankSelectorFrame() {
             drawPanel(PANEL_X_R, rightBoxName, bankBox_, bank_.boxCount(),
                       false, nullptr, &bank_, bankBox_, Panel::Bank);
         } else {
-            // Normal mode or applet switching right bank: selector on right
+            // Normal mode or dual switching right bank: selector on right
             selCenterX = PANEL_X_R + PANEL_W / 2;
             selAreaX = PANEL_X_R;
             auto truncName = [](const std::string& s, size_t max) -> std::string {
@@ -48,7 +48,7 @@ void UI::drawBankSelectorFrame() {
                 return t;
             };
             // Draw left panel (save or left bank)
-            if (appletMode_) {
+            if (isDualBankMode()) {
                 if (!leftBankName_.empty()) {
                     std::string leftBoxName = truncName(leftBankName_, 16) + " - " + bankLeft_.getBoxName(gameBox_);
                     drawPanel(PANEL_X_L, leftBoxName, gameBox_, bankLeft_.boxCount(),
@@ -66,7 +66,16 @@ void UI::drawBankSelectorFrame() {
     }
 
     // Title
-    if (appletMode_) {
+    if (allBanksMode_) {
+        if (activeBankName_.empty())
+            drawTextCentered("All Banks", selCenterX,
+                             splitView ? 25 : 40, T().text, font_);
+        else {
+            const char* side = (bankSelTarget_ == Panel::Game) ? "Left" : "Right";
+            drawTextCentered(std::string("Select ") + side + " Bank",
+                             selCenterX, 25, T().text, font_);
+        }
+    } else if (appletMode_) {
         const char* side = (bankSelTarget_ == Panel::Game) ? "Left" : "Right";
         drawTextCentered(std::string("Select ") + side + " Bank",
                          selCenterX, 25, T().text, font_);
@@ -114,12 +123,19 @@ void UI::drawBankSelectorFrame() {
                 drawRectOutline(LIST_X, rowY, LIST_W, ROW_H - 4, T().cursor, 2);
             }
 
-            // Bank name (left-aligned)
-            drawText(banks[idx].name, LIST_X + 20, rowY + (ROW_H - 4) / 2 - 9,
-                     T().text, font_);
+            // Bank name (left-aligned), with game label in all-banks mode
+            if (bankManager_.isAllMode()) {
+                std::string label = std::string(bankFolderNameOf(banks[idx].game)) + " / " + banks[idx].name;
+                drawText(label, LIST_X + 20, rowY + (ROW_H - 4) / 2 - 9,
+                         T().text, font_);
+            } else {
+                drawText(banks[idx].name, LIST_X + 20, rowY + (ROW_H - 4) / 2 - 9,
+                         T().text, font_);
+            }
 
             // Slot count (right-aligned)
-            int maxSlots = isLGPE(selectedGame_) ? 1000 : isBDSP(selectedGame_) ? 1200 : 960;
+            GameType bankGame = bankManager_.isAllMode() ? banks[idx].game : selectedGame_;
+            int maxSlots = isLGPE(bankGame) ? 1000 : isBDSP(bankGame) ? 1200 : 960;
             std::string slotStr = std::to_string(banks[idx].occupiedSlots) + "/" + std::to_string(maxSlots);
             const auto& se = getTextEntry(slotStr, font_, T().textDim);
             if (se.tex) drawText(slotStr, LIST_X + LIST_W - 20 - se.w, rowY + (ROW_H - 4) / 2 - 9,
@@ -128,16 +144,24 @@ void UI::drawBankSelectorFrame() {
     }
 
     // Status bar
-    drawStatusBar("A: Open  X: New  Y: Rename  +: Delete  B: Back  -: About");
+    if (bankManager_.isAllMode())
+        drawStatusBar("A: Open  B: Back  -: About");
+    else
+        drawStatusBar("A: Open  X: New  Y: Rename  +: Delete  B: Back  -: About");
 
     // Profile | Game name (bottom right, gold)
     {
         std::string label;
-        if (appletMode_)
-            label = "Dual Bank | ";
-        else if (selectedProfile_ >= 0 && selectedProfile_ < account_.profileCount())
-            label = account_.profiles()[selectedProfile_].nickname + " | ";
-        label += gameDisplayNameOf(selectedGame_);
+        if (allBanksMode_)
+            label = activeBankName_.empty() ? "All Banks" :
+                    "All Banks | " + std::string(gameDisplayNameOf(selectedGame_));
+        else if (appletMode_)
+            label = "Dual Bank | " + std::string(gameDisplayNameOf(selectedGame_));
+        else {
+            if (selectedProfile_ >= 0 && selectedProfile_ < account_.profileCount())
+                label = account_.profiles()[selectedProfile_].nickname + " | ";
+            label += gameDisplayNameOf(selectedGame_);
+        }
         const auto& e = getTextEntry(label, fontSmall_, T().goldLabel);
         if (e.tex) drawText(label, SCREEN_W - e.w - 15, SCREEN_H - 26, T().goldLabel, fontSmall_);
     }
@@ -193,18 +217,29 @@ void UI::handleBankSelectorInput(bool& running) {
             switch (event.cbutton.button) {
                 case SDL_CONTROLLER_BUTTON_DPAD_UP:
                     if (bankCount > 0) {
+                        int prev = bankSelCursor_;
                         bankSelCursor_ = (bankSelCursor_ - 1 + bankCount) % bankCount;
-                        // Adjust scroll to keep cursor visible
-                        if (bankSelCursor_ < bankSelScroll_)
+                        if (bankSelCursor_ > prev) {
+                            // Wrapped to bottom
+                            int visibleRows = (580 - 80) / 50;
+                            bankSelScroll_ = std::max(0, bankSelCursor_ - visibleRows + 1);
+                        } else if (bankSelCursor_ < bankSelScroll_) {
                             bankSelScroll_ = bankSelCursor_;
+                        }
                     }
                     break;
                 case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
                     if (bankCount > 0) {
+                        int prev = bankSelCursor_;
                         bankSelCursor_ = (bankSelCursor_ + 1) % bankCount;
-                        int visibleRows = (580 - 80) / 50;
-                        if (bankSelCursor_ >= bankSelScroll_ + visibleRows)
-                            bankSelScroll_ = bankSelCursor_ - visibleRows + 1;
+                        if (bankSelCursor_ < prev) {
+                            // Wrapped to top
+                            bankSelScroll_ = 0;
+                        } else {
+                            int visibleRows = (580 - 80) / 50;
+                            if (bankSelCursor_ >= bankSelScroll_ + visibleRows)
+                                bankSelScroll_ = bankSelCursor_ - visibleRows + 1;
+                        }
                     }
                     break;
                 case SDL_CONTROLLER_BUTTON_B: // Switch A = open
@@ -215,30 +250,34 @@ void UI::handleBankSelectorInput(bool& running) {
                     if (!activeBankName_.empty()) {
                         // Already have a bank loaded — return to main view
                         screen_ = AppScreen::MainView;
-                        if (appletMode_ && leftBankName_.empty()) {
+                        if (isDualBankMode() && leftBankName_.empty()) {
                             cursor_ = Cursor{};
                             cursor_.panel = Panel::Bank;
                         }
                     } else {
-                        account_.unmountSave();
-                        int cnt = BankManager::countBanks(basePath_, selectedGame_);
-                        gameBankCounts_[selectedGame_] = cnt;
-                        gameBankCounts_[pairedGame(selectedGame_)] = cnt;
+                        if (!allBanksMode_) {
+                            account_.unmountSave();
+                            int cnt = BankManager::countBanks(basePath_, selectedGame_);
+                            gameBankCounts_[selectedGame_] = cnt;
+                            gameBankCounts_[pairedGame(selectedGame_)] = cnt;
+                        }
+                        allBanksMode_ = false;
                         screen_ = AppScreen::GameSelector;
                     }
                     break;
                 case SDL_CONTROLLER_BUTTON_Y: // Switch X = new
-                    beginTextInput(TextInputPurpose::CreateBank);
+                    if (!bankManager_.isAllMode())
+                        beginTextInput(TextInputPurpose::CreateBank);
                     break;
                 case SDL_CONTROLLER_BUTTON_X: // Switch Y = rename
-                    if (bankCount > 0)
+                    if (bankCount > 0 && !bankManager_.isAllMode())
                         beginTextInput(TextInputPurpose::RenameBank);
                     break;
                 case SDL_CONTROLLER_BUTTON_BACK: // - = about
                     showAbout_ = true;
                     break;
                 case SDL_CONTROLLER_BUTTON_START: // + = delete
-                    if (bankCount > 0)
+                    if (bankCount > 0 && !bankManager_.isAllMode())
                         showDeleteConfirm_ = true;
                     break;
             }
@@ -248,17 +287,27 @@ void UI::handleBankSelectorInput(bool& running) {
             switch (event.key.keysym.sym) {
                 case SDLK_UP:
                     if (bankCount > 0) {
+                        int prev = bankSelCursor_;
                         bankSelCursor_ = (bankSelCursor_ - 1 + bankCount) % bankCount;
-                        if (bankSelCursor_ < bankSelScroll_)
+                        if (bankSelCursor_ > prev) {
+                            int visibleRows = (580 - 80) / 50;
+                            bankSelScroll_ = std::max(0, bankSelCursor_ - visibleRows + 1);
+                        } else if (bankSelCursor_ < bankSelScroll_) {
                             bankSelScroll_ = bankSelCursor_;
+                        }
                     }
                     break;
                 case SDLK_DOWN:
                     if (bankCount > 0) {
+                        int prev = bankSelCursor_;
                         bankSelCursor_ = (bankSelCursor_ + 1) % bankCount;
-                        int visibleRows = (580 - 80) / 50;
-                        if (bankSelCursor_ >= bankSelScroll_ + visibleRows)
-                            bankSelScroll_ = bankSelCursor_ - visibleRows + 1;
+                        if (bankSelCursor_ < prev) {
+                            bankSelScroll_ = 0;
+                        } else {
+                            int visibleRows = (580 - 80) / 50;
+                            if (bankSelCursor_ >= bankSelScroll_ + visibleRows)
+                                bankSelScroll_ = bankSelCursor_ - visibleRows + 1;
+                        }
                     }
                     break;
                 case SDLK_a:
@@ -267,15 +316,16 @@ void UI::handleBankSelectorInput(bool& running) {
                         openSelectedBank();
                     break;
                 case SDLK_x:
-                    beginTextInput(TextInputPurpose::CreateBank);
+                    if (!bankManager_.isAllMode())
+                        beginTextInput(TextInputPurpose::CreateBank);
                     break;
                 case SDLK_y:
-                    if (bankCount > 0)
+                    if (bankCount > 0 && !bankManager_.isAllMode())
                         beginTextInput(TextInputPurpose::RenameBank);
                     break;
                 case SDLK_DELETE:
                 case SDLK_EQUALS: // + key
-                    if (bankCount > 0)
+                    if (bankCount > 0 && !bankManager_.isAllMode())
                         showDeleteConfirm_ = true;
                     break;
                 case SDLK_MINUS:
@@ -285,15 +335,18 @@ void UI::handleBankSelectorInput(bool& running) {
                 case SDLK_ESCAPE:
                     if (!activeBankName_.empty()) {
                         screen_ = AppScreen::MainView;
-                        if (appletMode_ && leftBankName_.empty()) {
+                        if (isDualBankMode() && leftBankName_.empty()) {
                             cursor_ = Cursor{};
                             cursor_.panel = Panel::Bank;
                         }
                     } else {
-                        account_.unmountSave();
-                        int cnt = BankManager::countBanks(basePath_, selectedGame_);
-                        gameBankCounts_[selectedGame_] = cnt;
-                        gameBankCounts_[pairedGame(selectedGame_)] = cnt;
+                        if (!allBanksMode_) {
+                            account_.unmountSave();
+                            int cnt = BankManager::countBanks(basePath_, selectedGame_);
+                            gameBankCounts_[selectedGame_] = cnt;
+                            gameBankCounts_[pairedGame(selectedGame_)] = cnt;
+                        }
+                        allBanksMode_ = false;
                         screen_ = AppScreen::GameSelector;
                     }
                     break;
@@ -307,14 +360,24 @@ void UI::handleBankSelectorInput(bool& running) {
         uint32_t delay = stickMoved_ ? STICK_REPEAT_DELAY : STICK_INITIAL_DELAY;
         if (now - stickMoveTime_ >= delay) {
             if (stickDirY_ < 0) {
+                int prev = bankSelCursor_;
                 bankSelCursor_ = (bankSelCursor_ - 1 + bankCount) % bankCount;
-                if (bankSelCursor_ < bankSelScroll_)
+                if (bankSelCursor_ > prev) {
+                    int visibleRows = (580 - 80) / 50;
+                    bankSelScroll_ = std::max(0, bankSelCursor_ - visibleRows + 1);
+                } else if (bankSelCursor_ < bankSelScroll_) {
                     bankSelScroll_ = bankSelCursor_;
+                }
             } else {
+                int prev = bankSelCursor_;
                 bankSelCursor_ = (bankSelCursor_ + 1) % bankCount;
-                int visibleRows = (580 - 80) / 50;
-                if (bankSelCursor_ >= bankSelScroll_ + visibleRows)
-                    bankSelScroll_ = bankSelCursor_ - visibleRows + 1;
+                if (bankSelCursor_ < prev) {
+                    bankSelScroll_ = 0;
+                } else {
+                    int visibleRows = (580 - 80) / 50;
+                    if (bankSelCursor_ >= bankSelScroll_ + visibleRows)
+                        bankSelScroll_ = bankSelCursor_ - visibleRows + 1;
+                }
             }
             stickMoveTime_ = now;
             stickMoved_ = true;
@@ -330,23 +393,33 @@ void UI::openSelectedBank() {
 
     const std::string& name = banks[bankSelCursor_].name;
 
-    // Prevent loading same bank on both sides in applet mode
-    if (appletMode_) {
-        if (bankSelTarget_ == Panel::Game && name == activeBankName_) {
+    // Prevent loading same bank on both sides in dual mode
+    if (isDualBankMode()) {
+        if (bankSelTarget_ == Panel::Game && name == activeBankName_
+            && banks[bankSelCursor_].game == selectedGame_) {
             showMessageAndWait("Already Open",
                 "This bank is already open on the right panel.");
             return;
         }
-        if (bankSelTarget_ == Panel::Bank && name == leftBankName_) {
+        if (bankSelTarget_ == Panel::Bank && name == leftBankName_
+            && banks[bankSelCursor_].game == selectedGame_) {
             showMessageAndWait("Already Open",
                 "This bank is already open on the left panel.");
             return;
         }
     }
 
+    // In all-banks mode, set game type from the selected bank
+    if (allBanksMode_ && bankSelTarget_ == Panel::Bank) {
+        selectedGame_ = banks[bankSelCursor_].game;
+        invalidateAllSlotDisplays();
+        save_.setGameType(selectedGame_);
+        bankLeft_.setGameType(selectedGame_);
+    }
+
     showWorking("Loading bank...");
 
-    if (appletMode_ && bankSelTarget_ == Panel::Game) {
+    if (isDualBankMode() && bankSelTarget_ == Panel::Game) {
         leftBankPath_ = bankManager_.loadBank(name, bankLeft_);
         bankLeft_.setGameType(selectedGame_);
         leftBankName_ = name;
@@ -356,14 +429,19 @@ void UI::openSelectedBank() {
         activeBankName_ = name;
     }
 
-    // In applet mode, after loading the right bank, chain to left bank selector
+    // In dual mode, after loading the right bank, chain to left bank selector
     // (only if there's at least one other bank to choose from)
-    if (appletMode_ && bankSelTarget_ == Panel::Bank && leftBankName_.empty()
-        && (int)banks.size() > 1) {
-        bankSelTarget_ = Panel::Game;
-        bankSelCursor_ = 0;
-        bankSelScroll_ = 0;
-        return;  // stay on BankSelector screen
+    if (isDualBankMode() && bankSelTarget_ == Panel::Bank && leftBankName_.empty()) {
+        // In all-banks mode, switch to game-specific bank list for second bank
+        if (allBanksMode_)
+            bankManager_.init(basePath_, selectedGame_);
+
+        if ((int)bankManager_.list().size() > 1) {
+            bankSelTarget_ = Panel::Game;
+            bankSelCursor_ = 0;
+            bankSelScroll_ = 0;
+            return;  // stay on BankSelector screen
+        }
     }
 
     screen_ = AppScreen::MainView;
@@ -415,7 +493,7 @@ void UI::handleDeleteConfirmEvent(const SDL_Event& event) {
             return;
         const std::string& name = banks[bankSelCursor_].name;
         // Cannot delete a bank that is currently loaded
-        if (name == activeBankName_ || (appletMode_ && name == leftBankName_)) {
+        if (name == activeBankName_ || (isDualBankMode() && name == leftBankName_)) {
             showDeleteConfirm_ = false;
             showMessageAndWait("Cannot Delete", "This bank is currently loaded.");
             return;

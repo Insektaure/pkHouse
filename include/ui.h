@@ -82,6 +82,7 @@ public:
     bool showConfirmDialog(const std::string& title, const std::string& body);
     void showWorking(const std::string& msg);
     void setAppletMode(bool mode) { appletMode_ = mode; }
+    bool isDualBankMode() const { return appletMode_ || allBanksMode_; }
     void run(const std::string& basePath, const std::string& savePath);
 
 private:
@@ -236,12 +237,15 @@ private:
     // Game selector state
     GameType selectedGame_ = GameType::ZA;
     int gameSelCursor_ = 0;
+    bool gameSelOnAllBanks_ = false;  // cursor is on "View All Banks" option
+    bool allBanksMode_ = false;       // entered bank selector via "View All Banks"
     std::vector<GameType> availableGames_;
     std::unordered_map<GameType, SDL_Texture*> gameIconCache_;
     std::unordered_map<GameType, int> gameBankCounts_;
     void refreshBankCounts();
     void loadGameIcons();
     void freeGameIcons();
+    void enterAllBanksMode();
 
     // Owned save + bank manager (initialized after game selection)
     SaveFile save_;

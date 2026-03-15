@@ -8,6 +8,7 @@ struct BankInfo {
     std::string name;       // filename without .bin
     std::string fullPath;
     int occupiedSlots;      // 0..960
+    GameType game = GameType::ZA;  // which game this bank belongs to
 };
 
 class BankManager {
@@ -24,7 +25,12 @@ public:
     static int countOccupied(const std::string& filePath);
     static int countBanks(const std::string& basePath, GameType game);
 
+    // Scan all game folders and build a combined bank list
+    bool initAll(const std::string& basePath);
+    bool isAllMode() const { return allMode_; }
+
 private:
+    bool allMode_ = false;
     std::string banksDir_;   // basePath + "banks/sv/" or "banks/za/"
     std::string basePath_;
     GameType game_ = GameType::ZA;

@@ -44,7 +44,7 @@ void UI::handleBoxViewInput(const SDL_Event& event) {
     }
     // Can rename if viewing a bank panel (always in applet, only Bank panel in normal)
     auto canRenameBox = [&]() -> Bank* {
-        if (appletMode_)
+        if (isDualBankMode())
             return (boxViewPanel_ == Panel::Game) ? &bankLeft_ : &bank_;
         return (boxViewPanel_ == Panel::Bank) ? &bank_ : nullptr;
     };
@@ -116,7 +116,7 @@ void UI::handleInput(bool& running) {
         if (showMenu_) {
             bool hasWC = isSV(selectedGame_) || isSwSh(selectedGame_) || selectedGame_ == GameType::ZA || isBDSP(selectedGame_) || selectedGame_ == GameType::LA || isLGPE(selectedGame_);
             bool hasExport = !selectedSlots_.empty();
-            int menuCount = (appletMode_ ? (hasWC ? 8 : 7) : (hasWC ? 7 : 6)) + (hasExport ? 1 : 0);
+            int menuCount = (isDualBankMode() ? (hasWC ? 8 : 7) : (hasWC ? 7 : 6)) + (hasExport ? 1 : 0);
             auto menuConfirm = [&]() {
                 // 0=Theme, 1=Search (both modes)
                 if (menuSelection_ == 0) {
@@ -162,7 +162,7 @@ void UI::handleInput(bool& running) {
                     return;
                 }
                 int sel = menuSelection_ - (hasWC ? 3 : 2) - (hasExport ? 1 : 0);
-                if (appletMode_) {
+                if (isDualBankMode()) {
                     // sel: 0=Switch Left Bank, 1=Switch Right Bank, 2=Change Game,
                     // 3=Save Banks, 4=Quit
                     if (sel == 0) {
@@ -214,6 +214,8 @@ void UI::handleInput(bool& running) {
                         leftBankPath_.clear();
                         activeBankName_.clear();
                         activeBankPath_.clear();
+                        allBanksMode_ = false;
+                        gameSelOnAllBanks_ = false;
                         screen_ = AppScreen::GameSelector;
                         showMenu_ = false;
                     } else if (sel == 3) {
@@ -247,6 +249,8 @@ void UI::handleInput(bool& running) {
                         account_.unmountSave();
                         activeBankName_.clear();
                         activeBankPath_.clear();
+                        allBanksMode_ = false;
+                        gameSelOnAllBanks_ = false;
                         screen_ = AppScreen::GameSelector;
                         showMenu_ = false;
                     } else if (sel == 2) {
@@ -450,7 +454,7 @@ void UI::handleInput(bool& running) {
             if (event.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERLEFT) {
                 bool pressed = event.caxis.value > TRIGGER_DEADZONE;
                 if (pressed && !zlPressed_ &&
-                    !(appletMode_ && leftBankName_.empty())) {
+                    !(isDualBankMode() && leftBankName_.empty())) {
                     openBoxView(Panel::Game);
                     markDirty();
                 }
@@ -613,7 +617,7 @@ void UI::handleInput(bool& running) {
                 case SDLK_MINUS:
                     if (!yHeld_) showAbout_ = true;
                     break;
-                case SDLK_z: if (!yHeld_ && !(appletMode_ && leftBankName_.empty())) openBoxView(Panel::Game); break;
+                case SDLK_z: if (!yHeld_ && !(isDualBankMode() && leftBankName_.empty())) openBoxView(Panel::Game); break;
                 case SDLK_c: if (!yHeld_) openBoxView(Panel::Bank); break;
             }
         }
@@ -676,7 +680,7 @@ void UI::handleInput(bool& running) {
                 {
                     bool hasWC = isSV(selectedGame_) || isSwSh(selectedGame_) || selectedGame_ == GameType::ZA || isBDSP(selectedGame_) || selectedGame_ == GameType::LA || isLGPE(selectedGame_);
                     bool hasExport = !selectedSlots_.empty();
-                    int menuCount = (appletMode_ ? (hasWC ? 8 : 7) : (hasWC ? 7 : 6)) + (hasExport ? 1 : 0);
+                    int menuCount = (isDualBankMode() ? (hasWC ? 8 : 7) : (hasWC ? 7 : 6)) + (hasExport ? 1 : 0);
                     menuSelection_ = (menuSelection_ + (stickDirY_ > 0 ? 1 : menuCount - 1)) % menuCount;
                 }
             } else if (!showDetail_) {
@@ -760,7 +764,7 @@ void UI::moveCursor(int dx, int dy) {
     // Horizontal: crossing panel boundary
     if (cursor_.col < 0) {
         if (cursor_.panel == Panel::Bank &&
-            !(appletMode_ && leftBankName_.empty())) {
+            !(isDualBankMode() && leftBankName_.empty())) {
             cursor_.panel = Panel::Game;
             cursor_.col = maxCol;
             cursor_.box = gameBox_;
@@ -788,7 +792,7 @@ void UI::switchBox(int direction) {
     clearSelection();
     int maxBox;
     if (cursor_.panel == Panel::Game) {
-        if (appletMode_)
+        if (isDualBankMode())
             maxBox = leftBankName_.empty() ? 1 : bankLeft_.boxCount();
         else
             maxBox = save_.boxCount();
@@ -807,8 +811,10 @@ void UI::switchBox(int direction) {
 
 Pokemon UI::getPokemonAt(int box, int slot, Panel panel) const {
     if (panel == Panel::Game) {
-        if (appletMode_)
+        if (isDualBankMode()) {
+            if (leftBankName_.empty()) return Pokemon{};
             return bankLeft_.getSlot(box, slot);
+        }
         return save_.getBoxSlot(box, slot);
     }
     return bank_.getSlot(box, slot);
@@ -816,9 +822,10 @@ Pokemon UI::getPokemonAt(int box, int slot, Panel panel) const {
 
 void UI::setPokemonAt(int box, int slot, Panel panel, const Pokemon& pkm) {
     if (panel == Panel::Game) {
-        if (appletMode_)
+        if (isDualBankMode()) {
+            if (leftBankName_.empty()) return;
             bankLeft_.setSlot(box, slot, pkm);
-        else
+        } else
             save_.setBoxSlot(box, slot, pkm);
     } else {
         bank_.setSlot(box, slot, pkm);
@@ -828,9 +835,10 @@ void UI::setPokemonAt(int box, int slot, Panel panel, const Pokemon& pkm) {
 
 void UI::clearPokemonAt(int box, int slot, Panel panel) {
     if (panel == Panel::Game) {
-        if (appletMode_)
+        if (isDualBankMode()) {
+            if (leftBankName_.empty()) return;
             bankLeft_.clearSlot(box, slot);
-        else
+        } else
             save_.clearBoxSlot(box, slot);
     } else {
         bank_.clearSlot(box, slot);
@@ -840,7 +848,7 @@ void UI::clearPokemonAt(int box, int slot, Panel panel) {
 
 void UI::actionSelect() {
     // Block interaction on empty left panel in applet mode
-    if (appletMode_ && cursor_.panel == Panel::Game && leftBankName_.empty())
+    if (isDualBankMode() && cursor_.panel == Panel::Game && leftBankName_.empty())
         return;
 
     int box = cursor_.box;
@@ -1064,7 +1072,7 @@ void UI::actionCancel() {
 void UI::toggleSelect() {
     if (holding_)
         return; // can't multi-select while holding
-    if (appletMode_ && cursor_.panel == Panel::Game && leftBankName_.empty())
+    if (isDualBankMode() && cursor_.panel == Panel::Game && leftBankName_.empty())
         return;
 
     int slot = cursor_.slot(gridCols());
@@ -1100,7 +1108,7 @@ void UI::clearSelection() {
 void UI::beginYPress() {
     if (holding_)
         return;
-    if (appletMode_ && cursor_.panel == Panel::Game && leftBankName_.empty())
+    if (isDualBankMode() && cursor_.panel == Panel::Game && leftBankName_.empty())
         return;
 
     yHeld_ = true;
@@ -1161,7 +1169,7 @@ void UI::updateDragSelection() {
 void UI::selectAll() {
     if (holding_)
         return;
-    if (appletMode_ && cursor_.panel == Panel::Game && leftBankName_.empty())
+    if (isDualBankMode() && cursor_.panel == Panel::Game && leftBankName_.empty())
         return;
 
     int slots = maxSlots();
@@ -1469,7 +1477,7 @@ void UI::executeSearch() {
     auto scanPanel = [&](Panel panel) {
         int boxes, slots;
         if (panel == Panel::Game) {
-            if (appletMode_) {
+            if (isDualBankMode()) {
                 if (leftBankName_.empty()) return;
                 boxes = bankLeft_.boxCount();
                 slots = bankLeft_.slotsPerBox();
@@ -1554,7 +1562,7 @@ void UI::closeBoxView(bool navigate) {
 void UI::moveBoxViewCursor(int dx, int dy) {
     int totalBoxes;
     if (boxViewPanel_ == Panel::Game) {
-        totalBoxes = (appletMode_) ? bankLeft_.boxCount() : save_.boxCount();
+        totalBoxes = (isDualBankMode()) ? bankLeft_.boxCount() : save_.boxCount();
     } else {
         totalBoxes = bank_.boxCount();
     }
@@ -1606,7 +1614,7 @@ void UI::refreshHighlightSet() {
     auto scanPanel = [&](Panel panel) {
         int boxes, slots;
         if (panel == Panel::Game) {
-            if (appletMode_) {
+            if (isDualBankMode()) {
                 if (leftBankName_.empty()) return;
                 boxes = bankLeft_.boxCount();
                 slots = bankLeft_.slotsPerBox();
@@ -1743,7 +1751,7 @@ void UI::injectWondercard(const WCInfo& info) {
 
     // If !hasOT and target is bank panel: show restriction
     if (!info.hasOT) {
-        if (appletMode_) {
+        if (isDualBankMode()) {
             showMessageAndWait("Cannot Inject",
                 "This wondercard uses your OT and\ncan only be injected into a save file.");
             return;
@@ -1766,7 +1774,7 @@ void UI::injectWondercard(const WCInfo& info) {
 
     // Get trainer info
     TrainerInfo trainer;
-    if (!info.hasOT || !appletMode_) {
+    if (!info.hasOT || !isDualBankMode()) {
         trainer = save_.getTrainerInfo();
         if (!trainer.valid) {
             trainer.id32 = 0;
@@ -1865,7 +1873,7 @@ void UI::injectWondercard(const WCInfo& info) {
     }
 
     // Ensure correct game type for the panel
-    if (panel == Panel::Game && !appletMode_)
+    if (panel == Panel::Game && !isDualBankMode())
         pkm.gameType_ = selectedGame_;
     else if (isSwSh(selectedGame_))
         pkm.gameType_ = GameType::Sw;
@@ -1887,7 +1895,7 @@ void UI::injectWondercard(const WCInfo& info) {
 
     showMessageAndWait("Injected!",
         SpeciesName::get(natId) + " was placed in "
-        + (panel == Panel::Game ? (appletMode_ ? "Left" : "Save") : (appletMode_ ? "Right" : "Bank"))
+        + (panel == Panel::Game ? (isDualBankMode() ? "Left" : "Save") : (isDualBankMode() ? "Right" : "Bank"))
         + " Box " + std::to_string(box + 1)
         + " Slot " + std::to_string(slot + 1) + ".");
 }

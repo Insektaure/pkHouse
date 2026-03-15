@@ -450,7 +450,7 @@ void UI::drawFrame() {
 
     };
 
-    if (appletMode_) {
+    if (isDualBankMode()) {
         // Dual-bank mode: two bank panels side by side
         bool leftActive = (cursor_.panel == Panel::Game);
         bool rightActive = (cursor_.panel == Panel::Bank);
@@ -512,7 +512,9 @@ void UI::drawFrame() {
     // Profile | Game name (bottom right, gold)
     {
         std::string label;
-        if (appletMode_)
+        if (allBanksMode_)
+            label = "All Banks | ";
+        else if (isDualBankMode())
             label = "Dual Bank | ";
         else if (selectedProfile_ >= 0 && selectedProfile_ < account_.profileCount())
             label = account_.profiles()[selectedProfile_].nickname + " | ";
@@ -948,7 +950,7 @@ void UI::drawMenuPopup() {
     bool hasWC = isSV(selectedGame_) || isSwSh(selectedGame_) || selectedGame_ == GameType::ZA || isBDSP(selectedGame_) || selectedGame_ == GameType::LA || isLGPE(selectedGame_);
     bool hasExport = !selectedSlots_.empty();
     int menuCount;
-    if (appletMode_)
+    if (isDualBankMode())
         menuCount = hasWC ? 8 : 7;
     else
         menuCount = hasWC ? 7 : 6;
@@ -991,8 +993,8 @@ void UI::drawMenuPopup() {
     };
     // Build label list, skipping conditional items
     const char* visibleLabels[10];
-    const char** allLabels = appletMode_ ? labelsApplet : labelsNormal;
-    int allCount = appletMode_ ? 9 : 8;
+    const char** allLabels = isDualBankMode() ? labelsApplet : labelsNormal;
+    int allCount = isDualBankMode() ? 9 : 8;
     int vi = 0;
     for (int i = 0; i < allCount; i++) {
         if (!hasWC && i == 2) continue;     // skip Wondercard
@@ -1239,7 +1241,7 @@ void UI::drawSearchResultsPopup() {
 
             // Location
             std::string loc;
-            if (appletMode_)
+            if (isDualBankMode())
                 loc = (r.panel == Panel::Game ? "Left" : "Right");
             else
                 loc = (r.panel == Panel::Game ? "Save" : "Bank");
@@ -1451,7 +1453,7 @@ void UI::drawBoxViewOverlay() {
 
     int totalBoxes;
     if (boxViewPanel_ == Panel::Game)
-        totalBoxes = (appletMode_) ? bankLeft_.boxCount() : save_.boxCount();
+        totalBoxes = (isDualBankMode()) ? bankLeft_.boxCount() : save_.boxCount();
     else
         totalBoxes = bank_.boxCount();
     int usedRows = (totalBoxes + BV_COLS - 1) / BV_COLS;
@@ -1472,7 +1474,7 @@ void UI::drawBoxViewOverlay() {
     // Title
     const char* title;
     if (boxViewPanel_ == Panel::Game)
-        title = appletMode_ ? "Left Bank Boxes" : "Save Boxes";
+        title = isDualBankMode() ? "Left Bank Boxes" : "Save Boxes";
     else
         title = "Bank Boxes";
     drawTextCentered(title, popX + popW / 2, popY + 15, T().text, font_);
@@ -1480,7 +1482,7 @@ void UI::drawBoxViewOverlay() {
     // Subtitle: bank file name or profile | game
     std::string subtitle;
     if (boxViewPanel_ == Panel::Game) {
-        if (appletMode_)
+        if (isDualBankMode())
             subtitle = leftBankName_;
         else if (selectedProfile_ >= 0 && selectedProfile_ < account_.profileCount())
             subtitle = account_.profiles()[selectedProfile_].nickname + " | " + gameDisplayNameOf(selectedGame_);
@@ -1529,7 +1531,7 @@ void UI::drawBoxViewOverlay() {
         // Box label
         std::string boxName;
         if (boxViewPanel_ == Panel::Game)
-            boxName = (appletMode_) ? bankLeft_.getBoxName(i) : save_.getBoxName(i);
+            boxName = (isDualBankMode()) ? bankLeft_.getBoxName(i) : save_.getBoxName(i);
         else
             boxName = bank_.getBoxName(i);
 
@@ -1542,7 +1544,7 @@ void UI::drawBoxViewOverlay() {
     }
 
     // Footer hint
-    bool canRename = appletMode_ || (boxViewPanel_ == Panel::Bank);
+    bool canRename = isDualBankMode() || (boxViewPanel_ == Panel::Bank);
     const char* footer = canRename
         ? "A: Go to Box  Y: Rename  B: Cancel  D-Pad: Navigate"
         : "A: Go to Box  B: Cancel  D-Pad: Navigate";
@@ -1583,7 +1585,7 @@ void UI::drawBoxPreview(int boxIdx, int anchorX, int anchorY) {
     // Box name header
     std::string boxName;
     if (boxViewPanel_ == Panel::Game)
-        boxName = (appletMode_) ? bankLeft_.getBoxName(boxIdx) : save_.getBoxName(boxIdx);
+        boxName = (isDualBankMode()) ? bankLeft_.getBoxName(boxIdx) : save_.getBoxName(boxIdx);
     else
         boxName = bank_.getBoxName(boxIdx);
     drawTextCentered(boxName, prevX + previewW / 2,

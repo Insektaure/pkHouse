@@ -528,7 +528,7 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
                     saveNow_ = false;
                     running = true;
                 } else {
-                    if (!appletMode_) {
+                    if (!isDualBankMode()) {
                         showWorking("Saving...");
                         ledBlink();
                         if (save_.isLoaded())
@@ -570,14 +570,14 @@ void UI::selectGame(GameType game) {
     save_.setGameType(game);
     bankLeft_.setGameType(game);
 
-    if (appletMode_) {
+    if (isDualBankMode()) {
         // Reset left bank state for new game
         leftBankName_.clear();
         leftBankPath_.clear();
         bankSelTarget_ = Panel::Bank;
     }
 
-    if (!appletMode_) {
+    if (!isDualBankMode()) {
         showWorking("Loading save data...");
 
 #ifdef __SWITCH__
@@ -688,7 +688,7 @@ std::string UI::buildBackupDir(GameType game) const {
 bool UI::saveBankFiles() {
     showWorking("Saving...");
     ledBlink();
-    if (appletMode_) {
+    if (isDualBankMode()) {
         if (!leftBankPath_.empty()) bankLeft_.save(leftBankPath_);
         if (!activeBankPath_.empty()) bank_.save(activeBankPath_);
     } else {

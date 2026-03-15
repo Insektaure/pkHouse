@@ -381,9 +381,11 @@ void UI::drawGameSelectorFrame() {
         if (gameSelOnAllBanks_) {
             drawRect(labelX, allBanksY, labelW, labelH, T().menuHighlight);
             drawRectOutline(labelX, allBanksY, labelW, labelH, T().cursor, 2);
+        } else {
+            drawRect(labelX, allBanksY, labelW, labelH, T().panelBg);
         }
         drawTextCentered(label, SCREEN_W / 2, allBanksY + labelH / 2,
-                         gameSelOnAllBanks_ ? T().text : T().textDim, font_);
+                         T().text, font_);
     }
 
     if (selectedProfile_ >= 0) {

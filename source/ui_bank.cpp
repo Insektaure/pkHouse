@@ -163,11 +163,11 @@ void UI::drawBankSelectorFrame() {
                 // Group header: game name with separator line
                 std::string gameName = bankGroupNameOf(vrows[r].game);
                 drawText(gameName, LIST_X + 10, rowY + HDR_H / 2 - 7,
-                         T().textDim, fontSmall_);
-                // Separator line under the text
-                int textW = getTextEntry(gameName, fontSmall_, T().textDim).w;
+                         T().text, fontSmall_);
+                // Separator line after the text
+                int textW = getTextEntry(gameName, fontSmall_, T().text).w;
                 drawRect(LIST_X + 10 + textW + 10, rowY + HDR_H / 2,
-                         LIST_W - 30 - textW, 1, T().textDim);
+                         LIST_W - 30 - textW, 1, T().text);
             } else {
                 int idx = vrows[r].bankIdx;
 
@@ -238,7 +238,7 @@ void UI::drawBankSelectorFrame() {
 
     // Status bar
     if (bankManager_.isAllMode())
-        drawStatusBar("A: Open  B: Back  -: About");
+        drawStatusBar("A: Open  Y: Theme  B: Back  -: About");
     else
         drawStatusBar("A: Open  X: New  Y: Rename  +: Delete  B: Back  -: About");
 
@@ -370,9 +370,14 @@ void UI::handleBankSelectorInput(bool& running) {
                     if (!bankManager_.isAllMode())
                         beginTextInput(TextInputPurpose::CreateBank);
                     break;
-                case SDL_CONTROLLER_BUTTON_X: // Switch Y = rename
-                    if (bankCount > 0 && !bankManager_.isAllMode())
+                case SDL_CONTROLLER_BUTTON_X: // Switch Y = rename / theme
+                    if (bankManager_.isAllMode()) {
+                        showThemeSelector_ = true;
+                        themeSelCursor_ = themeIndex_;
+                        themeSelOriginal_ = themeIndex_;
+                    } else if (bankCount > 0) {
                         beginTextInput(TextInputPurpose::RenameBank);
+                    }
                     break;
                 case SDL_CONTROLLER_BUTTON_BACK: // - = about
                     showAbout_ = true;
@@ -431,8 +436,13 @@ void UI::handleBankSelectorInput(bool& running) {
                         beginTextInput(TextInputPurpose::CreateBank);
                     break;
                 case SDLK_y:
-                    if (bankCount > 0 && !bankManager_.isAllMode())
+                    if (bankManager_.isAllMode()) {
+                        showThemeSelector_ = true;
+                        themeSelCursor_ = themeIndex_;
+                        themeSelOriginal_ = themeIndex_;
+                    } else if (bankCount > 0) {
                         beginTextInput(TextInputPurpose::RenameBank);
+                    }
                     break;
                 case SDLK_DELETE:
                 case SDLK_EQUALS: // + key

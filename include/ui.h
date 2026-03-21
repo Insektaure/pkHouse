@@ -441,6 +441,7 @@ private:
     void handleSpeciesListPickerInput(const SDL_Event& event);
     void buildAvailableSpeciesList();
     void buildSpeciesListForLetter(int letterIndex);
+    bool letterHasSpecies(int letterIndex) const;
     void handleWondercardListInput(const SDL_Event& event);
     void injectWondercard(const WCInfo& info);
     std::string exportPokemon(const Pokemon& pkm);

@@ -654,20 +654,24 @@ void UI::handleInput(bool& running) {
             if (showSpeciesLetterPicker_) {
                 constexpr int COLS = 2;
                 constexpr int TOTAL_ITEMS = 27;
+                int dx = stickDirX_ > 0 ? 1 : (stickDirX_ < 0 ? -1 : 0);
+                int dy = stickDirY_ > 0 ? 1 : (stickDirY_ < 0 ? -1 : 0);
                 int col = speciesLetterCursor_ % COLS;
                 int row = speciesLetterCursor_ / COLS;
-                if (stickDirY_ != 0) {
-                    row += stickDirY_ > 0 ? 1 : -1;
-                    int totalRows = (TOTAL_ITEMS + COLS - 1) / COLS;
-                    row = (row + totalRows) % totalRows;
+                int totalRows = (TOTAL_ITEMS + COLS - 1) / COLS;
+                for (int attempt = 0; attempt < TOTAL_ITEMS; attempt++) {
+                    col += dx; row += dy;
+                    if (row < 0) row = totalRows - 1;
+                    if (row >= totalRows) row = 0;
+                    if (col < 0) col = COLS - 1;
+                    if (col >= COLS) col = 0;
+                    int idx = row * COLS + col;
+                    if (idx >= TOTAL_ITEMS) { col = 0; idx = row * COLS; }
+                    if (letterHasSpecies(idx)) {
+                        speciesLetterCursor_ = idx;
+                        break;
+                    }
                 }
-                if (stickDirX_ != 0) {
-                    col += stickDirX_ > 0 ? 1 : -1;
-                    col = (col + COLS) % COLS;
-                }
-                int idx = row * COLS + col;
-                if (idx >= TOTAL_ITEMS) idx = TOTAL_ITEMS - 1;
-                speciesLetterCursor_ = idx;
             } else if (showSpeciesListPicker_) {
                 constexpr int COLS = 3;
                 int total = static_cast<int>(speciesPickerList_.size());
@@ -1299,6 +1303,18 @@ void UI::buildSpeciesListForLetter(int letterIndex) {
         });
 }
 
+bool UI::letterHasSpecies(int letterIndex) const {
+    if (letterIndex == 0) return true; // "-" is always valid (clear filter)
+    if (letterIndex < 1 || letterIndex > 26) return false;
+    char letter = 'A' + (letterIndex - 1);
+    for (uint16_t id : availableSpecies_) {
+        const std::string& name = SpeciesName::get(id);
+        if (!name.empty() && std::toupper(static_cast<unsigned char>(name[0])) == letter)
+            return true;
+    }
+    return false;
+}
+
 void UI::handleSpeciesLetterPickerInput(const SDL_Event& event) {
     if (event.type == SDL_CONTROLLERAXISMOTION) {
         if (event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX ||
@@ -1316,22 +1332,31 @@ void UI::handleSpeciesLetterPickerInput(const SDL_Event& event) {
     int row = speciesLetterCursor_ / COLS;
 
     auto move = [&](int dx, int dy) {
-        col += dx;
-        row += dy;
         int totalRows = (TOTAL_ITEMS + COLS - 1) / COLS;
-        if (row < 0) row = totalRows - 1;
-        if (row >= totalRows) row = 0;
-        if (col < 0) col = COLS - 1;
-        if (col >= COLS) col = 0;
-        int idx = row * COLS + col;
-        if (idx >= TOTAL_ITEMS) {
-            col = 0;
-            idx = row * COLS + col;
+        // Try up to TOTAL_ITEMS times to find a non-empty letter
+        for (int attempt = 0; attempt < TOTAL_ITEMS; attempt++) {
+            col += dx;
+            row += dy;
+            if (row < 0) row = totalRows - 1;
+            if (row >= totalRows) row = 0;
+            if (col < 0) col = COLS - 1;
+            if (col >= COLS) col = 0;
+            int idx = row * COLS + col;
+            if (idx >= TOTAL_ITEMS) {
+                col = 0;
+                idx = row * COLS + col;
+            }
+            if (letterHasSpecies(idx)) {
+                speciesLetterCursor_ = idx;
+                return;
+            }
+            // Continue in the same direction
+            if (dx == 0 && dy == 0) break;
         }
-        speciesLetterCursor_ = idx;
     };
 
     auto confirm = [&]() {
+        if (!letterHasSpecies(speciesLetterCursor_)) return;
         if (speciesLetterCursor_ == 0) {
             // "-" = clear species filter
             searchFilter_.speciesId = 0;
@@ -1339,12 +1364,10 @@ void UI::handleSpeciesLetterPickerInput(const SDL_Event& event) {
             showSpeciesLetterPicker_ = false;
         } else {
             buildSpeciesListForLetter(speciesLetterCursor_);
-            if (!speciesPickerList_.empty()) {
-                speciesListCursor_ = 0;
-                speciesListScroll_ = 0;
-                showSpeciesLetterPicker_ = false;
-                showSpeciesListPicker_ = true;
-            }
+            speciesListCursor_ = 0;
+            speciesListScroll_ = 0;
+            showSpeciesLetterPicker_ = false;
+            showSpeciesListPicker_ = true;
         }
     };
 

@@ -1329,20 +1329,26 @@ void UI::drawSpeciesLetterPicker() {
             int cellW = COL_W - PAD * 2;
             int cellH = ROW_H - PAD * 2;
 
+            bool hasSpecies = letterHasSpecies(idx);
+
             if (idx == speciesLetterCursor_) {
                 drawRect(cellX, cellY, cellW, cellH, T().menuHighlight);
                 drawRectOutline(cellX, cellY, cellW, cellH, T().cursor, 2);
-            } else {
-                // Light background for unselected items
+            } else if (hasSpecies) {
+                // Light background for available letters
                 SDL_Color bg = T().panelBg;
                 bg.r = std::min(255, bg.r + 15);
                 bg.g = std::min(255, bg.g + 15);
                 bg.b = std::min(255, bg.b + 15);
                 drawRect(cellX, cellY, cellW, cellH, bg);
+            } else {
+                // Dimmed background for unavailable letters
+                drawRect(cellX, cellY, cellW, cellH, T().panelBg);
             }
 
             std::string label = (idx == 0) ? "-" : std::string(1, 'A' + idx - 1);
-            drawText(label, cellX + 20, cellY + cellH / 2 - 9, T().text, font_);
+            drawText(label, cellX + 20, cellY + cellH / 2 - 9,
+                     hasSpecies ? T().text : T().textDim, font_);
         }
     }
 

@@ -1308,12 +1308,6 @@ void UI::drawSpeciesLetterPicker() {
     if (cursorRow >= speciesLetterScroll_ + visibleRows)
         speciesLetterScroll_ = cursorRow - visibleRows + 1;
 
-    // Scroll indicators
-    if (speciesLetterScroll_ > 0)
-        drawTextCentered("^", popX + POP_W / 2, gridY - 12, T().arrow, fontSmall_);
-    if (speciesLetterScroll_ + visibleRows < totalRows)
-        drawTextCentered("v", popX + POP_W / 2, gridY + gridH + 2, T().arrow, fontSmall_);
-
     // Draw scrollbar
     if (totalRows > visibleRows) {
         int sbX = popX + POP_W - 20;
@@ -1338,8 +1332,6 @@ void UI::drawSpeciesLetterPicker() {
             if (idx == speciesLetterCursor_) {
                 drawRect(cellX, cellY, cellW, cellH, T().menuHighlight);
                 drawRectOutline(cellX, cellY, cellW, cellH, T().cursor, 2);
-                // Draw arrow indicator
-                drawText(">", cellX - 18, cellY + cellH / 2 - 9, T().cursor, font_);
             } else {
                 // Light background for unselected items
                 SDL_Color bg = T().panelBg;
@@ -1393,12 +1385,6 @@ void UI::drawSpeciesListPicker() {
         if (cursorRow >= speciesListScroll_ + visibleRows)
             speciesListScroll_ = cursorRow - visibleRows + 1;
 
-        // Scroll indicators
-        if (speciesListScroll_ > 0)
-            drawTextCentered("^", popX + POP_W / 2, gridY - 12, T().arrow, fontSmall_);
-        if (speciesListScroll_ + visibleRows < totalRows)
-            drawTextCentered("v", popX + POP_W / 2, gridY + gridH + 2, T().arrow, fontSmall_);
-
         // Draw scrollbar
         if (totalRows > visibleRows) {
             int sbX = popX + POP_W - 20;
@@ -1428,8 +1414,6 @@ void UI::drawSpeciesListPicker() {
                 if (idx == speciesListCursor_) {
                     drawRect(cellX, cellY, cellW, cellH, T().menuHighlight);
                     drawRectOutline(cellX, cellY, cellW, cellH, T().cursor, 2);
-                    // Draw arrow indicator
-                    drawText(">", cellX - 14, cellY + cellH / 2 - 9, T().cursor, fontSmall_);
                 } else {
                     SDL_Color bg = T().panelBg;
                     bg.r = std::min(255, bg.r + 15);
@@ -1438,11 +1422,21 @@ void UI::drawSpeciesListPicker() {
                     drawRect(cellX, cellY, cellW, cellH, bg);
                 }
 
-                // Draw sprite
+                // Draw sprite (aspect-ratio preserved)
                 SDL_Texture* spr = getSprite(specId);
                 if (spr) {
-                    int sprY = cellY + (cellH - SPRITE_SZ) / 2;
-                    SDL_Rect dst = { cellX + 6, sprY, SPRITE_SZ, SPRITE_SZ };
+                    int texW, texH;
+                    SDL_QueryTexture(spr, nullptr, nullptr, &texW, &texH);
+                    int dstW = SPRITE_SZ, dstH = SPRITE_SZ;
+                    if (texW > 0 && texH > 0 && (texW != texH)) {
+                        float scale = std::min(static_cast<float>(SPRITE_SZ) / texW,
+                                               static_cast<float>(SPRITE_SZ) / texH);
+                        dstW = static_cast<int>(texW * scale);
+                        dstH = static_cast<int>(texH * scale);
+                    }
+                    int sprX = cellX + 6 + (SPRITE_SZ - dstW) / 2;
+                    int sprY = cellY + (cellH - dstH) / 2;
+                    SDL_Rect dst = { sprX, sprY, dstW, dstH };
                     SDL_RenderCopy(renderer_, spr, nullptr, &dst);
                 }
 

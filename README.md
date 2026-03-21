@@ -18,20 +18,20 @@ If you need to restore a backup, use a save manager such as [Checkpoint](https:/
 
 ## Supported Games
 
-| Game | Tested Version | Save Format | Boxes | Slots/Box |
-|------|----------------|-------------|-------|-----------|
-| Pokemon Let's Go Pikachu | 1.0.2 | BEEF blocks (`savedata.bin`) | 40 | 25 |
-| Pokemon Let's Go Eevee | 1.0.2 | BEEF blocks (`savedata.bin`) | 40 | 25 |
-| Pokemon Sword | 1.3.2 | SCBlock (`main`) | 32 | 30 |
-| Pokemon Shield | 1.3.2 | SCBlock (`main`) | 32 | 30 |
-| Pokemon Brilliant Diamond | 1.3.0 | Flat binary (`SaveData.bin`) | 40 | 30 |
-| Pokemon Shining Pearl | 1.3.0 | Flat binary (`SaveData.bin`) | 40 | 30 |
-| Pokemon Legends: Arceus | 1.1.1 | SCBlock (`main`) | 32 | 30 |
-| Pokemon Scarlet | 4.0.0 | SCBlock (`main`) | 32 | 30 |
-| Pokemon Violet | 4.0.0 | SCBlock (`main`) | 32 | 30 |
-| Pokemon Legends: Z-A | 2.0.1 | SCBlock (`main`) | 32 | 30 |
-| Pokemon FireRed | 1.0.0 | GBA sectors (`FireRed_e.sav`) | 14 | 30 |
-| Pokemon LeafGreen | 1.0.0 | GBA sectors (`LeafGreen_e.sav`) | 14 | 30 |
+| Game                      | Tested Version | Save Format                     | Boxes | Slots/Box |
+|---------------------------|----------------|---------------------------------|-------|-----------|
+| Pokemon Let's Go Pikachu  | 1.0.2          | BEEF blocks (`savedata.bin`)    | 40    | 25        |
+| Pokemon Let's Go Eevee    | 1.0.2          | BEEF blocks (`savedata.bin`)    | 40    | 25        |
+| Pokemon Sword             | 1.3.2          | SCBlock (`main`)                | 32    | 30        |
+| Pokemon Shield            | 1.3.2          | SCBlock (`main`)                | 32    | 30        |
+| Pokemon Brilliant Diamond | 1.3.0          | Flat binary (`SaveData.bin`)    | 40    | 30        |
+| Pokemon Shining Pearl     | 1.3.0          | Flat binary (`SaveData.bin`)    | 40    | 30        |
+| Pokemon Legends: Arceus   | 1.1.1          | SCBlock (`main`)                | 32    | 30        |
+| Pokemon Scarlet           | 4.0.0          | SCBlock (`main`)                | 32    | 30        |
+| Pokemon Violet            | 4.0.0          | SCBlock (`main`)                | 32    | 30        |
+| Pokemon Legends: Z-A      | 2.0.2          | SCBlock (`main`)                | 32    | 30        |
+| Pokemon FireRed           | 1.0.0          | GBA sectors (`FireRed_e.sav`)   | 14    | 30        |
+| Pokemon LeafGreen         | 1.0.0          | GBA sectors (`LeafGreen_e.sav`) | 14    | 30        |
 
 > **Note:** Moving Pokemon between different games is not supported. Banks are separated by game family because transferred Pokemon would lack the HOME Tracker ID required for cross-game compatibility.
 

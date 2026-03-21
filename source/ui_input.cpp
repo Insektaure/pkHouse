@@ -1251,29 +1251,21 @@ void UI::selectAll() {
 void UI::buildAvailableSpeciesList() {
     availableSpecies_.clear();
 
-    // Helper: check if base stats are all zeros (species not in game)
+    // Use IsPresentInGame flags from personal tables (extracted from PKHeX binary data)
     auto isAvailable = [&](uint16_t species) -> bool {
         if (selectedGame_ == GameType::ZA) {
-            if (species >= PERSONAL_ZA_COUNT) return false;
-            auto s = PersonalZA::BASE_STATS[species];
-            return (s.hp | s.atk | s.def_ | s.spe | s.spa | s.spd) != 0;
+            return species < PERSONAL_ZA_COUNT && PersonalZA::IS_PRESENT[species];
         } else if (isSV(selectedGame_)) {
-            if (species >= PERSONAL_SV_COUNT) return false;
-            auto s = PersonalSV::BASE_STATS[species];
-            return (s.hp | s.atk | s.def_ | s.spe | s.spa | s.spd) != 0;
+            return species < PERSONAL_SV_COUNT && PersonalSV::IS_PRESENT[species];
         } else if (isSwSh(selectedGame_)) {
-            if (species >= PersonalSWSH::NUM_ENTRIES) return false;
-            auto s = PersonalSWSH::BASE_STATS[species];
-            return (s.hp | s.atk | s.def_ | s.spe | s.spa | s.spd) != 0;
-        } else if (isBDSP(selectedGame_)) {
-            if (species >= PERSONAL_BDSP_COUNT) return false;
-            auto s = PersonalBDSP::BASE_STATS[species];
-            return (s.hp | s.atk | s.def_ | s.spe | s.spa | s.spd) != 0;
+            return species < PersonalSWSH::NUM_ENTRIES && PersonalSWSH::IS_PRESENT[species];
         } else if (selectedGame_ == GameType::LA) {
-            if (species >= PERSONAL_LA_COUNT) return false;
-            auto s = PersonalLA::BASE_STATS[species];
-            return (s.hp | s.atk | s.def | s.spe | s.spa | s.spd) != 0;
+            return species < PERSONAL_LA_COUNT && PersonalLA::IS_PRESENT[species];
+        } else if (isBDSP(selectedGame_)) {
+            // BDSP: all species within table range are present
+            return species >= 1 && species < PERSONAL_BDSP_COUNT;
         } else if (isLGPE(selectedGame_)) {
+            // LGPE: no IsPresentInGame flag; check base stats
             if (species >= PERSONAL_GG_COUNT) return false;
             auto s = PersonalGG::BASE_STATS[species];
             return (s.hp | s.atk | s.def | s.spe | s.spa | s.spd) != 0;

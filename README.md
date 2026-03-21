@@ -176,7 +176,7 @@ Available filters:
 
 | Filter | Description |
 |--------|-------------|
-| Species Name | Text search (substring, case-insensitive) |
+| Species | Alphabetical picker — select a letter, then choose from species available in the current game (with sprites). Letters with no matching species are dimmed and skipped. |
 | OT Name | Text search (substring, case-insensitive) |
 | Shiny | Toggle to match shiny Pokemon only |
 | Egg | Toggle to match eggs only |
@@ -381,6 +381,8 @@ Place `pkHouse.nro` on your Switch SD card (`sdmc:/switch/pkHouse/`) and launch 
     <img src="screenshots/012.jpg">
     <img src="screenshots/013.jpg">
     <img src="screenshots/013_1.jpg">
+    <img src="screenshots/013_1_1.jpg">
+    <img src="screenshots/013_1_2.jpg">
     <img src="screenshots/013_2.jpg">
     <img src="screenshots/013_3.jpg">
     <img src="screenshots/014.jpg">

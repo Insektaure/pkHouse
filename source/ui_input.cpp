@@ -2,6 +2,12 @@
 #include "led.h"
 #include "species_converter.h"
 #include "form_names.h"
+#include "personal_za.h"
+#include "personal_sv.h"
+#include "personal_swsh.h"
+#include "personal_bdsp.h"
+#include "personal_la.h"
+#include "personal_gg.h"
 #include <algorithm>
 #include <cmath>
 #include <cctype>
@@ -303,6 +309,16 @@ void UI::handleInput(bool& running) {
                         break;
                 }
             }
+            continue;
+        }
+
+        // While species picker is open, handle its input only
+        if (showSpeciesListPicker_) {
+            handleSpeciesListPickerInput(event);
+            continue;
+        }
+        if (showSpeciesLetterPicker_) {
+            handleSpeciesLetterPickerInput(event);
             continue;
         }
 
@@ -635,7 +651,43 @@ void UI::handleInput(bool& running) {
         uint32_t delay = stickMoved_ ? STICK_REPEAT_DELAY : STICK_INITIAL_DELAY;
         if (now - stickMoveTime_ >= delay) {
             markDirty();
-            if (showSearchFilter_) {
+            if (showSpeciesLetterPicker_) {
+                constexpr int COLS = 2;
+                constexpr int TOTAL_ITEMS = 27;
+                int col = speciesLetterCursor_ % COLS;
+                int row = speciesLetterCursor_ / COLS;
+                if (stickDirY_ != 0) {
+                    row += stickDirY_ > 0 ? 1 : -1;
+                    int totalRows = (TOTAL_ITEMS + COLS - 1) / COLS;
+                    row = (row + totalRows) % totalRows;
+                }
+                if (stickDirX_ != 0) {
+                    col += stickDirX_ > 0 ? 1 : -1;
+                    col = (col + COLS) % COLS;
+                }
+                int idx = row * COLS + col;
+                if (idx >= TOTAL_ITEMS) idx = TOTAL_ITEMS - 1;
+                speciesLetterCursor_ = idx;
+            } else if (showSpeciesListPicker_) {
+                constexpr int COLS = 3;
+                int total = static_cast<int>(speciesPickerList_.size());
+                if (total > 0) {
+                    int col = speciesListCursor_ % COLS;
+                    int row = speciesListCursor_ / COLS;
+                    int totalRows = (total + COLS - 1) / COLS;
+                    if (stickDirY_ != 0) {
+                        row += stickDirY_ > 0 ? 1 : -1;
+                        row = (row + totalRows) % totalRows;
+                    }
+                    if (stickDirX_ != 0) {
+                        col += stickDirX_ > 0 ? 1 : -1;
+                        col = (col + COLS) % COLS;
+                    }
+                    int idx = row * COLS + col;
+                    if (idx >= total) idx = total - 1;
+                    speciesListCursor_ = idx;
+                }
+            } else if (showSearchFilter_) {
                 bool alpha = (selectedGame_ == GameType::LA || selectedGame_ == GameType::ZA);
                 if (stickDirY_ != 0) {
                     int dir = stickDirY_ > 0 ? 1 : -1;
@@ -1194,6 +1246,220 @@ void UI::selectAll() {
     }
 }
 
+// --- Species Picker ---
+
+void UI::buildAvailableSpeciesList() {
+    availableSpecies_.clear();
+
+    // Helper: check if base stats are all zeros (species not in game)
+    auto isAvailable = [&](uint16_t species) -> bool {
+        if (selectedGame_ == GameType::ZA) {
+            if (species >= PERSONAL_ZA_COUNT) return false;
+            auto s = PersonalZA::BASE_STATS[species];
+            return (s.hp | s.atk | s.def_ | s.spe | s.spa | s.spd) != 0;
+        } else if (isSV(selectedGame_)) {
+            if (species >= PERSONAL_SV_COUNT) return false;
+            auto s = PersonalSV::BASE_STATS[species];
+            return (s.hp | s.atk | s.def_ | s.spe | s.spa | s.spd) != 0;
+        } else if (isSwSh(selectedGame_)) {
+            if (species >= PersonalSWSH::NUM_ENTRIES) return false;
+            auto s = PersonalSWSH::BASE_STATS[species];
+            return (s.hp | s.atk | s.def_ | s.spe | s.spa | s.spd) != 0;
+        } else if (isBDSP(selectedGame_)) {
+            if (species >= PERSONAL_BDSP_COUNT) return false;
+            auto s = PersonalBDSP::BASE_STATS[species];
+            return (s.hp | s.atk | s.def_ | s.spe | s.spa | s.spd) != 0;
+        } else if (selectedGame_ == GameType::LA) {
+            if (species >= PERSONAL_LA_COUNT) return false;
+            auto s = PersonalLA::BASE_STATS[species];
+            return (s.hp | s.atk | s.def | s.spe | s.spa | s.spd) != 0;
+        } else if (isLGPE(selectedGame_)) {
+            if (species >= PERSONAL_GG_COUNT) return false;
+            auto s = PersonalGG::BASE_STATS[species];
+            return (s.hp | s.atk | s.def | s.spe | s.spa | s.spd) != 0;
+        } else if (isFRLG(selectedGame_)) {
+            return species >= 1 && species <= 386;
+        }
+        return false;
+    };
+
+    int maxSpecies = 1024;
+    for (uint16_t i = 1; i <= maxSpecies; i++) {
+        if (isAvailable(i))
+            availableSpecies_.push_back(i);
+    }
+}
+
+void UI::buildSpeciesListForLetter(int letterIndex) {
+    speciesPickerList_.clear();
+    if (letterIndex < 1 || letterIndex > 26) return;
+
+    char letter = 'A' + (letterIndex - 1);
+    for (uint16_t id : availableSpecies_) {
+        const std::string& name = SpeciesName::get(id);
+        if (!name.empty() && std::toupper(static_cast<unsigned char>(name[0])) == letter)
+            speciesPickerList_.push_back(id);
+    }
+    // Sort alphabetically by name
+    std::sort(speciesPickerList_.begin(), speciesPickerList_.end(),
+        [](uint16_t a, uint16_t b) {
+            return SpeciesName::get(a) < SpeciesName::get(b);
+        });
+}
+
+void UI::handleSpeciesLetterPickerInput(const SDL_Event& event) {
+    if (event.type == SDL_CONTROLLERAXISMOTION) {
+        if (event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX ||
+            event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY) {
+            int16_t lx = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTX);
+            int16_t ly = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTY);
+            updateStick(lx, ly);
+        }
+        return;
+    }
+
+    constexpr int TOTAL_ITEMS = 27; // "-" + A-Z
+    constexpr int COLS = 2;
+    int col = speciesLetterCursor_ % COLS;
+    int row = speciesLetterCursor_ / COLS;
+
+    auto move = [&](int dx, int dy) {
+        col += dx;
+        row += dy;
+        int totalRows = (TOTAL_ITEMS + COLS - 1) / COLS;
+        if (row < 0) row = totalRows - 1;
+        if (row >= totalRows) row = 0;
+        if (col < 0) col = COLS - 1;
+        if (col >= COLS) col = 0;
+        int idx = row * COLS + col;
+        if (idx >= TOTAL_ITEMS) {
+            col = 0;
+            idx = row * COLS + col;
+        }
+        speciesLetterCursor_ = idx;
+    };
+
+    auto confirm = [&]() {
+        if (speciesLetterCursor_ == 0) {
+            // "-" = clear species filter
+            searchFilter_.speciesId = 0;
+            searchFilter_.speciesName.clear();
+            showSpeciesLetterPicker_ = false;
+        } else {
+            buildSpeciesListForLetter(speciesLetterCursor_);
+            if (!speciesPickerList_.empty()) {
+                speciesListCursor_ = 0;
+                speciesListScroll_ = 0;
+                showSpeciesLetterPicker_ = false;
+                showSpeciesListPicker_ = true;
+            }
+        }
+    };
+
+    if (event.type == SDL_CONTROLLERBUTTONDOWN) {
+        switch (event.cbutton.button) {
+            case SDL_CONTROLLER_BUTTON_DPAD_UP:    move(0, -1); break;
+            case SDL_CONTROLLER_BUTTON_DPAD_DOWN:   move(0, +1); break;
+            case SDL_CONTROLLER_BUTTON_DPAD_LEFT:   move(-1, 0); break;
+            case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:  move(+1, 0); break;
+            case SDL_CONTROLLER_BUTTON_B: confirm(); break; // Switch A
+            case SDL_CONTROLLER_BUTTON_A: // Switch B = back
+                showSpeciesLetterPicker_ = false;
+                break;
+        }
+    }
+    if (event.type == SDL_KEYDOWN) {
+        switch (event.key.keysym.sym) {
+            case SDLK_UP:     move(0, -1); break;
+            case SDLK_DOWN:   move(0, +1); break;
+            case SDLK_LEFT:   move(-1, 0); break;
+            case SDLK_RIGHT:  move(+1, 0); break;
+            case SDLK_a:
+            case SDLK_RETURN: confirm(); break;
+            case SDLK_b:
+            case SDLK_ESCAPE:
+                showSpeciesLetterPicker_ = false;
+                break;
+        }
+    }
+}
+
+void UI::handleSpeciesListPickerInput(const SDL_Event& event) {
+    if (event.type == SDL_CONTROLLERAXISMOTION) {
+        if (event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX ||
+            event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY) {
+            int16_t lx = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTX);
+            int16_t ly = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTY);
+            updateStick(lx, ly);
+        }
+        return;
+    }
+
+    if (speciesPickerList_.empty()) return;
+
+    constexpr int COLS = 3;
+    int col = speciesListCursor_ % COLS;
+    int row = speciesListCursor_ / COLS;
+    int total = static_cast<int>(speciesPickerList_.size());
+
+    auto move = [&](int dx, int dy) {
+        col += dx;
+        row += dy;
+        int totalRows = (total + COLS - 1) / COLS;
+        if (row < 0) row = totalRows - 1;
+        if (row >= totalRows) row = 0;
+        if (col < 0) col = COLS - 1;
+        if (col >= COLS) col = 0;
+        int idx = row * COLS + col;
+        if (idx >= total) {
+            // Wrap to last item in row or first col
+            if (dx > 0) col = 0;
+            else if (dx < 0) col = (total - 1) % COLS;
+            else if (dy > 0) { row = 0; }
+            else { row = totalRows - 1; col = std::min(col, (total - 1) % COLS); }
+            idx = row * COLS + col;
+            if (idx >= total) idx = total - 1;
+        }
+        speciesListCursor_ = idx;
+    };
+
+    auto confirm = [&]() {
+        uint16_t id = speciesPickerList_[speciesListCursor_];
+        searchFilter_.speciesId = id;
+        searchFilter_.speciesName = SpeciesName::get(id);
+        showSpeciesListPicker_ = false;
+    };
+
+    if (event.type == SDL_CONTROLLERBUTTONDOWN) {
+        switch (event.cbutton.button) {
+            case SDL_CONTROLLER_BUTTON_DPAD_UP:    move(0, -1); break;
+            case SDL_CONTROLLER_BUTTON_DPAD_DOWN:   move(0, +1); break;
+            case SDL_CONTROLLER_BUTTON_DPAD_LEFT:   move(-1, 0); break;
+            case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:  move(+1, 0); break;
+            case SDL_CONTROLLER_BUTTON_B: confirm(); break; // Switch A
+            case SDL_CONTROLLER_BUTTON_A: // Switch B = back to letter picker
+                showSpeciesListPicker_ = false;
+                showSpeciesLetterPicker_ = true;
+                break;
+        }
+    }
+    if (event.type == SDL_KEYDOWN) {
+        switch (event.key.keysym.sym) {
+            case SDLK_UP:     move(0, -1); break;
+            case SDLK_DOWN:   move(0, +1); break;
+            case SDLK_LEFT:   move(-1, 0); break;
+            case SDLK_RIGHT:  move(+1, 0); break;
+            case SDLK_a:
+            case SDLK_RETURN: confirm(); break;
+            case SDLK_b:
+            case SDLK_ESCAPE:
+                showSpeciesListPicker_ = false;
+                showSpeciesLetterPicker_ = true;
+                break;
+        }
+    }
+}
+
 // --- Search/Filter ---
 
 void UI::handleSearchFilterInput(const SDL_Event& event) {
@@ -1223,7 +1489,13 @@ void UI::handleSearchFilterInput(const SDL_Event& event) {
 
     auto confirmAction = [&]() {
         switch (searchFilterCursor_) {
-            case 0: beginTextInput(TextInputPurpose::SearchSpecies); break;
+            case 0:
+                if (availableSpecies_.empty())
+                    buildAvailableSpeciesList();
+                speciesLetterCursor_ = 0;
+                speciesLetterScroll_ = 0;
+                showSpeciesLetterPicker_ = true;
+                break;
             case 1: beginTextInput(TextInputPurpose::SearchOT); break;
             case 2: searchFilter_.filterShiny = !searchFilter_.filterShiny; break;
             case 3: searchFilter_.filterEgg = !searchFilter_.filterEgg; break;
@@ -1412,7 +1684,11 @@ bool UI::matchesSearchFilter(const Pokemon& pkm,
         return out;
     };
 
-    if (!filterSpecies.empty()) {
+    // Species filter: exact match by ID if set, otherwise substring match
+    if (searchFilter_.speciesId > 0) {
+        if (pkm.species() != searchFilter_.speciesId)
+            return false;
+    } else if (!filterSpecies.empty()) {
         std::string name = toLower(SpeciesName::get(pkm.species()));
         if (name.find(filterSpecies) == std::string::npos)
             return false;

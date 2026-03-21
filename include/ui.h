@@ -34,6 +34,7 @@ enum class SearchMode { List, Highlight };
 
 // Search filter criteria
 struct SearchFilter {
+    uint16_t speciesId = 0;       // national dex ID (0 = any)
     std::string speciesName;
     std::string otName;
     bool filterShiny  = false;
@@ -201,6 +202,16 @@ private:
     int  searchResultScroll_ = 0;
     bool searchHighlightActive_ = false;
     std::unordered_set<uint64_t> searchMatchSet_;
+
+    // Species picker state (letter → species list)
+    bool showSpeciesLetterPicker_ = false;
+    bool showSpeciesListPicker_   = false;
+    int  speciesLetterCursor_ = 0;   // 0="-", 1-26=A-Z
+    int  speciesLetterScroll_ = 0;
+    int  speciesListCursor_   = 0;
+    int  speciesListScroll_   = 0;
+    std::vector<uint16_t> availableSpecies_;    // all species for current game
+    std::vector<uint16_t> speciesPickerList_;   // species filtered by letter
 
     // Joystick navigation
     static constexpr int16_t STICK_DEADZONE   = 16000;
@@ -394,6 +405,8 @@ private:
     void drawThemeSelectorPopup();
     void drawSearchFilterPopup();
     void drawSearchResultsPopup();
+    void drawSpeciesLetterPicker();
+    void drawSpeciesListPicker();
     void drawWondercardListPopup();
     void drawHeldOverlay();
     void drawBoxViewOverlay();
@@ -424,6 +437,10 @@ private:
     void selectAll();
     void handleSearchFilterInput(const SDL_Event& event);
     void handleSearchResultsInput(const SDL_Event& event);
+    void handleSpeciesLetterPickerInput(const SDL_Event& event);
+    void handleSpeciesListPickerInput(const SDL_Event& event);
+    void buildAvailableSpeciesList();
+    void buildSpeciesListForLetter(int letterIndex);
     void handleWondercardListInput(const SDL_Event& event);
     void injectWondercard(const WCInfo& info);
     std::string exportPokemon(const Pokemon& pkm);

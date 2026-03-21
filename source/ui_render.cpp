@@ -560,6 +560,14 @@ void UI::drawFrame() {
         drawSearchResultsPopup();
     }
 
+    // Species picker overlays (drawn on top of search filter)
+    if (showSpeciesLetterPicker_) {
+        drawSpeciesLetterPicker();
+    }
+    if (showSpeciesListPicker_) {
+        drawSpeciesListPicker();
+    }
+
     // Wondercard list popup
     if (showWondercardList_) {
         drawWondercardListPopup();
@@ -1082,11 +1090,24 @@ void UI::drawSearchFilterPopup() {
         int textY = rowY + (ROW_H - 4) / 2 - 9;
 
         switch (i) {
-            case 0:
-                drawText("Species Name:", labelX, textY, T().text, font_);
-                drawText(searchFilter_.speciesName.empty() ? "(any)" : searchFilter_.speciesName,
-                         valueX, textY, searchFilter_.speciesName.empty() ? T().textDim : T().text, font_);
+            case 0: {
+                drawText("Species:", labelX, textY, T().text, font_);
+                if (searchFilter_.speciesId > 0) {
+                    // Draw small sprite + name
+                    SDL_Texture* spr = getSprite(searchFilter_.speciesId);
+                    if (spr) {
+                        int sprSize = ROW_H - 6;
+                        SDL_Rect dst = { valueX, rowY + 2, sprSize, sprSize };
+                        SDL_RenderCopy(renderer_, spr, nullptr, &dst);
+                        drawText(searchFilter_.speciesName, valueX + sprSize + 6, textY, T().text, font_);
+                    } else {
+                        drawText(searchFilter_.speciesName, valueX, textY, T().text, font_);
+                    }
+                } else {
+                    drawText("(any)", valueX, textY, T().textDim, font_);
+                }
                 break;
+            }
             case 1:
                 drawText("OT Name:", labelX, textY, T().text, font_);
                 drawText(searchFilter_.otName.empty() ? "(any)" : searchFilter_.otName,
@@ -1254,6 +1275,186 @@ void UI::drawSearchResultsPopup() {
         ? "B: Close  X: Back to Filter"
         : "A: Go to  L/R: Skip 10  B: Close  X: Filter";
     drawTextCentered(footer, popX + POP_W / 2, popY + POP_H - 18, T().textDim, fontSmall_);
+}
+
+void UI::drawSpeciesLetterPicker() {
+    drawRect(0, 0, SCREEN_W, SCREEN_H, T().overlay);
+
+    constexpr int POP_W = 1080;
+    constexpr int POP_H = 620;
+    int popX = (SCREEN_W - POP_W) / 2;
+    int popY = (SCREEN_H - POP_H) / 2;
+
+    drawRect(popX, popY, POP_W, POP_H, T().panelBg);
+    drawRectOutline(popX, popY, POP_W, POP_H, T().cursor, 2);
+
+    drawTextCentered("Select Letter", popX + POP_W / 2, popY + 22, T().text, font_);
+
+    constexpr int COLS = 2;
+    constexpr int TOTAL_ITEMS = 27; // "-" + A-Z
+    constexpr int ROW_H = 56;
+    constexpr int COL_W = 500;
+    constexpr int PAD = 6;
+    int gridX = popX + (POP_W - COLS * COL_W) / 2;
+    int gridY = popY + 50;
+    int gridH = POP_H - 50 - 30;
+    int visibleRows = gridH / ROW_H;
+    int totalRows = (TOTAL_ITEMS + COLS - 1) / COLS;
+
+    // Auto-scroll to keep cursor visible
+    int cursorRow = speciesLetterCursor_ / COLS;
+    if (cursorRow < speciesLetterScroll_)
+        speciesLetterScroll_ = cursorRow;
+    if (cursorRow >= speciesLetterScroll_ + visibleRows)
+        speciesLetterScroll_ = cursorRow - visibleRows + 1;
+
+    // Scroll indicators
+    if (speciesLetterScroll_ > 0)
+        drawTextCentered("^", popX + POP_W / 2, gridY - 12, T().arrow, fontSmall_);
+    if (speciesLetterScroll_ + visibleRows < totalRows)
+        drawTextCentered("v", popX + POP_W / 2, gridY + gridH + 2, T().arrow, fontSmall_);
+
+    // Draw scrollbar
+    if (totalRows > visibleRows) {
+        int sbX = popX + POP_W - 20;
+        int sbH = gridH;
+        int thumbH = std::max(20, sbH * visibleRows / totalRows);
+        int thumbY = gridY + (sbH - thumbH) * speciesLetterScroll_ / (totalRows - visibleRows);
+        drawRect(sbX, gridY, 6, sbH, T().textDim);
+        drawRect(sbX, thumbY, 6, thumbH, T().text);
+    }
+
+    for (int r = 0; r < visibleRows && (speciesLetterScroll_ + r) < totalRows; r++) {
+        int row = speciesLetterScroll_ + r;
+        for (int c = 0; c < COLS; c++) {
+            int idx = row * COLS + c;
+            if (idx >= TOTAL_ITEMS) break;
+
+            int cellX = gridX + c * COL_W + PAD;
+            int cellY = gridY + r * ROW_H + PAD;
+            int cellW = COL_W - PAD * 2;
+            int cellH = ROW_H - PAD * 2;
+
+            if (idx == speciesLetterCursor_) {
+                drawRect(cellX, cellY, cellW, cellH, T().menuHighlight);
+                drawRectOutline(cellX, cellY, cellW, cellH, T().cursor, 2);
+                // Draw arrow indicator
+                drawText(">", cellX - 18, cellY + cellH / 2 - 9, T().cursor, font_);
+            } else {
+                // Light background for unselected items
+                SDL_Color bg = T().panelBg;
+                bg.r = std::min(255, bg.r + 15);
+                bg.g = std::min(255, bg.g + 15);
+                bg.b = std::min(255, bg.b + 15);
+                drawRect(cellX, cellY, cellW, cellH, bg);
+            }
+
+            std::string label = (idx == 0) ? "-" : std::string(1, 'A' + idx - 1);
+            drawText(label, cellX + 20, cellY + cellH / 2 - 9, T().text, font_);
+        }
+    }
+
+    drawTextCentered("A: Select  B: Back", popX + POP_W / 2, popY + POP_H - 18, T().textDim, fontSmall_);
+}
+
+void UI::drawSpeciesListPicker() {
+    drawRect(0, 0, SCREEN_W, SCREEN_H, T().overlay);
+
+    constexpr int POP_W = 1080;
+    constexpr int POP_H = 620;
+    int popX = (SCREEN_W - POP_W) / 2;
+    int popY = (SCREEN_H - POP_H) / 2;
+
+    drawRect(popX, popY, POP_W, POP_H, T().panelBg);
+    drawRectOutline(popX, popY, POP_W, POP_H, T().cursor, 2);
+
+    char letter = 'A' + (speciesLetterCursor_ - 1);
+    std::string title = std::string("Species - ") + letter;
+    drawTextCentered(title, popX + POP_W / 2, popY + 22, T().text, font_);
+
+    if (speciesPickerList_.empty()) {
+        drawTextCentered("No species found.", popX + POP_W / 2, popY + POP_H / 2, T().textDim, font_);
+    } else {
+        constexpr int COLS = 3;
+        constexpr int ROW_H = 56;
+        constexpr int PAD = 4;
+        int total = static_cast<int>(speciesPickerList_.size());
+        int totalRows = (total + COLS - 1) / COLS;
+        int COL_W = (POP_W - 40) / COLS;
+        int gridX = popX + 20;
+        int gridY = popY + 50;
+        int gridH = POP_H - 50 - 30;
+        int visibleRows = gridH / ROW_H;
+
+        // Auto-scroll to keep cursor visible
+        int cursorRow = speciesListCursor_ / COLS;
+        if (cursorRow < speciesListScroll_)
+            speciesListScroll_ = cursorRow;
+        if (cursorRow >= speciesListScroll_ + visibleRows)
+            speciesListScroll_ = cursorRow - visibleRows + 1;
+
+        // Scroll indicators
+        if (speciesListScroll_ > 0)
+            drawTextCentered("^", popX + POP_W / 2, gridY - 12, T().arrow, fontSmall_);
+        if (speciesListScroll_ + visibleRows < totalRows)
+            drawTextCentered("v", popX + POP_W / 2, gridY + gridH + 2, T().arrow, fontSmall_);
+
+        // Draw scrollbar
+        if (totalRows > visibleRows) {
+            int sbX = popX + POP_W - 20;
+            int sbH = gridH;
+            int thumbH = std::max(20, sbH * visibleRows / totalRows);
+            int thumbY = gridY + (sbH - thumbH) * speciesListScroll_ / (totalRows - visibleRows);
+            drawRect(sbX, gridY, 6, sbH, T().textDim);
+            drawRect(sbX, thumbY, 6, thumbH, T().text);
+        }
+
+        constexpr int SPRITE_SZ = 40;
+
+        for (int r = 0; r < visibleRows && (speciesListScroll_ + r) < totalRows; r++) {
+            int row = speciesListScroll_ + r;
+            for (int c = 0; c < COLS; c++) {
+                int idx = row * COLS + c;
+                if (idx >= total) break;
+
+                uint16_t specId = speciesPickerList_[idx];
+                const std::string& name = SpeciesName::get(specId);
+
+                int cellX = gridX + c * COL_W + PAD;
+                int cellY = gridY + r * ROW_H + PAD;
+                int cellW = COL_W - PAD * 2;
+                int cellH = ROW_H - PAD * 2;
+
+                if (idx == speciesListCursor_) {
+                    drawRect(cellX, cellY, cellW, cellH, T().menuHighlight);
+                    drawRectOutline(cellX, cellY, cellW, cellH, T().cursor, 2);
+                    // Draw arrow indicator
+                    drawText(">", cellX - 14, cellY + cellH / 2 - 9, T().cursor, fontSmall_);
+                } else {
+                    SDL_Color bg = T().panelBg;
+                    bg.r = std::min(255, bg.r + 15);
+                    bg.g = std::min(255, bg.g + 15);
+                    bg.b = std::min(255, bg.b + 15);
+                    drawRect(cellX, cellY, cellW, cellH, bg);
+                }
+
+                // Draw sprite
+                SDL_Texture* spr = getSprite(specId);
+                if (spr) {
+                    int sprY = cellY + (cellH - SPRITE_SZ) / 2;
+                    SDL_Rect dst = { cellX + 6, sprY, SPRITE_SZ, SPRITE_SZ };
+                    SDL_RenderCopy(renderer_, spr, nullptr, &dst);
+                }
+
+                // Draw name (truncated if needed)
+                std::string displayName = name;
+                if (displayName.length() > 14) displayName = displayName.substr(0, 13) + ".";
+                drawText(displayName, cellX + 6 + SPRITE_SZ + 6, cellY + cellH / 2 - 9, T().text, font_);
+            }
+        }
+    }
+
+    drawTextCentered("A: Select  B: Back", popX + POP_W / 2, popY + POP_H - 18, T().textDim, fontSmall_);
 }
 
 void UI::drawWondercardListPopup() {

@@ -9,27 +9,10 @@ Bank::Bank() {
 
 void Bank::setGameType(GameType g) {
     gameType_ = g;
-    if (isFRLG(g)) {
-        boxCount_ = 14;
-        slotsPerBox_ = 30;
-        slotSize_ = PokeCrypto::SIZE_3STORED;
-    } else if (isLGPE(g)) {
-        boxCount_ = 40;
-        slotsPerBox_ = 25;
-        slotSize_ = PokeCrypto::SIZE_6PARTY;
-    } else if (isBDSP(g)) {
-        boxCount_ = 40;
-        slotsPerBox_ = 30;
-        slotSize_ = PokeCrypto::SIZE_9PARTY;
-    } else if (g == GameType::LA) {
-        boxCount_ = 32;
-        slotsPerBox_ = 30;
-        slotSize_ = PokeCrypto::SIZE_8APARTY;
-    } else {
-        boxCount_ = 32;
-        slotsPerBox_ = 30;
-        slotSize_ = PokeCrypto::SIZE_9PARTY;
-    }
+    auto& info   = gameInfo(g);
+    boxCount_    = info.boxCount;
+    slotsPerBox_ = info.slotsPerBox;
+    slotSize_    = info.bankSlotSize;
     slots_.resize(boxCount_ * slotsPerBox_);
     boxNames_.resize(boxCount_);
 }

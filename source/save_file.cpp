@@ -8,37 +8,12 @@
 void SaveFile::setGameType(GameType game) {
     gameType_ = game;
     invalidateAllBoxCache();
-    kbox_ = 0x0d66012c; // Reset to default; LA overrides below
-    slotsPerBox_ = 30;   // Default; LGPE overrides below
-    if (game == GameType::ZA) {
-        gapBoxSlot_  = 0x40;
-        sizeBoxSlot_ = PokeCrypto::SIZE_9PARTY + 0x40;
-        boxCount_    = 32;
-    } else if (isBDSP(game)) {
-        gapBoxSlot_  = 0;
-        sizeBoxSlot_ = PokeCrypto::SIZE_9PARTY;
-        boxCount_    = BDSP_BOX_COUNT;
-    } else if (game == GameType::LA) {
-        gapBoxSlot_  = 0;
-        sizeBoxSlot_ = PokeCrypto::SIZE_8ASTORED;
-        boxCount_    = 32;
-        kbox_        = 0x47E1CEAB;
-    } else if (isLGPE(game)) {
-        gapBoxSlot_  = 0;
-        sizeBoxSlot_ = PokeCrypto::SIZE_6PARTY;
-        boxCount_    = LGPE_BOX_COUNT;
-        slotsPerBox_ = LGPE_SLOTS_PER_BOX;
-    } else if (isFRLG(game)) {
-        gapBoxSlot_  = 0;
-        sizeBoxSlot_ = PokeCrypto::SIZE_3STORED;  // 80 bytes per slot
-        boxCount_    = GBA_BOX_COUNT;              // 14 boxes
-        slotsPerBox_ = GBA_SLOTS_PER_BOX;         // 30 slots
-    } else {
-        // SV, SwSh: no gap, 32 boxes
-        gapBoxSlot_  = 0;
-        sizeBoxSlot_ = PokeCrypto::SIZE_9PARTY;
-        boxCount_    = 32;
-    }
+    auto& info   = gameInfo(game);
+    gapBoxSlot_  = info.saveGapSize;
+    sizeBoxSlot_ = info.saveSlotSize;
+    boxCount_    = info.boxCount;
+    slotsPerBox_ = info.slotsPerBox;
+    kbox_        = (game == GameType::LA) ? 0x47E1CEAB : 0x0d66012c;
 }
 
 bool SaveFile::isBDSPSize(size_t size) {

@@ -120,7 +120,7 @@ void UI::handleInput(bool& running) {
 
         // While menu is open, handle menu input only
         if (showMenu_) {
-            bool hasWC = isSV(selectedGame_) || isSwSh(selectedGame_) || selectedGame_ == GameType::ZA || isBDSP(selectedGame_) || selectedGame_ == GameType::LA || isLGPE(selectedGame_);
+            bool hasWC = gameInfo(selectedGame_).hasWondercards;
             bool hasExport = !selectedSlots_.empty();
             int menuCount = (isDualBankMode() ? (hasWC ? 8 : 7) : (hasWC ? 7 : 6)) + (hasExport ? 1 : 0);
             auto menuConfirm = [&]() {
@@ -734,7 +734,7 @@ void UI::handleInput(bool& running) {
             } else if (showMenu_) {
                 if (stickDirY_ != 0)
                 {
-                    bool hasWC = isSV(selectedGame_) || isSwSh(selectedGame_) || selectedGame_ == GameType::ZA || isBDSP(selectedGame_) || selectedGame_ == GameType::LA || isLGPE(selectedGame_);
+                    bool hasWC = gameInfo(selectedGame_).hasWondercards;
                     bool hasExport = !selectedSlots_.empty();
                     int menuCount = (isDualBankMode() ? (hasWC ? 8 : 7) : (hasWC ? 7 : 6)) + (hasExport ? 1 : 0);
                     menuSelection_ = (menuSelection_ + (stickDirY_ > 0 ? 1 : menuCount - 1)) % menuCount;
@@ -1494,7 +1494,7 @@ void UI::handleSearchFilterInput(const SDL_Event& event) {
         return;
     }
 
-    bool hasAlpha = (selectedGame_ == GameType::LA || selectedGame_ == GameType::ZA);
+    bool hasAlpha = gameInfo(selectedGame_).hasAlphaForms;
 
     auto moveFilterCursor = [&](int dir) {
         searchFilterCursor_ = (searchFilterCursor_ + dir + 12) % 12;
@@ -2239,13 +2239,7 @@ std::string UI::exportPokemon(const Pokemon& pkm) {
     uint32_t ec = pkm.encryptionConstant();
 
     // Short game tag
-    const char* gameTag = "ZA";
-    if (isSV(selectedGame_))   gameTag = "SV";
-    else if (isSwSh(selectedGame_)) gameTag = "SwSh";
-    else if (isBDSP(selectedGame_)) gameTag = "BDSP";
-    else if (selectedGame_ == GameType::LA) gameTag = "LA";
-    else if (isLGPE(selectedGame_)) gameTag = "LGPE";
-    else if (isFRLG(selectedGame_)) gameTag = "FRLG";
+    const char* gameTag = gameInfo(selectedGame_).gameTag;
 
     std::snprintf(buf, sizeof(buf), "%s - %04u%s%s - %s - %04X%08X.%s",
                   gameTag, sp, formStr.c_str(), tags.c_str(), nick.c_str(), chk, ec, ext);

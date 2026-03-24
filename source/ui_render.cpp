@@ -955,7 +955,7 @@ void UI::drawMenuPopup() {
 
     // Menu items differ by mode and game
     // SV/SwSh games get a "Wondercard" item after Search
-    bool hasWC = isSV(selectedGame_) || isSwSh(selectedGame_) || selectedGame_ == GameType::ZA || isBDSP(selectedGame_) || selectedGame_ == GameType::LA || isLGPE(selectedGame_);
+    bool hasWC = gameInfo(selectedGame_).hasWondercards;
     bool hasExport = !selectedSlots_.empty();
     int menuCount;
     if (isDualBankMode())
@@ -1058,7 +1058,7 @@ void UI::drawThemeSelectorPopup() {
 void UI::drawSearchFilterPopup() {
     drawRect(0, 0, SCREEN_W, SCREEN_H, T().overlay);
 
-    bool hasAlpha = (selectedGame_ == GameType::LA || selectedGame_ == GameType::ZA);
+    bool hasAlpha = gameInfo(selectedGame_).hasAlphaForms;
     int rowCount = hasAlpha ? 12 : 11;
 
     constexpr int POP_W = 600;
@@ -1473,11 +1473,7 @@ void UI::drawWondercardListPopup() {
 
     if (wcList_.empty()) {
         drawTextCentered("No wondercard files found.", popX + POP_W / 2, popY + POP_H / 2 - 20, T().textDim, font_);
-        std::string hint = isSwSh(selectedGame_) ? "Place .wc8 files in:" :
-                           (selectedGame_ == GameType::ZA ? "Place .wa9 files in:" :
-                           (isBDSP(selectedGame_) ? "Place .wb8 files in:" :
-                           (selectedGame_ == GameType::LA ? "Place .wa8 files in:" :
-                           (isLGPE(selectedGame_) ? "Place .wb7/.wb7full files in:" : "Place .wc9 files in:"))));
+        std::string hint = std::string("Place ") + gameInfo(selectedGame_).wcExtensionHint + " files in:";
         drawTextCentered(hint, popX + POP_W / 2, popY + POP_H / 2 + 10, T().textDim, fontSmall_);
         std::string path = "sdmc:/switch/pkHouse/wondercards/" + std::string(bankFolderNameOf(selectedGame_)) + "/";
         drawTextCentered(path, popX + POP_W / 2, popY + POP_H / 2 + 30, T().textDim, fontSmall_);

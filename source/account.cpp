@@ -1,4 +1,5 @@
 #include "account.h"
+#include <SDL2/SDL_image.h>
 #include <cstring>
 #include <ctime>
 #include <dirent.h>
@@ -6,28 +7,17 @@
 #include <sys/stat.h>
 #include <sys/statvfs.h>
 
-#ifdef __SWITCH__
-#include <SDL2/SDL_image.h>
-#endif
-
 bool AccountManager::init() {
-#ifdef __SWITCH__
     return R_SUCCEEDED(accountInitialize(AccountServiceType_Administrator));
-#else
-    return false;
-#endif
 }
 
 void AccountManager::shutdown() {
-#ifdef __SWITCH__
     unmountSave();
     freeTextures();
     accountExit();
-#endif
 }
 
 bool AccountManager::loadProfiles(SDL_Renderer* renderer) {
-#ifdef __SWITCH__
     AccountUid accounts[8];
     int32_t total = 0;
     Result rc = accountListAllUsers(accounts, 8, &total);
@@ -41,13 +31,8 @@ bool AccountManager::loadProfiles(SDL_Renderer* renderer) {
             users_.push_back(std::move(profile));
     }
     return !users_.empty();
-#else
-    (void)renderer;
-    return false;
-#endif
 }
 
-#ifdef __SWITCH__
 bool AccountManager::loadProfile(AccountUid uid, SDL_Renderer* renderer, UserProfile& out) {
     out.uid = uid;
 
@@ -103,10 +88,8 @@ std::string AccountManager::sanitizeForPath(const char* nickname) {
     if (result.size() > 32) result = result.substr(0, 32);
     return result;
 }
-#endif
 
 bool AccountManager::hasSaveData(int profileIndex, GameType game) const {
-#ifdef __SWITCH__
     if (profileIndex < 0 || profileIndex >= (int)users_.size())
         return false;
 
@@ -122,15 +105,9 @@ bool AccountManager::hasSaveData(int profileIndex, GameType game) const {
         return true;
     }
     return false;
-#else
-    (void)profileIndex;
-    (void)game;
-    return true;
-#endif
 }
 
 std::string AccountManager::mountSave(int profileIndex, GameType game) {
-#ifdef __SWITCH__
     if (profileIndex < 0 || profileIndex >= (int)users_.size())
         return "";
 
@@ -154,27 +131,18 @@ std::string AccountManager::mountSave(int profileIndex, GameType game) {
 
     mounted_ = true;
     return "save:/";
-#else
-    (void)profileIndex;
-    (void)game;
-    return "";
-#endif
 }
 
 void AccountManager::unmountSave() {
-#ifdef __SWITCH__
     if (mounted_) {
         fsdevUnmountDevice("save");
         mounted_ = false;
     }
-#endif
 }
 
 void AccountManager::commitSave() {
-#ifdef __SWITCH__
     if (mounted_)
         fsdevCommitDevice("save");
-#endif
 }
 
 bool AccountManager::backupSaveDir(const std::string& srcDir, const std::string& dstDir) {

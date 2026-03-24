@@ -8,9 +8,7 @@
 #include <sys/stat.h>
 #include <sys/statvfs.h>
 
-#ifdef __SWITCH__
 #include <switch.h>
-#endif
 
 bool UI::init() {
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER) < 0)
@@ -50,7 +48,6 @@ bool UI::init() {
     SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_BLEND);
 
     // Load font
-#ifdef __SWITCH__
     PlFontData fontData;
     plInitialize(PlServiceType_System);
     plGetSharedFontByType(&fontData, PlSharedFontType_Standard);
@@ -58,11 +55,6 @@ bool UI::init() {
     font_ = TTF_OpenFontRW(rw, 0, 18);
     fontSmall_ = TTF_OpenFontRW(SDL_RWFromMem(fontData.address, fontData.size), 0, 14);
     fontLarge_ = TTF_OpenFontRW(SDL_RWFromMem(fontData.address, fontData.size), 0, 28);
-#else
-    font_ = TTF_OpenFont("romfs/fonts/default.ttf", 18);
-    fontSmall_ = TTF_OpenFont("romfs/fonts/default.ttf", 14);
-    fontLarge_ = TTF_OpenFont("romfs/fonts/default.ttf", 28);
-#endif
 
     if (!font_ || !fontSmall_) {
         if (!font_)
@@ -75,11 +67,7 @@ bool UI::init() {
 
     // Load status icons
     {
-#ifdef __SWITCH__
         const char* iconDir = "romfs:/icons/";
-#else
-        const char* iconDir = "romfs/icons/";
-#endif
         auto loadIcon = [&](const char* name) -> SDL_Texture* {
             std::string path = std::string(iconDir) + name;
             SDL_Surface* s = IMG_Load(path.c_str());
@@ -121,19 +109,13 @@ void UI::shutdown() {
     IMG_Quit();
     TTF_Quit();
     SDL_Quit();
-#ifdef __SWITCH__
     plExit();
-#endif
 }
 
 void UI::showSplash() {
     if (!renderer_) return;
 
-#ifdef __SWITCH__
     const char* splashPath = "romfs:/splash.png";
-#else
-    const char* splashPath = "romfs/splash.png";
-#endif
 
     SDL_Surface* surf = IMG_Load(splashPath);
     if (!surf) return;
@@ -228,10 +210,6 @@ void UI::showMessageAndWait(const std::string& title, const std::string& body) {
                 if (event.cbutton.button == SDL_CONTROLLER_BUTTON_A) // Switch B
                     waiting = false;
             }
-            if (event.type == SDL_KEYDOWN) {
-                if (event.key.keysym.sym == SDLK_b || event.key.keysym.sym == SDLK_ESCAPE)
-                    waiting = false;
-            }
         }
 
         SDL_SetRenderDrawColor(renderer_, T().bg.r, T().bg.g, T().bg.b, 255);
@@ -260,12 +238,6 @@ bool UI::showConfirmDialog(const std::string& title, const std::string& body) {
                 if (event.cbutton.button == SDL_CONTROLLER_BUTTON_B) // Switch A = confirm
                     result = 1;
                 if (event.cbutton.button == SDL_CONTROLLER_BUTTON_A) // Switch B = cancel
-                    result = 0;
-            }
-            if (event.type == SDL_KEYDOWN) {
-                if (event.key.keysym.sym == SDLK_a || event.key.keysym.sym == SDLK_RETURN)
-                    result = 1;
-                if (event.key.keysym.sym == SDLK_b || event.key.keysym.sym == SDLK_ESCAPE)
                     result = 0;
             }
         }
@@ -354,7 +326,6 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
         GameType::V, GameType::ZA, GameType::FR, GameType::LG
     };
 
-#ifdef __SWITCH__
     if (appletMode_) {
         // Applet mode: skip profile, bank-only access
         screen_ = AppScreen::GameSelector;
@@ -374,13 +345,6 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
             loadGameIcons();
         }
     }
-#else
-    screen_ = AppScreen::GameSelector;
-    availableGames_.assign(std::begin(allGames), std::end(allGames));
-    refreshBankCounts();
-    showWorking("Loading game icons...");
-    loadGameIcons();
-#endif
 
     bool running = true;
 
@@ -393,12 +357,6 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
                 if (event.type == SDL_CONTROLLERBUTTONDOWN) {
                     if (event.cbutton.button == SDL_CONTROLLER_BUTTON_BACK ||
                         event.cbutton.button == SDL_CONTROLLER_BUTTON_A)
-                        { showAbout_ = false; markDirty(); }
-                }
-                if (event.type == SDL_KEYDOWN) {
-                    if (event.key.keysym.sym == SDLK_MINUS ||
-                        event.key.keysym.sym == SDLK_b ||
-                        event.key.keysym.sym == SDLK_ESCAPE)
                         { showAbout_ = false; markDirty(); }
                 }
             }
@@ -451,34 +409,6 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
                             break;
                         case SDL_CONTROLLER_BUTTON_A: // Switch B = cancel
                         case SDL_CONTROLLER_BUTTON_X: // Switch Y = cancel
-                            themeIndex_ = themeSelOriginal_;
-                            theme_ = &getTheme(themeIndex_);
-                            showThemeSelector_ = false;
-                            break;
-                    }
-                }
-                if (event.type == SDL_KEYDOWN) {
-                    markDirty();
-                    switch (event.key.keysym.sym) {
-                        case SDLK_UP:
-                            themeSelCursor_ = (themeSelCursor_ + THEME_COUNT - 1) % THEME_COUNT;
-                            theme_ = &getTheme(themeSelCursor_);
-                            break;
-                        case SDLK_DOWN:
-                            themeSelCursor_ = (themeSelCursor_ + 1) % THEME_COUNT;
-                            theme_ = &getTheme(themeSelCursor_);
-                            break;
-                        case SDLK_a:
-                        case SDLK_RETURN:
-                            themeIndex_ = themeSelCursor_;
-                            theme_ = &getTheme(themeIndex_);
-                            saveThemeIndex(basePath_, themeIndex_);
-                            showThemeSelector_ = false;
-                            showMenu_ = false;
-                            break;
-                        case SDLK_b:
-                        case SDLK_ESCAPE:
-                        case SDLK_y:
                             themeIndex_ = themeSelOriginal_;
                             theme_ = &getTheme(themeIndex_);
                             showThemeSelector_ = false;
@@ -581,7 +511,6 @@ void UI::selectGame(GameType game) {
     if (!isDualBankMode()) {
         showWorking("Loading save data...");
 
-#ifdef __SWITCH__
         if (selectedProfile_ >= 0) {
             std::string mountPath = account_.mountSave(selectedProfile_, game);
             if (mountPath.empty()) {
@@ -625,23 +554,6 @@ void UI::selectGame(GameType game) {
         } else {
             savePath_ = basePath_ + "main";
         }
-#else
-        // PC testing: different save file names per game
-        if (isSV(game))
-            savePath_ = basePath_ + "main_sv";
-        else if (isSwSh(game))
-            savePath_ = basePath_ + "main_swsh";
-        else if (isBDSP(game))
-            savePath_ = basePath_ + "main_bdsp";
-        else if (game == GameType::LA)
-            savePath_ = basePath_ + "main_la";
-        else if (isLGPE(game))
-            savePath_ = basePath_ + "main_lgpe";
-        else if (isFRLG(game))
-            savePath_ = basePath_ + "main_frlg";
-        else
-            savePath_ = basePath_ + "main";
-#endif
 
         save_.load(savePath_);
 

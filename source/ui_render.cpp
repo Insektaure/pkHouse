@@ -18,11 +18,7 @@ static SDL_Texture* loadSprite(const char* dir, uint16_t nationalId, uint8_t for
     if (form != 0) {
         std::snprintf(filename, sizeof(filename), "%03d-%d.png", nationalId, form);
         std::string path;
-#ifdef __SWITCH__
         path = std::string("romfs:/") + dir + "/" + filename;
-#else
-        path = std::string("romfs/") + dir + "/" + filename;
-#endif
         SDL_Surface* surf = IMG_Load(path.c_str());
         if (surf) {
             SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer, surf);
@@ -34,11 +30,7 @@ static SDL_Texture* loadSprite(const char* dir, uint16_t nationalId, uint8_t for
     // Fall back to base sprite (e.g. 019.png)
     std::snprintf(filename, sizeof(filename), "%03d.png", nationalId);
     std::string path;
-#ifdef __SWITCH__
     path = std::string("romfs:/") + dir + "/" + filename;
-#else
-    path = std::string("romfs/") + dir + "/" + filename;
-#endif
     SDL_Surface* surf = IMG_Load(path.c_str());
     if (!surf) return nullptr;
     SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer, surf);
@@ -105,11 +97,7 @@ SDL_Texture* UI::getRibbonSprite(const std::string& filename) {
         return it->second;
 
     std::string path;
-#ifdef __SWITCH__
     path = "romfs:/ribbons/" + filename + ".png";
-#else
-    path = basePath_ + "/romfs/ribbons/" + filename + ".png";
-#endif
     SDL_Texture* tex = IMG_LoadTexture(renderer_, path.c_str());
     ribbonSpriteCache_[filename] = tex; // cache even if null
     return tex;
@@ -121,11 +109,7 @@ SDL_Texture* UI::getBallSprite(uint8_t ballId) {
         return it->second;
 
     std::string path;
-#ifdef __SWITCH__
     path = "romfs:/balls/_ball" + std::to_string(ballId) + ".png";
-#else
-    path = basePath_ + "/romfs/balls/_ball" + std::to_string(ballId) + ".png";
-#endif
     SDL_Texture* tex = IMG_LoadTexture(renderer_, path.c_str());
     ballSpriteCache_[ballId] = tex;
     return tex;
@@ -139,11 +123,7 @@ SDL_Texture* UI::getTypeSprite(uint8_t typeId) {
     char filename[32];
     std::snprintf(filename, sizeof(filename), "type_icon_s_%02d.png", typeId);
     std::string path;
-#ifdef __SWITCH__
     path = std::string("romfs:/types/") + filename;
-#else
-    path = basePath_ + "/romfs/types/" + filename;
-#endif
     SDL_Texture* tex = IMG_LoadTexture(renderer_, path.c_str());
     typeSpriteCache_[typeId] = tex;
     return tex;
@@ -546,15 +526,11 @@ void UI::drawFrame() {
     // Box view overlay
     if (showBoxView_) {
         drawBoxViewOverlay();
-        if (showTextInput_)
-            drawTextInputPopup();
     }
 
     // Search popups
     if (showSearchFilter_) {
         drawSearchFilterPopup();
-        if (showTextInput_)
-            drawTextInputPopup();
     }
     if (showSearchResults_) {
         drawSearchResultsPopup();
@@ -1617,7 +1593,7 @@ void UI::drawAboutPopup() {
     y += 20;
     drawTextCentered("Brilliant Diamond/Shining Pearl (1.3.0)  -  Legends: Arceus (1.1.1)", cx, y, T().textDim, fontSmall_);
     y += 20;
-    drawTextCentered("Scarlet/Violet (4.0.0)  -  Legends: Z-A (2.0.1)", cx, y, T().textDim, fontSmall_);
+    drawTextCentered("Scarlet/Violet (4.0.0)  -  Legends: Z-A (2.0.2)", cx, y, T().textDim, fontSmall_);
     y += 20;
     drawTextCentered("FireRed/LeafGreen (1.0.0)", cx, y, T().textDim, fontSmall_);
     y += 30;

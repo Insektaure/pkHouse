@@ -34,11 +34,6 @@ void UI::updateStick(int16_t axisX, int16_t axisY) {
 // --- Input ---
 
 void UI::handleBoxViewInput(const SDL_Event& event) {
-    // Delegate to text input if active (PC only, for box rename)
-    if (showTextInput_) {
-        handleTextInputEvent(event);
-        return;
-    }
 
     if (event.type == SDL_CONTROLLERAXISMOTION) {
         if (event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX ||
@@ -79,28 +74,6 @@ void UI::handleBoxViewInput(const SDL_Event& event) {
             case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:  moveBoxViewCursor(+1, 0); break;
         }
     }
-    if (event.type == SDL_KEYDOWN) {
-        switch (event.key.keysym.sym) {
-            case SDLK_a:
-            case SDLK_RETURN: closeBoxView(true);  break;
-            case SDLK_b:
-            case SDLK_ESCAPE: closeBoxView(false); break;
-            case SDLK_y:
-            {
-                Bank* b = canRenameBox();
-                if (b) {
-                    renamingBoxIdx_ = boxViewCursor_;
-                    renamingBoxBank_ = b;
-                    beginTextInput(TextInputPurpose::RenameBoxName);
-                }
-                break;
-            }
-            case SDLK_UP:     moveBoxViewCursor(0, -1); break;
-            case SDLK_DOWN:   moveBoxViewCursor(0, +1); break;
-            case SDLK_LEFT:   moveBoxViewCursor(-1, 0); break;
-            case SDLK_RIGHT:  moveBoxViewCursor(+1, 0); break;
-        }
-    }
 }
 
 void UI::handleInput(bool& running) {
@@ -113,9 +86,7 @@ void UI::handleInput(bool& running) {
 
         // Any button/key event dirties the screen
         if (event.type == SDL_CONTROLLERBUTTONDOWN ||
-            event.type == SDL_CONTROLLERBUTTONUP ||
-            event.type == SDL_KEYDOWN ||
-            event.type == SDL_KEYUP)
+            event.type == SDL_CONTROLLERBUTTONUP)
             markDirty();
 
         if (showMenu_)               { handleMenuInput(event, running); continue; }
@@ -306,24 +277,6 @@ void UI::handleMenuInput(const SDL_Event& event, bool& running) {
                 break;
         }
     }
-    if (event.type == SDL_KEYDOWN) {
-        switch (event.key.keysym.sym) {
-            case SDLK_UP:
-                menuSelection_ = (menuSelection_ + menuCount - 1) % menuCount;
-                break;
-            case SDLK_DOWN:
-                menuSelection_ = (menuSelection_ + 1) % menuCount;
-                break;
-            case SDLK_a:
-            case SDLK_RETURN:
-                menuConfirm();
-                break;
-            case SDLK_b:
-            case SDLK_ESCAPE:
-                showMenu_ = false;
-                break;
-        }
-    }
 }
 
 void UI::handleDetailInput(const SDL_Event& event) {
@@ -406,34 +359,6 @@ void UI::handleDetailInput(const SDL_Event& event) {
         switch (event.cbutton.button) {
             case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:  lHeld_ = false; break;
             case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: rHeld_ = false; break;
-        }
-    }
-    if (event.type == SDL_KEYDOWN) {
-        switch (event.key.keysym.sym) {
-            case SDLK_b:
-            case SDLK_ESCAPE:
-                showDetail_ = false;
-                break;
-            case SDLK_x: { // Export
-                Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(gridCols()), cursor_.panel);
-                if (!pkm.isEmpty()) {
-                    std::string name = exportPokemon(pkm);
-                    if (!name.empty())
-                        showMessageAndWait("Exported!", name);
-                    else
-                        showMessageAndWait("Export Failed", "Could not write file.");
-                }
-                break;
-            }
-            case SDLK_a:
-                tryRelease();
-                break;
-            case SDLK_q:
-                detailNav(-1);
-                break;
-            case SDLK_e:
-                detailNav(1);
-                break;
         }
     }
 }
@@ -559,69 +484,6 @@ void UI::handleNormalInput(const SDL_Event& event) {
         }
     }
 
-    // Keyboard for PC testing
-    if (event.type == SDL_KEYDOWN) {
-        switch (event.key.keysym.sym) {
-            case SDLK_UP:     moveCursor(0, -1); break;
-            case SDLK_DOWN:   moveCursor(0, +1); break;
-            case SDLK_LEFT:   moveCursor(-1, 0); break;
-            case SDLK_RIGHT:  moveCursor(+1, 0); break;
-            case SDLK_a:
-            case SDLK_RETURN: if (!yHeld_) { actionSelect(); refreshHighlightSet(); } break;
-            case SDLK_b:
-            case SDLK_ESCAPE: if (!yHeld_) { actionCancel(); refreshHighlightSet(); } break;
-            case SDLK_x:
-            {
-                if (yHeld_) break;
-                if (holding_) {
-                    if (heldFromLGPEParty_) {
-                        showMessageAndWait("Party Pokemon",
-                            "Can't release a party Pokemon.");
-                        break;
-                    }
-                    int count = heldMulti_.empty() ? 1 : (int)heldMulti_.size();
-                    std::string msg = "Release " + std::to_string(count) + " Pokemon?";
-                    if (showConfirmDialog("Release Pokemon", msg)) {
-                        heldMulti_.clear();
-                        heldMultiSlots_.clear();
-                        heldPkm_ = Pokemon{};
-                        swapHistory_.clear();
-                        holding_ = false;
-                        positionPreserve_ = false;
-                        heldFromLGPEParty_ = false;
-                        lgpeHeldPartyIdx_ = -1;
-                        refreshHighlightSet();
-                    }
-                } else {
-                    Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(gridCols()), cursor_.panel);
-                    if (!pkm.isEmpty())
-                        showDetail_ = true;
-                }
-                break;
-            }
-            case SDLK_y:      beginYPress(); break;
-            case SDLK_t:      if (!yHeld_) selectAll(); break;
-            case SDLK_q:      if (!yHeld_) switchBox(-1); break;
-            case SDLK_e:      if (!yHeld_) switchBox(+1); break;
-            case SDLK_PLUS:
-                if (!yHeld_) {
-                    showMenu_ = true;
-                    menuSelection_ = 0;
-                }
-                break;
-            case SDLK_MINUS:
-                if (!yHeld_) showAbout_ = true;
-                break;
-            case SDLK_z: if (!yHeld_ && !(isDualBankMode() && leftBankName_.empty())) openBoxView(Panel::Game); break;
-            case SDLK_c: if (!yHeld_) openBoxView(Panel::Bank); break;
-        }
-    }
-
-    if (event.type == SDL_KEYUP) {
-        switch (event.key.keysym.sym) {
-            case SDLK_y: endYPress(); break;
-        }
-    }
 }
 
 void UI::handleStickRepeat() {
@@ -1363,20 +1225,6 @@ void UI::handleSpeciesLetterPickerInput(const SDL_Event& event) {
                 break;
         }
     }
-    if (event.type == SDL_KEYDOWN) {
-        switch (event.key.keysym.sym) {
-            case SDLK_UP:     move(0, -1); break;
-            case SDLK_DOWN:   move(0, +1); break;
-            case SDLK_LEFT:   move(-1, 0); break;
-            case SDLK_RIGHT:  move(+1, 0); break;
-            case SDLK_a:
-            case SDLK_RETURN: confirm(); break;
-            case SDLK_b:
-            case SDLK_ESCAPE:
-                showSpeciesLetterPicker_ = false;
-                break;
-        }
-    }
 }
 
 void UI::handleSpeciesListPickerInput(const SDL_Event& event) {
@@ -1438,31 +1286,11 @@ void UI::handleSpeciesListPickerInput(const SDL_Event& event) {
                 break;
         }
     }
-    if (event.type == SDL_KEYDOWN) {
-        switch (event.key.keysym.sym) {
-            case SDLK_UP:     move(0, -1); break;
-            case SDLK_DOWN:   move(0, +1); break;
-            case SDLK_LEFT:   move(-1, 0); break;
-            case SDLK_RIGHT:  move(+1, 0); break;
-            case SDLK_a:
-            case SDLK_RETURN: confirm(); break;
-            case SDLK_b:
-            case SDLK_ESCAPE:
-                showSpeciesListPicker_ = false;
-                showSpeciesLetterPicker_ = true;
-                break;
-        }
-    }
 }
 
 // --- Search/Filter ---
 
 void UI::handleSearchFilterInput(const SDL_Event& event) {
-    // Delegate to text input if active (PC only)
-    if (showTextInput_) {
-        handleTextInputEvent(event);
-        return;
-    }
 
     if (event.type == SDL_CONTROLLERAXISMOTION) {
         if (event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX ||
@@ -1546,32 +1374,6 @@ void UI::handleSearchFilterInput(const SDL_Event& event) {
                 break;
         }
     }
-    if (event.type == SDL_KEYDOWN) {
-        switch (event.key.keysym.sym) {
-            case SDLK_UP:
-                moveFilterCursor(-1);
-                break;
-            case SDLK_DOWN:
-                moveFilterCursor(1);
-                break;
-            case SDLK_LEFT:
-                if (searchFilterCursor_ == 6) searchLevelFocus_ = 0;
-                else if (searchFilterCursor_ == 9) searchFilter_.mode = SearchMode::List;
-                break;
-            case SDLK_RIGHT:
-                if (searchFilterCursor_ == 6) searchLevelFocus_ = 1;
-                else if (searchFilterCursor_ == 9) searchFilter_.mode = SearchMode::Highlight;
-                break;
-            case SDLK_a:
-            case SDLK_RETURN:
-                confirmAction();
-                break;
-            case SDLK_b:
-            case SDLK_ESCAPE:
-                showSearchFilter_ = false;
-                break;
-        }
-    }
 }
 
 void UI::handleSearchResultsInput(const SDL_Event& event) {
@@ -1644,26 +1446,6 @@ void UI::handleSearchResultsInput(const SDL_Event& event) {
         switch (event.cbutton.button) {
             case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:  lHeld_ = false; break;
             case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: rHeld_ = false; break;
-        }
-    }
-    if (event.type == SDL_KEYDOWN) {
-        switch (event.key.keysym.sym) {
-            case SDLK_UP:   navigate(-1); break;
-            case SDLK_DOWN: navigate(1);  break;
-            case SDLK_q:    navigate(-10); break;
-            case SDLK_e:    navigate(10);  break;
-            case SDLK_a:
-            case SDLK_RETURN:
-                jumpToResult();
-                break;
-            case SDLK_b:
-            case SDLK_ESCAPE:
-                showSearchResults_ = false;
-                break;
-            case SDLK_x:
-                showSearchResults_ = false;
-                showSearchFilter_ = true;
-                break;
         }
     }
 }
@@ -1943,8 +1725,6 @@ void UI::handleWondercardListInput(const SDL_Event& event) {
         // Only B to close
         if (event.type == SDL_CONTROLLERBUTTONDOWN && event.cbutton.button == SDL_CONTROLLER_BUTTON_A)
             showWondercardList_ = false;
-        if (event.type == SDL_KEYDOWN && (event.key.keysym.sym == SDLK_b || event.key.keysym.sym == SDLK_ESCAPE))
-            showWondercardList_ = false;
         return;
     }
 
@@ -1981,36 +1761,6 @@ void UI::handleWondercardListInput(const SDL_Event& event) {
                 injectWondercard(wcList_[wcListCursor_]);
                 break;
             case SDL_CONTROLLER_BUTTON_A: // Switch B = cancel
-                showWondercardList_ = false;
-                break;
-        }
-    }
-    if (event.type == SDL_KEYDOWN) {
-        switch (event.key.keysym.sym) {
-            case SDLK_UP:
-                if (wcListCursor_ > 0) wcListCursor_--;
-                else wcListCursor_ = count - 1;
-                scrollIntoView();
-                break;
-            case SDLK_DOWN:
-                if (wcListCursor_ < count - 1) wcListCursor_++;
-                else wcListCursor_ = 0;
-                scrollIntoView();
-                break;
-            case SDLK_q: // L
-                wcListCursor_ = std::max(0, wcListCursor_ - 10);
-                scrollIntoView();
-                break;
-            case SDLK_e: // R
-                wcListCursor_ = std::min(count - 1, wcListCursor_ + 10);
-                scrollIntoView();
-                break;
-            case SDLK_a:
-            case SDLK_RETURN:
-                injectWondercard(wcList_[wcListCursor_]);
-                break;
-            case SDLK_b:
-            case SDLK_ESCAPE:
                 showWondercardList_ = false;
                 break;
         }

@@ -5,9 +5,7 @@
 #include <cstdlib>
 #include <sys/statvfs.h>
 
-#ifdef __SWITCH__
 #include <switch.h>
-#endif
 
 // --- Bank Selector ---
 
@@ -264,10 +262,6 @@ void UI::drawBankSelectorFrame() {
         drawDeleteConfirmPopup();
     }
 
-    // Text input overlay
-    if (showTextInput_) {
-        drawTextInputPopup();
-    }
 }
 
 void UI::handleBankSelectorInput(bool& running) {
@@ -281,15 +275,8 @@ void UI::handleBankSelectorInput(bool& running) {
             return;
         }
 
-        if (event.type == SDL_CONTROLLERBUTTONDOWN ||
-            event.type == SDL_KEYDOWN)
+        if (event.type == SDL_CONTROLLERBUTTONDOWN)
             markDirty();
-
-        // Text input popup takes priority
-        if (showTextInput_) {
-            handleTextInputEvent(event);
-            continue;
-        }
 
         // Delete confirmation takes priority
         if (showDeleteConfirm_) {
@@ -389,94 +376,10 @@ void UI::handleBankSelectorInput(bool& running) {
             }
         }
 
-        if (event.type == SDL_KEYDOWN) {
-            switch (event.key.keysym.sym) {
-                case SDLK_UP:
-                    if (bankCount > 0) {
-                        int prev = bankSelCursor_;
-                        bankSelCursor_ = (bankSelCursor_ - 1 + bankCount) % bankCount;
-                        if (bankManager_.isAllMode()) {
-                            if (bankSelCursor_ > prev)
-                                bankSelScroll_ = bankManager_.totalVisualRows() * 50;
-                        } else {
-                            if (bankSelCursor_ > prev) {
-                                int visibleRows = (580 - 80) / 50;
-                                bankSelScroll_ = std::max(0, bankSelCursor_ - visibleRows + 1);
-                            } else if (bankSelCursor_ < bankSelScroll_) {
-                                bankSelScroll_ = bankSelCursor_;
-                            }
-                        }
-                    }
-                    break;
-                case SDLK_DOWN:
-                    if (bankCount > 0) {
-                        int prev = bankSelCursor_;
-                        bankSelCursor_ = (bankSelCursor_ + 1) % bankCount;
-                        if (bankManager_.isAllMode()) {
-                            if (bankSelCursor_ < prev)
-                                bankSelScroll_ = 0;
-                        } else {
-                            if (bankSelCursor_ < prev) {
-                                bankSelScroll_ = 0;
-                            } else {
-                                int visibleRows = (580 - 80) / 50;
-                                if (bankSelCursor_ >= bankSelScroll_ + visibleRows)
-                                    bankSelScroll_ = bankSelCursor_ - visibleRows + 1;
-                            }
-                        }
-                    }
-                    break;
-                case SDLK_a:
-                case SDLK_RETURN:
-                    if (bankCount > 0)
-                        openSelectedBank();
-                    break;
-                case SDLK_x:
-                    if (!bankManager_.isAllMode())
-                        beginTextInput(TextInputPurpose::CreateBank);
-                    break;
-                case SDLK_y:
-                    if (bankManager_.isAllMode()) {
-                        showThemeSelector_ = true;
-                        themeSelCursor_ = themeIndex_;
-                        themeSelOriginal_ = themeIndex_;
-                    } else if (bankCount > 0) {
-                        beginTextInput(TextInputPurpose::RenameBank);
-                    }
-                    break;
-                case SDLK_DELETE:
-                case SDLK_EQUALS: // + key
-                    if (bankCount > 0 && !bankManager_.isAllMode())
-                        showDeleteConfirm_ = true;
-                    break;
-                case SDLK_MINUS:
-                    showAbout_ = true;
-                    break;
-                case SDLK_b:
-                case SDLK_ESCAPE:
-                    if (!activeBankName_.empty()) {
-                        screen_ = AppScreen::MainView;
-                        if (isDualBankMode() && leftBankName_.empty()) {
-                            cursor_ = Cursor{};
-                            cursor_.panel = Panel::Bank;
-                        }
-                    } else {
-                        if (!allBanksMode_) {
-                            account_.unmountSave();
-                            int cnt = BankManager::countBanks(basePath_, selectedGame_);
-                            gameBankCounts_[selectedGame_] = cnt;
-                            gameBankCounts_[pairedGame(selectedGame_)] = cnt;
-                        }
-                        allBanksMode_ = false;
-                        screen_ = AppScreen::GameSelector;
-                    }
-                    break;
-            }
-        }
     }
 
     // Joystick repeat navigation
-    if ((stickDirY_ != 0) && bankCount > 0 && !showTextInput_ && !showDeleteConfirm_) {
+    if ((stickDirY_ != 0) && bankCount > 0 && !showDeleteConfirm_) {
         uint32_t now = SDL_GetTicks();
         uint32_t delay = stickMoved_ ? STICK_REPEAT_DELAY : STICK_INITIAL_DELAY;
         if (now - stickMoveTime_ >= delay) {
@@ -647,18 +550,6 @@ void UI::handleDeleteConfirmEvent(const SDL_Event& event) {
                 break;
         }
     }
-    if (event.type == SDL_KEYDOWN) {
-        switch (event.key.keysym.sym) {
-            case SDLK_a:
-            case SDLK_RETURN:
-                tryDelete();
-                break;
-            case SDLK_b:
-            case SDLK_ESCAPE:
-                showDeleteConfirm_ = false;
-                break;
-        }
-    }
 }
 
 // --- Text Input ---
@@ -696,7 +587,6 @@ void UI::beginTextInput(TextInputPurpose purpose) {
         textInputCursorPos_ = (int)textInputBuffer_.size();
     }
 
-#ifdef __SWITCH__
     SwkbdConfig kbd;
     swkbdCreate(&kbd, 0);
     swkbdConfigMakePresetDefault(&kbd);
@@ -731,113 +621,10 @@ void UI::beginTextInput(TextInputPurpose purpose) {
         commitTextInput(result);
     else if (R_SUCCEEDED(rc))
         commitTextInput("");
-#else
-    showTextInput_ = true;
-    SDL_StartTextInput();
-#endif
-}
-
-void UI::drawTextInputPopup() {
-    drawRect(0, 0, SCREEN_W, SCREEN_H, T().overlay);
-
-    constexpr int POP_W = 500;
-    constexpr int POP_H = 180;
-    int popX = (SCREEN_W - POP_W) / 2;
-    int popY = (SCREEN_H - POP_H) / 2;
-
-    drawRect(popX, popY, POP_W, POP_H, T().panelBg);
-    drawRectOutline(popX, popY, POP_W, POP_H, T().cursor, 2);
-
-    const char* title = "Text Input";
-    switch (textInputPurpose_) {
-        case TextInputPurpose::CreateBank:    title = "New Bank Name"; break;
-        case TextInputPurpose::RenameBank:    title = "Rename Bank"; break;
-        case TextInputPurpose::RenameBoxName: title = "Rename Box"; break;
-        case TextInputPurpose::SearchSpecies: title = "Species Name"; break;
-        case TextInputPurpose::SearchOT:      title = "OT Name"; break;
-        case TextInputPurpose::SearchLevelMin: title = "Min Level"; break;
-        case TextInputPurpose::SearchLevelMax: title = "Max Level"; break;
-    }
-    drawTextCentered(title, popX + POP_W / 2, popY + 30, T().text, font_);
-
-    // Text field background
-    int fieldX = popX + 40;
-    int fieldY = popY + 60;
-    int fieldW = POP_W - 80;
-    int fieldH = 36;
-    drawRect(fieldX, fieldY, fieldW, fieldH, T().textFieldBg);
-    drawRectOutline(fieldX, fieldY, fieldW, fieldH, T().textDim, 1);
-
-    // Text content
-    if (!textInputBuffer_.empty()) {
-        drawText(textInputBuffer_, fieldX + 8, fieldY + 8, T().text, font_);
-    }
-
-    // Blinking cursor
-    int cursorX = fieldX + 8;
-    if (!textInputBuffer_.empty() && textInputCursorPos_ > 0) {
-        std::string beforeCursor = textInputBuffer_.substr(0, textInputCursorPos_);
-        cursorX += getTextEntry(beforeCursor, font_, T().text).w;
-    }
-    // Blink every 500ms
-    if ((SDL_GetTicks() / 500) % 2 == 0) {
-        drawRect(cursorX, fieldY + 6, 2, fieldH - 12, T().text);
-    }
-
-    drawTextCentered("Enter: Confirm  Escape: Cancel",
-                     popX + POP_W / 2, popY + POP_H - 25, T().textDim, fontSmall_);
-}
-
-void UI::handleTextInputEvent(const SDL_Event& event) {
-    markDirty();
-    if (event.type == SDL_TEXTINPUT) {
-        int maxLen = (textInputPurpose_ == TextInputPurpose::RenameBoxName) ? 16 : 32;
-        if ((int)textInputBuffer_.size() < maxLen) {
-            std::string input = event.text.text;
-            textInputBuffer_.insert(textInputCursorPos_, input);
-            textInputCursorPos_ += (int)input.size();
-        }
-        return;
-    }
-
-    if (event.type == SDL_KEYDOWN) {
-        switch (event.key.keysym.sym) {
-            case SDLK_RETURN:
-                SDL_StopTextInput();
-                showTextInput_ = false;
-                if (!textInputBuffer_.empty())
-                    commitTextInput(textInputBuffer_);
-                break;
-            case SDLK_ESCAPE:
-                SDL_StopTextInput();
-                showTextInput_ = false;
-                break;
-            case SDLK_BACKSPACE:
-                if (textInputCursorPos_ > 0) {
-                    textInputBuffer_.erase(textInputCursorPos_ - 1, 1);
-                    textInputCursorPos_--;
-                }
-                break;
-            case SDLK_DELETE:
-                if (textInputCursorPos_ < (int)textInputBuffer_.size()) {
-                    textInputBuffer_.erase(textInputCursorPos_, 1);
-                }
-                break;
-            case SDLK_LEFT:
-                if (textInputCursorPos_ > 0)
-                    textInputCursorPos_--;
-                break;
-            case SDLK_RIGHT:
-                if (textInputCursorPos_ < (int)textInputBuffer_.size())
-                    textInputCursorPos_++;
-                break;
-        }
-    }
 }
 
 void UI::commitTextInput(const std::string& text) {
     if (textInputPurpose_ == TextInputPurpose::CreateBank) {
-#ifdef __SWITCH__
         {
             Bank temp;
             temp.setGameType(selectedGame_);
@@ -853,7 +640,6 @@ void UI::commitTextInput(const std::string& text) {
                 }
             }
         }
-#endif
         showWorking("Creating bank...");
         if (bankManager_.createBank(text)) {
             // Select the newly created bank

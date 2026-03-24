@@ -276,8 +276,6 @@ private:
     int  bankSelScroll_ = 0;
     bool showDeleteConfirm_ = false;
 
-    // Text input (PC only; Switch uses swkbd)
-    bool showTextInput_ = false;
     TextInputPurpose textInputPurpose_;
     std::string textInputBuffer_;
     int textInputCursorPos_ = 0;
@@ -392,8 +390,6 @@ private:
     void openSelectedBank();
     void drawDeleteConfirmPopup();
     void handleDeleteConfirmEvent(const SDL_Event& event);
-    void drawTextInputPopup();
-    void handleTextInputEvent(const SDL_Event& event);
     void beginTextInput(TextInputPurpose purpose);
     void commitTextInput(const std::string& text);
 

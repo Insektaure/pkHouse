@@ -1,6 +1,5 @@
 #include "led.h"
 
-#ifdef __SWITCH__
 #include <switch.h>
 #include <cstring>
 #include <string>
@@ -151,12 +150,3 @@ void ledOff() {
     // Lite built-in LED: off.
     liteOff();
 }
-
-#else
-// Stubs for non-Switch builds.
-void ledInit() {}
-void ledInitWithPath(const char*) {}
-void ledExit() {}
-void ledBlink() {}
-void ledOff() {}
-#endif

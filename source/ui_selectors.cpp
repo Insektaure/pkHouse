@@ -4,9 +4,7 @@
 #include <cstring>
 #include <sys/stat.h>
 
-#ifdef __SWITCH__
 #include <switch.h>
-#endif
 
 void UI::refreshBankCounts() {
     gameBankCounts_.clear();
@@ -85,8 +83,7 @@ void UI::handleProfileSelectorInput(bool& running) {
             return;
         }
 
-        if (event.type == SDL_CONTROLLERBUTTONDOWN ||
-            event.type == SDL_KEYDOWN)
+        if (event.type == SDL_CONTROLLERBUTTONDOWN)
             markDirty();
 
         if (event.type == SDL_CONTROLLERAXISMOTION) {
@@ -118,32 +115,6 @@ void UI::handleProfileSelectorInput(bool& running) {
                     showAbout_ = true;
                     break;
                 case SDL_CONTROLLER_BUTTON_START:
-                    running = false;
-                    break;
-            }
-        }
-
-        if (event.type == SDL_KEYDOWN) {
-            switch (event.key.keysym.sym) {
-                case SDLK_LEFT:
-                    profileSelCursor_ = (profileSelCursor_ + count - 1) % count;
-                    break;
-                case SDLK_RIGHT:
-                    profileSelCursor_ = (profileSelCursor_ + 1) % count;
-                    break;
-                case SDLK_a:
-                case SDLK_RETURN:
-                    selectProfile(profileSelCursor_);
-                    break;
-                case SDLK_y:
-                    showThemeSelector_ = true;
-                    themeSelCursor_ = themeIndex_;
-                    themeSelOriginal_ = themeIndex_;
-                    break;
-                case SDLK_MINUS:
-                    showAbout_ = true;
-                    break;
-                case SDLK_ESCAPE:
                     running = false;
                     break;
             }
@@ -200,7 +171,6 @@ void UI::selectProfile(int index) {
 
 void UI::loadGameIcons() {
     freeGameIcons();
-#ifdef __SWITCH__
     std::string cacheDir = basePath_ + "cache/";
     mkdir(cacheDir.c_str(), 0755);
 
@@ -263,7 +233,6 @@ void UI::loadGameIcons() {
         }
         nsExit();
     }
-#endif
 }
 
 void UI::freeGameIcons() {
@@ -463,8 +432,7 @@ void UI::handleGameSelectorInput(bool& running) {
             return;
         }
 
-        if (event.type == SDL_CONTROLLERBUTTONDOWN ||
-            event.type == SDL_KEYDOWN)
+        if (event.type == SDL_CONTROLLERBUTTONDOWN)
             markDirty();
 
         if (event.type == SDL_CONTROLLERAXISMOTION) {
@@ -515,45 +483,6 @@ void UI::handleGameSelectorInput(bool& running) {
                     break;
                 case SDL_CONTROLLER_BUTTON_START:
                     running = false;
-                    break;
-            }
-        }
-
-        if (event.type == SDL_KEYDOWN) {
-            switch (event.key.keysym.sym) {
-                case SDLK_LEFT:
-                    moveGrid(-1, 0);
-                    break;
-                case SDLK_RIGHT:
-                    moveGrid(1, 0);
-                    break;
-                case SDLK_UP:
-                    moveGrid(0, -1);
-                    break;
-                case SDLK_DOWN:
-                    moveGrid(0, 1);
-                    break;
-                case SDLK_a:
-                case SDLK_RETURN:
-                    if (gameSelOnAllBanks_)
-                        enterAllBanksMode();
-                    else
-                        selectGame(availableGames_[gameSelCursor_]);
-                    break;
-                case SDLK_y:
-                    showThemeSelector_ = true;
-                    themeSelCursor_ = themeIndex_;
-                    themeSelOriginal_ = themeIndex_;
-                    break;
-                case SDLK_MINUS:
-                    showAbout_ = true;
-                    break;
-                case SDLK_b:
-                case SDLK_ESCAPE:
-                    if (selectedProfile_ >= 0)
-                        screen_ = AppScreen::ProfileSelector;
-                    else
-                        running = false;
                     break;
             }
         }

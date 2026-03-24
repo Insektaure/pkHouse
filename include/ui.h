@@ -425,6 +425,11 @@ private:
 
     // Input handling
     void handleInput(bool& running);
+    void handleMenuInput(const SDL_Event& event, bool& running);
+    void handleDetailInput(const SDL_Event& event);
+    void handleNormalInput(const SDL_Event& event);
+    void handleStickRepeat();
+    void handleBumperRepeat();
     void moveCursor(int dx, int dy);
     void switchBox(int direction);
     void actionSelect();

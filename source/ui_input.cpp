@@ -118,679 +118,659 @@ void UI::handleInput(bool& running) {
             event.type == SDL_KEYUP)
             markDirty();
 
-        // While menu is open, handle menu input only
-        if (showMenu_) {
+        if (showMenu_)               { handleMenuInput(event, running); continue; }
+        if (showSpeciesListPicker_)  { handleSpeciesListPickerInput(event); continue; }
+        if (showSpeciesLetterPicker_){ handleSpeciesLetterPickerInput(event); continue; }
+        if (showSearchFilter_)       { handleSearchFilterInput(event); continue; }
+        if (showSearchResults_)      { handleSearchResultsInput(event); continue; }
+        if (showWondercardList_)     { handleWondercardListInput(event); continue; }
+        if (showBoxView_)            { handleBoxViewInput(event); continue; }
+        if (showDetail_)             { handleDetailInput(event); continue; }
+
+        handleNormalInput(event);
+    }
+
+    handleStickRepeat();
+    handleBumperRepeat();
+}
+
+void UI::handleMenuInput(const SDL_Event& event, bool& running) {
+    bool hasWC = gameInfo(selectedGame_).hasWondercards;
+    bool hasExport = !selectedSlots_.empty();
+    int menuCount = (isDualBankMode() ? (hasWC ? 8 : 7) : (hasWC ? 7 : 6)) + (hasExport ? 1 : 0);
+    auto menuConfirm = [&]() {
+        // 0=Theme, 1=Search (both modes)
+        if (menuSelection_ == 0) {
+            showThemeSelector_ = true;
+            themeSelCursor_ = themeIndex_;
+            themeSelOriginal_ = themeIndex_;
+            return;
+        }
+        if (menuSelection_ == 1) {
+            showMenu_ = false;
+            showSearchFilter_ = true;
+            searchFilterCursor_ = 0;
+            searchFilter_ = SearchFilter{};
+            clearSearchHighlight();
+            return;
+        }
+        // Wondercard (index 2) for SV/SwSh games
+        if (hasWC && menuSelection_ == 2) {
+            showMenu_ = false;
+            wcList_ = scanWondercards(basePath_, selectedGame_);
+            wcListCursor_ = 0;
+            wcListScroll_ = 0;
+            showWondercardList_ = true;
+            return;
+        }
+        // Export Selected (after Wondercard)
+        int exportIdx = hasWC ? 3 : 2;
+        if (hasExport && menuSelection_ == exportIdx) {
+            showMenu_ = false;
+            int exported = 0;
+            int failed = 0;
+            for (int slot : selectedSlots_) {
+                Pokemon pkm = getPokemonAt(selectedBox_, slot, selectedPanel_);
+                if (!pkm.isEmpty()) {
+                    std::string name = exportPokemon(pkm);
+                    if (!name.empty()) exported++;
+                    else failed++;
+                }
+            }
+            std::string body = std::to_string(exported) + " Pokemon exported.";
+            if (failed > 0) body += "\n" + std::to_string(failed) + " failed.";
+            showMessageAndWait("Export Complete", body);
+            return;
+        }
+        int sel = menuSelection_ - (hasWC ? 3 : 2) - (hasExport ? 1 : 0);
+        if (isDualBankMode()) {
+            // sel: 0=Switch Left Bank, 1=Switch Right Bank, 2=Change Game,
+            // 3=Save Banks, 4=Quit
+            if (sel == 0) {
+                // Need at least 1 bank available that isn't loaded on the right
+                int avail = 0;
+                for (auto& b : bankManager_.list())
+                    if (b.name != activeBankName_) avail++;
+                if (avail == 0) {
+                    showMenu_ = false;
+                    if (!showConfirmDialog("No Banks Available",
+                            "Create a new bank?")) return;
+                    if (!saveBankFiles()) return;
+                    bankManager_.refresh();
+                    bankSelTarget_ = Panel::Game;
+                    screen_ = AppScreen::BankSelector;
+                    beginTextInput(TextInputPurpose::CreateBank);
+                    return;
+                }
+                if (!saveBankFiles()) { showMenu_ = false; return; }
+                bankManager_.refresh();
+                bankSelTarget_ = Panel::Game;
+                screen_ = AppScreen::BankSelector;
+                showMenu_ = false;
+            } else if (sel == 1) {
+                // Need at least 1 bank available that isn't loaded on the left
+                int avail = 0;
+                for (auto& b : bankManager_.list())
+                    if (b.name != leftBankName_) avail++;
+                if (avail == 0) {
+                    showMenu_ = false;
+                    if (!showConfirmDialog("No Banks Available",
+                            "Create a new bank?")) return;
+                    if (!saveBankFiles()) return;
+                    bankManager_.refresh();
+                    bankSelTarget_ = Panel::Bank;
+                    screen_ = AppScreen::BankSelector;
+                    beginTextInput(TextInputPurpose::CreateBank);
+                    return;
+                }
+                if (!saveBankFiles()) { showMenu_ = false; return; }
+                bankManager_.refresh();
+                bankSelTarget_ = Panel::Bank;
+                screen_ = AppScreen::BankSelector;
+                showMenu_ = false;
+            } else if (sel == 2) {
+                // Change Game — save banks and return to game selector
+                if (!saveBankFiles()) { showMenu_ = false; return; }
+                leftBankName_.clear();
+                leftBankPath_.clear();
+                activeBankName_.clear();
+                activeBankPath_.clear();
+                allBanksMode_ = false;
+                gameSelOnAllBanks_ = false;
+                screen_ = AppScreen::GameSelector;
+                showMenu_ = false;
+            } else if (sel == 3) {
+                saveBankFiles();
+                showMenu_ = false;
+            } else {
+                running = false;
+            }
+        } else {
+            // sel: 0=Switch Bank, 1=Change Game, 2=Save & Quit, 3=Quit Without Saving
+            if (sel == 0) {
+                if (!saveBankFiles()) { showMenu_ = false; return; }
+                showWorking("Saving...");
+                ledBlink();
+                if (save_.isLoaded())
+                    save_.save(savePath_);
+                account_.commitSave();
+                ledOff();
+                bankManager_.refresh();
+                screen_ = AppScreen::BankSelector;
+                showMenu_ = false;
+            } else if (sel == 1) {
+                // Change Game — save everything, unmount, go to game selector
+                if (!saveBankFiles()) { showMenu_ = false; return; }
+                showWorking("Saving...");
+                ledBlink();
+                if (save_.isLoaded())
+                    save_.save(savePath_);
+                account_.commitSave();
+                ledOff();
+                account_.unmountSave();
+                activeBankName_.clear();
+                activeBankPath_.clear();
+                allBanksMode_ = false;
+                gameSelOnAllBanks_ = false;
+                screen_ = AppScreen::GameSelector;
+                showMenu_ = false;
+            } else if (sel == 2) {
+                saveNow_ = true;
+                running = false;
+            } else {
+                running = false;
+            }
+        }
+    };
+    if (event.type == SDL_CONTROLLERAXISMOTION) {
+        if (event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX ||
+            event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY) {
+            int16_t lx = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTX);
+            int16_t ly = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTY);
+            updateStick(lx, ly);
+        }
+    }
+    if (event.type == SDL_CONTROLLERBUTTONDOWN) {
+        switch (event.cbutton.button) {
+            case SDL_CONTROLLER_BUTTON_DPAD_UP:
+                menuSelection_ = (menuSelection_ + menuCount - 1) % menuCount;
+                break;
+            case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+                menuSelection_ = (menuSelection_ + 1) % menuCount;
+                break;
+            case SDL_CONTROLLER_BUTTON_B: // Switch A = confirm
+                menuConfirm();
+                break;
+            case SDL_CONTROLLER_BUTTON_A: // Switch B = cancel
+                showMenu_ = false;
+                break;
+        }
+    }
+    if (event.type == SDL_KEYDOWN) {
+        switch (event.key.keysym.sym) {
+            case SDLK_UP:
+                menuSelection_ = (menuSelection_ + menuCount - 1) % menuCount;
+                break;
+            case SDLK_DOWN:
+                menuSelection_ = (menuSelection_ + 1) % menuCount;
+                break;
+            case SDLK_a:
+            case SDLK_RETURN:
+                menuConfirm();
+                break;
+            case SDLK_b:
+            case SDLK_ESCAPE:
+                showMenu_ = false;
+                break;
+        }
+    }
+}
+
+void UI::handleDetailInput(const SDL_Event& event) {
+    auto tryRelease = [&]() {
+        int box = cursor_.box;
+        int slot = cursor_.slot(gridCols());
+        // Block releasing LGPE party members
+        if (save_.isLGPEPartySlot(box, slot) && cursor_.panel == Panel::Game) {
+            showMessageAndWait("Party Pokemon",
+                "Can't release a party Pokemon.");
+            return;
+        }
+        Pokemon pkm = getPokemonAt(box, slot, cursor_.panel);
+        if (pkm.isEmpty()) return;
+        std::string name = pkm.displayName();
+        if (showConfirmDialog("Release Pokemon",
+                "Release " + name + "?")) {
+            clearPokemonAt(box, slot, cursor_.panel);
+            // Remove from multi-select if selected
+            if (!selectedSlots_.empty() && cursor_.panel == selectedPanel_
+                && box == selectedBox_) {
+                auto it = std::find(selectedSlots_.begin(),
+                                    selectedSlots_.end(), slot);
+                if (it != selectedSlots_.end())
+                    selectedSlots_.erase(it);
+            }
+            showDetail_ = false;
+            refreshHighlightSet();
+        }
+    };
+    // Navigate to prev/next non-empty Pokemon in the box
+    auto detailNav = [&](int dir) {
+        int cols = gridCols();
+        int slots = maxSlots();
+        int cur = cursor_.slot(cols);
+        for (int step = 1; step < slots; step++) {
+            int next = (cur + dir * step % slots + slots) % slots;
+            Pokemon pkm = getPokemonAt(cursor_.box, next, cursor_.panel);
+            if (!pkm.isEmpty()) {
+                cursor_.col = next % cols;
+                cursor_.row = next / cols;
+                return;
+            }
+        }
+    };
+    if (event.type == SDL_CONTROLLERBUTTONDOWN) {
+        switch (event.cbutton.button) {
+            case SDL_CONTROLLER_BUTTON_A: // Switch B
+                showDetail_ = false;
+                break;
+            case SDL_CONTROLLER_BUTTON_Y: { // Switch X — export
+                Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(gridCols()), cursor_.panel);
+                if (!pkm.isEmpty()) {
+                    std::string name = exportPokemon(pkm);
+                    if (!name.empty())
+                        showMessageAndWait("Exported!", name);
+                    else
+                        showMessageAndWait("Export Failed", "Could not write file.");
+                }
+                break;
+            }
+            case SDL_CONTROLLER_BUTTON_B: // Switch A
+                tryRelease();
+                break;
+            case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
+                detailNav(-1);
+                lHeld_ = true;
+                bumperRepeatTime_ = SDL_GetTicks();
+                bumperMoved_ = false;
+                break;
+            case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:
+                detailNav(1);
+                rHeld_ = true;
+                bumperRepeatTime_ = SDL_GetTicks();
+                bumperMoved_ = false;
+                break;
+        }
+    }
+    if (event.type == SDL_CONTROLLERBUTTONUP) {
+        switch (event.cbutton.button) {
+            case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:  lHeld_ = false; break;
+            case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: rHeld_ = false; break;
+        }
+    }
+    if (event.type == SDL_KEYDOWN) {
+        switch (event.key.keysym.sym) {
+            case SDLK_b:
+            case SDLK_ESCAPE:
+                showDetail_ = false;
+                break;
+            case SDLK_x: { // Export
+                Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(gridCols()), cursor_.panel);
+                if (!pkm.isEmpty()) {
+                    std::string name = exportPokemon(pkm);
+                    if (!name.empty())
+                        showMessageAndWait("Exported!", name);
+                    else
+                        showMessageAndWait("Export Failed", "Could not write file.");
+                }
+                break;
+            }
+            case SDLK_a:
+                tryRelease();
+                break;
+            case SDLK_q:
+                detailNav(-1);
+                break;
+            case SDLK_e:
+                detailNav(1);
+                break;
+        }
+    }
+}
+
+void UI::handleNormalInput(const SDL_Event& event) {
+    if (event.type == SDL_CONTROLLERAXISMOTION) {
+        if (event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX ||
+            event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY) {
+            int16_t lx = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTX);
+            int16_t ly = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTY);
+            updateStick(lx, ly);
+        }
+        if (event.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERLEFT) {
+            bool pressed = event.caxis.value > TRIGGER_DEADZONE;
+            if (pressed && !zlPressed_ &&
+                !(isDualBankMode() && leftBankName_.empty())) {
+                openBoxView(Panel::Game);
+                markDirty();
+            }
+            zlPressed_ = pressed;
+        }
+        if (event.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERRIGHT) {
+            bool pressed = event.caxis.value > TRIGGER_DEADZONE;
+            if (pressed && !zrPressed_) {
+                openBoxView(Panel::Bank);
+                markDirty();
+            }
+            zrPressed_ = pressed;
+        }
+    }
+
+    if (event.type == SDL_CONTROLLERBUTTONDOWN) {
+        switch (event.cbutton.button) {
+            case SDL_CONTROLLER_BUTTON_B: // Switch A (right) = SDL B
+                if (!yHeld_) { actionSelect(); refreshHighlightSet(); }
+                break;
+            case SDL_CONTROLLER_BUTTON_A: // Switch B (bottom) = SDL A
+                if (!yHeld_) { actionCancel(); refreshHighlightSet(); }
+                break;
+            case SDL_CONTROLLER_BUTTON_Y: // Switch X (top) = SDL Y
+            {
+                if (yHeld_) break;
+                if (holding_) {
+                    if (heldFromLGPEParty_) {
+                        showMessageAndWait("Party Pokemon",
+                            "Can't release a party Pokemon.");
+                        break;
+                    }
+                    int count = heldMulti_.empty() ? 1 : (int)heldMulti_.size();
+                    std::string msg = "Release " + std::to_string(count) + " Pokemon?";
+                    if (showConfirmDialog("Release Pokemon", msg)) {
+                        heldMulti_.clear();
+                        heldMultiSlots_.clear();
+                        heldPkm_ = Pokemon{};
+                        swapHistory_.clear();
+                        holding_ = false;
+                        positionPreserve_ = false;
+                        heldFromLGPEParty_ = false;
+                        lgpeHeldPartyIdx_ = -1;
+                        refreshHighlightSet();
+                    }
+                } else {
+                    Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(gridCols()), cursor_.panel);
+                    if (!pkm.isEmpty())
+                        showDetail_ = true;
+                }
+                break;
+            }
+            case SDL_CONTROLLER_BUTTON_X: // Switch Y (left) = SDL X
+                beginYPress();
+                break;
+            case SDL_CONTROLLER_BUTTON_START: // + (open menu)
+                if (!yHeld_) {
+                    showMenu_ = true;
+                    menuSelection_ = 0;
+                }
+                break;
+            case SDL_CONTROLLER_BUTTON_BACK: // - (about)
+                if (!yHeld_) showAbout_ = true;
+                break;
+            case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
+                if (!yHeld_) {
+                    switchBox(-1);
+                    lHeld_ = true;
+                    bumperRepeatTime_ = SDL_GetTicks();
+                    bumperMoved_ = false;
+                }
+                break;
+            case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:
+                if (!yHeld_) {
+                    switchBox(+1);
+                    rHeld_ = true;
+                    bumperRepeatTime_ = SDL_GetTicks();
+                    bumperMoved_ = false;
+                }
+                break;
+            case SDL_CONTROLLER_BUTTON_DPAD_UP:
+                moveCursor(0, -1);
+                break;
+            case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+                moveCursor(0, +1);
+                break;
+            case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
+                moveCursor(-1, 0);
+                break;
+            case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
+                moveCursor(+1, 0);
+                break;
+        }
+    }
+
+    if (event.type == SDL_CONTROLLERBUTTONUP) {
+        switch (event.cbutton.button) {
+            case SDL_CONTROLLER_BUTTON_X: // Switch Y released
+                endYPress();
+                break;
+            case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
+                lHeld_ = false;
+                break;
+            case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:
+                rHeld_ = false;
+                break;
+        }
+    }
+
+    // Keyboard for PC testing
+    if (event.type == SDL_KEYDOWN) {
+        switch (event.key.keysym.sym) {
+            case SDLK_UP:     moveCursor(0, -1); break;
+            case SDLK_DOWN:   moveCursor(0, +1); break;
+            case SDLK_LEFT:   moveCursor(-1, 0); break;
+            case SDLK_RIGHT:  moveCursor(+1, 0); break;
+            case SDLK_a:
+            case SDLK_RETURN: if (!yHeld_) { actionSelect(); refreshHighlightSet(); } break;
+            case SDLK_b:
+            case SDLK_ESCAPE: if (!yHeld_) { actionCancel(); refreshHighlightSet(); } break;
+            case SDLK_x:
+            {
+                if (yHeld_) break;
+                if (holding_) {
+                    if (heldFromLGPEParty_) {
+                        showMessageAndWait("Party Pokemon",
+                            "Can't release a party Pokemon.");
+                        break;
+                    }
+                    int count = heldMulti_.empty() ? 1 : (int)heldMulti_.size();
+                    std::string msg = "Release " + std::to_string(count) + " Pokemon?";
+                    if (showConfirmDialog("Release Pokemon", msg)) {
+                        heldMulti_.clear();
+                        heldMultiSlots_.clear();
+                        heldPkm_ = Pokemon{};
+                        swapHistory_.clear();
+                        holding_ = false;
+                        positionPreserve_ = false;
+                        heldFromLGPEParty_ = false;
+                        lgpeHeldPartyIdx_ = -1;
+                        refreshHighlightSet();
+                    }
+                } else {
+                    Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(gridCols()), cursor_.panel);
+                    if (!pkm.isEmpty())
+                        showDetail_ = true;
+                }
+                break;
+            }
+            case SDLK_y:      beginYPress(); break;
+            case SDLK_t:      if (!yHeld_) selectAll(); break;
+            case SDLK_q:      if (!yHeld_) switchBox(-1); break;
+            case SDLK_e:      if (!yHeld_) switchBox(+1); break;
+            case SDLK_PLUS:
+                if (!yHeld_) {
+                    showMenu_ = true;
+                    menuSelection_ = 0;
+                }
+                break;
+            case SDLK_MINUS:
+                if (!yHeld_) showAbout_ = true;
+                break;
+            case SDLK_z: if (!yHeld_ && !(isDualBankMode() && leftBankName_.empty())) openBoxView(Panel::Game); break;
+            case SDLK_c: if (!yHeld_) openBoxView(Panel::Bank); break;
+        }
+    }
+
+    if (event.type == SDL_KEYUP) {
+        switch (event.key.keysym.sym) {
+            case SDLK_y: endYPress(); break;
+        }
+    }
+}
+
+void UI::handleStickRepeat() {
+    if (stickDirX_ == 0 && stickDirY_ == 0) return;
+
+    uint32_t now = SDL_GetTicks();
+    uint32_t delay = stickMoved_ ? STICK_REPEAT_DELAY : STICK_INITIAL_DELAY;
+    if (now - stickMoveTime_ < delay) return;
+
+    markDirty();
+    if (showSpeciesLetterPicker_) {
+        constexpr int COLS = 2;
+        constexpr int TOTAL_ITEMS = 27;
+        int dx = stickDirX_ > 0 ? 1 : (stickDirX_ < 0 ? -1 : 0);
+        int dy = stickDirY_ > 0 ? 1 : (stickDirY_ < 0 ? -1 : 0);
+        int col = speciesLetterCursor_ % COLS;
+        int row = speciesLetterCursor_ / COLS;
+        int totalRows = (TOTAL_ITEMS + COLS - 1) / COLS;
+        for (int attempt = 0; attempt < TOTAL_ITEMS; attempt++) {
+            col += dx; row += dy;
+            if (row < 0) row = totalRows - 1;
+            if (row >= totalRows) row = 0;
+            if (col < 0) col = COLS - 1;
+            if (col >= COLS) col = 0;
+            int idx = row * COLS + col;
+            if (idx >= TOTAL_ITEMS) { col = 0; idx = row * COLS; }
+            if (letterHasSpecies(idx)) {
+                speciesLetterCursor_ = idx;
+                break;
+            }
+        }
+    } else if (showSpeciesListPicker_) {
+        constexpr int COLS = 3;
+        int total = static_cast<int>(speciesPickerList_.size());
+        if (total > 0) {
+            int col = speciesListCursor_ % COLS;
+            int row = speciesListCursor_ / COLS;
+            int totalRows = (total + COLS - 1) / COLS;
+            if (stickDirY_ != 0) {
+                row += stickDirY_ > 0 ? 1 : -1;
+                row = (row + totalRows) % totalRows;
+            }
+            if (stickDirX_ != 0) {
+                col += stickDirX_ > 0 ? 1 : -1;
+                col = (col + COLS) % COLS;
+            }
+            int idx = row * COLS + col;
+            if (idx >= total) idx = total - 1;
+            speciesListCursor_ = idx;
+        }
+    } else if (showSearchFilter_) {
+        bool alpha = (selectedGame_ == GameType::LA || selectedGame_ == GameType::ZA);
+        if (stickDirY_ != 0) {
+            int dir = stickDirY_ > 0 ? 1 : -1;
+            searchFilterCursor_ = (searchFilterCursor_ + dir + 12) % 12;
+            if (!alpha && searchFilterCursor_ == 4)
+                searchFilterCursor_ = (searchFilterCursor_ + dir + 12) % 12;
+        }
+        if (stickDirX_ != 0 && searchFilterCursor_ == 6)
+            searchLevelFocus_ = stickDirX_ > 0 ? 1 : 0;
+        if (stickDirX_ != 0 && searchFilterCursor_ == 9)
+            searchFilter_.mode = stickDirX_ > 0 ? SearchMode::Highlight : SearchMode::List;
+    } else if (showSearchResults_) {
+        if (stickDirY_ != 0 && !searchResults_.empty()) {
+            searchResultCursor_ += stickDirY_ > 0 ? 1 : -1;
+            if (searchResultCursor_ < 0) searchResultCursor_ = 0;
+            if (searchResultCursor_ >= (int)searchResults_.size())
+                searchResultCursor_ = (int)searchResults_.size() - 1;
+            int visibleRows = 12;
+            if (searchResultCursor_ < searchResultScroll_)
+                searchResultScroll_ = searchResultCursor_;
+            if (searchResultCursor_ >= searchResultScroll_ + visibleRows)
+                searchResultScroll_ = searchResultCursor_ - visibleRows + 1;
+        }
+    } else if (showWondercardList_) {
+        if (stickDirY_ != 0 && !wcList_.empty()) {
+            int count = static_cast<int>(wcList_.size());
+            wcListCursor_ += stickDirY_ > 0 ? 1 : -1;
+            if (wcListCursor_ < 0) wcListCursor_ = count - 1;
+            if (wcListCursor_ >= count) wcListCursor_ = 0;
+            constexpr int ROW_H = 36;
+            int visibleRows = (550 - 40 - 50) / ROW_H;
+            if (wcListCursor_ < wcListScroll_)
+                wcListScroll_ = wcListCursor_;
+            else if (wcListCursor_ >= wcListScroll_ + visibleRows)
+                wcListScroll_ = wcListCursor_ - visibleRows + 1;
+        }
+    } else if (showBoxView_) {
+        if (stickDirX_ != 0) moveBoxViewCursor(stickDirX_, 0);
+        if (stickDirY_ != 0) moveBoxViewCursor(0, stickDirY_);
+    } else if (showMenu_) {
+        if (stickDirY_ != 0)
+        {
             bool hasWC = gameInfo(selectedGame_).hasWondercards;
             bool hasExport = !selectedSlots_.empty();
             int menuCount = (isDualBankMode() ? (hasWC ? 8 : 7) : (hasWC ? 7 : 6)) + (hasExport ? 1 : 0);
-            auto menuConfirm = [&]() {
-                // 0=Theme, 1=Search (both modes)
-                if (menuSelection_ == 0) {
-                    showThemeSelector_ = true;
-                    themeSelCursor_ = themeIndex_;
-                    themeSelOriginal_ = themeIndex_;
-                    return;
-                }
-                if (menuSelection_ == 1) {
-                    showMenu_ = false;
-                    showSearchFilter_ = true;
-                    searchFilterCursor_ = 0;
-                    searchFilter_ = SearchFilter{};
-                    clearSearchHighlight();
-                    return;
-                }
-                // Wondercard (index 2) for SV/SwSh games
-                if (hasWC && menuSelection_ == 2) {
-                    showMenu_ = false;
-                    wcList_ = scanWondercards(basePath_, selectedGame_);
-                    wcListCursor_ = 0;
-                    wcListScroll_ = 0;
-                    showWondercardList_ = true;
-                    return;
-                }
-                // Export Selected (after Wondercard)
-                int exportIdx = hasWC ? 3 : 2;
-                if (hasExport && menuSelection_ == exportIdx) {
-                    showMenu_ = false;
-                    int exported = 0;
-                    int failed = 0;
-                    for (int slot : selectedSlots_) {
-                        Pokemon pkm = getPokemonAt(selectedBox_, slot, selectedPanel_);
-                        if (!pkm.isEmpty()) {
-                            std::string name = exportPokemon(pkm);
-                            if (!name.empty()) exported++;
-                            else failed++;
-                        }
-                    }
-                    std::string body = std::to_string(exported) + " Pokemon exported.";
-                    if (failed > 0) body += "\n" + std::to_string(failed) + " failed.";
-                    showMessageAndWait("Export Complete", body);
-                    return;
-                }
-                int sel = menuSelection_ - (hasWC ? 3 : 2) - (hasExport ? 1 : 0);
-                if (isDualBankMode()) {
-                    // sel: 0=Switch Left Bank, 1=Switch Right Bank, 2=Change Game,
-                    // 3=Save Banks, 4=Quit
-                    if (sel == 0) {
-                        // Need at least 1 bank available that isn't loaded on the right
-                        int avail = 0;
-                        for (auto& b : bankManager_.list())
-                            if (b.name != activeBankName_) avail++;
-                        if (avail == 0) {
-                            showMenu_ = false;
-                            if (!showConfirmDialog("No Banks Available",
-                                    "Create a new bank?")) return;
-                            if (!saveBankFiles()) return;
-                            bankManager_.refresh();
-                            bankSelTarget_ = Panel::Game;
-                            screen_ = AppScreen::BankSelector;
-                            beginTextInput(TextInputPurpose::CreateBank);
-                            return;
-                        }
-                        if (!saveBankFiles()) { showMenu_ = false; return; }
-                        bankManager_.refresh();
-                        bankSelTarget_ = Panel::Game;
-                        screen_ = AppScreen::BankSelector;
-                        showMenu_ = false;
-                    } else if (sel == 1) {
-                        // Need at least 1 bank available that isn't loaded on the left
-                        int avail = 0;
-                        for (auto& b : bankManager_.list())
-                            if (b.name != leftBankName_) avail++;
-                        if (avail == 0) {
-                            showMenu_ = false;
-                            if (!showConfirmDialog("No Banks Available",
-                                    "Create a new bank?")) return;
-                            if (!saveBankFiles()) return;
-                            bankManager_.refresh();
-                            bankSelTarget_ = Panel::Bank;
-                            screen_ = AppScreen::BankSelector;
-                            beginTextInput(TextInputPurpose::CreateBank);
-                            return;
-                        }
-                        if (!saveBankFiles()) { showMenu_ = false; return; }
-                        bankManager_.refresh();
-                        bankSelTarget_ = Panel::Bank;
-                        screen_ = AppScreen::BankSelector;
-                        showMenu_ = false;
-                    } else if (sel == 2) {
-                        // Change Game — save banks and return to game selector
-                        if (!saveBankFiles()) { showMenu_ = false; return; }
-                        leftBankName_.clear();
-                        leftBankPath_.clear();
-                        activeBankName_.clear();
-                        activeBankPath_.clear();
-                        allBanksMode_ = false;
-                        gameSelOnAllBanks_ = false;
-                        screen_ = AppScreen::GameSelector;
-                        showMenu_ = false;
-                    } else if (sel == 3) {
-                        saveBankFiles();
-                        showMenu_ = false;
-                    } else {
-                        running = false;
-                    }
-                } else {
-                    // sel: 0=Switch Bank, 1=Change Game, 2=Save & Quit, 3=Quit Without Saving
-                    if (sel == 0) {
-                        if (!saveBankFiles()) { showMenu_ = false; return; }
-                        showWorking("Saving...");
-                        ledBlink();
-                        if (save_.isLoaded())
-                            save_.save(savePath_);
-                        account_.commitSave();
-                        ledOff();
-                        bankManager_.refresh();
-                        screen_ = AppScreen::BankSelector;
-                        showMenu_ = false;
-                    } else if (sel == 1) {
-                        // Change Game — save everything, unmount, go to game selector
-                        if (!saveBankFiles()) { showMenu_ = false; return; }
-                        showWorking("Saving...");
-                        ledBlink();
-                        if (save_.isLoaded())
-                            save_.save(savePath_);
-                        account_.commitSave();
-                        ledOff();
-                        account_.unmountSave();
-                        activeBankName_.clear();
-                        activeBankPath_.clear();
-                        allBanksMode_ = false;
-                        gameSelOnAllBanks_ = false;
-                        screen_ = AppScreen::GameSelector;
-                        showMenu_ = false;
-                    } else if (sel == 2) {
-                        saveNow_ = true;
-                        running = false;
-                    } else {
-                        running = false;
-                    }
-                }
-            };
-            if (event.type == SDL_CONTROLLERAXISMOTION) {
-                if (event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX ||
-                    event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY) {
-                    int16_t lx = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTX);
-                    int16_t ly = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTY);
-                    updateStick(lx, ly);
-                }
-            }
-            if (event.type == SDL_CONTROLLERBUTTONDOWN) {
-                switch (event.cbutton.button) {
-                    case SDL_CONTROLLER_BUTTON_DPAD_UP:
-                        menuSelection_ = (menuSelection_ + menuCount - 1) % menuCount;
-                        break;
-                    case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
-                        menuSelection_ = (menuSelection_ + 1) % menuCount;
-                        break;
-                    case SDL_CONTROLLER_BUTTON_B: // Switch A = confirm
-                        menuConfirm();
-                        break;
-                    case SDL_CONTROLLER_BUTTON_A: // Switch B = cancel
-                        showMenu_ = false;
-                        break;
-                }
-            }
-            if (event.type == SDL_KEYDOWN) {
-                switch (event.key.keysym.sym) {
-                    case SDLK_UP:
-                        menuSelection_ = (menuSelection_ + menuCount - 1) % menuCount;
-                        break;
-                    case SDLK_DOWN:
-                        menuSelection_ = (menuSelection_ + 1) % menuCount;
-                        break;
-                    case SDLK_a:
-                    case SDLK_RETURN:
-                        menuConfirm();
-                        break;
-                    case SDLK_b:
-                    case SDLK_ESCAPE:
-                        showMenu_ = false;
-                        break;
-                }
-            }
-            continue;
+            menuSelection_ = (menuSelection_ + (stickDirY_ > 0 ? 1 : menuCount - 1)) % menuCount;
         }
-
-        // While species picker is open, handle its input only
-        if (showSpeciesListPicker_) {
-            handleSpeciesListPickerInput(event);
-            continue;
-        }
-        if (showSpeciesLetterPicker_) {
-            handleSpeciesLetterPickerInput(event);
-            continue;
-        }
-
-        // While search filter is open, handle its input only
-        if (showSearchFilter_) {
-            handleSearchFilterInput(event);
-            continue;
-        }
-
-        // While search results are open, handle their input only
-        if (showSearchResults_) {
-            handleSearchResultsInput(event);
-            continue;
-        }
-
-        // While wondercard list is open, handle its input only
-        if (showWondercardList_) {
-            handleWondercardListInput(event);
-            continue;
-        }
-
-        // While box view is open, handle its input only
-        if (showBoxView_) {
-            handleBoxViewInput(event);
-            continue;
-        }
-
-        // While detail popup is open, allow closing or releasing
-        if (showDetail_) {
-            auto tryRelease = [&]() {
-                int box = cursor_.box;
-                int slot = cursor_.slot(gridCols());
-                // Block releasing LGPE party members
-                if (save_.isLGPEPartySlot(box, slot) && cursor_.panel == Panel::Game) {
-                    showMessageAndWait("Party Pokemon",
-                        "Can't release a party Pokemon.");
-                    return;
-                }
-                Pokemon pkm = getPokemonAt(box, slot, cursor_.panel);
-                if (pkm.isEmpty()) return;
-                std::string name = pkm.displayName();
-                if (showConfirmDialog("Release Pokemon",
-                        "Release " + name + "?")) {
-                    clearPokemonAt(box, slot, cursor_.panel);
-                    // Remove from multi-select if selected
-                    if (!selectedSlots_.empty() && cursor_.panel == selectedPanel_
-                        && box == selectedBox_) {
-                        auto it = std::find(selectedSlots_.begin(),
-                                            selectedSlots_.end(), slot);
-                        if (it != selectedSlots_.end())
-                            selectedSlots_.erase(it);
-                    }
-                    showDetail_ = false;
-                    refreshHighlightSet();
-                }
-            };
-            // Navigate to prev/next non-empty Pokemon in the box
-            auto detailNav = [&](int dir) {
-                int cols = gridCols();
-                int slots = maxSlots();
-                int cur = cursor_.slot(cols);
-                for (int step = 1; step < slots; step++) {
-                    int next = (cur + dir * step % slots + slots) % slots;
-                    Pokemon pkm = getPokemonAt(cursor_.box, next, cursor_.panel);
-                    if (!pkm.isEmpty()) {
-                        cursor_.col = next % cols;
-                        cursor_.row = next / cols;
-                        return;
-                    }
-                }
-            };
-            if (event.type == SDL_CONTROLLERBUTTONDOWN) {
-                switch (event.cbutton.button) {
-                    case SDL_CONTROLLER_BUTTON_A: // Switch B
-                        showDetail_ = false;
-                        break;
-                    case SDL_CONTROLLER_BUTTON_Y: { // Switch X — export
-                        Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(gridCols()), cursor_.panel);
-                        if (!pkm.isEmpty()) {
-                            std::string name = exportPokemon(pkm);
-                            if (!name.empty())
-                                showMessageAndWait("Exported!", name);
-                            else
-                                showMessageAndWait("Export Failed", "Could not write file.");
-                        }
-                        break;
-                    }
-                    case SDL_CONTROLLER_BUTTON_B: // Switch A
-                        tryRelease();
-                        break;
-                    case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
-                        detailNav(-1);
-                        lHeld_ = true;
-                        bumperRepeatTime_ = SDL_GetTicks();
-                        bumperMoved_ = false;
-                        break;
-                    case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:
-                        detailNav(1);
-                        rHeld_ = true;
-                        bumperRepeatTime_ = SDL_GetTicks();
-                        bumperMoved_ = false;
-                        break;
-                }
-            }
-            if (event.type == SDL_CONTROLLERBUTTONUP) {
-                switch (event.cbutton.button) {
-                    case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:  lHeld_ = false; break;
-                    case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: rHeld_ = false; break;
-                }
-            }
-            if (event.type == SDL_KEYDOWN) {
-                switch (event.key.keysym.sym) {
-                    case SDLK_b:
-                    case SDLK_ESCAPE:
-                        showDetail_ = false;
-                        break;
-                    case SDLK_x: { // Export
-                        Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(gridCols()), cursor_.panel);
-                        if (!pkm.isEmpty()) {
-                            std::string name = exportPokemon(pkm);
-                            if (!name.empty())
-                                showMessageAndWait("Exported!", name);
-                            else
-                                showMessageAndWait("Export Failed", "Could not write file.");
-                        }
-                        break;
-                    }
-                    case SDLK_a:
-                        tryRelease();
-                        break;
-                    case SDLK_q:
-                        detailNav(-1);
-                        break;
-                    case SDLK_e:
-                        detailNav(1);
-                        break;
-                }
-            }
-            continue;
-        }
-
-        if (event.type == SDL_CONTROLLERAXISMOTION) {
-            if (event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX ||
-                event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY) {
-                int16_t lx = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTX);
-                int16_t ly = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTY);
-                updateStick(lx, ly);
-            }
-            if (event.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERLEFT) {
-                bool pressed = event.caxis.value > TRIGGER_DEADZONE;
-                if (pressed && !zlPressed_ &&
-                    !(isDualBankMode() && leftBankName_.empty())) {
-                    openBoxView(Panel::Game);
-                    markDirty();
-                }
-                zlPressed_ = pressed;
-            }
-            if (event.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERRIGHT) {
-                bool pressed = event.caxis.value > TRIGGER_DEADZONE;
-                if (pressed && !zrPressed_) {
-                    openBoxView(Panel::Bank);
-                    markDirty();
-                }
-                zrPressed_ = pressed;
-            }
-        }
-
-        if (event.type == SDL_CONTROLLERBUTTONDOWN) {
-            switch (event.cbutton.button) {
-                case SDL_CONTROLLER_BUTTON_B: // Switch A (right) = SDL B
-                    if (!yHeld_) { actionSelect(); refreshHighlightSet(); }
-                    break;
-                case SDL_CONTROLLER_BUTTON_A: // Switch B (bottom) = SDL A
-                    if (!yHeld_) { actionCancel(); refreshHighlightSet(); }
-                    break;
-                case SDL_CONTROLLER_BUTTON_Y: // Switch X (top) = SDL Y
-                {
-                    if (yHeld_) break;
-                    if (holding_) {
-                        if (heldFromLGPEParty_) {
-                            showMessageAndWait("Party Pokemon",
-                                "Can't release a party Pokemon.");
-                            break;
-                        }
-                        int count = heldMulti_.empty() ? 1 : (int)heldMulti_.size();
-                        std::string msg = "Release " + std::to_string(count) + " Pokemon?";
-                        if (showConfirmDialog("Release Pokemon", msg)) {
-                            heldMulti_.clear();
-                            heldMultiSlots_.clear();
-                            heldPkm_ = Pokemon{};
-                            swapHistory_.clear();
-                            holding_ = false;
-                            positionPreserve_ = false;
-                            heldFromLGPEParty_ = false;
-                            lgpeHeldPartyIdx_ = -1;
-                            refreshHighlightSet();
-                        }
-                    } else {
-                        Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(gridCols()), cursor_.panel);
-                        if (!pkm.isEmpty())
-                            showDetail_ = true;
-                    }
-                    break;
-                }
-                case SDL_CONTROLLER_BUTTON_X: // Switch Y (left) = SDL X
-                    beginYPress();
-                    break;
-                case SDL_CONTROLLER_BUTTON_START: // + (open menu)
-                    if (!yHeld_) {
-                        showMenu_ = true;
-                        menuSelection_ = 0;
-                    }
-                    break;
-                case SDL_CONTROLLER_BUTTON_BACK: // - (about)
-                    if (!yHeld_) showAbout_ = true;
-                    break;
-                case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
-                    if (!yHeld_) {
-                        switchBox(-1);
-                        lHeld_ = true;
-                        bumperRepeatTime_ = SDL_GetTicks();
-                        bumperMoved_ = false;
-                    }
-                    break;
-                case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:
-                    if (!yHeld_) {
-                        switchBox(+1);
-                        rHeld_ = true;
-                        bumperRepeatTime_ = SDL_GetTicks();
-                        bumperMoved_ = false;
-                    }
-                    break;
-                case SDL_CONTROLLER_BUTTON_DPAD_UP:
-                    moveCursor(0, -1);
-                    break;
-                case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
-                    moveCursor(0, +1);
-                    break;
-                case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
-                    moveCursor(-1, 0);
-                    break;
-                case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
-                    moveCursor(+1, 0);
-                    break;
-            }
-        }
-
-        if (event.type == SDL_CONTROLLERBUTTONUP) {
-            switch (event.cbutton.button) {
-                case SDL_CONTROLLER_BUTTON_X: // Switch Y released
-                    endYPress();
-                    break;
-                case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
-                    lHeld_ = false;
-                    break;
-                case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:
-                    rHeld_ = false;
-                    break;
-            }
-        }
-
-        // Keyboard for PC testing
-        if (event.type == SDL_KEYDOWN) {
-            switch (event.key.keysym.sym) {
-                case SDLK_UP:     moveCursor(0, -1); break;
-                case SDLK_DOWN:   moveCursor(0, +1); break;
-                case SDLK_LEFT:   moveCursor(-1, 0); break;
-                case SDLK_RIGHT:  moveCursor(+1, 0); break;
-                case SDLK_a:
-                case SDLK_RETURN: if (!yHeld_) { actionSelect(); refreshHighlightSet(); } break;
-                case SDLK_b:
-                case SDLK_ESCAPE: if (!yHeld_) { actionCancel(); refreshHighlightSet(); } break;
-                case SDLK_x:
-                {
-                    if (yHeld_) break;
-                    if (holding_) {
-                        if (heldFromLGPEParty_) {
-                            showMessageAndWait("Party Pokemon",
-                                "Can't release a party Pokemon.");
-                            break;
-                        }
-                        int count = heldMulti_.empty() ? 1 : (int)heldMulti_.size();
-                        std::string msg = "Release " + std::to_string(count) + " Pokemon?";
-                        if (showConfirmDialog("Release Pokemon", msg)) {
-                            heldMulti_.clear();
-                            heldMultiSlots_.clear();
-                            heldPkm_ = Pokemon{};
-                            swapHistory_.clear();
-                            holding_ = false;
-                            positionPreserve_ = false;
-                            heldFromLGPEParty_ = false;
-                            lgpeHeldPartyIdx_ = -1;
-                            refreshHighlightSet();
-                        }
-                    } else {
-                        Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(gridCols()), cursor_.panel);
-                        if (!pkm.isEmpty())
-                            showDetail_ = true;
-                    }
-                    break;
-                }
-                case SDLK_y:      beginYPress(); break;
-                case SDLK_t:      if (!yHeld_) selectAll(); break;
-                case SDLK_q:      if (!yHeld_) switchBox(-1); break;
-                case SDLK_e:      if (!yHeld_) switchBox(+1); break;
-                case SDLK_PLUS:
-                    if (!yHeld_) {
-                        showMenu_ = true;
-                        menuSelection_ = 0;
-                    }
-                    break;
-                case SDLK_MINUS:
-                    if (!yHeld_) showAbout_ = true;
-                    break;
-                case SDLK_z: if (!yHeld_ && !(isDualBankMode() && leftBankName_.empty())) openBoxView(Panel::Game); break;
-                case SDLK_c: if (!yHeld_) openBoxView(Panel::Bank); break;
-            }
-        }
-
-        if (event.type == SDL_KEYUP) {
-            switch (event.key.keysym.sym) {
-                case SDLK_y: endYPress(); break;
-            }
-        }
+    } else if (!showDetail_) {
+        if (stickDirX_ != 0) moveCursor(stickDirX_, 0);
+        if (stickDirY_ != 0) moveCursor(0, stickDirY_);
     }
+    stickMoveTime_ = now;
+    stickMoved_ = true;
+}
 
-    // Joystick repeat navigation
-    if (stickDirX_ != 0 || stickDirY_ != 0) {
-        uint32_t now = SDL_GetTicks();
-        uint32_t delay = stickMoved_ ? STICK_REPEAT_DELAY : STICK_INITIAL_DELAY;
-        if (now - stickMoveTime_ >= delay) {
-            markDirty();
-            if (showSpeciesLetterPicker_) {
-                constexpr int COLS = 2;
-                constexpr int TOTAL_ITEMS = 27;
-                int dx = stickDirX_ > 0 ? 1 : (stickDirX_ < 0 ? -1 : 0);
-                int dy = stickDirY_ > 0 ? 1 : (stickDirY_ < 0 ? -1 : 0);
-                int col = speciesLetterCursor_ % COLS;
-                int row = speciesLetterCursor_ / COLS;
-                int totalRows = (TOTAL_ITEMS + COLS - 1) / COLS;
-                for (int attempt = 0; attempt < TOTAL_ITEMS; attempt++) {
-                    col += dx; row += dy;
-                    if (row < 0) row = totalRows - 1;
-                    if (row >= totalRows) row = 0;
-                    if (col < 0) col = COLS - 1;
-                    if (col >= COLS) col = 0;
-                    int idx = row * COLS + col;
-                    if (idx >= TOTAL_ITEMS) { col = 0; idx = row * COLS; }
-                    if (letterHasSpecies(idx)) {
-                        speciesLetterCursor_ = idx;
-                        break;
-                    }
-                }
-            } else if (showSpeciesListPicker_) {
-                constexpr int COLS = 3;
-                int total = static_cast<int>(speciesPickerList_.size());
-                if (total > 0) {
-                    int col = speciesListCursor_ % COLS;
-                    int row = speciesListCursor_ / COLS;
-                    int totalRows = (total + COLS - 1) / COLS;
-                    if (stickDirY_ != 0) {
-                        row += stickDirY_ > 0 ? 1 : -1;
-                        row = (row + totalRows) % totalRows;
-                    }
-                    if (stickDirX_ != 0) {
-                        col += stickDirX_ > 0 ? 1 : -1;
-                        col = (col + COLS) % COLS;
-                    }
-                    int idx = row * COLS + col;
-                    if (idx >= total) idx = total - 1;
-                    speciesListCursor_ = idx;
-                }
-            } else if (showSearchFilter_) {
-                bool alpha = (selectedGame_ == GameType::LA || selectedGame_ == GameType::ZA);
-                if (stickDirY_ != 0) {
-                    int dir = stickDirY_ > 0 ? 1 : -1;
-                    searchFilterCursor_ = (searchFilterCursor_ + dir + 12) % 12;
-                    if (!alpha && searchFilterCursor_ == 4)
-                        searchFilterCursor_ = (searchFilterCursor_ + dir + 12) % 12;
-                }
-                if (stickDirX_ != 0 && searchFilterCursor_ == 6)
-                    searchLevelFocus_ = stickDirX_ > 0 ? 1 : 0;
-                if (stickDirX_ != 0 && searchFilterCursor_ == 9)
-                    searchFilter_.mode = stickDirX_ > 0 ? SearchMode::Highlight : SearchMode::List;
-            } else if (showSearchResults_) {
-                if (stickDirY_ != 0 && !searchResults_.empty()) {
-                    searchResultCursor_ += stickDirY_ > 0 ? 1 : -1;
-                    if (searchResultCursor_ < 0) searchResultCursor_ = 0;
-                    if (searchResultCursor_ >= (int)searchResults_.size())
-                        searchResultCursor_ = (int)searchResults_.size() - 1;
-                    int visibleRows = 12;
-                    if (searchResultCursor_ < searchResultScroll_)
-                        searchResultScroll_ = searchResultCursor_;
-                    if (searchResultCursor_ >= searchResultScroll_ + visibleRows)
-                        searchResultScroll_ = searchResultCursor_ - visibleRows + 1;
-                }
-            } else if (showWondercardList_) {
-                if (stickDirY_ != 0 && !wcList_.empty()) {
-                    int count = static_cast<int>(wcList_.size());
-                    wcListCursor_ += stickDirY_ > 0 ? 1 : -1;
-                    if (wcListCursor_ < 0) wcListCursor_ = count - 1;
-                    if (wcListCursor_ >= count) wcListCursor_ = 0;
-                    constexpr int ROW_H = 36;
-                    int visibleRows = (550 - 40 - 50) / ROW_H;
-                    if (wcListCursor_ < wcListScroll_)
-                        wcListScroll_ = wcListCursor_;
-                    else if (wcListCursor_ >= wcListScroll_ + visibleRows)
-                        wcListScroll_ = wcListCursor_ - visibleRows + 1;
-                }
-            } else if (showBoxView_) {
-                if (stickDirX_ != 0) moveBoxViewCursor(stickDirX_, 0);
-                if (stickDirY_ != 0) moveBoxViewCursor(0, stickDirY_);
-            } else if (showMenu_) {
-                if (stickDirY_ != 0)
-                {
-                    bool hasWC = gameInfo(selectedGame_).hasWondercards;
-                    bool hasExport = !selectedSlots_.empty();
-                    int menuCount = (isDualBankMode() ? (hasWC ? 8 : 7) : (hasWC ? 7 : 6)) + (hasExport ? 1 : 0);
-                    menuSelection_ = (menuSelection_ + (stickDirY_ > 0 ? 1 : menuCount - 1)) % menuCount;
-                }
-            } else if (!showDetail_) {
-                if (stickDirX_ != 0) moveCursor(stickDirX_, 0);
-                if (stickDirY_ != 0) moveCursor(0, stickDirY_);
-            }
-            stickMoveTime_ = now;
-            stickMoved_ = true;
-        }
-    }
+void UI::handleBumperRepeat() {
+    if (!lHeld_ && !rHeld_) return;
 
-    // L/R shoulder button repeat
-    if (lHeld_ || rHeld_) {
-        uint32_t now = SDL_GetTicks();
-        uint32_t delay = bumperMoved_ ? BUMPER_REPEAT_DELAY : BUMPER_INITIAL_DELAY;
-        if (now - bumperRepeatTime_ >= delay) {
-            markDirty();
-            if (showSearchResults_ && !searchResults_.empty()) {
-                // Page through search results
-                int dir = lHeld_ ? -10 : 10;
-                searchResultCursor_ += dir;
-                if (searchResultCursor_ < 0) searchResultCursor_ = 0;
-                if (searchResultCursor_ >= (int)searchResults_.size())
-                    searchResultCursor_ = (int)searchResults_.size() - 1;
-                int visibleRows = 12;
-                if (searchResultCursor_ < searchResultScroll_)
-                    searchResultScroll_ = searchResultCursor_;
-                if (searchResultCursor_ >= searchResultScroll_ + visibleRows)
-                    searchResultScroll_ = searchResultCursor_ - visibleRows + 1;
-            } else if (showDetail_) {
-                // Navigate to prev/next non-empty slot
-                int dir = lHeld_ ? -1 : 1;
-                int cols = gridCols();
-                int slots = maxSlots();
-                int cur = cursor_.slot(cols);
-                for (int step = 1; step < slots; step++) {
-                    int next = (cur + dir * step % slots + slots) % slots;
-                    Pokemon pkm = getPokemonAt(cursor_.box, next, cursor_.panel);
-                    if (!pkm.isEmpty()) {
-                        cursor_.col = next % cols;
-                        cursor_.row = next / cols;
-                        break;
-                    }
-                }
-            } else if (!showMenu_ && !showSearchFilter_ &&
-                       !showBoxView_) {
-                // Box switching
-                if (lHeld_) switchBox(-1);
-                if (rHeld_) switchBox(+1);
+    uint32_t now = SDL_GetTicks();
+    uint32_t delay = bumperMoved_ ? BUMPER_REPEAT_DELAY : BUMPER_INITIAL_DELAY;
+    if (now - bumperRepeatTime_ < delay) return;
+
+    markDirty();
+    if (showSearchResults_ && !searchResults_.empty()) {
+        // Page through search results
+        int dir = lHeld_ ? -10 : 10;
+        searchResultCursor_ += dir;
+        if (searchResultCursor_ < 0) searchResultCursor_ = 0;
+        if (searchResultCursor_ >= (int)searchResults_.size())
+            searchResultCursor_ = (int)searchResults_.size() - 1;
+        int visibleRows = 12;
+        if (searchResultCursor_ < searchResultScroll_)
+            searchResultScroll_ = searchResultCursor_;
+        if (searchResultCursor_ >= searchResultScroll_ + visibleRows)
+            searchResultScroll_ = searchResultCursor_ - visibleRows + 1;
+    } else if (showDetail_) {
+        // Navigate to prev/next non-empty slot
+        int dir = lHeld_ ? -1 : 1;
+        int cols = gridCols();
+        int slots = maxSlots();
+        int cur = cursor_.slot(cols);
+        for (int step = 1; step < slots; step++) {
+            int next = (cur + dir * step % slots + slots) % slots;
+            Pokemon pkm = getPokemonAt(cursor_.box, next, cursor_.panel);
+            if (!pkm.isEmpty()) {
+                cursor_.col = next % cols;
+                cursor_.row = next / cols;
+                break;
             }
-            bumperRepeatTime_ = now;
-            bumperMoved_ = true;
         }
+    } else if (!showMenu_ && !showSearchFilter_ &&
+               !showBoxView_) {
+        // Box switching
+        if (lHeld_) switchBox(-1);
+        if (rHeld_) switchBox(+1);
     }
+    bumperRepeatTime_ = now;
+    bumperMoved_ = true;
 }
 
 void UI::moveCursor(int dx, int dy) {

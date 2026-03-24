@@ -1,5 +1,5 @@
 #include "poke_crypto.h"
-#include <cstring>
+#include "binary_io.h"
 
 // Block shuffle position table (24 patterns * 4 + 8*4 duplicates)
 // From PokeCrypto.cs lines 66-101
@@ -21,22 +21,6 @@ static const uint8_t BLOCK_POSITION_INVERT[32] = {
     0, 1, 2, 4, 3, 5, 6, 7, 12, 18, 13, 19, 8, 10, 14, 20, 16, 22, 9, 11, 15, 21, 17, 23,
     0, 1, 2, 4, 3, 5, 6, 7,
 };
-
-static inline uint16_t readU16LE(const uint8_t* p) {
-    uint16_t v;
-    std::memcpy(&v, p, 2);
-    return v;
-}
-
-static inline void writeU16LE(uint8_t* p, uint16_t v) {
-    std::memcpy(p, &v, 2);
-}
-
-static inline uint32_t readU32LE(const uint8_t* p) {
-    uint32_t v;
-    std::memcpy(&v, p, 4);
-    return v;
-}
 
 void PokeCrypto::cryptArray(uint8_t* data, size_t len, uint32_t seed) {
     size_t pairs = len / 2;

@@ -1,5 +1,5 @@
 #include "md5.h"
-#include <cstring>
+#include "binary_io.h"
 #include <vector>
 
 // MD5 implementation based on RFC 1321.
@@ -34,16 +34,6 @@ static constexpr uint32_t K[64] = {
 
 static inline uint32_t leftRotate(uint32_t x, uint32_t c) {
     return (x << c) | (x >> (32 - c));
-}
-
-static inline uint32_t readU32LE(const uint8_t* p) {
-    uint32_t v;
-    std::memcpy(&v, p, 4);
-    return v;
-}
-
-static inline void writeU32LE(uint8_t* p, uint32_t v) {
-    std::memcpy(p, &v, 4);
 }
 
 } // anonymous namespace

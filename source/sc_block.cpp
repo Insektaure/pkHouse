@@ -1,15 +1,5 @@
 #include "sc_block.h"
-#include <cstring>
-
-static inline uint32_t readU32LE(const uint8_t* p) {
-    uint32_t v;
-    std::memcpy(&v, p, 4);
-    return v;
-}
-
-static inline void writeU32LE(uint8_t* p, uint32_t v) {
-    std::memcpy(p, &v, 4);
-}
+#include "binary_io.h"
 
 SCBlock SCBlock::readFromOffset(const uint8_t* buf, size_t bufLen, size_t& offset) {
     SCBlock block{};

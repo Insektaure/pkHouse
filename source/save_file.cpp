@@ -1,4 +1,5 @@
 #include "save_file.h"
+#include "binary_io.h"
 #include "md5.h"
 #include <fstream>
 #include <cstdio>
@@ -819,16 +820,6 @@ bool SaveFile::saveLGPE(const std::string& path) {
 }
 
 // --- GBA save format (sector-based, for FRLG) ---
-
-static inline uint16_t readU16LE(const uint8_t* p) {
-    uint16_t v; std::memcpy(&v, p, 2); return v;
-}
-static inline uint32_t readU32LE(const uint8_t* p) {
-    uint32_t v; std::memcpy(&v, p, 4); return v;
-}
-static inline void writeU16LE(uint8_t* p, uint16_t v) {
-    std::memcpy(p, &v, 2);
-}
 
 uint16_t SaveFile::checkSum32GBA(const uint8_t* data, size_t len) {
     uint32_t chk = 0;

@@ -231,20 +231,17 @@ static const uint8_t FRLG_GENDER_RATIOS[387] = {
 };
 
 uint8_t Pokemon::level() const {
+    auto& o = ofs();
+    if (o.levelByte >= 0)
+        return data[o.levelByte];
+    // Compute from EXP using species growth rate table
+    uint32_t exp = readU32(o.expOfs);
     if (isFRLG(gameType_)) {
-        // PK3: calculate from EXP at offset 0x24 using species growth rate
-        uint32_t exp = readU32(0x24);
         uint16_t sp = species();
         uint8_t growth = (sp < 387) ? FRLG_GROWTH_RATES[sp] : 0;
         return levelFromExp(exp, growth);
     }
-    if (isLGPE(gameType_))
-        return data[0xEC]; // PB7: Stat_Level in party stats
-    if (gameType_ != GameType::LA)
-        return data[0x148];
-
-    // LA box data doesn't store level — calculate from EXP (offset 0x10)
-    uint32_t exp = readU32(0x10);
+    // LA
     uint16_t sp = speciesInternal();
     uint8_t growth = (sp < 1276) ? LA_GROWTH_RATES[sp] : 0;
     return levelFromExp(exp, growth);
@@ -259,7 +256,9 @@ uint16_t Pokemon::species() const {
 }
 
 uint8_t Pokemon::gender() const {
-    if (isFRLG(gameType_)) {
+    auto& o = ofs();
+    if (o.genderByte < 0) {
+        // PK3: PID-based gender
         uint16_t sp = species();
         if (sp >= 387) return 2; // genderless
         uint8_t ratio = FRLG_GENDER_RATIOS[sp];
@@ -268,11 +267,7 @@ uint8_t Pokemon::gender() const {
         if (ratio == 0x00) return 0; // always male
         return (pid() & 0xFF) >= ratio ? 0 : 1; // 0=male, 1=female
     }
-    if (isLGPE(gameType_))
-        return (data[0x1D] >> 1) & 3;
-    if (isSV(gameType_) || gameType_ == GameType::ZA)
-        return (data[0x22] >> 1) & 3; // PK9/PA9: bits 1:2
-    return (data[0x22] >> 2) & 3;     // PK8/PB8/PA8: bits 2:3
+    return (data[o.genderByte] >> o.genderShift) & 3;
 }
 
 // Gen3 English character encoding table (byte 0x00-0xFF → Unicode codepoint)
@@ -376,23 +371,17 @@ static std::string readUtf16String(const uint8_t* base, int offset, int maxChars
 }
 
 std::string Pokemon::nickname() const {
-    if (isFRLG(gameType_))
+    auto& o = ofs();
+    if (o.nickname < 0)
         return readGen3String(data.data(), 0x08, 10);
-    int ofs;
-    if (isLGPE(gameType_))       ofs = 0x40;
-    else if (gameType_ == GameType::LA) ofs = 0x60;
-    else                                ofs = 0x58;
-    return readUtf16String(data.data(), ofs, 13);
+    return readUtf16String(data.data(), o.nickname, 13);
 }
 
 std::string Pokemon::otName() const {
-    if (isFRLG(gameType_))
+    auto& o = ofs();
+    if (o.otName < 0)
         return readGen3String(data.data(), 0x14, 7);
-    int ofs;
-    if (isLGPE(gameType_))       ofs = 0xB0;
-    else if (gameType_ == GameType::LA) ofs = 0x110;
-    else                                ofs = 0xF8;
-    return readUtf16String(data.data(), ofs, 13);
+    return readUtf16String(data.data(), o.otName, 13);
 }
 
 std::string Pokemon::displayName() const {

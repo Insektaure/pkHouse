@@ -11,6 +11,50 @@
 // EXP table: 6 growth rates x 100 levels (defined in pokemon.cpp)
 extern const uint32_t EXP_TABLE[6][100];
 
+// Per-format offset table for Pokemon data fields.
+// -1 means the field needs special handling (see accessor comments).
+struct PokemonOffsets {
+    int speciesInternal;  // readU16
+    int heldItem;         // readU16
+    int pid;              // readU32
+    int nature;           // byte read, -1 = pid % 25 (PK3)
+    int fateful;          // byte offset, -1 = u32 bit (PK3)
+    int fatefulBit;       // bit position within byte
+    int genderByte;       // byte offset, -1 = PID-based (PK3)
+    int genderShift;      // right-shift before & 3
+    int form;             // byte offset, -1 = always 0 (PK3)
+    int formShift;        // right-shift (3 for PB7, 0 otherwise)
+    int ball;             // byte offset, -1 = u16 bits (PK3)
+    int ability;          // offset, -1 = always 0 (PK3)
+    bool abilityIsU8;     // true for PB7
+    int evBase;           // evHp = base+0 .. evSpD = base+5
+    int tid;              // readU16
+    int sid;              // readU16
+    int moveBase;         // move1 = base, +2, +4, +6
+    int iv32;             // readU32
+    int nickname;         // UTF16 offset, -1 = Gen3 encoding
+    int otName;           // UTF16 offset, -1 = Gen3 encoding
+    int levelByte;        // byte offset, -1 = computed from EXP
+    int expOfs;           // u32 offset for EXP, -1 = N/A
+    int alphaByte;        // byte for alpha, -1 = always false
+    bool alphaIsNonZero;  // true = !=0 (PA9), false = bit5 (PA8)
+};
+
+// Returns the offset table for a given game format.
+inline const PokemonOffsets& pokemonOffsetsFor(GameType g) {
+    //                              spec  held  pid   nat  fate fBit gend gShf form fShf ball  abi  aU8  ev    tid   sid   move  iv32  nick  ot    lvl   exp   alph aNZ
+    static constexpr PokemonOffsets PK3 = {0x20, 0x22, 0x00, -1,  -1,  31,  -1,  0,   -1,  0,   -1,  -1,  false, 0x38, 0x04, 0x06, 0x2C, 0x48, -1,   -1,   -1,   0x24, -1,  false};
+    static constexpr PokemonOffsets PB7 = {0x08, 0x0A, 0x18, 0x1C, 0x1D, 0,  0x1D, 1,  0x1D, 3,  0xDC, 0x14, true, 0x1E, 0x0C, 0x0E, 0x5A, 0x74, 0x40, 0xB0, 0xEC, -1,   -1,  false};
+    static constexpr PokemonOffsets PK8 = {0x08, 0x0A, 0x1C, 0x20, 0x22, 0,  0x22, 2,  0x24, 0,  0x124, 0x14, false, 0x26, 0x0C, 0x0E, 0x72, 0x8C, 0x58, 0xF8, 0x148, -1,  -1,  false};
+    static constexpr PokemonOffsets PA8 = {0x08, 0x0A, 0x1C, 0x20, 0x22, 0,  0x22, 2,  0x24, 0,  0x137, 0x14, false, 0x26, 0x0C, 0x0E, 0x54, 0x94, 0x60, 0x110, -1,   0x10, 0x16, false};
+    static constexpr PokemonOffsets PA9 = {0x08, 0x0A, 0x1C, 0x20, 0x22, 0,  0x22, 1,  0x24, 0,  0x124, 0x14, false, 0x26, 0x0C, 0x0E, 0x72, 0x8C, 0x58, 0xF8, 0x148, -1,  0x23, true};
+    if (isFRLG(g)) return PK3;
+    if (isLGPE(g)) return PB7;
+    if (g == GameType::LA) return PA8;
+    if (isSV(g) || g == GameType::ZA) return PA9;
+    return PK8; // SwSh, BDSP
+}
+
 // Pokemon data structure for Gen3/Gen6/Gen8/Gen8a/Gen9 (PK3/PB7/PK8/PA8/PA9).
 // Ported from PKHeX.Core/PKM/PA9.cs, G8PKM.cs, PA8.cs, PK3.cs
 struct Pokemon {
@@ -18,94 +62,84 @@ struct Pokemon {
     GameType gameType_ = GameType::ZA;
 
     // --- Helpers ---
-    uint16_t readU16(int ofs) const {
+    const PokemonOffsets& ofs() const { return pokemonOffsetsFor(gameType_); }
+
+    uint16_t readU16(int o) const {
         uint16_t v;
-        std::memcpy(&v, data.data() + ofs, 2);
+        std::memcpy(&v, data.data() + o, 2);
         return v;
     }
-    uint32_t readU32(int ofs) const {
+    uint32_t readU32(int o) const {
         uint32_t v;
-        std::memcpy(&v, data.data() + ofs, 4);
+        std::memcpy(&v, data.data() + o, 4);
         return v;
     }
-    void writeU16(int ofs, uint16_t v) {
-        std::memcpy(data.data() + ofs, &v, 2);
+    void writeU16(int o, uint16_t v) {
+        std::memcpy(data.data() + o, &v, 2);
     }
-    void writeU32(int ofs, uint32_t v) {
-        std::memcpy(data.data() + ofs, &v, 4);
+    void writeU32(int o, uint32_t v) {
+        std::memcpy(data.data() + o, &v, 4);
     }
 
-    // --- Block A (game-aware offsets) ---
+    // --- Block A (offset-table driven) ---
 
-    // EncryptionConstant: 0x00 for all formats (PK3: this is PID)
     uint32_t encryptionConstant() const { return readU32(0x00); }
 
-    // Species internal ID: 0x20 (PK3), 0x08 (all others)
-    uint16_t speciesInternal() const {
-        return readU16(isFRLG(gameType_) ? 0x20 : 0x08);
-    }
+    uint16_t speciesInternal() const { return readU16(ofs().speciesInternal); }
 
     // National species ID (converted via SpeciesConverter)
     uint16_t species() const;
 
-    // HeldItem: 0x22 (PK3), 0x0A (all others)
-    uint16_t heldItem() const {
-        return readU16(isFRLG(gameType_) ? 0x22 : 0x0A);
-    }
+    uint16_t heldItem() const { return readU16(ofs().heldItem); }
 
-    // PID: 0x00 (PK3), 0x18 (PB7), 0x1C (PK8/PA8/PA9)
-    uint32_t pid() const {
-        if (isFRLG(gameType_)) return readU32(0x00);
-        return readU32(isLGPE(gameType_) ? 0x18 : 0x1C);
-    }
+    uint32_t pid() const { return readU32(ofs().pid); }
 
-    // Nature: PID % 25 (PK3), 0x1C (PB7), 0x20 (PK8/PA8/PA9)
+    // Nature: byte read for modern, pid % 25 for PK3
     uint8_t nature() const {
-        if (isFRLG(gameType_)) return pid() % 25;
-        return isLGPE(gameType_) ? data[0x1C] : data[0x20];
+        int o = ofs().nature;
+        return o >= 0 ? data[o] : static_cast<uint8_t>(pid() % 25);
     }
 
-    // FatefulEncounter: bit 31 of RIB0 at 0x4C (PK3), 0x1D bit 0 (PB7), 0x22 bit 0 (PK8/PA8/PA9)
+    // FatefulEncounter: bit in byte for modern, bit 31 of u32@0x4C for PK3
     bool fatefulEncounter() const {
-        if (isFRLG(gameType_)) return (readU32(0x4C) >> 31) & 1;
-        int ofs = isLGPE(gameType_) ? 0x1D : 0x22;
-        return (data[ofs] & 1) != 0;
+        auto& o = ofs();
+        if (o.fateful < 0) return (readU32(0x4C) >> 31) & 1;
+        return (data[o.fateful] >> o.fatefulBit) & 1;
     }
 
-    // Gender: derived from PID (PK3), 0x1D bits 1-2 (PB7), 0x22 bits (PK8/PA8/PA9)
+    // Gender: byte bits for modern, PID-based for PK3 (impl in pokemon.cpp)
     uint8_t gender() const;
 
-    // Form: always 0 for PK3, 0x1D bits 3-7 (PB7), 0x24 (PK8/PA8/PA9)
+    // Form: byte for modern, always 0 for PK3
     uint8_t form() const {
-        if (isFRLG(gameType_)) return 0;
-        return isLGPE(gameType_) ? (data[0x1D] >> 3) : data[0x24];
+        auto& o = ofs();
+        return o.form >= 0 ? static_cast<uint8_t>(data[o.form] >> o.formShift) : 0;
     }
 
-    // Ball: bits 11-14 of u16@0x46 (PK3), 0xDC (PB7), 0x137 (PA8), 0x124 (PK8/PA9)
+    // Ball: byte for modern, bits 11-14 of u16@0x46 for PK3
     uint8_t ball() const {
-        if (isFRLG(gameType_)) return (readU16(0x46) >> 11) & 0xF;
-        if (isLGPE(gameType_)) return data[0xDC];
-        if (gameType_ == GameType::LA) return data[0x137];
-        return data[0x124];
+        int o = ofs().ball;
+        return o >= 0 ? data[o] : static_cast<uint8_t>((readU16(0x46) >> 11) & 0xF);
     }
 
-    // Ability: 0 for PK3 (not stored), 0x14 u8 (PB7), 0x14 u16 (PK8/PA8/PA9)
+    // Ability: u16 for modern, u8 for PB7, 0 for PK3
     uint16_t ability() const {
-        if (isFRLG(gameType_)) return 0;
-        return isLGPE(gameType_) ? (uint16_t)data[0x14] : readU16(0x14);
+        auto& o = ofs();
+        if (o.ability < 0) return 0;
+        return o.abilityIsU8 ? static_cast<uint16_t>(data[o.ability]) : readU16(o.ability);
     }
 
-    // EVs: 0x38-0x3D (PK3), 0x1E-0x23 (PB7), 0x26-0x2B (PK8/PA8/PA9)
-    uint8_t evHp()  const { return data[isFRLG(gameType_) ? 0x38 : isLGPE(gameType_) ? 0x1E : 0x26]; }
-    uint8_t evAtk() const { return data[isFRLG(gameType_) ? 0x39 : isLGPE(gameType_) ? 0x1F : 0x27]; }
-    uint8_t evDef() const { return data[isFRLG(gameType_) ? 0x3A : isLGPE(gameType_) ? 0x20 : 0x28]; }
-    uint8_t evSpe() const { return data[isFRLG(gameType_) ? 0x3B : isLGPE(gameType_) ? 0x21 : 0x29]; }
-    uint8_t evSpA() const { return data[isFRLG(gameType_) ? 0x3C : isLGPE(gameType_) ? 0x22 : 0x2A]; }
-    uint8_t evSpD() const { return data[isFRLG(gameType_) ? 0x3D : isLGPE(gameType_) ? 0x23 : 0x2B]; }
+    // EVs
+    uint8_t evHp()  const { return data[ofs().evBase + 0]; }
+    uint8_t evAtk() const { return data[ofs().evBase + 1]; }
+    uint8_t evDef() const { return data[ofs().evBase + 2]; }
+    uint8_t evSpe() const { return data[ofs().evBase + 3]; }
+    uint8_t evSpA() const { return data[ofs().evBase + 4]; }
+    uint8_t evSpD() const { return data[ofs().evBase + 5]; }
 
-    // TID/SID: 0x04/0x06 (PK3), 0x0C/0x0E (all others)
-    uint16_t tid() const { return readU16(isFRLG(gameType_) ? 0x04 : 0x0C); }
-    uint16_t sid() const { return readU16(isFRLG(gameType_) ? 0x06 : 0x0E); }
+    // TID/SID
+    uint16_t tid() const { return readU16(ofs().tid); }
+    uint16_t sid() const { return readU16(ofs().sid); }
 
     // Display TID/SID: Gen7+ uses 6-digit/4-digit format, Gen3 uses raw 16-bit
     uint32_t displayTid() const {
@@ -119,41 +153,22 @@ struct Pokemon {
         return combined / 1000000;
     }
 
-    // --- Fields with game-aware offsets ---
+    // --- String fields (impl in pokemon.cpp) ---
 
-    // Nickname: 0x08 Gen3 encoded (PK3), 0x40 (PB7), 0x58 (PK8/PA9), 0x60 (PA8)
     std::string nickname() const;
-
-    // OT Name: 0x14 Gen3 encoded (PK3), 0xB0 (PB7), 0xF8 (PK8/PA9), 0x110 (PA8)
     std::string otName() const;
 
-    // Moves: 0x2C-0x32 (PK3), 0x5A-0x60 (PB7), 0x54-0x5A (PA8), 0x72-0x78 (PK8/PA9)
-    uint16_t move1() const {
-        if (isFRLG(gameType_)) return readU16(0x2C);
-        return readU16(isLGPE(gameType_) ? 0x5A : gameType_ == GameType::LA ? 0x54 : 0x72);
-    }
-    uint16_t move2() const {
-        if (isFRLG(gameType_)) return readU16(0x2E);
-        return readU16(isLGPE(gameType_) ? 0x5C : gameType_ == GameType::LA ? 0x56 : 0x74);
-    }
-    uint16_t move3() const {
-        if (isFRLG(gameType_)) return readU16(0x30);
-        return readU16(isLGPE(gameType_) ? 0x5E : gameType_ == GameType::LA ? 0x58 : 0x76);
-    }
-    uint16_t move4() const {
-        if (isFRLG(gameType_)) return readU16(0x32);
-        return readU16(isLGPE(gameType_) ? 0x60 : gameType_ == GameType::LA ? 0x5A : 0x78);
-    }
+    // Moves
+    uint16_t move1() const { return readU16(ofs().moveBase + 0); }
+    uint16_t move2() const { return readU16(ofs().moveBase + 2); }
+    uint16_t move3() const { return readU16(ofs().moveBase + 4); }
+    uint16_t move4() const { return readU16(ofs().moveBase + 6); }
 
-    // IV32: 0x48 (PK3), 0x74 (PB7), 0x94 (PA8), 0x8C (PK8/PA9)
-    uint32_t iv32() const {
-        if (isFRLG(gameType_)) return readU32(0x48);
-        if (isLGPE(gameType_)) return readU32(0x74);
-        return readU32(gameType_ == GameType::LA ? 0x94 : 0x8C);
-    }
+    // IV32: bit-packed IV word
+    uint32_t iv32() const { return readU32(ofs().iv32); }
     bool isEgg() const { return ((iv32() >> 30) & 1) == 1; }
     bool isNicknamed() const {
-        if (isFRLG(gameType_)) return true; // PK3 always stores name in nickname field
+        if (isFRLG(gameType_)) return true;
         return ((iv32() >> 31) & 1) == 1;
     }
 
@@ -165,7 +180,7 @@ struct Pokemon {
     int ivSpA() const { return (iv32() >> 20) & 0x1F; }
     int ivSpD() const { return (iv32() >> 25) & 0x1F; }
 
-    // Level: party 0x54 or from EXP (PK3), 0xEC (PB7), 0x148 (PK8/PA9), from EXP (PA8)
+    // Level (impl in pokemon.cpp — byte read or computed from EXP)
     uint8_t level() const;
 
     // --- Utility ---
@@ -182,12 +197,10 @@ struct Pokemon {
 
     // IsAlpha: PA9 → 0x23 != 0, PA8 → 0x16 bit 5, others → false
     bool isAlpha() const {
-        if (isFRLG(gameType_)) return false;
-        if (gameType_ == GameType::LA)
-            return (data[0x16] >> 5) & 1;
-        if (isSwSh(gameType_) || isBDSP(gameType_) || isLGPE(gameType_))
-            return false;
-        return data[0x23] != 0; // PA9 (ZA/SV)
+        auto& o = ofs();
+        if (o.alphaByte < 0) return false;
+        return o.alphaIsNonZero ? (data[o.alphaByte] != 0)
+                                : ((data[o.alphaByte] >> 5) & 1);
     }
 
     // Ribbon/mark info

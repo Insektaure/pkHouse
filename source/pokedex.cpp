@@ -31,15 +31,16 @@ static uint16_t langBitMask(int lang) {
     return static_cast<uint16_t>(1u << getDexLangFlag(lang));
 }
 
-// Check if species+form exists in a PersonalTable that uses FORM_COUNT[].
-// Base-HP > 0 confirms the entry has real data (species present in game).
-template<typename NS>
-static bool isPresentInGame(uint16_t species, uint8_t form, int tableCount) {
-    if (species == 0 || species >= static_cast<uint16_t>(tableCount)) return false;
-    if (NS::FORM_COUNT[species] == 0) return false;
-    if (form > 0 && form >= NS::FORM_COUNT[species]) return false;
-    auto idx = NS::getEntryIndex(species, form);
-    return NS::BASE_STATS[idx].hp > 0;
+// Check if species+form exists in a game's PersonalTable.
+// Uses IS_PRESENT[] flag (byte 0x1C in PersonalInfo), matching PKHeX IsPresentInGame.
+static bool isPresentZA(uint16_t species, uint8_t form) {
+    if (species == 0 || species >= PERSONAL_ZA_COUNT) return false;
+    return PersonalZA::IS_PRESENT[PersonalZA::getEntryIndex(species, form)] != 0;
+}
+
+static bool isPresentSV(uint16_t species, uint8_t form) {
+    if (species == 0 || species >= PERSONAL_SV_COUNT) return false;
+    return PersonalSV::IS_PRESENT[PersonalSV::getEntryIndex(species, form)] != 0;
 }
 
 // ============================================================
@@ -222,7 +223,7 @@ static void registerZA(SaveFile& save, const Pokemon& pkm) {
     uint8_t  form    = pkm.form();
     uint8_t  gender  = pkm.gender();
 
-    if (!isPresentInGame<PersonalZA>(species, form, PERSONAL_ZA_COUNT))
+    if (!isPresentZA(species, form))
         return;
 
     uint16_t internal = SpeciesConverter::getInternal9(species);
@@ -328,7 +329,6 @@ static constexpr uint8_t SV_DEX_BLUEBERRY[1424] = {
 static void updateAdjacent(SCBlock* block, uint16_t species) {
     // Get dex index for this species (check all 3 groups)
     if (species >= 1424) return;
-    uint16_t internal = SpeciesConverter::getInternal9(species);
 
     uint8_t group = 0;
     uint16_t index = 0;
@@ -376,7 +376,7 @@ static void registerSVKitakami(SaveFile& save, const Pokemon& pkm) {
     uint8_t  form    = pkm.form();
     uint8_t  gender  = pkm.gender();
 
-    if (!isPresentInGame<PersonalSV>(species, form, PERSONAL_SV_COUNT))
+    if (!isPresentSV(species, form))
         return;
 
     uint16_t internal = SpeciesConverter::getInternal9(species);
@@ -695,11 +695,7 @@ static void registerSwSh(SaveFile& save, const Pokemon& pkm) {
     uint8_t  form    = pkm.form();
     uint8_t  gender  = pkm.gender();
 
-    // Check if species is present in SwSh
-    if (species >= 1192 || PersonalSWSH::FORM_COUNT[species] == 0) return;
-    if (PersonalSWSH::IS_PRESENT[species] == 0) return;
-
-    // Find which dex this species belongs to
+    // Find which dex this species belongs to (matches PKHeX GetEntry guard)
     auto [dexIdx, blockKey] = getSwShDex(species);
     if (dexIdx == 0) return;
 

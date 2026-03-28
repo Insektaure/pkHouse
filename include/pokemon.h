@@ -38,16 +38,21 @@ struct PokemonOffsets {
     int expOfs;           // u32 offset for EXP, -1 = N/A
     int alphaByte;        // byte for alpha, -1 = always false
     bool alphaIsNonZero;  // true = !=0 (PA9), false = bit5 (PA8)
+    int languageByte;     // byte offset for language field
+    int formArgument;     // u32 offset (Alcremie decoration), -1 = N/A
+    int canGmaxByte;      // byte with Gmax flag (bit 4), -1 = N/A
+    int heightScalar;     // u8 offset (LGPE size), -1 = N/A
+    int weightScalar;     // u8 offset (LGPE size), -1 = N/A
 };
 
 // Returns the offset table for a given game format.
 inline const PokemonOffsets& pokemonOffsetsFor(GameType g) {
-    //                              spec  held  pid   nat  fate fBit gend gShf form fShf ball  abi  aU8  ev    tid   sid   move  iv32  nick  ot    lvl   exp   alph aNZ
-    static constexpr PokemonOffsets PK3 = {0x20, 0x22, 0x00, -1,  -1,  31,  -1,  0,   -1,  0,   -1,  -1,  false, 0x38, 0x04, 0x06, 0x2C, 0x48, -1,   -1,   -1,   0x24, -1,  false};
-    static constexpr PokemonOffsets PB7 = {0x08, 0x0A, 0x18, 0x1C, 0x1D, 0,  0x1D, 1,  0x1D, 3,  0xDC, 0x14, true, 0x1E, 0x0C, 0x0E, 0x5A, 0x74, 0x40, 0xB0, 0xEC, -1,   -1,  false};
-    static constexpr PokemonOffsets PK8 = {0x08, 0x0A, 0x1C, 0x20, 0x22, 0,  0x22, 2,  0x24, 0,  0x124, 0x14, false, 0x26, 0x0C, 0x0E, 0x72, 0x8C, 0x58, 0xF8, 0x148, -1,  -1,  false};
-    static constexpr PokemonOffsets PA8 = {0x08, 0x0A, 0x1C, 0x20, 0x22, 0,  0x22, 2,  0x24, 0,  0x137, 0x14, false, 0x26, 0x0C, 0x0E, 0x54, 0x94, 0x60, 0x110, -1,   0x10, 0x16, false};
-    static constexpr PokemonOffsets PA9 = {0x08, 0x0A, 0x1C, 0x20, 0x22, 0,  0x22, 1,  0x24, 0,  0x124, 0x14, false, 0x26, 0x0C, 0x0E, 0x72, 0x8C, 0x58, 0xF8, 0x148, -1,  0x23, true};
+    //                              spec  held  pid   nat  fate fBit gend gShf form fShf ball  abi  aU8  ev    tid   sid   move  iv32  nick  ot    lvl   exp   alph aNZ  lang  fArg  gmax hSca wSca
+    static constexpr PokemonOffsets PK3 = {0x20, 0x22, 0x00, -1,  -1,  31,  -1,  0,   -1,  0,   -1,  -1,  false, 0x38, 0x04, 0x06, 0x2C, 0x48, -1,   -1,   -1,   0x24, -1,  false, 0x12, -1,   -1,   -1,  -1};
+    static constexpr PokemonOffsets PB7 = {0x08, 0x0A, 0x18, 0x1C, 0x1D, 0,  0x1D, 1,  0x1D, 3,  0xDC, 0x14, true, 0x1E, 0x0C, 0x0E, 0x5A, 0x74, 0x40, 0xB0, 0xEC, -1,   -1,  false, 0xE3, 0x3C, -1,   0x3A,0x3B};
+    static constexpr PokemonOffsets PK8 = {0x08, 0x0A, 0x1C, 0x20, 0x22, 0,  0x22, 2,  0x24, 0,  0x124, 0x14, false, 0x26, 0x0C, 0x0E, 0x72, 0x8C, 0x58, 0xF8, 0x148, -1,  -1,  false, 0xF2, 0xE4, 0x16, -1,  -1};
+    static constexpr PokemonOffsets PA8 = {0x08, 0x0A, 0x1C, 0x20, 0x22, 0,  0x22, 2,  0x24, 0,  0x137, 0x14, false, 0x26, 0x0C, 0x0E, 0x54, 0x94, 0x60, 0x110, -1,   0x10, 0x16, false, 0xE3, 0xE4, -1,   -1,  -1};
+    static constexpr PokemonOffsets PA9 = {0x08, 0x0A, 0x1C, 0x20, 0x22, 0,  0x22, 1,  0x24, 0,  0x124, 0x14, false, 0x26, 0x0C, 0x0E, 0x72, 0x8C, 0x58, 0xF8, 0x148, -1,  0x23, true,  0xD5, 0xD0, -1,   -1,  -1};
     if (isFRLG(g)) return PK3;
     if (isLGPE(g)) return PB7;
     if (g == GameType::LA) return PA8;
@@ -194,6 +199,34 @@ struct Pokemon {
     void refreshChecksum();
     void loadFromEncrypted(const uint8_t* encrypted, size_t len);
     void getEncrypted(uint8_t* outBuf);
+
+    // Language: byte at format-specific offset
+    uint8_t language() const {
+        int o = ofs().languageByte;
+        return (o >= 0) ? data[o] : 0;
+    }
+
+    // FormArgument: u32 (Alcremie decoration in low byte)
+    uint32_t formArgument() const {
+        int o = ofs().formArgument;
+        return (o >= 0) ? readU32(o) : 0;
+    }
+
+    // CanGigantamax: PK8 byte 0x16 bit 4
+    bool canGigantamax() const {
+        int o = ofs().canGmaxByte;
+        return (o >= 0) && (data[o] & 0x10) != 0;
+    }
+
+    // Height/Weight scalars (LGPE size tracking, u8 0-255)
+    uint8_t heightScalar() const {
+        int o = ofs().heightScalar;
+        return (o >= 0) ? data[o] : 0;
+    }
+    uint8_t weightScalar() const {
+        int o = ofs().weightScalar;
+        return (o >= 0) ? data[o] : 0;
+    }
 
     // IsAlpha: PA9 → 0x23 != 0, PA8 → 0x16 bit 5, others → false
     bool isAlpha() const {

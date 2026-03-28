@@ -27,9 +27,24 @@ public:
     std::string getBoxName(int box) const;
 
     bool isLoaded() const { return loaded_; }
+    GameType gameType() const { return gameType_; }
+
+    // Access SCBlock by key (for SCBlock-based games: ZA/SV/SwSh/LA)
+    SCBlock* findBlock(uint32_t key) { return SwishCrypto::findBlock(blocks_, key); }
+
+    // Access raw save data (for flat binary games: BDSP/LGPE/FRLG)
+    uint8_t* rawData() { return rawData_.data(); }
+    size_t rawDataSize() const { return rawData_.size(); }
+
+    // Find GBA sector data by section ID in the active save slot.
+    // Returns pointer to the sector's 0x1000-byte region, or nullptr.
+    uint8_t* findGbaSectorData(int sectionId);
 
     // Get trainer info from save file (SV/ZA only, SCBlock-based)
     TrainerInfo getTrainerInfo() const;
+
+    // Get save file language (shorthand for getTrainerInfo().language)
+    uint8_t saveLanguage() const { auto ti = getTrainerInfo(); return ti.valid ? ti.language : 0; }
 
     // Debug: verify encrypt(decrypt(file)) == file. Call right after load().
     // Returns "OK" if round-trip matches, or a description of the mismatch.

@@ -1,4 +1,5 @@
 #include "save_file.h"
+#include "pokedex.h"
 #include "binary_io.h"
 #include "md5.h"
 #include <fstream>
@@ -209,6 +210,10 @@ void SaveFile::setBoxSlot(int box, int slot, Pokemon pkm) {
     // Zero the gap bytes (if any)
     if (gapBoxSlot_ > 0)
         std::memset(boxData_ + offset + (sizeBoxSlot_ - gapBoxSlot_), 0, gapBoxSlot_);
+
+    // Register in Pokedex (non-empty, non-egg Pokemon only)
+    if (!pkm.isEmpty())
+        Pokedex::registerPokemon(*this, pkm);
 
     invalidateBoxCache(box);
 }
@@ -926,4 +931,17 @@ bool SaveFile::saveGBA(const std::string& path) {
     size_t written = std::fwrite(rawData_.data(), 1, rawData_.size(), f);
     std::fclose(f);
     return written == rawData_.size();
+}
+
+uint8_t* SaveFile::findGbaSectorData(int sectionId) {
+    if (rawData_.size() < GBA_SAVE_SIZE)
+        return nullptr;
+    int slotBase = gbaActiveSlot_ * GBA_SECTOR_COUNT * GBA_SECTOR_SIZE;
+    for (int i = 0; i < GBA_SECTOR_COUNT; i++) {
+        int sectorOfs = slotBase + i * GBA_SECTOR_SIZE;
+        uint16_t id = readU16LE(rawData_.data() + sectorOfs + GBA_OFS_SECTOR_ID);
+        if (id == static_cast<uint16_t>(sectionId))
+            return rawData_.data() + sectorOfs;
+    }
+    return nullptr;
 }

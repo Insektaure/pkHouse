@@ -717,14 +717,16 @@ static void registerSwSh(SaveFile& save, const Pokemon& pkm) {
 namespace {
 
 // Zukan8b layout: 493 species max (national dex 1-493)
-// Offsets within the 0x30B8-byte block:
+// Offsets within the 0x30B8-byte block (from PKHeX Zukan8b.cs):
 //   0x0000: State[493]        — u32 per species (0=none, 1=heard, 2=seen, 3=caught)
 //   0x07B4: MaleShiny[493]    — u32 per species (bool)
 //   0x0F68: FemaleShiny[493]  — u32 per species (bool)
 //   0x171C: Male[493]         — u32 per species (bool)
 //   0x1ED0: Female[493]       — u32 per species (bool)
-//   0x2684: Language[493]     — u32 per species (bitflags)
-//   0x2E38: FormFlags...      — per-species form tracking (variable)
+//   0x2684: FormFlags...      — per-species form tracking (13 species, normal+shiny)
+//   0x28FC: Language[493]     — u32 per species (bitflags)
+//   0x30B0: RegionalDex flag
+//   0x30B4: NationalDex flag
 constexpr size_t BDSP_ZUKAN_OFFSET    = 0x7A328;
 constexpr size_t BDSP_ZUKAN_SIZE      = 0x30B8;
 constexpr int    BDSP_MAX_SPECIES     = 493;
@@ -733,7 +735,8 @@ constexpr size_t BDSP_MALE_SHINY_BASE = 0x07B4;
 constexpr size_t BDSP_FEM_SHINY_BASE  = 0x0F68;
 constexpr size_t BDSP_MALE_BASE       = 0x171C;
 constexpr size_t BDSP_FEMALE_BASE     = 0x1ED0;
-constexpr size_t BDSP_LANG_BASE       = 0x2684;
+// Form flags at 0x2684-0x28FB (between Female and Language)
+constexpr size_t BDSP_LANG_BASE       = 0x28FC;
 
 } // anon
 
@@ -784,19 +787,19 @@ static void registerBDSP(SaveFile& save, const Pokemon& pkm) {
     uint8_t form = pkm.form();
     struct BDSPFormInfo { uint16_t species; size_t offset; uint8_t count; };
     static constexpr BDSPFormInfo BDSP_FORMS[] = {
-        {201, 0x2E38, 28}, // Unown
-        {351, 0x2F18,  4}, // Castform
-        {386, 0x2F38,  4}, // Deoxys
-        {412, 0x2F58,  3}, // Burmy
-        {413, 0x2F70,  3}, // Wormadam
-        {414, 0x2F88,  3}, // Mothim
-        {421, 0x2FA0,  2}, // Cherrim
-        {422, 0x2FB0,  2}, // Shellos
-        {423, 0x2FC0,  2}, // Gastrodon
-        {479, 0x2FD0,  6}, // Rotom
-        {487, 0x3000,  2}, // Giratina
-        {492, 0x3010,  2}, // Shaymin
-        {493, 0x3020, 18}, // Arceus
+        {201, 0x2684, 28}, // Unown
+        {351, 0x2764,  4}, // Castform
+        {386, 0x2784,  4}, // Deoxys
+        {412, 0x27A4,  3}, // Burmy
+        {413, 0x27BC,  3}, // Wormadam
+        {414, 0x27D4,  3}, // Mothim
+        {421, 0x27EC,  2}, // Cherrim
+        {422, 0x27FC,  2}, // Shellos
+        {423, 0x280C,  2}, // Gastrodon
+        {479, 0x281C,  6}, // Rotom
+        {487, 0x284C,  2}, // Giratina
+        {492, 0x285C,  2}, // Shaymin
+        {493, 0x286C, 18}, // Arceus
     };
     for (const auto& fi : BDSP_FORMS) {
         if (species != fi.species) continue;

@@ -753,7 +753,7 @@ static void registerBDSP(SaveFile& save, const Pokemon& pkm) {
         PersonalBDSP::FORM_COUNT[species] == 0) return;
 
     uint8_t gender = pkm.gender();
-    size_t idx = static_cast<size_t>(species) * 4;
+    size_t idx = static_cast<size_t>(species - 1) * 4;
 
     // State → Caught (3) — never downgrade
     uint32_t state = readU32LE(z + BDSP_STATE_BASE + idx);

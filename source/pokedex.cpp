@@ -820,25 +820,25 @@ static void registerBDSP(SaveFile& save, const Pokemon& pkm) {
 namespace {
 
 // LGPE Pokedex block is at save offset 0x02A00, size 0x020E8.
-// Within that block, the pokedex base is at offset 0x0550.
+// All offsets below are relative to block start (NOT an internal "PokeDex base").
+// PKHeX Zukan7b receives the entire block as Data; 0x550 is PokeDexLanguageFlags, not a base.
 // Format from Zukan7.cs:
-//   Layout: Magic(4) + Flags(4) + Misc(0x80) + Caught(0x68) + Seen(4×0x8C) + Display(4×0x8C) + ...
 //   OFS_CAUGHT  = 0x88 (bitfield, 0x68 bytes = 832 bits)
 //   OFS_SEEN    = 0xF0 (4 gender/shiny regions × 0x8C bytes each)
 //   OFS_DISPLAY = 0x320 (4 display regions × 0x8C bytes each)
-// Max species for LGPE = 809 (only 153 in-game: 1-151, 808, 809)
+//   LanguageFlags = 0x550 (920 bytes, 9 bits per species)
+//   SizeData    = 0xF78 (186 entries × 6 bytes × 4 groups)
 constexpr size_t LGPE_ZUKAN_BLOCK_OFFSET = 0x02A00;
-constexpr size_t LGPE_POKEDEX_BASE       = 0x0550;  // within the block
-constexpr size_t LGPE_CAUGHT_OFS         = 0x88;    // from PokeDex base
-constexpr size_t LGPE_SEEN_OFS           = 0xF0;    // from PokeDex base
+constexpr size_t LGPE_CAUGHT_OFS         = 0x88;    // from block start
+constexpr size_t LGPE_SEEN_OFS           = 0xF0;    // from block start
 constexpr size_t LGPE_BIT_SEEN_SIZE      = 0x8C;    // bytes per seen region
 constexpr size_t LGPE_DISPLAY_OFS        = 0xF0 + 4 * 0x8C; // = 0x320
-constexpr size_t LGPE_LANG_OFS           = 0x550; // from PokeDex base (after caught+seen+display)
-constexpr int    LGPE_LANG_COUNT         = 9;     // 9 language flags per species
-constexpr size_t LGPE_LANG_BYTE_COUNT    = 920;   // total bytes for language bitfield
-constexpr size_t LGPE_SIZE_OFS           = 0xF78; // from BLOCK start (not PokeDex base)
-constexpr int    LGPE_SIZE_ENTRY_SIZE    = 6;     // bytes per size entry
-constexpr int    LGPE_SIZE_ENTRY_COUNT   = 186;   // total species+form entries
+constexpr size_t LGPE_LANG_OFS           = 0x550;   // from block start
+constexpr int    LGPE_LANG_COUNT         = 9;
+constexpr size_t LGPE_LANG_BYTE_COUNT    = 920;
+constexpr size_t LGPE_SIZE_OFS           = 0xF78;   // from block start
+constexpr int    LGPE_SIZE_ENTRY_SIZE    = 6;
+constexpr int    LGPE_SIZE_ENTRY_COUNT   = 186;
 constexpr int    LGPE_MAX_SPECIES        = 809;
 
 } // anon
@@ -847,9 +847,9 @@ static void registerLGPE(SaveFile& save, const Pokemon& pkm) {
     uint8_t* raw = save.rawData();
     size_t rawSize = save.rawDataSize();
 
-    size_t dexBase = LGPE_ZUKAN_BLOCK_OFFSET + LGPE_POKEDEX_BASE;
-    // Ensure enough room for the display region end
-    size_t requiredEnd = dexBase + LGPE_DISPLAY_OFS + 4 * LGPE_BIT_SEEN_SIZE;
+    size_t dexBase = LGPE_ZUKAN_BLOCK_OFFSET;
+    // Ensure enough room for the size data at the end of the block
+    size_t requiredEnd = dexBase + LGPE_SIZE_OFS + LGPE_SIZE_ENTRY_SIZE * LGPE_SIZE_ENTRY_COUNT * 4;
     if (rawSize < requiredEnd) return;
 
     uint16_t species = pkm.species();
@@ -894,8 +894,8 @@ static void registerLGPE(SaveFile& save, const Pokemon& pkm) {
     // Size tracking: update min/max height and weight.
     // Size data is at LGPE_SIZE_OFS from the BLOCK start (not PokeDex base).
     // 4 groups: MinHeight, MaxHeight, MinWeight, MaxWeight (each 186 entries × 6 bytes).
-    uint8_t* sizeBase = raw + LGPE_ZUKAN_BLOCK_OFFSET + LGPE_SIZE_OFS;
-    size_t sizeEnd = LGPE_ZUKAN_BLOCK_OFFSET + LGPE_SIZE_OFS +
+    uint8_t* sizeBase = raw + dexBase + LGPE_SIZE_OFS;
+    size_t sizeEnd = dexBase + LGPE_SIZE_OFS +
                      LGPE_SIZE_ENTRY_SIZE * LGPE_SIZE_ENTRY_COUNT * 4;
     int sizeIdx = (species <= 151) ? (species - 1) :
                   (species == 808) ? 151 : (species == 809) ? 152 : -1;

@@ -212,6 +212,22 @@ The injected Pokemon is fully generated from the wondercard data — PID, IVs, n
 
 Wondercard files can be downloaded from the [Project Pokemon EventsGallery](https://github.com/projectpokemon/EventsGallery) repository.
 
+### Pokedex Auto-Registration
+
+When transferring Pokemon from a bank to a save file, the Pokedex is automatically updated to register the Pokemon as caught. This solves the issue where version-exclusive Pokemon transferred between paired games would not appear in the Pokedex.
+
+| Game Family                       | What gets registered                                                                                             |
+|-----------------------------------|------------------------------------------------------------------------------------------------------------------|
+| Scarlet / Violet (+ DLCs)         | Caught, seen, heard, gender, language (Pokemon + save), shiny, display, neighbor discovery                       |
+| Sword / Shield (+ DLCs)           | Caught, seen (all gender/shiny regions), language, display, battled count, Gigantamax, Alcremie forms, Eternatus |
+| Brilliant Diamond / Shining Pearl | Caught, gender, shiny, language, alternate form tracking (Unown, Rotom, Arceus, etc.)                            |
+| Let's Go Pikachu / Eevee          | Caught, seen, display, language, size tracking (height/weight), capture count                                    |
+| FireRed / LeafGreen               | Caught, seen (with all 3 copy sync), Unown/Spinda PID                                                            |
+
+> **_Legends: Arceus_** and **_Legends: Z-A_** are excluded from auto-registration as all Pokemon are obtainable in a single playthrough without trading.
+
+Pokedex completion rewards (Shiny Charm, diplomas) are triggered by the in-game NPC when the dex is complete.
+
 ### Export Pokemon
 
 Export Pokemon as decrypted `.pk` files compatible with PKHeX. Access from the **detail view** (single export) or the **menu** (batch export of selected Pokemon).

@@ -1032,9 +1032,9 @@ void registerPokemon(SaveFile& save, const Pokemon& pkm) {
 
     GameType game = save.gameType();
 
-    if (game == GameType::ZA) {
-        registerZA(save, pkm);
-    } else if (isSV(game)) {
+    // Only register for dual/paired games (version exclusives require cross-save transfer).
+    // ZA and LA are single games — all Pokemon obtainable in one playthrough.
+    if (isSV(game)) {
         registerSVKitakami(save, pkm);
     } else if (isSwSh(game)) {
         registerSwSh(save, pkm);
@@ -1045,7 +1045,6 @@ void registerPokemon(SaveFile& save, const Pokemon& pkm) {
     } else if (isFRLG(game)) {
         registerFRLG(save, pkm);
     }
-    // LA: intentionally skipped — research-task based dex, not applicable
 }
 
 } // namespace Pokedex

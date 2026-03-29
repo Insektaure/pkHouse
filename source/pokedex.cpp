@@ -59,7 +59,6 @@ constexpr int ZA_LANGUAGE            = 0x08; // u16 bitflags
 constexpr int ZA_IS_NEW              = 0x0A; // u8
 constexpr int ZA_GENDER_SEEN         = 0x0B; // u8 (bit0=M, bit1=F, bit2=genderless)
 constexpr int ZA_SHINY_SEEN          = 0x0C; // u32 bitflags (per form)
-constexpr int ZA_MEGA_FLAGS          = 0x10; // u8 (bit0=mega0, bit1=mega1)
 constexpr int ZA_ALPHA_FLAG          = 0x11; // u8
 constexpr int ZA_DISPLAY_FORM        = 0x5A; // u8
 constexpr int ZA_DISPLAY_GENDER      = 0x5B; // u8 (DisplayGender9a enum)
@@ -89,60 +88,6 @@ static bool isBiGenderZA(uint16_t species) {
         default:
             return false;
     }
-}
-
-// BattleMegas: species that have mega forms in ZA.
-// Ported from PKHeX.Core FormInfo.cs BattleMegas list.
-static bool hasMegaForm(uint16_t species) {
-    switch (species) {
-        // Gen6 XY
-        case 3: case 6: case 9: case 65: case 94: case 115: case 127:
-        case 130: case 142: case 150: case 181: case 212: case 214: case 229:
-        case 248: case 257: case 282: case 303: case 306: case 308: case 310:
-        case 354: case 359: case 380: case 381: case 445: case 448: case 460:
-        // Gen6 ORAS
-        case 15: case 18: case 80: case 208: case 254: case 260: case 302:
-        case 319: case 323: case 334: case 362: case 373: case 376: case 384:
-        case 428: case 475: case 531: case 719:
-        // Gen9 ZA new megas + special species
-        case 26: case 36: case 71: case 121: case 149: case 154: case 160:
-        case 227: case 358: case 398: case 478: case 485: case 491: case 500:
-        case 530: case 545: case 560: case 604: case 609: case 623: case 652:
-        case 655: case 658: case 668: case 670: case 678: case 687: case 689:
-        case 691: case 701: case 718: case 740: case 768: case 780: case 801:
-        case 807: case 870: case 952: case 970: case 978: case 998:
-            return true;
-        default:
-            return false;
-    }
-}
-
-// IsMegaForm: check if a specific species+form is a mega evolution form.
-// Ported from FormInfo.IsBattleMegaForm.
-static bool isMegaForm(uint16_t species, uint8_t form) {
-    if (!hasMegaForm(species)) return false;
-    switch (species) {
-        case 26:  return form == 2 || form == 3; // Raichu Mega X/Y
-        case 80:  return form == 1;  // Slowbro
-        case 718: return form == 5;  // Zygarde Complete
-        case 670: return form == 6;  // Floette Mega
-        case 658: return form == 3;  // Greninja Mega
-        case 678: return form == 2 || form == 3; // Meowstic Mega M/F
-        case 801: return form == 2 || form == 3; // Magearna Mega
-        case 978: return form == 3 || form == 4 || form == 5; // Tatsugiri Mega
-        default:  return form != 0;  // generic: form 0 = base, other = mega
-    }
-}
-
-// IsMegaFormXY: species with two mega forms (X and Y).
-// pkHouse only supports DLC saves, so Raichu is always included.
-static bool isMegaFormXY(uint16_t species) {
-    return species == 6 || species == 150 || species == 26; // Charizard, Mewtwo, Raichu
-}
-
-// IsMegaFormZA: species with ZA-exclusive mega forms (DLC-only).
-static bool isMegaFormZA(uint16_t species) {
-    return species == 359 || species == 448 || species == 445; // Absol, Lucario, Garchomp
 }
 
 // GetFormExtraFlags: auto-set additional form seen/caught flags on first registration.
@@ -187,16 +132,8 @@ static uint32_t getFormExtraFlagsShinySeen(uint16_t species, uint8_t form) {
         case 718: return 0x3F;     // Zygarde: all forms
         case 658: return (form != 2) ? 0xB : 0u; // Greninja
         case 670: return (form == 5) ? 0x20 : 0u; // Floette
-        default: break;
+        default: return 0;
     }
-    // Fallback: mega form bits
-    if (isMegaFormXY(species))
-        return 0x06; // two mega forms (X + Y)
-    if (isMegaFormZA(species))
-        return 0x06; // Mega + Z Mega
-    if (hasMegaForm(species))
-        return 0x02; // single mega form
-    return 0;
 }
 
 static uint8_t calcDisplayGenderZA(uint8_t gender, uint16_t species, uint8_t form) {
@@ -243,18 +180,6 @@ static void registerZA(SaveFile& save, const Pokemon& pkm) {
     uint8_t gc = std::min(gender, static_cast<uint8_t>(2));
     e[ZA_GENDER_SEEN] |= static_cast<uint8_t>(1u << gc);
 
-    // Mega form flags (Zukan9a.Register lines 42-50)
-    if (isMegaForm(species, form))
-        e[ZA_MEGA_FLAGS] |= (1u << 0); // mega slot 0
-
-    if (isMegaFormXY(species) || isMegaFormZA(species))
-        e[ZA_MEGA_FLAGS] |= (1u << 1); // mega slot 1 (X/Y or ZA variant)
-    else if (species == 801 || species == 678) // Magearna, Meowstic
-        e[ZA_MEGA_FLAGS] |= (1u << 1);
-    else if (species == 978) { // Tatsugiri: mega index = form (clamped)
-        int raw = (form < 3) ? form : std::min(form - 3, 3);
-        e[ZA_MEGA_FLAGS] |= static_cast<uint8_t>(1u << raw);
-    }
 
     // Set language
     writeU16LE(e + ZA_LANGUAGE, readU16LE(e + ZA_LANGUAGE) | langBitMask(pkm.language()));

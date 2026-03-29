@@ -827,6 +827,11 @@ namespace {
 //   OFS_SEEN    = 0xF0 (4 gender/shiny regions × 0x8C bytes each)
 //   OFS_DISPLAY = 0x320 (4 display regions × 0x8C bytes each)
 //   LanguageFlags = 0x550 (920 bytes, 9 bits per species)
+//
+// CaptureRecord block at save offset 0x46600, size 0x010A4.
+// Per-species captured count: 153 × u32 at offset 0x2A8, cap 9999.
+// Total captured: u32 at offset 0x794, cap 999999999.
+// Index: species <= 151 ? species-1 : species-657 (Meltan=151, Melmetal=152).
 //   SizeData    = 0xF78 (186 entries × 6 bytes × 4 groups)
 constexpr size_t LGPE_ZUKAN_BLOCK_OFFSET = 0x02A00;
 constexpr size_t LGPE_CAUGHT_OFS         = 0x88;    // from block start
@@ -840,6 +845,14 @@ constexpr size_t LGPE_SIZE_OFS           = 0xF78;   // from block start
 constexpr int    LGPE_SIZE_ENTRY_SIZE    = 6;
 constexpr int    LGPE_SIZE_ENTRY_COUNT   = 186;
 constexpr int    LGPE_MAX_SPECIES        = 809;
+
+// CaptureRecord block
+constexpr size_t LGPE_CAPTURE_BLOCK_OFFSET = 0x46600;
+constexpr size_t LGPE_CAPTURE_BLOCK_SIZE   = 0x010A4;
+constexpr size_t LGPE_CAPTURED_OFS         = 0x2A8;   // 153 × u32 per-species count
+constexpr size_t LGPE_TOTAL_CAPTURED_OFS   = 0x794;   // u32 total
+constexpr uint32_t LGPE_MAX_CAPTURE_ENTRY  = 9999;
+constexpr uint32_t LGPE_MAX_CAPTURE_TOTAL  = 999999999;
 
 } // anon
 
@@ -919,6 +932,24 @@ static void registerLGPE(SaveFile& save, const Pokemon& pkm) {
         // Update MaxWeight (group 3) — overwrite if new is larger
         uint8_t* maxW = sizeOfs(3);
         if (wt > maxW[2]) { maxW[0] = ht; maxW[2] = wt; maxW[1] = 1; }
+    }
+
+    // Increment per-species capture count + total (CaptureRecords block).
+    // Index: species <= 151 ? species-1 : species-657 (matching PKHeX GetSpeciesIndex).
+    int captIdx = (species <= 151) ? (species - 1) :
+                  (species == 808) ? 151 : (species == 809) ? 152 : -1;
+    size_t captBase = LGPE_CAPTURE_BLOCK_OFFSET;
+    if (captIdx >= 0 && rawSize >= captBase + LGPE_CAPTURE_BLOCK_SIZE) {
+        uint8_t* cb = raw + captBase;
+        // Per-species count
+        size_t entryOfs = LGPE_CAPTURED_OFS + static_cast<size_t>(captIdx) * 4;
+        uint32_t count = readU32LE(cb + entryOfs);
+        if (count < LGPE_MAX_CAPTURE_ENTRY)
+            writeU32LE(cb + entryOfs, count + 1);
+        // Total captured count
+        uint32_t total = readU32LE(cb + LGPE_TOTAL_CAPTURED_OFS);
+        if (total < LGPE_MAX_CAPTURE_TOTAL)
+            writeU32LE(cb + LGPE_TOTAL_CAPTURED_OFS, total + 1);
     }
 }
 

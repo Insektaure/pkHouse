@@ -106,10 +106,11 @@ static bool hasMegaForm(uint16_t species) {
         case 428: case 475: case 531: case 719:
         // Gen9 ZA new megas + special species
         case 26: case 36: case 71: case 121: case 149: case 154: case 160:
-        case 227: case 358: case 398: case 478: case 500: case 530: case 545:
-        case 560: case 604: case 609: case 612: case 623: case 652: case 655:
-        case 658: case 668: case 678: case 706: case 718: case 740: case 748:
-        case 768: case 801: case 862: case 884: case 932: case 978:
+        case 227: case 358: case 398: case 478: case 485: case 491: case 500:
+        case 530: case 545: case 560: case 604: case 609: case 623: case 652:
+        case 655: case 658: case 668: case 670: case 678: case 687: case 689:
+        case 691: case 701: case 718: case 740: case 768: case 780: case 801:
+        case 807: case 870: case 952: case 970: case 978: case 998:
             return true;
         default:
             return false;

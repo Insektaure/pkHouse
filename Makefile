@@ -11,7 +11,7 @@ include $(DEVKITPRO)/libnx/switch_rules
 
 #---------------------------------------------------------------------------------
 APP_TITLE	:=	pkHouse - Local Bank System
-APP_VERSION :=	1.8.1
+APP_VERSION :=	1.9.0
 APP_AUTHOR	:=	Insektaure
 
 TARGET		:=	$(notdir $(CURDIR))

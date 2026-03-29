@@ -939,14 +939,14 @@ constexpr int FRLG_PID_SPINDA_OFS    = 0x08;  // from PokeDex base (u32)
 constexpr int FRLG_MAX_SPECIES       = 386;
 constexpr int FRLG_BITFIELD_SIZE     = 52;    // bytes (416 bits, only 386 used)
 
-// Offsets for seen copies in the assembled Large data.
-// Large starts at assembled byte 0xF2C (FRLG SmallLength).
-// SeenOffset2 (FRLG) = 0x5F8 in Large → section 1, internal offset 0x5A4
-// SeenOffset3 (FRLG) = 0x3A18 in Large → section 4, internal offset 0xB44
+// Seen copies in PKHeX Large buffer (sections 1-4, no section 0 tail).
+// Large[0] = section 1 byte 0. Mapping: Large[N] = section (1 + N/0xF80), byte (N % 0xF80).
+// SeenOffset2 (FRLG) = 0x5F8 in Large → section 1, byte 0x5F8
+// SeenOffset3 (FRLG) = 0x3A18 in Large → section 4, byte 0xB98
 constexpr int FRLG_SEEN2_SECTION     = 1;
-constexpr int FRLG_SEEN2_OFFSET      = 0x5A4; // within section 1 data
+constexpr int FRLG_SEEN2_OFFSET      = 0x5F8; // within section 1 data
 constexpr int FRLG_SEEN3_SECTION     = 4;
-constexpr int FRLG_SEEN3_OFFSET      = 0xB44; // within section 4 data
+constexpr int FRLG_SEEN3_OFFSET      = 0xB98; // within section 4 data
 
 } // anon
 

@@ -323,7 +323,8 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
     constexpr GameType allGames[] = {
         GameType::GP, GameType::GE, GameType::Sw, GameType::Sh,
         GameType::BD, GameType::SP, GameType::LA, GameType::S,
-        GameType::V, GameType::ZA, GameType::FR, GameType::LG
+        GameType::V, GameType::ZA, GameType::FR, GameType::LG,
+        GameType::FR_ES, GameType::LG_ES
     };
 
     if (appletMode_) {

@@ -145,7 +145,8 @@ void UI::selectProfile(int index) {
     constexpr GameType allGames[] = {
         GameType::GP, GameType::GE, GameType::Sw, GameType::Sh,
         GameType::BD, GameType::SP, GameType::LA, GameType::S,
-        GameType::V, GameType::ZA, GameType::FR, GameType::LG
+        GameType::V, GameType::ZA, GameType::FR, GameType::LG,
+        GameType::FR_ES, GameType::LG_ES
     };
     for (GameType g : allGames) {
         if (account_.hasSaveData(index, g))
@@ -161,6 +162,7 @@ void UI::selectProfile(int index) {
     refreshBankCounts();
 
     gameSelCursor_ = 0;
+    gameSelPage_ = 0;
     gameSelOnAllBanks_ = false;
     showWorking("Loading game icons...");
     loadGameIcons();
@@ -259,21 +261,29 @@ void UI::drawGameSelectorFrame() {
 
     int numGames = (int)availableGames_.size();
     constexpr int COLS = 6;
+    constexpr int ROWS_PER_PAGE = 2;
+    constexpr int GAMES_PER_PAGE = COLS * ROWS_PER_PAGE;
     constexpr int CARD_W = 160;
     constexpr int CARD_H = 200;
     constexpr int CARD_GAP = 20;
     constexpr int ICON_SIZE = 128;
 
-    int rows = (numGames + COLS - 1) / COLS;
+    int totalPages = (numGames + GAMES_PER_PAGE - 1) / GAMES_PER_PAGE;
+    int pageStart = gameSelPage_ * GAMES_PER_PAGE;
+    int pageEnd = std::min(pageStart + GAMES_PER_PAGE, numGames);
+    int pageCount = pageEnd - pageStart;
+
+    int rows = (pageCount + COLS - 1) / COLS;
     int totalH = rows * CARD_H + (rows - 1) * CARD_GAP;
     int gridStartY = (SCREEN_H - totalH) / 2;
 
-    for (int i = 0; i < numGames; i++) {
-        int r = i / COLS;
-        int c = i % COLS;
+    for (int i = pageStart; i < pageEnd; i++) {
+        int idx = i - pageStart;
+        int r = idx / COLS;
+        int c = idx % COLS;
 
         // Center each row: count items in this row
-        int rowItems = std::min(COLS, numGames - r * COLS);
+        int rowItems = std::min(COLS, pageCount - r * COLS);
         int rowW = rowItems * CARD_W + (rowItems - 1) * CARD_GAP;
         int rowStartX = (SCREEN_W - rowW) / 2;
 
@@ -311,8 +321,8 @@ void UI::drawGameSelectorFrame() {
                 case GameType::ZA: abbr = "ZA"; break;
                 case GameType::GP: abbr = "GP"; break;
                 case GameType::GE: abbr = "GE"; break;
-                case GameType::FR: abbr = "FR"; break;
-                case GameType::LG: abbr = "LG"; break;
+                case GameType::FR: case GameType::FR_ES: abbr = "FR"; break;
+                case GameType::LG: case GameType::LG_ES: abbr = "LG"; break;
             }
             drawTextCentered(abbr, iconX + ICON_SIZE / 2, iconY + ICON_SIZE / 2,
                              T().text, font_);
@@ -337,7 +347,7 @@ void UI::drawGameSelectorFrame() {
 
     // "View All Banks" option below the grid
     {
-        int lastRow = (numGames - 1) / COLS;
+        int lastRow = (pageCount - 1) / COLS;
         int gridBottomY = gridStartY + (lastRow + 1) * (CARD_H + CARD_GAP);
         int allBanksY = gridBottomY + 10;
 
@@ -357,13 +367,26 @@ void UI::drawGameSelectorFrame() {
                          T().text, font_);
     }
 
+    // Chevron arrows for page navigation
+    if (totalPages > 1) {
+        int chevronY = SCREEN_H / 2;
+        // Left chevron (previous page)
+        SDL_Color chevronColor = (gameSelPage_ > 0) ? T().text : T().textDim;
+        drawTextCentered("<", 30, chevronY, chevronColor, font_);
+        // Right chevron (next page)
+        chevronColor = (gameSelPage_ < totalPages - 1) ? T().text : T().textDim;
+        drawTextCentered(">", SCREEN_W - 30, chevronY, chevronColor, font_);
+    }
+
     if (selectedProfile_ >= 0) {
-        drawStatusBar("A: Select  B: Back  Y: Theme  -: About  +: Quit");
+        drawStatusBar(totalPages > 1 ? "A: Select  B: Back  L/R: Page  Y: Theme  -: About  +: Quit"
+                                     : "A: Select  B: Back  Y: Theme  -: About  +: Quit");
         std::string profileLabel = account_.profiles()[selectedProfile_].nickname;
         const auto& e = getTextEntry(profileLabel, fontSmall_, T().goldLabel);
         if (e.tex) drawText(profileLabel, SCREEN_W - e.w - 15, SCREEN_H - 26, T().goldLabel, fontSmall_);
     } else {
-        drawStatusBar("A: Select  B: Quit  Y: Theme  -: About");
+        drawStatusBar(totalPages > 1 ? "A: Select  B: Quit  L/R: Page  Y: Theme  -: About"
+                                     : "A: Select  B: Quit  Y: Theme  -: About");
     }
     if (appletMode_) {
         std::string modeLabel = "Dual Bank Mode";
@@ -378,25 +401,32 @@ void UI::handleGameSelectorInput(bool& running) {
 
     constexpr int COLS = 6;
 
+    constexpr int GAMES_PER_PAGE = 12;
+
     auto moveGrid = [&](int dx, int dy) {
+        int pageStart = gameSelPage_ * GAMES_PER_PAGE;
+        int pageEnd = std::min(pageStart + GAMES_PER_PAGE, numGames);
+        int pageCount = pageEnd - pageStart;
+
         if (gameSelOnAllBanks_) {
             // On "All Banks" row: up goes back to grid, left/right ignored
             if (dy < 0) {
                 gameSelOnAllBanks_ = false;
-                // Place cursor on bottom row
-                int totalRows = (numGames + COLS - 1) / COLS;
+                // Place cursor on bottom row of current page
+                int totalRows = (pageCount + COLS - 1) / COLS;
                 int lastRowStart = (totalRows - 1) * COLS;
-                int lastRowItems = numGames - lastRowStart;
-                int col = gameSelCursor_ % COLS;
+                int lastRowItems = pageCount - lastRowStart;
+                int col = (gameSelCursor_ - pageStart) % COLS;
                 if (col >= lastRowItems) col = lastRowItems - 1;
-                gameSelCursor_ = lastRowStart + col;
+                gameSelCursor_ = pageStart + lastRowStart + col;
             }
             return;
         }
 
-        int col = gameSelCursor_ % COLS;
-        int row = gameSelCursor_ / COLS;
-        int totalRows = (numGames + COLS - 1) / COLS;
+        int localIdx = gameSelCursor_ - pageStart;
+        int col = localIdx % COLS;
+        int row = localIdx / COLS;
+        int totalRows = (pageCount + COLS - 1) / COLS;
 
         col += dx;
         row += dy;
@@ -408,7 +438,7 @@ void UI::handleGameSelectorInput(bool& running) {
         }
 
         // Wrap columns within the row
-        int rowItems = std::min(COLS, numGames - row * COLS);
+        int rowItems = std::min(COLS, pageCount - row * COLS);
         if (rowItems <= 0) rowItems = COLS; // fallback for row wrap
         if (col < 0) col = rowItems - 1;
         if (col >= rowItems) col = 0;
@@ -419,10 +449,10 @@ void UI::handleGameSelectorInput(bool& running) {
             return;
         }
 
-        int newCursor = row * COLS + col;
-        if (newCursor >= numGames)
-            newCursor = numGames - 1;
-        gameSelCursor_ = newCursor;
+        int newLocal = row * COLS + col;
+        if (newLocal >= pageCount)
+            newLocal = pageCount - 1;
+        gameSelCursor_ = pageStart + newLocal;
     };
 
     SDL_Event event;
@@ -478,6 +508,26 @@ void UI::handleGameSelectorInput(bool& running) {
                     themeSelCursor_ = themeIndex_;
                     themeSelOriginal_ = themeIndex_;
                     break;
+                case SDL_CONTROLLER_BUTTON_LEFTSHOULDER: { // L = previous page
+                    constexpr int GAMES_PER_PAGE = 12;
+                    int totalPages = (numGames + GAMES_PER_PAGE - 1) / GAMES_PER_PAGE;
+                    if (totalPages > 1 && gameSelPage_ > 0) {
+                        gameSelPage_--;
+                        gameSelCursor_ = gameSelPage_ * GAMES_PER_PAGE;
+                        gameSelOnAllBanks_ = false;
+                    }
+                    break;
+                }
+                case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: { // R = next page
+                    constexpr int GAMES_PER_PAGE = 12;
+                    int totalPages = (numGames + GAMES_PER_PAGE - 1) / GAMES_PER_PAGE;
+                    if (totalPages > 1 && gameSelPage_ < totalPages - 1) {
+                        gameSelPage_++;
+                        gameSelCursor_ = gameSelPage_ * GAMES_PER_PAGE;
+                        gameSelOnAllBanks_ = false;
+                    }
+                    break;
+                }
                 case SDL_CONTROLLER_BUTTON_BACK: // - = about
                     showAbout_ = true;
                     break;

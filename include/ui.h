@@ -248,6 +248,7 @@ private:
     // Game selector state
     GameType selectedGame_ = GameType::ZA;
     int gameSelCursor_ = 0;
+    int gameSelPage_ = 0;
     bool gameSelOnAllBanks_ = false;  // cursor is on "View All Banks" option
     bool allBanksMode_ = false;       // entered bank selector via "View All Banks"
     std::vector<GameType> availableGames_;

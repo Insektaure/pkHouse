@@ -2,14 +2,14 @@
 #include <cstdint>
 
 // Supported game types (sequential enum used as array index)
-enum class GameType { ZA, S, V, Sw, Sh, BD, SP, LA, GP, GE, FR, LG };
-static constexpr int GAME_TYPE_COUNT = 12;
+enum class GameType { ZA, S, V, Sw, Sh, BD, SP, LA, GP, GE, FR, LG, FR_ES, LG_ES };
+static constexpr int GAME_TYPE_COUNT = 14;
 
 inline bool isSV(GameType g) { return g == GameType::S || g == GameType::V; }
 inline bool isSwSh(GameType g) { return g == GameType::Sw || g == GameType::Sh; }
 inline bool isBDSP(GameType g) { return g == GameType::BD || g == GameType::SP; }
 inline bool isLGPE(GameType g) { return g == GameType::GP || g == GameType::GE; }
-inline bool isFRLG(GameType g) { return g == GameType::FR || g == GameType::LG; }
+inline bool isFRLG(GameType g) { return g == GameType::FR || g == GameType::LG || g == GameType::FR_ES || g == GameType::LG_ES; }
 
 // Per-game constant table. One entry per GameType enum value.
 struct GameInfo {
@@ -83,6 +83,14 @@ inline const GameInfo& gameInfo(GameType g) {
         {0x010034D02340E000, "LeafGreen_e.sav", "Pokemon LeafGreen",             "FireRed / LeafGreen",
          "FireRedLeafGreen", "LeafGreen",         "pk3", 100,   14, 30, 80,    0, 80,
          false, false, "", "FRLG"},
+        // FR_ES
+        {0x0100EB702342C000, "FireRed_s.sav",   "Pokemon FireRed (ES)",          "FireRed / LeafGreen",
+         "FireRedLeafGreen", "FireRed_ES",        "pk3", 100,   14, 30, 80,    0, 80,
+         false, false, "", "FRLG"},
+        // LG_ES
+        {0x01002B5023434000, "LeafGreen_s.sav",  "Pokemon LeafGreen (ES)",        "FireRed / LeafGreen",
+         "FireRedLeafGreen", "LeafGreen_ES",      "pk3", 100,   14, 30, 80,    0, 80,
+         false, false, "", "FRLG"},
     };
     return INFO[static_cast<int>(g)];
 }
@@ -100,6 +108,8 @@ inline GameType pairedGame(GameType g) {
         case GameType::GE: return GameType::GP;
         case GameType::FR: return GameType::LG;
         case GameType::LG: return GameType::FR;
+        case GameType::FR_ES: return GameType::LG_ES;
+        case GameType::LG_ES: return GameType::FR_ES;
         default: return g;
     }
 }

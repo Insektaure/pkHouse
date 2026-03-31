@@ -250,6 +250,7 @@ private:
     int gameSelCursor_ = 0;
     int gameSelPage_ = 0;
     bool gameSelOnAllBanks_ = false;  // cursor is on "View All Banks" option
+    int gameSelOnChevron_ = 0;        // 0=none, -1=left chevron, 1=right chevron
     bool allBanksMode_ = false;       // entered bank selector via "View All Banks"
     std::vector<GameType> availableGames_;
     std::unordered_map<GameType, SDL_Texture*> gameIconCache_;

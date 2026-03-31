@@ -164,6 +164,7 @@ void UI::selectProfile(int index) {
     gameSelCursor_ = 0;
     gameSelPage_ = 0;
     gameSelOnAllBanks_ = false;
+    gameSelOnChevron_ = 0;
     showWorking("Loading game icons...");
     loadGameIcons();
     screen_ = AppScreen::GameSelector;
@@ -291,7 +292,7 @@ void UI::drawGameSelectorFrame() {
         int cardY = gridStartY + r * (CARD_H + CARD_GAP);
 
         // Card background
-        if (i == gameSelCursor_ && !gameSelOnAllBanks_) {
+        if (i == gameSelCursor_ && !gameSelOnAllBanks_ && gameSelOnChevron_ == 0) {
             drawRect(cardX, cardY, CARD_W, CARD_H, T().menuHighlight);
             drawRectOutline(cardX, cardY, CARD_W, CARD_H, T().cursor, 3);
         } else {
@@ -367,15 +368,31 @@ void UI::drawGameSelectorFrame() {
                          T().text, font_);
     }
 
-    // Chevron arrows for page navigation
+    // Chevron buttons for page navigation
     if (totalPages > 1) {
-        int chevronY = SCREEN_H / 2;
-        // Left chevron (previous page)
-        SDL_Color chevronColor = (gameSelPage_ > 0) ? T().text : T().textDim;
-        drawTextCentered("<", 30, chevronY, chevronColor, font_);
-        // Right chevron (next page)
-        chevronColor = (gameSelPage_ < totalPages - 1) ? T().text : T().textDim;
-        drawTextCentered(">", SCREEN_W - 30, chevronY, chevronColor, font_);
+        constexpr int BTN_W = 40;
+        constexpr int BTN_H = 60;
+        int btnY = SCREEN_H / 2 - BTN_H / 2;
+
+        // Left button
+        int leftX = 10;
+        bool canLeft = gameSelPage_ > 0;
+        bool leftFocused = gameSelOnChevron_ == -1;
+        drawRect(leftX, btnY, BTN_W, BTN_H, leftFocused ? T().menuHighlight : T().panelBg);
+        if (leftFocused)
+            drawRectOutline(leftX, btnY, BTN_W, BTN_H, T().cursor, 3);
+        drawTextCentered("<", leftX + BTN_W / 2, btnY + BTN_H / 2,
+                         canLeft ? T().text : T().textDim, font_);
+
+        // Right button
+        int rightX = SCREEN_W - BTN_W - 10;
+        bool canRight = gameSelPage_ < totalPages - 1;
+        bool rightFocused = gameSelOnChevron_ == 1;
+        drawRect(rightX, btnY, BTN_W, BTN_H, rightFocused ? T().menuHighlight : T().panelBg);
+        if (rightFocused)
+            drawRectOutline(rightX, btnY, BTN_W, BTN_H, T().cursor, 3);
+        drawTextCentered(">", rightX + BTN_W / 2, btnY + BTN_H / 2,
+                         canRight ? T().text : T().textDim, font_);
     }
 
     if (selectedProfile_ >= 0) {
@@ -403,10 +420,37 @@ void UI::handleGameSelectorInput(bool& running) {
 
     constexpr int GAMES_PER_PAGE = 12;
 
+    int totalPages = (numGames + GAMES_PER_PAGE - 1) / GAMES_PER_PAGE;
+
     auto moveGrid = [&](int dx, int dy) {
         int pageStart = gameSelPage_ * GAMES_PER_PAGE;
         int pageEnd = std::min(pageStart + GAMES_PER_PAGE, numGames);
         int pageCount = pageEnd - pageStart;
+
+        // On a chevron button
+        if (gameSelOnChevron_ != 0) {
+            if (dx != 0) {
+                if (gameSelOnChevron_ == -1 && dx > 0) {
+                    // Right from left chevron → back to grid col 0
+                    gameSelOnChevron_ = 0;
+                } else if (gameSelOnChevron_ == 1 && dx < 0) {
+                    // Left from right chevron → back to grid last col
+                    gameSelOnChevron_ = 0;
+                    int localIdx = gameSelCursor_ - pageStart;
+                    int row = localIdx / COLS;
+                    int rowItems = std::min(COLS, pageCount - row * COLS);
+                    gameSelCursor_ = pageStart + row * COLS + rowItems - 1;
+                }
+            }
+            if (dy > 0) {
+                gameSelOnChevron_ = 0;
+                gameSelOnAllBanks_ = true;
+            }
+            if (dy < 0) {
+                gameSelOnChevron_ = 0;
+            }
+            return;
+        }
 
         if (gameSelOnAllBanks_) {
             // On "All Banks" row: up goes back to grid, left/right ignored
@@ -437,9 +481,22 @@ void UI::handleGameSelectorInput(bool& running) {
             return;
         }
 
-        // Wrap columns within the row
+        // Navigate to chevrons when going past grid edges (only if page exists)
+        if (totalPages > 1) {
+            if (col < 0 && gameSelPage_ > 0) {
+                gameSelOnChevron_ = -1;
+                return;
+            }
+            int rowItems = std::min(COLS, pageCount - row * COLS);
+            if (col >= rowItems && gameSelPage_ < totalPages - 1) {
+                gameSelOnChevron_ = 1;
+                return;
+            }
+        }
+
+        // Wrap columns within the row (single-page fallback)
         int rowItems = std::min(COLS, pageCount - row * COLS);
-        if (rowItems <= 0) rowItems = COLS; // fallback for row wrap
+        if (rowItems <= 0) rowItems = COLS;
         if (col < 0) col = rowItems - 1;
         if (col >= rowItems) col = 0;
 
@@ -489,7 +546,15 @@ void UI::handleGameSelectorInput(bool& running) {
                     moveGrid(0, 1);
                     break;
                 case SDL_CONTROLLER_BUTTON_B: // Switch A = select
-                    if (gameSelOnAllBanks_)
+                    if (gameSelOnChevron_ == -1 && gameSelPage_ > 0) {
+                        gameSelPage_--;
+                        gameSelCursor_ = gameSelPage_ * GAMES_PER_PAGE;
+                        gameSelOnChevron_ = 0;
+                    } else if (gameSelOnChevron_ == 1 && gameSelPage_ < totalPages - 1) {
+                        gameSelPage_++;
+                        gameSelCursor_ = gameSelPage_ * GAMES_PER_PAGE;
+                        gameSelOnChevron_ = 0;
+                    } else if (gameSelOnAllBanks_)
                         enterAllBanksMode();
                     else
                         selectGame(availableGames_[gameSelCursor_]);
@@ -509,22 +574,20 @@ void UI::handleGameSelectorInput(bool& running) {
                     themeSelOriginal_ = themeIndex_;
                     break;
                 case SDL_CONTROLLER_BUTTON_LEFTSHOULDER: { // L = previous page
-                    constexpr int GAMES_PER_PAGE = 12;
-                    int totalPages = (numGames + GAMES_PER_PAGE - 1) / GAMES_PER_PAGE;
                     if (totalPages > 1 && gameSelPage_ > 0) {
                         gameSelPage_--;
                         gameSelCursor_ = gameSelPage_ * GAMES_PER_PAGE;
                         gameSelOnAllBanks_ = false;
+                        gameSelOnChevron_ = 0;
                     }
                     break;
                 }
                 case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: { // R = next page
-                    constexpr int GAMES_PER_PAGE = 12;
-                    int totalPages = (numGames + GAMES_PER_PAGE - 1) / GAMES_PER_PAGE;
                     if (totalPages > 1 && gameSelPage_ < totalPages - 1) {
                         gameSelPage_++;
                         gameSelCursor_ = gameSelPage_ * GAMES_PER_PAGE;
                         gameSelOnAllBanks_ = false;
+                        gameSelOnChevron_ = 0;
                     }
                     break;
                 }

@@ -427,14 +427,14 @@ static std::string readUtf16String(const uint8_t* base, int offset, int maxChars
 std::string Pokemon::nickname() const {
     auto& o = ofs();
     if (o.nickname < 0)
-        return readGen3String(data.data(), 0x08, 10, isFRLG_JA(gameType_));
+        return readGen3String(data.data(), 0x08, 10, language() == 1);
     return readUtf16String(data.data(), o.nickname, 13);
 }
 
 std::string Pokemon::otName() const {
     auto& o = ofs();
     if (o.otName < 0)
-        return readGen3String(data.data(), 0x14, 7, isFRLG_JA(gameType_));
+        return readGen3String(data.data(), 0x14, 7, language() == 1);
     return readUtf16String(data.data(), o.otName, 13);
 }
 

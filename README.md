@@ -30,8 +30,10 @@ If you need to restore a backup, use a save manager such as [Checkpoint](https:/
 | Pokemon Scarlet           | 4.0.0          | SCBlock (`main`)                | 32    | 30        |
 | Pokemon Violet            | 4.0.0          | SCBlock (`main`)                | 32    | 30        |
 | Pokemon Legends: Z-A      | 2.0.2          | SCBlock (`main`)                | 32    | 30        |
-| Pokemon FireRed           | 1.0.0          | GBA sectors (`FireRed_e.sav`)   | 14    | 30        |
-| Pokemon LeafGreen         | 1.0.0          | GBA sectors (`LeafGreen_e.sav`) | 14    | 30        |
+| Pokemon FireRed           | 1.0.0          | GBA sectors (`FireRed_*.sav`)   | 14    | 30        |
+| Pokemon LeafGreen         | 1.0.0          | GBA sectors (`LeafGreen_*.sav`) | 14    | 30        |
+
+All regional versions of FireRed / LeafGreen are supported: English, Spanish, French, German, Italian, and Japanese. The save file format is identical across all languages — only the title ID and save filename differ.
 
 > **Note:** Moving Pokemon between different games is not supported. Banks are separated by game family because transferred Pokemon would lack the HOME Tracker ID required for cross-game compatibility.
 
@@ -285,12 +287,15 @@ This works automatically with no configuration required.
 
 | Button | Action |
 |--------|--------|
-| D-Pad | Navigate game grid and "View All Banks" option |
-| A | Select game / View All Banks |
+| D-Pad | Navigate game grid, chevron buttons, and "View All Banks" option |
+| A | Select game / Change page / View All Banks |
+| L / R | Previous / Next page |
 | B | Back to profile selector |
 | Y | Theme selector |
 | - | About |
 | + | Quit |
+
+When more than 12 games are available, the game selector is paginated. Use L/R or navigate to the chevron buttons on either side to switch pages.
 
 ### Bank Selector
 

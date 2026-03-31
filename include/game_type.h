@@ -9,6 +9,7 @@ inline bool isSV(GameType g) { return g == GameType::S || g == GameType::V; }
 inline bool isSwSh(GameType g) { return g == GameType::Sw || g == GameType::Sh; }
 inline bool isBDSP(GameType g) { return g == GameType::BD || g == GameType::SP; }
 inline bool isLGPE(GameType g) { return g == GameType::GP || g == GameType::GE; }
+inline bool isFRLG_JA(GameType g) { return g == GameType::FR_JA || g == GameType::LG_JA; }
 inline bool isFRLG(GameType g) {
     return g == GameType::FR    || g == GameType::LG    ||
            g == GameType::FR_ES || g == GameType::LG_ES ||

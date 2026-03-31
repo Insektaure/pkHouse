@@ -146,7 +146,9 @@ void UI::selectProfile(int index) {
         GameType::GP, GameType::GE, GameType::Sw, GameType::Sh,
         GameType::BD, GameType::SP, GameType::LA, GameType::S,
         GameType::V, GameType::ZA, GameType::FR, GameType::LG,
-        GameType::FR_ES, GameType::LG_ES
+        GameType::FR_ES, GameType::LG_ES, GameType::FR_DE, GameType::LG_DE,
+        GameType::FR_IT, GameType::LG_IT, GameType::FR_FR, GameType::LG_FR,
+        GameType::FR_JA, GameType::LG_JA
     };
     for (GameType g : allGames) {
         if (account_.hasSaveData(index, g))
@@ -322,8 +324,8 @@ void UI::drawGameSelectorFrame() {
                 case GameType::ZA: abbr = "ZA"; break;
                 case GameType::GP: abbr = "GP"; break;
                 case GameType::GE: abbr = "GE"; break;
-                case GameType::FR: case GameType::FR_ES: abbr = "FR"; break;
-                case GameType::LG: case GameType::LG_ES: abbr = "LG"; break;
+                case GameType::FR: case GameType::FR_ES: case GameType::FR_DE: case GameType::FR_IT: case GameType::FR_FR: case GameType::FR_JA: abbr = "FR"; break;
+                case GameType::LG: case GameType::LG_ES: case GameType::LG_DE: case GameType::LG_IT: case GameType::LG_FR: case GameType::LG_JA: abbr = "LG"; break;
             }
             drawTextCentered(abbr, iconX + ICON_SIZE / 2, iconY + ICON_SIZE / 2,
                              T().text, font_);

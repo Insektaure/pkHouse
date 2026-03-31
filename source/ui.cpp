@@ -324,7 +324,9 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
         GameType::GP, GameType::GE, GameType::Sw, GameType::Sh,
         GameType::BD, GameType::SP, GameType::LA, GameType::S,
         GameType::V, GameType::ZA, GameType::FR, GameType::LG,
-        GameType::FR_ES, GameType::LG_ES
+        GameType::FR_ES, GameType::LG_ES, GameType::FR_DE, GameType::LG_DE,
+        GameType::FR_IT, GameType::LG_IT, GameType::FR_FR, GameType::LG_FR,
+        GameType::FR_JA, GameType::LG_JA
     };
 
     if (appletMode_) {

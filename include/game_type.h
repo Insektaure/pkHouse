@@ -2,14 +2,21 @@
 #include <cstdint>
 
 // Supported game types (sequential enum used as array index)
-enum class GameType { ZA, S, V, Sw, Sh, BD, SP, LA, GP, GE, FR, LG, FR_ES, LG_ES };
-static constexpr int GAME_TYPE_COUNT = 14;
+enum class GameType { ZA, S, V, Sw, Sh, BD, SP, LA, GP, GE, FR, LG, FR_ES, LG_ES, FR_DE, LG_DE, FR_IT, LG_IT, FR_FR, LG_FR, FR_JA, LG_JA };
+static constexpr int GAME_TYPE_COUNT = 22;
 
 inline bool isSV(GameType g) { return g == GameType::S || g == GameType::V; }
 inline bool isSwSh(GameType g) { return g == GameType::Sw || g == GameType::Sh; }
 inline bool isBDSP(GameType g) { return g == GameType::BD || g == GameType::SP; }
 inline bool isLGPE(GameType g) { return g == GameType::GP || g == GameType::GE; }
-inline bool isFRLG(GameType g) { return g == GameType::FR || g == GameType::LG || g == GameType::FR_ES || g == GameType::LG_ES; }
+inline bool isFRLG(GameType g) {
+    return g == GameType::FR    || g == GameType::LG    ||
+           g == GameType::FR_ES || g == GameType::LG_ES ||
+           g == GameType::FR_DE || g == GameType::LG_DE ||
+           g == GameType::FR_IT || g == GameType::LG_IT ||
+           g == GameType::FR_FR || g == GameType::LG_FR ||
+           g == GameType::FR_JA || g == GameType::LG_JA;
+}
 
 // Per-game constant table. One entry per GameType enum value.
 struct GameInfo {
@@ -91,6 +98,38 @@ inline const GameInfo& gameInfo(GameType g) {
         {0x01002B5023434000, "LeafGreen_s.sav",  "Pokemon LeafGreen (ES)",        "FireRed / LeafGreen",
          "FireRedLeafGreen", "LeafGreen_ES",      "pk3", 100,   14, 30, 80,    0, 80,
          false, false, "", "FRLG"},
+        // FR_DE
+        {0x01007F8023416000, "FireRed_d.sav",    "Pokemon FireRed (DE)",          "FireRed / LeafGreen",
+         "FireRedLeafGreen", "FireRed_DE",        "pk3", 100,   14, 30, 80,    0, 80,
+         false, false, "", "FRLG"},
+        // LG_DE
+        {0x0100FD6023430000, "LeafGreen_d.sav",  "Pokemon LeafGreen (DE)",        "FireRed / LeafGreen",
+         "FireRedLeafGreen", "LeafGreen_DE",      "pk3", 100,   14, 30, 80,    0, 80,
+         false, false, "", "FRLG"},
+        // FR_IT
+        {0x010092302342A000, "FireRed_i.sav",    "Pokemon FireRed (IT)",          "FireRed / LeafGreen",
+         "FireRedLeafGreen", "FireRed_IT",        "pk3", 100,   14, 30, 80,    0, 80,
+         false, false, "", "FRLG"},
+        // LG_IT
+        {0x01005C7023432000, "LeafGreen_i.sav",  "Pokemon LeafGreen (IT)",        "FireRed / LeafGreen",
+         "FireRedLeafGreen", "LeafGreen_IT",      "pk3", 100,   14, 30, 80,    0, 80,
+         false, false, "", "FRLG"},
+        // FR_FR
+        {0x01004B3023412000, "FireRed_f.sav",    "Pokemon FireRed (FR)",          "FireRed / LeafGreen",
+         "FireRedLeafGreen", "FireRed_FR",        "pk3", 100,   14, 30, 80,    0, 80,
+         false, false, "", "FRLG"},
+        // LG_FR
+        {0x010087C02342E000, "LeafGreen_f.sav",  "Pokemon LeafGreen (FR)",        "FireRed / LeafGreen",
+         "FireRedLeafGreen", "LeafGreen_FR",      "pk3", 100,   14, 30, 80,    0, 80,
+         false, false, "", "FRLG"},
+        // FR_JA
+        {0x01006FA0233F8000, "FireRed_j.sav",    "Pokemon FireRed (JA)",          "FireRed / LeafGreen",
+         "FireRedLeafGreen", "FireRed_JA",        "pk3", 100,   14, 30, 80,    0, 80,
+         false, false, "", "FRLG"},
+        // LG_JA
+        {0x0100F1E0233FA000, "LeafGreen_j.sav",  "Pokemon LeafGreen (JA)",        "FireRed / LeafGreen",
+         "FireRedLeafGreen", "LeafGreen_JA",      "pk3", 100,   14, 30, 80,    0, 80,
+         false, false, "", "FRLG"},
     };
     return INFO[static_cast<int>(g)];
 }
@@ -110,6 +149,14 @@ inline GameType pairedGame(GameType g) {
         case GameType::LG: return GameType::FR;
         case GameType::FR_ES: return GameType::LG_ES;
         case GameType::LG_ES: return GameType::FR_ES;
+        case GameType::FR_DE: return GameType::LG_DE;
+        case GameType::LG_DE: return GameType::FR_DE;
+        case GameType::FR_IT: return GameType::LG_IT;
+        case GameType::LG_IT: return GameType::FR_IT;
+        case GameType::FR_FR: return GameType::LG_FR;
+        case GameType::LG_FR: return GameType::FR_FR;
+        case GameType::FR_JA: return GameType::LG_JA;
+        case GameType::LG_JA: return GameType::FR_JA;
         default: return g;
     }
 }

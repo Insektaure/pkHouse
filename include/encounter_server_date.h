@@ -161,6 +161,9 @@ static constexpr WA9DateEntry WA9Gifts[] = {
     {  102, 2025, 10, 23, 2026,  2,  1, 2}, // Slowpoke PokéCenter Gift
     {  101, 2025, 10, 31, 2027,  2,  1, 0}, // PokéCenter Audino Birthday Gift
     { 1607, 2025, 12,  9, 2026,  1, 20, 0}, // Alpha Charizard
+    { 9031, 2026,  4,  2,    0,  0,  0, 0}, // Alpha Chikorita
+    { 9032, 2026,  4,  2,    0,  0,  0, 0}, // Alpha Tepig
+    { 9033, 2026,  4,  2,    0,  0,  0, 0}, // Alpha Totodile
 };
 
 static constexpr size_t WA9Gifts_Count = sizeof(WA9Gifts) / sizeof(WA9Gifts[0]);

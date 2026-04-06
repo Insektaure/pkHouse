@@ -41,6 +41,7 @@
     "bank_already_right": "Este banco ya esta abierto en el panel derecho.",
     "bank_already_left": "Este banco ya esta abierto en el panel izquierdo.",
     "loading_bank": "Cargando banco...",
+    "no_bank_loaded": "(Ningun banco cargado)",
 
     "select_profile": "Seleccionar perfil",
     "status_profile": "A: Seleccionar  Y: Tema  -: Acerca de  +: Salir",

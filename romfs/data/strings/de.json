@@ -41,6 +41,7 @@
     "bank_already_right": "Diese Bank ist bereits im rechten Panel geoeffnet.",
     "bank_already_left": "Diese Bank ist bereits im linken Panel geoeffnet.",
     "loading_bank": "Bank wird geladen...",
+    "no_bank_loaded": "(Keine Bank geladen)",
 
     "select_profile": "Profil waehlen",
     "status_profile": "A: Waehlen  Y: Design  -: Info  +: Beenden",

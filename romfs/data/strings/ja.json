@@ -41,6 +41,7 @@
     "bank_already_right": "このバンクはすでに右パネルで開いています。",
     "bank_already_left": "このバンクはすでに左パネルで開いています。",
     "loading_bank": "バンクを読み込み中...",
+    "no_bank_loaded": "(バンク未読み込み)",
 
     "select_profile": "プロフィールを選択",
     "status_profile": "A：選択  Y：テーマ  -：情報  +：終了",

@@ -41,6 +41,7 @@
     "bank_already_right": "This bank is already open on the right panel.",
     "bank_already_left": "This bank is already open on the left panel.",
     "loading_bank": "Loading bank...",
+    "no_bank_loaded": "(No Bank Loaded)",
 
     "select_profile": "Select Profile",
     "status_profile": "A: Select  Y: Theme  -: About  +: Quit",

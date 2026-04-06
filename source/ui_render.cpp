@@ -441,7 +441,7 @@ void UI::drawFrame() {
         if (!leftBankName_.empty())
             leftBoxName = truncName(leftBankName_, 16) + " - " + bankLeft_.getBoxName(gameBox_);
         else
-            leftBoxName = "(No Bank Loaded)";
+            leftBoxName = i18n::get(StrKey::NoBankLoaded);
         drawPanel(PANEL_X_L, leftBoxName, gameBox_,
                   leftBankName_.empty() ? 1 : bankLeft_.boxCount(),
                   leftActive, nullptr,

@@ -53,7 +53,7 @@ void UI::drawBankSelectorFrame() {
                     drawPanel(PANEL_X_L, leftBoxName, gameBox_, bankLeft_.boxCount(),
                               false, nullptr, &bankLeft_, gameBox_, Panel::Game);
                 } else {
-                    drawPanel(PANEL_X_L, "(No Bank Loaded)", 0, 1,
+                    drawPanel(PANEL_X_L, i18n::get(StrKey::NoBankLoaded), 0, 1,
                               false, nullptr, nullptr, 0, Panel::Game);
                 }
             } else {

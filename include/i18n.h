@@ -39,7 +39,10 @@ inline const LangInfo KNOWN_LANGS[] = {
     {"es",      "Espa\xc3\xb1ol"},                                // Español
     {"it",      "Italiano"},
     {"ko",      "\xed\x95\x9c\xea\xb5\xad\xec\x96\xb4"},       // 한국어
+    {"nl",      "Nederlands"},
     {"zh-Hans", "\xe7\xae\x80\xe4\xbd\x93\xe4\xb8\xad\xe6\x96\x87"}, // 简体中文
+    {"pt",      "Portugu\xc3\xaas"},                                    // Português
+    {"ru",      "\xd0\xa0\xd1\x83\xd1\x81\xd1\x81\xd0\xba\xd0\xb8\xd0\xb9"}, // Русский
     {"zh-Hant", "\xe7\xb9\x81\xe9\xab\x94\xe4\xb8\xad\xe6\x96\x87"}, // 繁體中文
 };
 inline constexpr int KNOWN_LANG_COUNT = sizeof(KNOWN_LANGS) / sizeof(KNOWN_LANGS[0]);
@@ -98,6 +101,7 @@ namespace StrKey {
     constexpr const char* BankAlreadyRight     = "bank_already_right";
     constexpr const char* BankAlreadyLeft      = "bank_already_left";
     constexpr const char* LoadingBank          = "loading_bank";
+    constexpr const char* NoBankLoaded         = "no_bank_loaded";
 
     // ui_selectors.cpp
     constexpr const char* SelectProfile        = "select_profile";

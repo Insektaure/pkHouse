@@ -41,6 +41,7 @@
     "bank_already_right": "Cette banque est deja ouverte sur le panneau droit.",
     "bank_already_left": "Cette banque est deja ouverte sur le panneau gauche.",
     "loading_bank": "Chargement de la banque...",
+    "no_bank_loaded": "(Aucune banque chargee)",
 
     "select_profile": "Choisir un profil",
     "status_profile": "A : Choisir  Y : Theme  - : A propos  + : Quitter",

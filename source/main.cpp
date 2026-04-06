@@ -54,6 +54,10 @@ int main(int argc, char* argv[]) {
                 case SetLanguage_ES419: lang = "es"; break;
                 case SetLanguage_IT:    lang = "it"; break;
                 case SetLanguage_KO:    lang = "ko"; break;
+                case SetLanguage_NL:    lang = "nl"; break;
+                case SetLanguage_PT:
+                case SetLanguage_PTBR:  lang = "pt"; break;
+                case SetLanguage_RU:    lang = "ru"; break;
                 case SetLanguage_ZHCN:
                 case SetLanguage_ZHHANS:lang = "zh-Hans"; break;
                 case SetLanguage_ZHTW:

@@ -170,6 +170,30 @@ Change themes from the **menu** (+ button) in the main view, or press **Y** on t
 A live preview is applied as you scroll through the list. Press **A** to confirm or **B** to cancel and revert.\
 Your theme choice is saved automatically and persists across sessions.
 
+### Language
+
+pkHouse supports 12 languages:
+
+| Language | Code |
+|----------|------|
+| English | en |
+| Deutsch | de |
+| Español | es |
+| Français | fr |
+| Italiano | it |
+| Nederlands | nl |
+| Português | pt |
+| Русский | ru |
+| 日本語 | ja |
+| 한국어 | ko |
+| 简体中文 | zh-Hans |
+| 繁體中文 | zh-Hant |
+
+The app automatically detects the Switch system language on startup. You can also manually override the language from the **menu** (+ button → Language) or press **Y** on the profile/game selection screens.\
+Your language choice is saved to `language.txt` and persists across sessions. Delete this file to revert to automatic system detection.
+
+Missing keys automatically fall back to English.
+
 ### Search / Filter
 
 Search for Pokemon across both panels (save and bank) using the **menu** (+ button → Search).
@@ -330,6 +354,7 @@ When switching banks, the selector appears on the side being switched while the 
 | Option | Description |
 |--------|-------------|
 | Theme | Open the theme selector |
+| Language | Open the language selector |
 | Search | Search for Pokemon across both panels |
 | Wondercard | Inject event wondercards as Pokemon (supported games only) |
 | Export Selected | Export selected Pokemon as `.pk` files (shown when Pokemon are selected) |
@@ -343,6 +368,7 @@ When switching banks, the selector appears on the side being switched while the 
 | Option | Description |
 |--------|-------------|
 | Theme | Open the theme selector |
+| Language | Open the language selector |
 | Search | Search for Pokemon across both panels |
 | Wondercard | Inject event wondercards as Pokemon (supported games only) |
 | Export Selected | Export selected Pokemon as `.pk` files (shown when Pokemon are selected) |

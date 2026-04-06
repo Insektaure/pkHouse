@@ -172,7 +172,7 @@ Your theme choice is saved automatically and persists across sessions.
 
 ### Language
 
-pkHouse supports 12 languages:
+pkHouse supports 9 languages:
 
 | Language | Code |
 |----------|------|
@@ -185,14 +185,13 @@ pkHouse supports 12 languages:
 | Português | pt |
 | Русский | ru |
 | 日本語 | ja |
-| 한국어 | ko |
-| 简体中文 | zh-Hans |
-| 繁體中文 | zh-Hant |
 
-The app automatically detects the Switch system language on startup. You can also manually override the language from the **menu** (+ button → Language) or press **Y** on the profile/game selection screens.\
+The app automatically detects the Switch system language on startup. You can also manually override the language from the **menu** (+ button → Language).\
 Your language choice is saved to `language.txt` and persists across sessions. Delete this file to revert to automatic system detection.
 
 Missing keys automatically fall back to English.
+
+> **Note:** Korean (한국어), Simplified Chinese (简体中文), and Traditional Chinese (繁體中文) translation files are included but currently disabled. The system font (`PlSharedFontType_Standard`) does not include CJK/Korean glyphs — enabling these languages requires loading additional system fonts.
 
 ### Search / Filter
 

@@ -31,6 +31,11 @@ struct LangInfo {
     const char* displayName;
 };
 
+// NOTE: Korean and Chinese are excluded — PlSharedFontType_Standard does not include
+// CJK/Korean glyphs. Supporting these requires loading PlSharedFontType_KO /
+// PlSharedFontType_ChineseSimplified / PlSharedFontType_ChineseTraditional.
+// Translation files (ko.json, zh-Hans.json, zh-Hant.json) are present in romfs
+// and can be enabled once font loading supports these scripts.
 inline const LangInfo KNOWN_LANGS[] = {
     {"en",      "English"},
     {"ja",      "\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e"},       // 日本語
@@ -38,12 +43,9 @@ inline const LangInfo KNOWN_LANGS[] = {
     {"de",      "Deutsch"},
     {"es",      "Espa\xc3\xb1ol"},                                // Español
     {"it",      "Italiano"},
-    {"ko",      "\xed\x95\x9c\xea\xb5\xad\xec\x96\xb4"},       // 한국어
     {"nl",      "Nederlands"},
-    {"zh-Hans", "\xe7\xae\x80\xe4\xbd\x93\xe4\xb8\xad\xe6\x96\x87"}, // 简体中文
     {"pt",      "Portugu\xc3\xaas"},                                    // Português
     {"ru",      "\xd0\xa0\xd1\x83\xd1\x81\xd1\x81\xd0\xba\xd0\xb8\xd0\xb9"}, // Русский
-    {"zh-Hant", "\xe7\xb9\x81\xe9\xab\x94\xe4\xb8\xad\xe6\x96\x87"}, // 繁體中文
 };
 inline constexpr int KNOWN_LANG_COUNT = sizeof(KNOWN_LANGS) / sizeof(KNOWN_LANGS[0]);
 

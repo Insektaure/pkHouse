@@ -53,15 +53,17 @@ int main(int argc, char* argv[]) {
                 case SetLanguage_ES:
                 case SetLanguage_ES419: lang = "es"; break;
                 case SetLanguage_IT:    lang = "it"; break;
-                case SetLanguage_KO:    lang = "ko"; break;
                 case SetLanguage_NL:    lang = "nl"; break;
                 case SetLanguage_PT:
                 case SetLanguage_PTBR:  lang = "pt"; break;
                 case SetLanguage_RU:    lang = "ru"; break;
-                case SetLanguage_ZHCN:
-                case SetLanguage_ZHHANS:lang = "zh-Hans"; break;
-                case SetLanguage_ZHTW:
-                case SetLanguage_ZHHANT:lang = "zh-Hant"; break;
+                // Korean and Chinese: translation files exist but are disabled
+                // because PlSharedFontType_Standard lacks CJK/Korean glyphs.
+                // case SetLanguage_KO:    lang = "ko"; break;
+                // case SetLanguage_ZHCN:
+                // case SetLanguage_ZHHANS:lang = "zh-Hans"; break;
+                // case SetLanguage_ZHTW:
+                // case SetLanguage_ZHHANT:lang = "zh-Hant"; break;
                 default:                lang = "en"; break;
             }
             setExit();

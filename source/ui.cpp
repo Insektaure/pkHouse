@@ -49,6 +49,11 @@ bool UI::init() {
     SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_BLEND);
 
     // Load font
+    // NOTE: PlSharedFontType_Standard covers Latin, Cyrillic, and Japanese glyphs.
+    // Korean (PlSharedFontType_KO) and Chinese (PlSharedFontType_ChineseSimplified /
+    // PlSharedFontType_ChineseTraditional) require loading separate system fonts.
+    // SDL_ttf does not support font fallback chains, so supporting these languages
+    // would require switching the primary font based on the active language.
     PlFontData fontData;
     plInitialize(PlServiceType_System);
     plGetSharedFontByType(&fontData, PlSharedFontType_Standard);

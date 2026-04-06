@@ -101,7 +101,13 @@ std::vector<std::string> availableLangs() {
     while ((entry = readdir(dir)) != nullptr) {
         std::string name = entry->d_name;
         if (name.size() > 5 && name.substr(name.size() - 5) == ".json") {
-            langs.push_back(name.substr(0, name.size() - 5));
+            std::string code = name.substr(0, name.size() - 5);
+            // Only include languages listed in KNOWN_LANGS (font support filter)
+            bool known = false;
+            for (int i = 0; i < KNOWN_LANG_COUNT; i++) {
+                if (code == KNOWN_LANGS[i].code) { known = true; break; }
+            }
+            if (known) langs.push_back(code);
         }
     }
     closedir(dir);

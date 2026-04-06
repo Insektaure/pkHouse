@@ -1,4 +1,5 @@
 #include "ui.h"
+#include "i18n.h"
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
@@ -24,7 +25,7 @@ void UI::drawProfileSelectorFrame() {
     SDL_SetRenderDrawColor(renderer_, T().bg.r, T().bg.g, T().bg.b, 255);
     SDL_RenderClear(renderer_);
 
-    drawTextCentered("Select Profile", SCREEN_W / 2, 40, T().text, font_);
+    drawTextCentered(i18n::get(StrKey::SelectProfile), SCREEN_W / 2, 40, T().text, font_);
 
     const auto& profiles = account_.profiles();
     int count = (int)profiles.size();
@@ -69,7 +70,7 @@ void UI::drawProfileSelectorFrame() {
         drawTextCentered(name, cardX + CARD_W / 2, cardY + ICON_SIZE + 24, T().text, fontSmall_);
     }
 
-    drawStatusBar("A: Select  Y: Theme  -: About  +: Quit");
+    drawStatusBar(i18n::get(StrKey::StatusProfile));
 }
 
 void UI::handleProfileSelectorInput(bool& running) {
@@ -156,8 +157,8 @@ void UI::selectProfile(int index) {
     }
 
     if (availableGames_.empty()) {
-        showMessageAndWait("No Save Data",
-            "No supported Pokemon save data found for this profile.");
+        showMessageAndWait(i18n::get(StrKey::NoSaveData),
+            i18n::get(StrKey::NoSaveDataBody));
         return;
     }
 
@@ -167,7 +168,7 @@ void UI::selectProfile(int index) {
     gameSelPage_ = 0;
     gameSelOnAllBanks_ = false;
     gameSelOnChevron_ = 0;
-    showWorking("Loading game icons...");
+    showWorking(i18n::get(StrKey::LoadingGameIcons));
     loadGameIcons();
     screen_ = AppScreen::GameSelector;
 }
@@ -255,11 +256,11 @@ void UI::drawGameSelectorFrame() {
     SDL_RenderClear(renderer_);
 
     if (appletMode_) {
-        drawTextCentered("Select Game (Dual Bank)", SCREEN_W / 2, 30, T().text, font_);
-        drawTextCentered("Use title override mode to transfer between save and bank",
+        drawTextCentered(i18n::get(StrKey::SelectGameDual), SCREEN_W / 2, 30, T().text, font_);
+        drawTextCentered(i18n::get(StrKey::DualBankHint),
                          SCREEN_W / 2, 55, T().textDim, fontSmall_);
     } else {
-        drawTextCentered("Select Game", SCREEN_W / 2, 40, T().text, font_);
+        drawTextCentered(i18n::get(StrKey::SelectGame), SCREEN_W / 2, 40, T().text, font_);
     }
 
     int numGames = (int)availableGames_.size();
@@ -354,7 +355,7 @@ void UI::drawGameSelectorFrame() {
         int gridBottomY = gridStartY + (lastRow + 1) * (CARD_H + CARD_GAP);
         int allBanksY = gridBottomY + 10;
 
-        std::string label = "View All Banks";
+        std::string label = i18n::get(StrKey::ViewAllBanks);
         const auto& te = getTextEntry(label, font_, T().text);
         int labelW = te.w + 40;  // padding
         int labelH = 36;
@@ -398,17 +399,17 @@ void UI::drawGameSelectorFrame() {
     }
 
     if (selectedProfile_ >= 0) {
-        drawStatusBar(totalPages > 1 ? "A: Select  B: Back  L/R: Page  Y: Theme  -: About  +: Quit"
-                                     : "A: Select  B: Back  Y: Theme  -: About  +: Quit");
+        drawStatusBar(totalPages > 1 ? i18n::get(StrKey::StatusGameBackPage)
+                                     : i18n::get(StrKey::StatusGameBack));
         std::string profileLabel = account_.profiles()[selectedProfile_].nickname;
         const auto& e = getTextEntry(profileLabel, fontSmall_, T().goldLabel);
         if (e.tex) drawText(profileLabel, SCREEN_W - e.w - 15, SCREEN_H - 26, T().goldLabel, fontSmall_);
     } else {
-        drawStatusBar(totalPages > 1 ? "A: Select  B: Quit  L/R: Page  Y: Theme  -: About"
-                                     : "A: Select  B: Quit  Y: Theme  -: About");
+        drawStatusBar(totalPages > 1 ? i18n::get(StrKey::StatusGameQuitPage)
+                                     : i18n::get(StrKey::StatusGameQuit));
     }
     if (appletMode_) {
-        std::string modeLabel = "Dual Bank Mode";
+        std::string modeLabel = i18n::get(StrKey::DualBankMode);
         const auto& e = getTextEntry(modeLabel, fontSmall_, T().goldLabel);
         if (e.tex) drawText(modeLabel, SCREEN_W - e.w - 15, SCREEN_H - 26, T().goldLabel, fontSmall_);
     }
@@ -623,7 +624,7 @@ void UI::enterAllBanksMode() {
 
     if (bankManager_.list().empty()) {
         allBanksMode_ = false;
-        showMessageAndWait("No Banks", "No banks found for any game.");
+        showMessageAndWait(i18n::get(StrKey::NoBanksTitle), i18n::get(StrKey::NoBanksAnyGame));
         return;
     }
 

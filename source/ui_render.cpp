@@ -1,4 +1,5 @@
 #include "ui.h"
+#include "i18n.h"
 #include "species_converter.h"
 #include "move_types.h"
 #include <algorithm>
@@ -308,7 +309,7 @@ void UI::drawSlot(int x, int y, const SlotDisplay& sd, bool isCursor, int select
 
         // Level at the bottom
         if (!sd.egg) {
-            std::string lvlStr = "Lv." + std::to_string(sd.level);
+            std::string lvlStr = i18n::get(StrKey::LvPrefix) + std::to_string(sd.level);
             drawTextCentered(lvlStr, x + CELL_W / 2, y + CELL_H - 12, T().textDim, fontSmall_);
         }
 
@@ -465,27 +466,22 @@ void UI::drawFrame() {
     }
 
     // Status bar
-    std::string statusMsg = "D-Pad: Move  L/R: Box  A: Pick/Place  Y: Select  YY: All  B: Cancel  X: Detail";
+    std::string statusMsg = i18n::get(StrKey::StatusMain);
     if (searchHighlightActive_ && !holding_ && selectedSlots_.empty() && !yHeld_) {
-        statusMsg = "Search: " + std::to_string(searchResults_.size()) +
-                    " matches  |  B: Clear  +: Menu";
+        statusMsg = i18n::fmt(StrKey::StatusSearch, std::to_string(searchResults_.size()));
     } else if (holding_ && !heldMulti_.empty()) {
-        statusMsg = "Holding " + std::to_string(heldMulti_.size()) +
-                    " Pokemon" + (positionPreserve_ ? " (keep positions)" : "") +
-                    "  |  A: Place  B: Return  X: Delete";
+        statusMsg = i18n::fmt(StrKey::StatusHoldingMulti, std::to_string(heldMulti_.size()),
+                    positionPreserve_ ? i18n::get(StrKey::KeepPositions) : "");
     } else if (holding_) {
         std::string heldName = heldPkm_.displayName();
         if (!heldName.empty()) {
-            statusMsg = "Holding: " + heldName + " Lv." + std::to_string(heldPkm_.level()) +
-                        "  |  A: Place  B: Return  X: Delete";
+            statusMsg = i18n::fmt(StrKey::StatusHoldingSingle, heldName, std::to_string(heldPkm_.level()));
         }
     } else if (yHeld_ && yDragActive_) {
-        statusMsg = "Drag selecting: " + std::to_string(selectedSlots_.size()) +
-                    " slots  |  Release Y to confirm";
+        statusMsg = i18n::fmt(StrKey::StatusDrag, std::to_string(selectedSlots_.size()));
     } else if (!selectedSlots_.empty()) {
-        statusMsg = std::to_string(selectedSlots_.size()) +
-                    " selected" + (positionPreserve_ ? " (keep positions)" : "") +
-                    "  |  A: Pick up  Y: Toggle/Drag  B: Clear";
+        statusMsg = i18n::fmt(StrKey::StatusSelected, std::to_string(selectedSlots_.size()),
+                    positionPreserve_ ? i18n::get(StrKey::KeepPositions) : "");
     }
     drawStatusBar(statusMsg);
 
@@ -493,9 +489,9 @@ void UI::drawFrame() {
     {
         std::string label;
         if (allBanksMode_)
-            label = "All Banks | ";
+            label = i18n::get(StrKey::LabelAllBanks);
         else if (isDualBankMode())
-            label = "Dual Bank | ";
+            label = i18n::get(StrKey::LabelDualBank);
         else if (selectedProfile_ >= 0 && selectedProfile_ < account_.profileCount())
             label = account_.profiles()[selectedProfile_].nickname + " | ";
         label += gameDisplayNameOf(selectedGame_);
@@ -597,7 +593,8 @@ void drawPolygonOutline(SDL_Renderer* renderer, const SDL_Point pts[], int count
 } // anonymous namespace
 
 void UI::drawRadarChart(int cx, int cy, int radius, const int values[6], int maxVal) {
-    static const char* labels[6] = {"HP", "Attack", "Defense", "Speed", "Sp. Def", "Sp. Atk"};
+    const std::string labels[6] = {i18n::get(StrKey::StatHP), i18n::get(StrKey::StatAtk),
+        i18n::get(StrKey::StatDef), i18n::get(StrKey::StatSpe), i18n::get(StrKey::StatSpD), i18n::get(StrKey::StatSpA)};
     constexpr int N = 6;
     constexpr int LABEL_MARGIN = 12;
 
@@ -660,7 +657,7 @@ void UI::drawRadarChart(int cx, int cy, int radius, const int values[6], int max
         int lx = cx + static_cast<int>((radius + LABEL_MARGIN) * HEX_COS[i]);
         int ly = cy + static_cast<int>((radius + LABEL_MARGIN) * HEX_SIN[i]);
 
-        const char* name = labels[i];
+        const std::string& name = labels[i];
         std::string valStr = std::to_string(values[i]);
 
         SDL_Color nameColor = T().goldLabel;
@@ -771,7 +768,7 @@ void UI::drawDetailPopup(const Pokemon& pkm) {
     SDL_Color nameColor = pkm.isShiny() ? T().shiny : T().text;
     drawText(specName, nameStartX, infoY, nameColor, font_);
 
-    std::string lvlStr = "  Lv." + std::to_string(pkm.level());
+    std::string lvlStr = "  " + i18n::get(StrKey::LvPrefix) + std::to_string(pkm.level());
     int nameW = getTextEntry(specName, font_, nameColor).w;
     drawText(lvlStr, nameStartX + nameW, infoY, T().text, font_);
 
@@ -788,36 +785,36 @@ void UI::drawDetailPopup(const Pokemon& pkm) {
     infoY += 30;
 
     // National dex ID
-    std::string idStr = "National #" + std::to_string(pkm.species());
+    std::string idStr = i18n::get(StrKey::NationalDexPrefix) + std::to_string(pkm.species());
     drawText(idStr, infoX, infoY, T().textDim, font_);
     infoY += 28;
 
     // OT + TID/SID
-    std::string otStr = "OT: " + pkm.otName() + " | TID: " + std::to_string(pkm.displayTid())
-                        + " | SID: " + std::to_string(pkm.displaySid());
+    std::string otStr = i18n::get(StrKey::OTPrefix) + pkm.otName() + " | " + i18n::get(StrKey::TIDPrefix) + std::to_string(pkm.displayTid())
+                        + " | " + i18n::get(StrKey::SIDPrefix) + std::to_string(pkm.displaySid());
     drawText(otStr, infoX, infoY, T().textDim, font_);
     infoY += 28;
 
     // Nature
-    std::string natureStr = "Nature: " + NatureName::get(pkm.nature());
+    std::string natureStr = i18n::get(StrKey::NaturePrefix) + NatureName::get(pkm.nature());
     drawText(natureStr, infoX, infoY, T().textDim, font_);
     infoY += 28;
 
     // Ability
-    std::string abilityStr = "Ability: " + AbilityName::get(pkm.ability());
+    std::string abilityStr = i18n::get(StrKey::AbilityPrefix) + AbilityName::get(pkm.ability());
     drawText(abilityStr, infoX, infoY, T().textDim, font_);
     infoY += 28;
 
     // Held item
     uint16_t item = pkm.heldItem();
-    std::string itemStr = "Held Item: " + (item != 0 ? ItemName::get(item) : std::string("---"));
+    std::string itemStr = i18n::get(StrKey::HeldItemPrefix) + (item != 0 ? ItemName::get(item) : i18n::get(StrKey::NoneItem));
     drawText(itemStr, infoX, infoY, T().textDim, font_);
 
     // --- Below sprite: Moves ---
     int movesX = popX + 30;
     int movesY = sprY + LARGE_SPRITE + 46;
 
-    drawText("Moves", movesX, movesY, T().text, font_);
+    drawText(i18n::get(StrKey::Moves), movesX, movesY, T().text, font_);
     movesY += 30;
 
     constexpr int TYPE_ICON_W = 25;
@@ -851,7 +848,7 @@ void UI::drawDetailPopup(const Pokemon& pkm) {
     auto ribbons = pkm.getRibbonsAndMarks();
     if (!ribbons.empty()) {
         movesY += 16;
-        std::string ribTitle = "Ribbons & Marks (" + std::to_string(ribbons.size()) + ")";
+        std::string ribTitle = i18n::fmt(StrKey::RibbonsMarks, std::to_string(ribbons.size()));
         drawText(ribTitle, movesX, movesY, T().text, font_);
         movesY += 30;
 
@@ -869,7 +866,7 @@ void UI::drawDetailPopup(const Pokemon& pkm) {
             int x = (col == 0) ? col1X : col2X;
             if (ribbonY + RIB_ROW_H > maxY) {
                 int remaining = static_cast<int>(ribbons.size() - i);
-                drawText("+" + std::to_string(remaining) + " more...", x, ribbonY, T().textDim, font_);
+                drawText(i18n::fmt(StrKey::MoreRibbons, std::to_string(remaining)), x, ribbonY, T().textDim, font_);
                 break;
             }
 
@@ -902,12 +899,12 @@ void UI::drawDetailPopup(const Pokemon& pkm) {
     constexpr int CHART_RADIUS = 65;
 
     // IVs radar chart
-    drawTextCentered("IVs", chartCX, popY + 18, T().text, font_);
+    drawTextCentered(i18n::get(StrKey::IVs), chartCX, popY + 18, T().text, font_);
     int ivsRadar[] = {pkm.ivHp(), pkm.ivAtk(), pkm.ivDef(), pkm.ivSpe(), pkm.ivSpD(), pkm.ivSpA()};
     drawRadarChart(chartCX, popY + 150, CHART_RADIUS, ivsRadar, 31);
 
     // EVs radar chart
-    drawTextCentered("EVs", chartCX, popY + 283, T().text, font_);
+    drawTextCentered(i18n::get(StrKey::EVs), chartCX, popY + 283, T().text, font_);
     int evsRadar[] = {pkm.evHp(), pkm.evAtk(), pkm.evDef(), pkm.evSpe(), pkm.evSpD(), pkm.evSpA()};
     drawRadarChart(chartCX, popY + 415, CHART_RADIUS, evsRadar, 252);
 
@@ -922,7 +919,7 @@ void UI::drawDetailPopup(const Pokemon& pkm) {
     drawText(techBuf2, popX + 20, popY + POP_H - 50, T().textDim, fontSmall_);
 
     // Close hint at bottom
-    drawTextCentered("L/R: Prev/Next   A: Release   X: Export   B: Close", popX + POP_W / 2, popY + POP_H - 20, T().textDim, fontSmall_);
+    drawTextCentered(i18n::get(StrKey::DetailFooter), popX + POP_W / 2, popY + POP_H - 20, T().textDim, fontSmall_);
 }
 
 void UI::drawMenuPopup() {
@@ -935,9 +932,9 @@ void UI::drawMenuPopup() {
     bool hasExport = !selectedSlots_.empty();
     int menuCount;
     if (isDualBankMode())
-        menuCount = hasWC ? 8 : 7;
+        menuCount = hasWC ? 9 : 8;
     else
-        menuCount = hasWC ? 7 : 6;
+        menuCount = hasWC ? 8 : 7;
     if (hasExport) menuCount++;
 
     constexpr int POP_W = 380;
@@ -948,41 +945,43 @@ void UI::drawMenuPopup() {
     drawRect(popX, popY, POP_W, POP_H, T().panelBg);
     drawRectOutline(popX, popY, POP_W, POP_H, T().cursor, 2);
 
-    drawTextCentered("Menu", popX + POP_W / 2, popY + 22, T().text, font_);
+    drawTextCentered(i18n::get(StrKey::MenuTitle), popX + POP_W / 2, popY + 22, T().text, font_);
 
     static char exportBuf[64];
     if (hasExport)
-        std::snprintf(exportBuf, sizeof(exportBuf), "Export Selected (%d)", (int)selectedSlots_.size());
+        std::snprintf(exportBuf, sizeof(exportBuf), "%s", i18n::fmt(StrKey::MenuExportSelected, std::to_string((int)selectedSlots_.size())).c_str());
 
-    const char* labelsNormal[] = {
-        "Theme",
-        "Search",
-        "Wondercard",
+    const std::string labelsNormal[] = {
+        i18n::get(StrKey::MenuTheme),
+        i18n::get(StrKey::MenuLanguage),
+        i18n::get(StrKey::MenuSearch),
+        i18n::get(StrKey::MenuWondercard),
         exportBuf,
-        "Switch Bank",
-        "Change Game",
-        "Save & Quit",
-        "Quit Without Saving"
+        i18n::get(StrKey::MenuSwitchBank),
+        i18n::get(StrKey::MenuChangeGame),
+        i18n::get(StrKey::MenuSaveQuit),
+        i18n::get(StrKey::MenuQuitNoSave)
     };
-    const char* labelsApplet[] = {
-        "Theme",
-        "Search",
-        "Wondercard",
+    const std::string labelsApplet[] = {
+        i18n::get(StrKey::MenuTheme),
+        i18n::get(StrKey::MenuLanguage),
+        i18n::get(StrKey::MenuSearch),
+        i18n::get(StrKey::MenuWondercard),
         exportBuf,
-        "Switch Left Bank",
-        "Switch Right Bank",
-        "Change Game",
-        "Save Banks",
-        "Quit"
+        i18n::get(StrKey::MenuSwitchLeft),
+        i18n::get(StrKey::MenuSwitchRight),
+        i18n::get(StrKey::MenuChangeGame),
+        i18n::get(StrKey::MenuSaveBanks),
+        i18n::get(StrKey::MenuQuit)
     };
     // Build label list, skipping conditional items
-    const char* visibleLabels[10];
-    const char** allLabels = isDualBankMode() ? labelsApplet : labelsNormal;
-    int allCount = isDualBankMode() ? 9 : 8;
+    std::string visibleLabels[12];
+    const std::string* allLabels = isDualBankMode() ? labelsApplet : labelsNormal;
+    int allCount = isDualBankMode() ? 10 : 9;
     int vi = 0;
     for (int i = 0; i < allCount; i++) {
-        if (!hasWC && i == 2) continue;     // skip Wondercard
-        if (!hasExport && i == 3) continue; // skip Export Selected
+        if (!hasWC && i == 3) continue;     // skip Wondercard
+        if (!hasExport && i == 4) continue; // skip Export Selected
         visibleLabels[vi++] = allLabels[i];
     }
 
@@ -998,7 +997,7 @@ void UI::drawMenuPopup() {
         drawTextCentered(visibleLabels[i], popX + POP_W / 2, rowY + (rowH - 4) / 2, T().text, font_);
     }
 
-    drawTextCentered("A: Confirm  B: Cancel", popX + POP_W / 2, popY + POP_H - 18, T().textDim, fontSmall_);
+    drawTextCentered(i18n::get(StrKey::AConfirmBCancelMenu), popX + POP_W / 2, popY + POP_H - 18, T().textDim, fontSmall_);
 }
 
 void UI::drawThemeSelectorPopup() {
@@ -1012,7 +1011,7 @@ void UI::drawThemeSelectorPopup() {
     drawRect(popX, popY, POP_W, POP_H, T().panelBg);
     drawRectOutline(popX, popY, POP_W, POP_H, T().cursor, 2);
 
-    drawTextCentered("Select Theme", popX + POP_W / 2, popY + 22, T().text, font_);
+    drawTextCentered(i18n::get(StrKey::SelectTheme), popX + POP_W / 2, popY + 22, T().text, font_);
 
     int rowH = 36;
     int startY = popY + 50;
@@ -1028,7 +1027,38 @@ void UI::drawThemeSelectorPopup() {
         drawTextCentered(label, popX + POP_W / 2, rowY + (rowH - 4) / 2, T().text, font_);
     }
 
-    drawTextCentered("A: Select  B: Cancel", popX + POP_W / 2, popY + POP_H - 18, T().textDim, fontSmall_);
+    drawTextCentered(i18n::get(StrKey::ASelectBCancel), popX + POP_W / 2, popY + POP_H - 18, T().textDim, fontSmall_);
+}
+
+void UI::drawLanguageSelectorPopup() {
+    drawRect(0, 0, SCREEN_W, SCREEN_H, T().overlay);
+
+    int langCount = (int)langList_.size();
+    constexpr int POP_W = 380;
+    int POP_H = 50 + langCount * 36 + 30;
+    int popX = (SCREEN_W - POP_W) / 2;
+    int popY = (SCREEN_H - POP_H) / 2;
+
+    drawRect(popX, popY, POP_W, POP_H, T().panelBg);
+    drawRectOutline(popX, popY, POP_W, POP_H, T().cursor, 2);
+
+    drawTextCentered(i18n::get(StrKey::SelectLanguage), popX + POP_W / 2, popY + 22, T().text, font_);
+
+    int rowH = 36;
+    int startY = popY + 50;
+
+    for (int i = 0; i < langCount; i++) {
+        int rowY = startY + i * rowH;
+        if (i == langSelCursor_) {
+            drawRect(popX + 20, rowY, POP_W - 40, rowH - 4, T().menuHighlight);
+            drawRectOutline(popX + 20, rowY, POP_W - 40, rowH - 4, T().cursor, 2);
+        }
+        std::string label = langDisplayName(langList_[i]);
+        if (langList_[i] == i18n::currentLang()) label = "* " + label + " *";
+        drawTextCentered(label, popX + POP_W / 2, rowY + (rowH - 4) / 2, T().text, font_);
+    }
+
+    drawTextCentered(i18n::get(StrKey::ASelectBCancel), popX + POP_W / 2, popY + POP_H - 18, T().textDim, fontSmall_);
 }
 
 void UI::drawSearchFilterPopup() {
@@ -1046,7 +1076,7 @@ void UI::drawSearchFilterPopup() {
     drawRect(popX, popY, POP_W, POP_H, T().panelBg);
     drawRectOutline(popX, popY, POP_W, POP_H, T().cursor, 2);
 
-    drawTextCentered("Search / Filter", popX + POP_W / 2, popY + 22, T().text, font_);
+    drawTextCentered(i18n::get(StrKey::SearchFilter), popX + POP_W / 2, popY + 22, T().text, font_);
 
     int startY = popY + 50;
     int labelX = popX + 30;
@@ -1067,9 +1097,8 @@ void UI::drawSearchFilterPopup() {
 
         switch (i) {
             case 0: {
-                drawText("Species:", labelX, textY, T().text, font_);
+                drawText(i18n::get(StrKey::FilterSpecies), labelX, textY, T().text, font_);
                 if (searchFilter_.speciesId > 0) {
-                    // Draw small sprite + name
                     SDL_Texture* spr = getSprite(searchFilter_.speciesId);
                     if (spr) {
                         int sprSize = ROW_H - 6;
@@ -1080,41 +1109,41 @@ void UI::drawSearchFilterPopup() {
                         drawText(searchFilter_.speciesName, valueX, textY, T().text, font_);
                     }
                 } else {
-                    drawText("(any)", valueX, textY, T().textDim, font_);
+                    drawText(i18n::get(StrKey::FilterAny), valueX, textY, T().textDim, font_);
                 }
                 break;
             }
             case 1:
-                drawText("OT Name:", labelX, textY, T().text, font_);
-                drawText(searchFilter_.otName.empty() ? "(any)" : searchFilter_.otName,
+                drawText(i18n::get(StrKey::FilterOT), labelX, textY, T().text, font_);
+                drawText(searchFilter_.otName.empty() ? i18n::get(StrKey::FilterAny) : searchFilter_.otName,
                          valueX, textY, searchFilter_.otName.empty() ? T().textDim : T().text, font_);
                 break;
             case 2:
-                drawText("Shiny:", labelX, textY, T().text, font_);
-                drawText(searchFilter_.filterShiny ? "Yes" : "Off",
+                drawText(i18n::get(StrKey::FilterShiny), labelX, textY, T().text, font_);
+                drawText(searchFilter_.filterShiny ? i18n::get(StrKey::FilterYes) : i18n::get(StrKey::FilterOff),
                          valueX, textY, searchFilter_.filterShiny ? T().shiny : T().textDim, font_);
                 break;
             case 3:
-                drawText("Egg:", labelX, textY, T().text, font_);
-                drawText(searchFilter_.filterEgg ? "Yes" : "Off",
+                drawText(i18n::get(StrKey::FilterEgg), labelX, textY, T().text, font_);
+                drawText(searchFilter_.filterEgg ? i18n::get(StrKey::FilterYes) : i18n::get(StrKey::FilterOff),
                          valueX, textY, searchFilter_.filterEgg ? T().text : T().textDim, font_);
                 break;
             case 4:
-                drawText("Alpha:", labelX, textY, T().text, font_);
-                drawText(searchFilter_.filterAlpha ? "Yes" : "Off",
+                drawText(i18n::get(StrKey::FilterAlpha), labelX, textY, T().text, font_);
+                drawText(searchFilter_.filterAlpha ? i18n::get(StrKey::FilterYes) : i18n::get(StrKey::FilterOff),
                          valueX, textY, searchFilter_.filterAlpha ? T().text : T().textDim, font_);
                 break;
             case 5: {
-                drawText("Gender:", labelX, textY, T().text, font_);
-                const char* g = "Any";
-                if (searchFilter_.gender == GenderFilter::Male)        g = "Male";
-                else if (searchFilter_.gender == GenderFilter::Female)  g = "Female";
-                else if (searchFilter_.gender == GenderFilter::Genderless) g = "Genderless";
+                drawText(i18n::get(StrKey::FilterGender), labelX, textY, T().text, font_);
+                const char* g = i18n::get(StrKey::GenderAny).c_str();
+                if (searchFilter_.gender == GenderFilter::Male)        g = i18n::get(StrKey::GenderMale).c_str();
+                else if (searchFilter_.gender == GenderFilter::Female)  g = i18n::get(StrKey::GenderFemale).c_str();
+                else if (searchFilter_.gender == GenderFilter::Genderless) g = i18n::get(StrKey::GenderGenderless).c_str();
                 drawText(g, valueX, textY, T().text, font_);
                 break;
             }
             case 6: {
-                drawText("Level:", labelX, textY, T().text, font_);
+                drawText(i18n::get(StrKey::FilterLevel), labelX, textY, T().text, font_);
                 std::string minStr = searchFilter_.levelMin > 0 ? std::to_string(searchFilter_.levelMin) : "-";
                 std::string maxStr = searchFilter_.levelMax > 0 ? std::to_string(searchFilter_.levelMax) : "-";
                 SDL_Color minC = (searchFilterCursor_ == 6 && searchLevelFocus_ == 0) ? T().cursor : T().text;
@@ -1125,43 +1154,43 @@ void UI::drawSearchFilterPopup() {
                 break;
             }
             case 7: {
-                drawText("Perfect IVs:", labelX, textY, T().text, font_);
-                const char* iv = "Off";
-                if (searchFilter_.perfectIVs == PerfectIVFilter::AtLeastOne) iv = "1+";
-                else if (searchFilter_.perfectIVs == PerfectIVFilter::All6)  iv = "6IV";
+                drawText(i18n::get(StrKey::FilterPerfectIVs), labelX, textY, T().text, font_);
+                const char* iv = i18n::get(StrKey::FilterOff).c_str();
+                if (searchFilter_.perfectIVs == PerfectIVFilter::AtLeastOne) iv = i18n::get(StrKey::IVOnePlus).c_str();
+                else if (searchFilter_.perfectIVs == PerfectIVFilter::All6)  iv = i18n::get(StrKey::IVSix).c_str();
                 drawText(iv, valueX, textY, T().text, font_);
                 break;
             }
             case 8: {
-                drawText("Ribbons/Marks:", labelX, textY, T().text, font_);
-                const char* rf = "Off";
-                if (searchFilter_.ribbonFilter == RibbonFilter::HasRibbon) rf = "Has Ribbon";
-                else if (searchFilter_.ribbonFilter == RibbonFilter::HasMark) rf = "Has Mark";
-                else if (searchFilter_.ribbonFilter == RibbonFilter::HasAny)  rf = "Has Any";
+                drawText(i18n::get(StrKey::FilterRibbons), labelX, textY, T().text, font_);
+                const char* rf = i18n::get(StrKey::FilterOff).c_str();
+                if (searchFilter_.ribbonFilter == RibbonFilter::HasRibbon) rf = i18n::get(StrKey::RibbonHasRibbon).c_str();
+                else if (searchFilter_.ribbonFilter == RibbonFilter::HasMark) rf = i18n::get(StrKey::RibbonHasMark).c_str();
+                else if (searchFilter_.ribbonFilter == RibbonFilter::HasAny)  rf = i18n::get(StrKey::RibbonHasAny).c_str();
                 drawText(rf, valueX, textY,
                          searchFilter_.ribbonFilter != RibbonFilter::Off ? T().text : T().textDim, font_);
                 break;
             }
             case 9: {
-                drawText("Mode:", labelX, textY, T().text, font_);
+                drawText(i18n::get(StrKey::FilterMode), labelX, textY, T().text, font_);
                 bool isList = (searchFilter_.mode == SearchMode::List);
-                drawText(isList ? "[x] List" : "[ ] List",
+                drawText(isList ? i18n::get(StrKey::ModeListOn) : i18n::get(StrKey::ModeListOff),
                          valueX, textY, isList ? T().text : T().textDim, font_);
-                drawText(!isList ? "[x] Highlight" : "[ ] Highlight",
+                drawText(!isList ? i18n::get(StrKey::ModeHighlightOn) : i18n::get(StrKey::ModeHighlightOff),
                          valueX + 100, textY, !isList ? T().searchMatch : T().textDim, font_);
                 break;
             }
             case 10:
-                drawTextCentered("[ Reset ]", popX + POP_W / 2, rowY + (ROW_H - 4) / 2, T().textDim, font_);
+                drawTextCentered(i18n::get(StrKey::FilterReset), popX + POP_W / 2, rowY + (ROW_H - 4) / 2, T().textDim, font_);
                 break;
             case 11:
-                drawTextCentered("[ Search ]", popX + POP_W / 2, rowY + (ROW_H - 4) / 2, T().text, font_);
+                drawTextCentered(i18n::get(StrKey::FilterSearch), popX + POP_W / 2, rowY + (ROW_H - 4) / 2, T().text, font_);
                 break;
         }
         visualRow++;
     }
 
-    drawTextCentered("A: Edit/Toggle  B: Cancel", popX + POP_W / 2, popY + POP_H - 18, T().textDim, fontSmall_);
+    drawTextCentered(i18n::get(StrKey::FilterFooter), popX + POP_W / 2, popY + POP_H - 18, T().textDim, fontSmall_);
 }
 
 void UI::drawSearchResultsPopup() {
@@ -1175,11 +1204,11 @@ void UI::drawSearchResultsPopup() {
     drawRect(popX, popY, POP_W, POP_H, T().panelBg);
     drawRectOutline(popX, popY, POP_W, POP_H, T().cursor, 2);
 
-    std::string title = "Search Results (" + std::to_string(searchResults_.size()) + " found)";
+    std::string title = i18n::fmt(StrKey::SearchResultsTitle, std::to_string(searchResults_.size()));
     drawTextCentered(title, popX + POP_W / 2, popY + 22, T().text, font_);
 
     if (searchResults_.empty()) {
-        drawTextCentered("No Pokemon found.", popX + POP_W / 2, popY + POP_H / 2, T().textDim, font_);
+        drawTextCentered(i18n::get(StrKey::NoPokemonFound), popX + POP_W / 2, popY + POP_H / 2, T().textDim, font_);
     } else {
         constexpr int ROW_H = 36;
         int listY = popY + 50;
@@ -1212,20 +1241,20 @@ void UI::drawSearchResultsPopup() {
             // Status badges (fixed-width area for up to three badges)
             {
                 int bx = x;
-                if (r.isShiny) { drawText("[S]", bx, textY, T().shiny, font_); bx += 35; }
-                if (r.isAlpha) { drawText("[A]", bx, textY, T().text, font_); bx += 35; }
-                if (r.isEgg)   { drawText("[E]", bx, textY, T().textDim, font_); }
+                if (r.isShiny) { drawText(i18n::get(StrKey::BadgeShiny), bx, textY, T().shiny, font_); bx += 35; }
+                if (r.isAlpha) { drawText(i18n::get(StrKey::BadgeAlpha), bx, textY, T().text, font_); bx += 35; }
+                if (r.isEgg)   { drawText(i18n::get(StrKey::BadgeEgg), bx, textY, T().textDim, font_); }
             }
             x += 105;
 
             // Species name
-            std::string name = r.isEgg ? "Egg" : r.speciesName;
+            std::string name = r.isEgg ? i18n::get(StrKey::Egg) : r.speciesName;
             if (name.length() > 14) name = name.substr(0, 13) + ".";
             drawText(name, x, textY, r.isShiny ? T().shiny : T().text, font_);
             x += 170;
 
             // Level
-            std::string lvlStr = r.isEgg ? "Egg" : "Lv." + std::to_string(r.level);
+            std::string lvlStr = r.isEgg ? i18n::get(StrKey::Egg) : i18n::get(StrKey::LvPrefix) + std::to_string(r.level);
             drawText(lvlStr, x, textY, T().textDim, font_);
             x += 70;
 
@@ -1239,17 +1268,17 @@ void UI::drawSearchResultsPopup() {
             // Location
             std::string loc;
             if (isDualBankMode())
-                loc = (r.panel == Panel::Game ? "Left" : "Right");
+                loc = (r.panel == Panel::Game ? i18n::get(StrKey::LocLeft) : i18n::get(StrKey::LocRight));
             else
-                loc = (r.panel == Panel::Game ? "Save" : "Bank");
-            loc += " Box " + std::to_string(r.box + 1) + " Slot " + std::to_string(r.slot + 1);
+                loc = (r.panel == Panel::Game ? i18n::get(StrKey::LocSave) : i18n::get(StrKey::LocBank));
+            loc += " " + i18n::get(StrKey::BoxLabel) + " " + std::to_string(r.box + 1) + " " + i18n::get(StrKey::SlotLabel) + " " + std::to_string(r.slot + 1);
             drawText(loc, x, textY, T().textDim, font_);
         }
     }
 
     std::string footer = searchResults_.empty()
-        ? "B: Close  X: Back to Filter"
-        : "A: Go to  L/R: Skip 10  B: Close  X: Filter";
+        ? i18n::get(StrKey::ResultsFooterEmpty)
+        : i18n::get(StrKey::ResultsFooter);
     drawTextCentered(footer, popX + POP_W / 2, popY + POP_H - 18, T().textDim, fontSmall_);
 }
 
@@ -1264,7 +1293,7 @@ void UI::drawSpeciesLetterPicker() {
     drawRect(popX, popY, POP_W, POP_H, T().panelBg);
     drawRectOutline(popX, popY, POP_W, POP_H, T().cursor, 2);
 
-    drawTextCentered("Select Letter", popX + POP_W / 2, popY + 22, T().text, font_);
+    drawTextCentered(i18n::get(StrKey::SelectLetter), popX + POP_W / 2, popY + 22, T().text, font_);
 
     constexpr int COLS = 2;
     constexpr int TOTAL_ITEMS = 27; // "-" + A-Z
@@ -1328,7 +1357,7 @@ void UI::drawSpeciesLetterPicker() {
         }
     }
 
-    drawTextCentered("A: Select  B: Back", popX + POP_W / 2, popY + POP_H - 18, T().textDim, fontSmall_);
+    drawTextCentered(i18n::get(StrKey::ASelectBBack), popX + POP_W / 2, popY + POP_H - 18, T().textDim, fontSmall_);
 }
 
 void UI::drawSpeciesListPicker() {
@@ -1343,11 +1372,11 @@ void UI::drawSpeciesListPicker() {
     drawRectOutline(popX, popY, POP_W, POP_H, T().cursor, 2);
 
     char letter = 'A' + (speciesLetterCursor_ - 1);
-    std::string title = std::string("Species - ") + letter;
+    std::string title = i18n::fmt(StrKey::SpeciesDashLetter, std::string(1, letter));
     drawTextCentered(title, popX + POP_W / 2, popY + 22, T().text, font_);
 
     if (speciesPickerList_.empty()) {
-        drawTextCentered("No species found.", popX + POP_W / 2, popY + POP_H / 2, T().textDim, font_);
+        drawTextCentered(i18n::get(StrKey::NoSpeciesFound), popX + POP_W / 2, popY + POP_H / 2, T().textDim, font_);
     } else {
         constexpr int COLS = 3;
         constexpr int ROW_H = 56;
@@ -1430,7 +1459,7 @@ void UI::drawSpeciesListPicker() {
         }
     }
 
-    drawTextCentered("A: Select  B: Back", popX + POP_W / 2, popY + POP_H - 18, T().textDim, fontSmall_);
+    drawTextCentered(i18n::get(StrKey::ASelectBBack), popX + POP_W / 2, popY + POP_H - 18, T().textDim, fontSmall_);
 }
 
 void UI::drawWondercardListPopup() {
@@ -1444,12 +1473,12 @@ void UI::drawWondercardListPopup() {
     drawRect(popX, popY, POP_W, POP_H, T().panelBg);
     drawRectOutline(popX, popY, POP_W, POP_H, T().cursor, 2);
 
-    std::string title = "Wondercards (" + std::to_string(wcList_.size()) + ")";
+    std::string title = i18n::fmt(StrKey::WondercardsTitle, std::to_string(wcList_.size()));
     drawTextCentered(title, popX + POP_W / 2, popY + 22, T().text, font_);
 
     if (wcList_.empty()) {
-        drawTextCentered("No wondercard files found.", popX + POP_W / 2, popY + POP_H / 2 - 20, T().textDim, font_);
-        std::string hint = std::string("Place ") + gameInfo(selectedGame_).wcExtensionHint + " files in:";
+        drawTextCentered(i18n::get(StrKey::NoWCFound), popX + POP_W / 2, popY + POP_H / 2 - 20, T().textDim, font_);
+        std::string hint = i18n::fmt(StrKey::PlaceFilesIn, std::string(gameInfo(selectedGame_).wcExtensionHint));
         drawTextCentered(hint, popX + POP_W / 2, popY + POP_H / 2 + 10, T().textDim, fontSmall_);
         std::string path = "sdmc:/switch/pkHouse/wondercards/" + std::string(bankFolderNameOf(selectedGame_)) + "/";
         drawTextCentered(path, popX + POP_W / 2, popY + POP_H / 2 + 30, T().textDim, fontSmall_);
@@ -1484,7 +1513,7 @@ void UI::drawWondercardListPopup() {
 
             if (!wc.valid) {
                 // Invalid entry — show filename and marker
-                drawText("[Invalid]", x, textY, T().genderFemale, font_);
+                drawText(i18n::get(StrKey::BadgeInvalid), x, textY, T().genderFemale, font_);
                 x += 110;
                 std::string fn = wc.filename;
                 if (fn.length() > 40) fn = fn.substr(0, 39) + ".";
@@ -1492,7 +1521,7 @@ void UI::drawWondercardListPopup() {
             } else {
                 // Shiny indicator
                 if (wc.isShiny) {
-                    drawText("[S]", x, textY, T().shiny, font_);
+                    drawText(i18n::get(StrKey::BadgeShiny), x, textY, T().shiny, font_);
                 }
                 x += 40;
 
@@ -1525,12 +1554,12 @@ void UI::drawWondercardListPopup() {
                 x += 170;
 
                 // Level
-                drawText("Lv." + std::to_string(wc.level), x, textY, T().textDim, font_);
+                drawText(i18n::get(StrKey::LvPrefix) + std::to_string(wc.level), x, textY, T().textDim, font_);
                 x += 70;
 
                 // Player OT tag
                 if (!wc.hasOT) {
-                    drawText("[Player OT]", x, textY, T().genderFemale, font_);
+                    drawText(i18n::get(StrKey::PlayerOTTag), x, textY, T().genderFemale, font_);
                 }
                 x += 120;
 
@@ -1548,8 +1577,8 @@ void UI::drawWondercardListPopup() {
     }
 
     std::string footer = wcList_.empty()
-        ? "B: Close"
-        : "A: Inject  L/R: Skip 10  B: Cancel";
+        ? i18n::get(StrKey::BClose)
+        : i18n::get(StrKey::WCFooter);
     drawTextCentered(footer, popX + POP_W / 2, popY + POP_H - 18, T().textDim, fontSmall_);
 }
 
@@ -1568,7 +1597,7 @@ void UI::drawAboutPopup() {
     int y = py + 25;
 
     // Title
-    drawTextCentered("pkHouse - Local Bank System", cx, y, T().shiny, fontLarge_);
+    drawTextCentered(i18n::get(StrKey::AboutTitle), cx, y, T().shiny, fontLarge_);
     y += 38;
 
     // Version / author
@@ -1583,19 +1612,19 @@ void UI::drawAboutPopup() {
     y += 20;
 
     // Description
-    drawTextCentered("Pokemon Box Manager for Nintendo Switch", cx, y, T().text, font_);
+    drawTextCentered(i18n::get(StrKey::AboutDesc1), cx, y, T().text, font_);
     y += 28;
-    drawTextCentered("Move Pokemon between save files and banks.", cx, y, T().text, font_);
+    drawTextCentered(i18n::get(StrKey::AboutDesc2), cx, y, T().text, font_);
     y += 28;
-    drawTextCentered("Supported Games", cx, y, T().selected, font_);
+    drawTextCentered(i18n::get(StrKey::SupportedGames), cx, y, T().selected, font_);
     y += 24;
-    drawTextCentered("Let's Go Pikachu/Eevee (1.0.2)  -  Sword/Shield (1.3.2)", cx, y, T().textDim, fontSmall_);
+    drawTextCentered(i18n::get(StrKey::SupportedLGPE), cx, y, T().textDim, fontSmall_);
     y += 20;
-    drawTextCentered("Brilliant Diamond/Shining Pearl (1.3.0)  -  Legends: Arceus (1.1.1)", cx, y, T().textDim, fontSmall_);
+    drawTextCentered(i18n::get(StrKey::SupportedSwSh), cx, y, T().textDim, fontSmall_);
     y += 20;
-    drawTextCentered("Scarlet/Violet (4.0.0)  -  Legends: Z-A (2.0.2)", cx, y, T().textDim, fontSmall_);
+    drawTextCentered(i18n::get(StrKey::SupportedSVZA), cx, y, T().textDim, fontSmall_);
     y += 20;
-    drawTextCentered("FireRed/LeafGreen (1.0.0)", cx, y, T().textDim, fontSmall_);
+    drawTextCentered(i18n::get(StrKey::SupportedFRLG), cx, y, T().textDim, fontSmall_);
     y += 30;
 
     // Divider
@@ -1604,20 +1633,20 @@ void UI::drawAboutPopup() {
     y += 20;
 
     // Credits
-    drawTextCentered("Based on PKHeX by kwsch & PokeCrypto research.", cx, y, T().creditsText, fontSmall_);
+    drawTextCentered(i18n::get(StrKey::CreditPKHeX), cx, y, T().creditsText, fontSmall_);
     y += 20;
-    drawTextCentered("Save backup & write logic based on JKSV by J-D-K.", cx, y, T().creditsText, fontSmall_);
+    drawTextCentered(i18n::get(StrKey::CreditJKSV), cx, y, T().creditsText, fontSmall_);
     y += 35;
 
     // Controls
-    drawTextCentered("Controls", cx, y, T().selected, font_);
+    drawTextCentered(i18n::get(StrKey::Controls), cx, y, T().selected, font_);
     y += 28;
-    drawText("A: Pick/Place    B: Cancel    X: Details    Y: Multi-select", px + 50, y, T().textDim, fontSmall_);
+    drawText(i18n::get(StrKey::ControlsLine1), px + 50, y, T().textDim, fontSmall_);
     y += 20;
-    drawText("L/R: Switch Box    ZL/ZR: Box View    +: Menu    -: About", px + 50, y, T().textDim, fontSmall_);
+    drawText(i18n::get(StrKey::ControlsLine2), px + 50, y, T().textDim, fontSmall_);
 
     // Footer
-    drawTextCentered("Press - or B to close", cx, py + POP_H - 22, T().textDim, fontSmall_);
+    drawTextCentered(i18n::get(StrKey::PressMinusBClose), cx, py + POP_H - 22, T().textDim, fontSmall_);
 }
 
 void UI::drawBoxViewOverlay() {
@@ -1645,11 +1674,10 @@ void UI::drawBoxViewOverlay() {
     drawRectOutline(popX, popY, popW, popH, T().cursor, 2);
 
     // Title
-    const char* title;
-    if (boxViewPanel_ == Panel::Game)
-        title = isDualBankMode() ? "Left Bank Boxes" : "Save Boxes";
-    else
-        title = "Bank Boxes";
+    const std::string& title2 = (boxViewPanel_ == Panel::Game)
+        ? (isDualBankMode() ? i18n::get(StrKey::BoxViewLeft) : i18n::get(StrKey::BoxViewSave))
+        : i18n::get(StrKey::BoxViewBank);
+    const char* title = title2.c_str();
     drawTextCentered(title, popX + popW / 2, popY + 15, T().text, font_);
 
     // Subtitle: bank file name or profile | game
@@ -1718,9 +1746,10 @@ void UI::drawBoxViewOverlay() {
 
     // Footer hint
     bool canRename = isDualBankMode() || (boxViewPanel_ == Panel::Bank);
-    const char* footer = canRename
-        ? "A: Go to Box  Y: Rename  B: Cancel  D-Pad: Navigate"
-        : "A: Go to Box  B: Cancel  D-Pad: Navigate";
+    const std::string& footerStr = canRename
+        ? i18n::get(StrKey::BoxViewFooterRename)
+        : i18n::get(StrKey::BoxViewFooter);
+    const char* footer = footerStr.c_str();
     drawTextCentered(footer, popX + popW / 2, popY + popH - 15, T().textDim, fontSmall_);
 
     // Box preview for cursor box (drawn last so it appears on top)

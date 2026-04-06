@@ -1,4 +1,5 @@
 #include "ui.h"
+#include "i18n.h"
 #include "led.h"
 #include "species_converter.h"
 #include "form_names.h"
@@ -108,9 +109,9 @@ void UI::handleInput(bool& running) {
 void UI::handleMenuInput(const SDL_Event& event, bool& running) {
     bool hasWC = gameInfo(selectedGame_).hasWondercards;
     bool hasExport = !selectedSlots_.empty();
-    int menuCount = (isDualBankMode() ? (hasWC ? 8 : 7) : (hasWC ? 7 : 6)) + (hasExport ? 1 : 0);
+    int menuCount = (isDualBankMode() ? (hasWC ? 9 : 8) : (hasWC ? 8 : 7)) + (hasExport ? 1 : 0);
     auto menuConfirm = [&]() {
-        // 0=Theme, 1=Search (both modes)
+        // 0=Theme, 1=Language, 2=Search (both modes)
         if (menuSelection_ == 0) {
             showThemeSelector_ = true;
             themeSelCursor_ = themeIndex_;
@@ -118,6 +119,15 @@ void UI::handleMenuInput(const SDL_Event& event, bool& running) {
             return;
         }
         if (menuSelection_ == 1) {
+            langList_ = i18n::availableLangs();
+            langSelCursor_ = 0;
+            for (int i = 0; i < (int)langList_.size(); i++) {
+                if (langList_[i] == i18n::currentLang()) { langSelCursor_ = i; break; }
+            }
+            showLanguageSelector_ = true;
+            return;
+        }
+        if (menuSelection_ == 2) {
             showMenu_ = false;
             showSearchFilter_ = true;
             searchFilterCursor_ = 0;
@@ -125,8 +135,8 @@ void UI::handleMenuInput(const SDL_Event& event, bool& running) {
             clearSearchHighlight();
             return;
         }
-        // Wondercard (index 2) for SV/SwSh games
-        if (hasWC && menuSelection_ == 2) {
+        // Wondercard (index 3) for SV/SwSh games
+        if (hasWC && menuSelection_ == 3) {
             showMenu_ = false;
             wcList_ = scanWondercards(basePath_, selectedGame_);
             wcListCursor_ = 0;
@@ -135,7 +145,7 @@ void UI::handleMenuInput(const SDL_Event& event, bool& running) {
             return;
         }
         // Export Selected (after Wondercard)
-        int exportIdx = hasWC ? 3 : 2;
+        int exportIdx = hasWC ? 4 : 3;
         if (hasExport && menuSelection_ == exportIdx) {
             showMenu_ = false;
             int exported = 0;
@@ -148,12 +158,12 @@ void UI::handleMenuInput(const SDL_Event& event, bool& running) {
                     else failed++;
                 }
             }
-            std::string body = std::to_string(exported) + " Pokemon exported.";
-            if (failed > 0) body += "\n" + std::to_string(failed) + " failed.";
-            showMessageAndWait("Export Complete", body);
+            std::string body = i18n::fmt(StrKey::PokemonExported, std::to_string(exported));
+            if (failed > 0) body += "\n" + i18n::fmt(StrKey::ExportFailedCount, std::to_string(failed));
+            showMessageAndWait(i18n::get(StrKey::ExportComplete), body);
             return;
         }
-        int sel = menuSelection_ - (hasWC ? 3 : 2) - (hasExport ? 1 : 0);
+        int sel = menuSelection_ - (hasWC ? 4 : 3) - (hasExport ? 1 : 0);
         if (isDualBankMode()) {
             // sel: 0=Switch Left Bank, 1=Switch Right Bank, 2=Change Game,
             // 3=Save Banks, 4=Quit
@@ -164,8 +174,8 @@ void UI::handleMenuInput(const SDL_Event& event, bool& running) {
                     if (b.name != activeBankName_) avail++;
                 if (avail == 0) {
                     showMenu_ = false;
-                    if (!showConfirmDialog("No Banks Available",
-                            "Create a new bank?")) return;
+                    if (!showConfirmDialog(i18n::get(StrKey::NoBanksAvailable),
+                            i18n::get(StrKey::CreateNewBank))) return;
                     if (!saveBankFiles()) return;
                     bankManager_.refresh();
                     bankSelTarget_ = Panel::Game;
@@ -185,8 +195,8 @@ void UI::handleMenuInput(const SDL_Event& event, bool& running) {
                     if (b.name != leftBankName_) avail++;
                 if (avail == 0) {
                     showMenu_ = false;
-                    if (!showConfirmDialog("No Banks Available",
-                            "Create a new bank?")) return;
+                    if (!showConfirmDialog(i18n::get(StrKey::NoBanksAvailable),
+                            i18n::get(StrKey::CreateNewBank))) return;
                     if (!saveBankFiles()) return;
                     bankManager_.refresh();
                     bankSelTarget_ = Panel::Bank;
@@ -220,7 +230,7 @@ void UI::handleMenuInput(const SDL_Event& event, bool& running) {
             // sel: 0=Switch Bank, 1=Change Game, 2=Save & Quit, 3=Quit Without Saving
             if (sel == 0) {
                 if (!saveBankFiles()) { showMenu_ = false; return; }
-                showWorking("Saving...");
+                showWorking(i18n::get(StrKey::Saving));
                 ledBlink();
                 if (save_.isLoaded())
                     save_.save(savePath_);
@@ -232,7 +242,7 @@ void UI::handleMenuInput(const SDL_Event& event, bool& running) {
             } else if (sel == 1) {
                 // Change Game — save everything, unmount, go to game selector
                 if (!saveBankFiles()) { showMenu_ = false; return; }
-                showWorking("Saving...");
+                showWorking(i18n::get(StrKey::Saving));
                 ledBlink();
                 if (save_.isLoaded())
                     save_.save(savePath_);
@@ -285,15 +295,15 @@ void UI::handleDetailInput(const SDL_Event& event) {
         int slot = cursor_.slot(gridCols());
         // Block releasing LGPE party members
         if (save_.isLGPEPartySlot(box, slot) && cursor_.panel == Panel::Game) {
-            showMessageAndWait("Party Pokemon",
-                "Can't release a party Pokemon.");
+            showMessageAndWait(i18n::get(StrKey::PartyPokemon),
+                i18n::get(StrKey::CantReleaseParty));
             return;
         }
         Pokemon pkm = getPokemonAt(box, slot, cursor_.panel);
         if (pkm.isEmpty()) return;
         std::string name = pkm.displayName();
-        if (showConfirmDialog("Release Pokemon",
-                "Release " + name + "?")) {
+        if (showConfirmDialog(i18n::get(StrKey::ReleasePokemon),
+                i18n::fmt(StrKey::ReleaseConfirm, name))) {
             clearPokemonAt(box, slot, cursor_.panel);
             // Remove from multi-select if selected
             if (!selectedSlots_.empty() && cursor_.panel == selectedPanel_
@@ -332,9 +342,9 @@ void UI::handleDetailInput(const SDL_Event& event) {
                 if (!pkm.isEmpty()) {
                     std::string name = exportPokemon(pkm);
                     if (!name.empty())
-                        showMessageAndWait("Exported!", name);
+                        showMessageAndWait(i18n::get(StrKey::Exported), name);
                     else
-                        showMessageAndWait("Export Failed", "Could not write file.");
+                        showMessageAndWait(i18n::get(StrKey::ExportFailed), i18n::get(StrKey::CouldNotWrite));
                 }
                 break;
             }
@@ -403,13 +413,13 @@ void UI::handleNormalInput(const SDL_Event& event) {
                 if (yHeld_) break;
                 if (holding_) {
                     if (heldFromLGPEParty_) {
-                        showMessageAndWait("Party Pokemon",
-                            "Can't release a party Pokemon.");
+                        showMessageAndWait(i18n::get(StrKey::PartyPokemon),
+                            i18n::get(StrKey::CantReleaseParty));
                         break;
                     }
                     int count = heldMulti_.empty() ? 1 : (int)heldMulti_.size();
-                    std::string msg = "Release " + std::to_string(count) + " Pokemon?";
-                    if (showConfirmDialog("Release Pokemon", msg)) {
+                    std::string msg = i18n::fmt(StrKey::ReleaseMultiConfirm, std::to_string(count));
+                    if (showConfirmDialog(i18n::get(StrKey::ReleasePokemon), msg)) {
                         heldMulti_.clear();
                         heldMultiSlots_.clear();
                         heldPkm_ = Pokemon{};
@@ -579,7 +589,7 @@ void UI::handleStickRepeat() {
         {
             bool hasWC = gameInfo(selectedGame_).hasWondercards;
             bool hasExport = !selectedSlots_.empty();
-            int menuCount = (isDualBankMode() ? (hasWC ? 8 : 7) : (hasWC ? 7 : 6)) + (hasExport ? 1 : 0);
+            int menuCount = (isDualBankMode() ? (hasWC ? 9 : 8) : (hasWC ? 8 : 7)) + (hasExport ? 1 : 0);
             menuSelection_ = (menuSelection_ + (stickDirY_ > 0 ? 1 : menuCount - 1)) % menuCount;
         }
     } else if (!showDetail_) {
@@ -798,8 +808,8 @@ void UI::actionSelect() {
     if (holding_ && !heldMulti_.empty()) {
         // Block LGPE party Pokemon from moving to bank
         if (heldFromLGPEParty_ && cursor_.panel == Panel::Bank) {
-            showMessageAndWait("Party Pokemon",
-                "Can't move party Pokemon to bank.");
+            showMessageAndWait(i18n::get(StrKey::PartyPokemon),
+                i18n::get(StrKey::CantMovePartyBank));
             return;
         }
         // Helper: update LGPE party pointer when a Pokemon is placed at a new slot
@@ -823,8 +833,8 @@ void UI::actionSelect() {
             for (int i = 0; i < (int)heldMulti_.size(); i++) {
                 int targetSlot = heldMultiSlots_[i];
                 if (!getPokemonAt(box, targetSlot, cursor_.panel).isEmpty()) {
-                    showMessageAndWait("Slots occupied",
-                        "Target box has Pokemon in the way. Needs matching slots empty.");
+                    showMessageAndWait(i18n::get(StrKey::SlotsOccupied),
+                        i18n::get(StrKey::SlotsOccupiedBody));
                     return;
                 }
             }
@@ -841,9 +851,8 @@ void UI::actionSelect() {
                     emptyCount++;
             }
             if (emptyCount < (int)heldMulti_.size()) {
-                showMessageAndWait("Not enough space",
-                    "Need " + std::to_string(heldMulti_.size()) + " empty slots, only " +
-                    std::to_string(emptyCount) + " available.");
+                showMessageAndWait(i18n::get(StrKey::NotEnoughSpaceSlots),
+                    i18n::fmt(StrKey::NeedEmptySlots, std::to_string(heldMulti_.size()), std::to_string(emptyCount)));
                 return;
             }
             int placed = 0;
@@ -883,8 +892,8 @@ void UI::actionSelect() {
     } else {
         // Block LGPE party Pokemon from moving to bank
         if (heldFromLGPEParty_ && cursor_.panel == Panel::Bank) {
-            showMessageAndWait("Party Pokemon",
-                "Can't move party Pokemon to bank.");
+            showMessageAndWait(i18n::get(StrKey::PartyPokemon),
+                i18n::get(StrKey::CantMovePartyBank));
             return;
         }
 
@@ -1769,7 +1778,7 @@ void UI::handleWondercardListInput(const SDL_Event& event) {
 
 void UI::injectWondercard(const WCInfo& info) {
     if (!info.valid) {
-        showMessageAndWait("Invalid", "This wondercard file is invalid\nand cannot be injected.");
+        showMessageAndWait(i18n::get(StrKey::InvalidWC), i18n::get(StrKey::InvalidWCBody));
         return;
     }
 
@@ -1781,14 +1790,13 @@ void UI::injectWondercard(const WCInfo& info) {
     // If !hasOT and target is bank panel: show restriction
     if (!info.hasOT) {
         if (isDualBankMode()) {
-            showMessageAndWait("Cannot Inject",
-                "This wondercard uses your OT and\ncan only be injected into a save file.");
+            showMessageAndWait(i18n::get(StrKey::CannotInject),
+                i18n::get(StrKey::CannotInjectBody));
             return;
         }
         if (panel == Panel::Bank) {
-            showMessageAndWait("Cannot Inject to Bank",
-                "This wondercard uses your OT.\n"
-                "Move cursor to the save panel first.");
+            showMessageAndWait(i18n::get(StrKey::CannotInjectBank),
+                i18n::get(StrKey::CannotInjectBankBody));
             return;
         }
     }
@@ -1796,8 +1804,8 @@ void UI::injectWondercard(const WCInfo& info) {
     // Check if target slot is empty
     Pokemon existing = getPokemonAt(box, slot, panel);
     if (!existing.isEmpty()) {
-        showMessageAndWait("Slot Occupied",
-            "Move cursor to an empty slot to inject.");
+        showMessageAndWait(i18n::get(StrKey::SlotOccupied),
+            i18n::get(StrKey::SlotOccupiedBody));
         return;
     }
 
@@ -1828,7 +1836,7 @@ void UI::injectWondercard(const WCInfo& info) {
         WC8 wc;
         if (!wc.loadFromFile(info.path)) {
             showWondercardList_ = false;
-            showMessageAndWait("Error", "Failed to load wondercard file.");
+            showMessageAndWait(i18n::get(StrKey::Error), i18n::get(StrKey::FailedLoadWC));
             return;
         }
 
@@ -1842,7 +1850,7 @@ void UI::injectWondercard(const WCInfo& info) {
         WA9 wc;
         if (!wc.loadFromFile(info.path)) {
             showWondercardList_ = false;
-            showMessageAndWait("Error", "Failed to load wondercard file.");
+            showMessageAndWait(i18n::get(StrKey::Error), i18n::get(StrKey::FailedLoadWC));
             return;
         }
 
@@ -1854,7 +1862,7 @@ void UI::injectWondercard(const WCInfo& info) {
         WB8 wc;
         if (!wc.loadFromFile(info.path)) {
             showWondercardList_ = false;
-            showMessageAndWait("Error", "Failed to load wondercard file.");
+            showMessageAndWait(i18n::get(StrKey::Error), i18n::get(StrKey::FailedLoadWC));
             return;
         }
 
@@ -1866,7 +1874,7 @@ void UI::injectWondercard(const WCInfo& info) {
         WA8 wc;
         if (!wc.loadFromFile(info.path)) {
             showWondercardList_ = false;
-            showMessageAndWait("Error", "Failed to load wondercard file.");
+            showMessageAndWait(i18n::get(StrKey::Error), i18n::get(StrKey::FailedLoadWC));
             return;
         }
 
@@ -1878,7 +1886,7 @@ void UI::injectWondercard(const WCInfo& info) {
         WB7 wc;
         if (!wc.loadFromFile(info.path)) {
             showWondercardList_ = false;
-            showMessageAndWait("Error", "Failed to load wondercard file.");
+            showMessageAndWait(i18n::get(StrKey::Error), i18n::get(StrKey::FailedLoadWC));
             return;
         }
 
@@ -1890,7 +1898,7 @@ void UI::injectWondercard(const WCInfo& info) {
         WC9 wc;
         if (!wc.loadFromFile(info.path)) {
             showWondercardList_ = false;
-            showMessageAndWait("Error", "Failed to load wondercard file.");
+            showMessageAndWait(i18n::get(StrKey::Error), i18n::get(StrKey::FailedLoadWC));
             return;
         }
 
@@ -1922,11 +1930,12 @@ void UI::injectWondercard(const WCInfo& info) {
 
     showWondercardList_ = false;
 
-    showMessageAndWait("Injected!",
-        SpeciesName::get(natId) + " was placed in "
-        + (panel == Panel::Game ? (isDualBankMode() ? "Left" : "Save") : (isDualBankMode() ? "Right" : "Bank"))
-        + " Box " + std::to_string(box + 1)
-        + " Slot " + std::to_string(slot + 1) + ".");
+    std::string panelName = (panel == Panel::Game)
+        ? (isDualBankMode() ? i18n::get(StrKey::LocLeft) : i18n::get(StrKey::LocSave))
+        : (isDualBankMode() ? i18n::get(StrKey::LocRight) : i18n::get(StrKey::LocBank));
+    showMessageAndWait(i18n::get(StrKey::Injected),
+        i18n::fmt(StrKey::InjectedBody, SpeciesName::get(natId), panelName,
+                  std::to_string(box + 1), std::to_string(slot + 1)));
 }
 
 std::string UI::exportPokemon(const Pokemon& pkm) {

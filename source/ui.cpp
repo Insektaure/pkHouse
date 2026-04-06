@@ -1,6 +1,7 @@
 #include "ui.h"
 #include "ui_util.h"
 #include "led.h"
+#include "i18n.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -216,7 +217,7 @@ void UI::showMessageAndWait(const std::string& title, const std::string& body) {
         SDL_RenderClear(renderer_);
 
         drawTextCentered(title, SCREEN_W / 2, SCREEN_H / 2 - 40, T().red, fontLarge_);
-        drawBodyText(body, SCREEN_H / 2 + 5, "Press B to dismiss");
+        drawBodyText(body, SCREEN_H / 2 + 5, i18n::get(StrKey::PressBToDismiss));
 
         SDL_RenderPresent(renderer_);
         SDL_Delay(16);
@@ -246,7 +247,7 @@ bool UI::showConfirmDialog(const std::string& title, const std::string& body) {
         SDL_RenderClear(renderer_);
 
         drawTextCentered(title, SCREEN_W / 2, SCREEN_H / 2 - 40, T().red, fontLarge_);
-        drawBodyText(body, SCREEN_H / 2 + 5, "A: Continue   B: Cancel");
+        drawBodyText(body, SCREEN_H / 2 + 5, i18n::get(StrKey::AContinueBCancel));
 
         SDL_RenderPresent(renderer_);
         SDL_Delay(16);
@@ -334,17 +335,17 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
         screen_ = AppScreen::GameSelector;
         availableGames_.assign(std::begin(allGames), std::end(allGames));
         refreshBankCounts();
-        showWorking("Loading game icons...");
+        showWorking(i18n::get(StrKey::LoadingGameIcons));
         loadGameIcons();
     } else {
-        showWorking("Loading profiles...");
+        showWorking(i18n::get(StrKey::LoadingProfiles));
         if (account_.init() && account_.loadProfiles(renderer_)) {
             screen_ = AppScreen::ProfileSelector;
         } else {
             screen_ = AppScreen::GameSelector;
             availableGames_.assign(std::begin(allGames), std::end(allGames));
             refreshBankCounts();
-            showWorking("Loading game icons...");
+            showWorking(i18n::get(StrKey::LoadingGameIcons));
             loadGameIcons();
         }
     }
@@ -447,6 +448,75 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
             continue;
         }
 
+        // Language selector intercepts input from any screen
+        if (showLanguageSelector_) {
+            SDL_Event event;
+            while (SDL_PollEvent(&event)) {
+                if (event.type == SDL_QUIT) { running = false; break; }
+                if (event.type == SDL_CONTROLLERAXISMOTION) {
+                    if (event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX ||
+                        event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY) {
+                        int16_t lx = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTX);
+                        int16_t ly = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTY);
+                        updateStick(lx, ly);
+                    }
+                }
+                if (event.type == SDL_CONTROLLERBUTTONDOWN) {
+                    markDirty();
+                    int langCount = (int)langList_.size();
+                    switch (event.cbutton.button) {
+                        case SDL_CONTROLLER_BUTTON_DPAD_UP:
+                            langSelCursor_ = (langSelCursor_ + langCount - 1) % langCount;
+                            break;
+                        case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+                            langSelCursor_ = (langSelCursor_ + 1) % langCount;
+                            break;
+                        case SDL_CONTROLLER_BUTTON_B: { // Switch A = confirm
+                            std::string newLang = langList_[langSelCursor_];
+                            i18n::init(newLang);
+                            clearTextCache();
+                            // Persist choice
+                            std::string path = basePath_ + "language.txt";
+                            FILE* f = std::fopen(path.c_str(), "w");
+                            if (f) { std::fputs(newLang.c_str(), f); std::fclose(f); }
+                            showLanguageSelector_ = false;
+                            showMenu_ = false;
+                            break;
+                        }
+                        case SDL_CONTROLLER_BUTTON_A: // Switch B = cancel
+                        case SDL_CONTROLLER_BUTTON_X: // Switch Y = cancel
+                            showLanguageSelector_ = false;
+                            break;
+                    }
+                }
+            }
+            // Joystick repeat
+            if (stickDirY_ != 0 && !langList_.empty()) {
+                uint32_t now = SDL_GetTicks();
+                uint32_t delay = stickMoved_ ? STICK_REPEAT_DELAY : STICK_INITIAL_DELAY;
+                if (now - stickMoveTime_ >= delay) {
+                    int langCount = (int)langList_.size();
+                    langSelCursor_ = (langSelCursor_ + (stickDirY_ > 0 ? 1 : langCount - 1)) % langCount;
+                    stickMoveTime_ = now;
+                    stickMoved_ = true;
+                    markDirty();
+                }
+            }
+            if (!showLanguageSelector_) continue;
+            if (dirty_) {
+                if (theme_ != lastTheme_) { clearTextCache(); lastTheme_ = theme_; }
+                if (screen_ == AppScreen::ProfileSelector) drawProfileSelectorFrame();
+                else if (screen_ == AppScreen::GameSelector) drawGameSelectorFrame();
+                else if (screen_ == AppScreen::BankSelector) drawBankSelectorFrame();
+                else drawFrame();
+                drawLanguageSelectorPopup();
+                SDL_RenderPresent(renderer_);
+                dirty_ = false;
+            }
+            SDL_Delay(16);
+            continue;
+        }
+
         AppScreen screenBefore = screen_;
         if (screen_ == AppScreen::ProfileSelector) {
             handleProfileSelectorInput(running);
@@ -462,7 +532,7 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
                     running = true;
                 } else {
                     if (!isDualBankMode()) {
-                        showWorking("Saving...");
+                        showWorking(i18n::get(StrKey::Saving));
                         ledBlink();
                         if (save_.isLoaded())
                             save_.save(savePath_);
@@ -478,7 +548,7 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
             markDirty();
         // If a popup just activated, skip drawing here — the popup branch
         // will handle it next iteration with dirty_ still set.
-        if (dirty_ && !showAbout_ && !showThemeSelector_) {
+        if (dirty_ && !showAbout_ && !showThemeSelector_ && !showLanguageSelector_) {
             if (theme_ != lastTheme_) {
                 clearTextCache();
                 lastTheme_ = theme_;
@@ -512,12 +582,12 @@ void UI::selectGame(GameType game) {
     }
 
     if (!isDualBankMode()) {
-        showWorking("Loading save data...");
+        showWorking(i18n::get(StrKey::LoadingSaveData));
 
         if (selectedProfile_ >= 0) {
             std::string mountPath = account_.mountSave(selectedProfile_, game);
             if (mountPath.empty()) {
-                showMessageAndWait("Mount Error", "Failed to mount save data.");
+                showMessageAndWait(i18n::get(StrKey::MountError), i18n::get(StrKey::FailedMountSave));
                 return;
             }
             savePath_ = mountPath + saveFileNameOf(game);
@@ -530,10 +600,8 @@ void UI::selectGame(GameType game) {
             if (statvfs("sdmc:/", &vfs) == 0) {
                 size_t freeSpace = (size_t)vfs.f_bavail * vfs.f_bsize;
                 if (freeSpace < saveSize * 2) {
-                    std::string msg = "Free: " + formatSize(freeSpace) +
-                        ", Need: " + formatSize(saveSize) +
-                        ".  Continue without backup?";
-                    if (!showConfirmDialog("Low Storage", msg)) {
+                    std::string msg = i18n::fmt(StrKey::LowStorageBody, formatSize(freeSpace), formatSize(saveSize));
+                    if (!showConfirmDialog(i18n::get(StrKey::LowStorage), msg)) {
                         account_.unmountSave();
                         return;
                     }
@@ -547,8 +615,8 @@ void UI::selectGame(GameType game) {
                 bool ok = AccountManager::backupSaveDir(mountPath, backupDir);
                 ledOff();
                 if (!ok) {
-                    if (!showConfirmDialog("Backup Failed",
-                            "Could not back up save data.\nContinue without backup?")) {
+                    if (!showConfirmDialog(i18n::get(StrKey::BackupFailed),
+                            i18n::get(StrKey::BackupFailedBody))) {
                         account_.unmountSave();
                         return;
                     }
@@ -564,7 +632,7 @@ void UI::selectGame(GameType game) {
         if (!isBDSP(game) && !isLGPE(game) && !isFRLG(game)) {
             std::string rtResult = save_.verifyRoundTrip();
             if (rtResult != "OK")
-                showMessageAndWait("Round-Trip Check", rtResult);
+                showMessageAndWait(i18n::get(StrKey::RoundTripCheck), rtResult);
         }
     }
 
@@ -602,7 +670,7 @@ std::string UI::buildBackupDir(GameType game) const {
 }
 
 bool UI::saveBankFiles() {
-    showWorking("Saving...");
+    showWorking(i18n::get(StrKey::Saving));
     ledBlink();
     if (isDualBankMode()) {
         if (!leftBankPath_.empty()) bankLeft_.save(leftBankPath_);

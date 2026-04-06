@@ -185,6 +185,11 @@ private:
     int  themeSelCursor_    = 0;
     int  themeSelOriginal_  = 0;
 
+    // Language selector state
+    bool showLanguageSelector_ = false;
+    int  langSelCursor_        = 0;
+    std::vector<std::string> langList_;
+
     // Wondercard list state
     bool showWondercardList_ = false;
     int  wcListCursor_  = 0;
@@ -401,6 +406,7 @@ private:
     void drawMenuPopup();
     void drawAboutPopup();
     void drawThemeSelectorPopup();
+    void drawLanguageSelectorPopup();
     void drawSearchFilterPopup();
     void drawSearchResultsPopup();
     void drawSpeciesLetterPicker();

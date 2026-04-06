@@ -1,9 +1,11 @@
 #include "ui.h"
 #include "led.h"
 #include "species_converter.h"
+#include "i18n.h"
 
 #include <switch.h>
 #include <string>
+#include <fstream>
 #include <cstdio>
 
 int main(int argc, char* argv[]) {
@@ -27,6 +29,41 @@ int main(int argc, char* argv[]) {
     ledInitWithPath(basePath.c_str());
 
     std::string savePath = basePath + "main";
+
+    // Detect language: check override file first, then system setting
+    {
+        std::string lang = "en";
+        std::string overridePath = basePath + "language.txt";
+        std::ifstream ifs(overridePath);
+        if (ifs.good()) {
+            std::string line;
+            if (std::getline(ifs, line) && !line.empty())
+                lang = line;
+        } else {
+            setInitialize();
+            u64 langCode;
+            setGetSystemLanguage(&langCode);
+            SetLanguage sysLang;
+            setMakeLanguage(langCode, &sysLang);
+            switch (sysLang) {
+                case SetLanguage_JA:    lang = "ja"; break;
+                case SetLanguage_FR:
+                case SetLanguage_FRCA:  lang = "fr"; break;
+                case SetLanguage_DE:    lang = "de"; break;
+                case SetLanguage_ES:
+                case SetLanguage_ES419: lang = "es"; break;
+                case SetLanguage_IT:    lang = "it"; break;
+                case SetLanguage_KO:    lang = "ko"; break;
+                case SetLanguage_ZHCN:
+                case SetLanguage_ZHHANS:lang = "zh-Hans"; break;
+                case SetLanguage_ZHTW:
+                case SetLanguage_ZHHANT:lang = "zh-Hant"; break;
+                default:                lang = "en"; break;
+            }
+            setExit();
+        }
+        i18n::init(lang);
+    }
 
     // Load text data
     SpeciesName::load("romfs:/data/species_en.txt");

@@ -1,5 +1,6 @@
 #include "ui.h"
 #include "ui_util.h"
+#include "i18n.h"
 #include <algorithm>
 #include <cstring>
 #include <cstdlib>
@@ -66,28 +67,28 @@ void UI::drawBankSelectorFrame() {
     // Title
     if (allBanksMode_) {
         if (activeBankName_.empty())
-            drawTextCentered("All Banks", selCenterX,
+            drawTextCentered(i18n::get(StrKey::AllBanks), selCenterX,
                              splitView ? 25 : 40, T().text, font_);
         else {
-            const char* side = (bankSelTarget_ == Panel::Game) ? "Left" : "Right";
-            drawTextCentered(std::string("Select ") + side + " Bank",
+            std::string side = (bankSelTarget_ == Panel::Game) ? i18n::get(StrKey::Left) : i18n::get(StrKey::Right);
+            drawTextCentered(i18n::fmt(StrKey::SelectSideBank, side),
                              selCenterX, 25, T().text, font_);
         }
     } else if (appletMode_) {
-        const char* side = (bankSelTarget_ == Panel::Game) ? "Left" : "Right";
-        drawTextCentered(std::string("Select ") + side + " Bank",
+        std::string side = (bankSelTarget_ == Panel::Game) ? i18n::get(StrKey::Left) : i18n::get(StrKey::Right);
+        drawTextCentered(i18n::fmt(StrKey::SelectSideBank, side),
                          selCenterX, 25, T().text, font_);
     } else {
-        drawTextCentered("Select Bank", selCenterX,
+        drawTextCentered(i18n::get(StrKey::SelectBank), selCenterX,
                          splitView ? 25 : 40, T().text, font_);
     }
 
     const auto& banks = bankManager_.list();
 
     if (banks.empty()) {
-        drawTextCentered("No banks found.",
+        drawTextCentered(i18n::get(StrKey::NoBanksFound),
                          selCenterX, SCREEN_H / 2 - 10, T().textDim, font_);
-        drawTextCentered("Press X to create one.",
+        drawTextCentered(i18n::get(StrKey::PressXCreate),
                          selCenterX, SCREEN_H / 2 + 15, T().textDim, fontSmall_);
     } else if (bankManager_.isAllMode()) {
         // All-banks mode: grouped list with game headers
@@ -236,9 +237,9 @@ void UI::drawBankSelectorFrame() {
 
     // Status bar
     if (bankManager_.isAllMode())
-        drawStatusBar("A: Open  Y: Theme  B: Back  -: About");
+        drawStatusBar(i18n::get(StrKey::StatusBankAll));
     else
-        drawStatusBar("A: Open  X: New  Y: Rename  +: Delete  B: Back  -: About");
+        drawStatusBar(i18n::get(StrKey::StatusBankNormal));
 
     // Profile | Game name (bottom right, gold)
     {
@@ -431,14 +432,14 @@ void UI::openSelectedBank() {
     if (isDualBankMode()) {
         if (bankSelTarget_ == Panel::Game && name == activeBankName_
             && banks[bankSelCursor_].game == selectedGame_) {
-            showMessageAndWait("Already Open",
-                "This bank is already open on the right panel.");
+            showMessageAndWait(i18n::get(StrKey::AlreadyOpen),
+                i18n::get(StrKey::BankAlreadyRight));
             return;
         }
         if (bankSelTarget_ == Panel::Bank && name == leftBankName_
             && banks[bankSelCursor_].game == selectedGame_) {
-            showMessageAndWait("Already Open",
-                "This bank is already open on the left panel.");
+            showMessageAndWait(i18n::get(StrKey::AlreadyOpen),
+                i18n::get(StrKey::BankAlreadyLeft));
             return;
         }
     }
@@ -451,7 +452,7 @@ void UI::openSelectedBank() {
         bankLeft_.setGameType(selectedGame_);
     }
 
-    showWorking("Loading bank...");
+    showWorking(i18n::get(StrKey::LoadingBank));
 
     if (isDualBankMode() && bankSelTarget_ == Panel::Game) {
         leftBankPath_ = bankManager_.loadBank(name, bankLeft_);
@@ -512,11 +513,11 @@ void UI::drawDeleteConfirmPopup() {
     std::string bankName = (bankSelCursor_ >= 0 && bankSelCursor_ < (int)banks.size())
         ? banks[bankSelCursor_].name : "";
 
-    drawTextCentered("Delete \"" + bankName + "\"?",
+    drawTextCentered(i18n::fmt(StrKey::DeleteBankConfirm, bankName),
                      popX + POP_W / 2, popY + 50, T().text, font_);
-    drawTextCentered("This cannot be undone!",
+    drawTextCentered(i18n::get(StrKey::CannotUndo),
                      popX + POP_W / 2, popY + 85, T().red, fontSmall_);
-    drawTextCentered("A:Confirm  B:Cancel",
+    drawTextCentered(i18n::get(StrKey::AConfirmBCancel),
                      popX + POP_W / 2, popY + POP_H - 25, T().textDim, fontSmall_);
 }
 
@@ -529,10 +530,10 @@ void UI::handleDeleteConfirmEvent(const SDL_Event& event) {
         // Cannot delete a bank that is currently loaded
         if (name == activeBankName_ || (isDualBankMode() && name == leftBankName_)) {
             showDeleteConfirm_ = false;
-            showMessageAndWait("Cannot Delete", "This bank is currently loaded.");
+            showMessageAndWait(i18n::get(StrKey::CannotDelete), i18n::get(StrKey::BankCurrentlyLoaded));
             return;
         }
-        showWorking("Deleting bank...");
+        showWorking(i18n::get(StrKey::DeletingBank));
         bankManager_.deleteBank(name);
         int newCount = (int)bankManager_.list().size();
         if (bankSelCursor_ >= newCount && newCount > 0)
@@ -592,20 +593,20 @@ void UI::beginTextInput(TextInputPurpose purpose) {
     swkbdConfigMakePresetDefault(&kbd);
     swkbdConfigSetStringLenMax(&kbd, 32);
     if (purpose == TextInputPurpose::CreateBank)
-        swkbdConfigSetHeaderText(&kbd, "Enter bank name");
+        swkbdConfigSetHeaderText(&kbd, i18n::get(StrKey::EnterBankName).c_str());
     else if (purpose == TextInputPurpose::RenameBank)
-        swkbdConfigSetHeaderText(&kbd, "Rename bank");
+        swkbdConfigSetHeaderText(&kbd, i18n::get(StrKey::RenameBank).c_str());
     else if (purpose == TextInputPurpose::RenameBoxName) {
-        swkbdConfigSetHeaderText(&kbd, "Rename box");
+        swkbdConfigSetHeaderText(&kbd, i18n::get(StrKey::RenameBox).c_str());
         swkbdConfigSetStringLenMax(&kbd, 16);
     } else if (purpose == TextInputPurpose::SearchSpecies)
-        swkbdConfigSetHeaderText(&kbd, "Species name");
+        swkbdConfigSetHeaderText(&kbd, i18n::get(StrKey::SpeciesNameInput).c_str());
     else if (purpose == TextInputPurpose::SearchOT)
-        swkbdConfigSetHeaderText(&kbd, "OT name");
+        swkbdConfigSetHeaderText(&kbd, i18n::get(StrKey::OtNameInput).c_str());
     else if (purpose == TextInputPurpose::SearchLevelMin)
-        swkbdConfigSetHeaderText(&kbd, "Min level");
+        swkbdConfigSetHeaderText(&kbd, i18n::get(StrKey::MinLevel).c_str());
     else if (purpose == TextInputPurpose::SearchLevelMax)
-        swkbdConfigSetHeaderText(&kbd, "Max level");
+        swkbdConfigSetHeaderText(&kbd, i18n::get(StrKey::MaxLevel).c_str());
     if (purpose == TextInputPurpose::RenameBank && !renamingBankName_.empty())
         swkbdConfigSetInitialText(&kbd, renamingBankName_.c_str());
     else if (!textInputBuffer_.empty())
@@ -633,14 +634,13 @@ void UI::commitTextInput(const std::string& text) {
             if (statvfs("sdmc:/", &vfs) == 0) {
                 size_t freeSpace = (size_t)vfs.f_bavail * vfs.f_bsize;
                 if (freeSpace < needed) {
-                    showMessageAndWait("Not Enough Space",
-                        "Free: " + formatSize(freeSpace) +
-                        ", Need: " + formatSize(needed));
+                    showMessageAndWait(i18n::get(StrKey::NotEnoughSpace),
+                        i18n::fmt(StrKey::FreeNeedSpace, formatSize(freeSpace), formatSize(needed)));
                     return;
                 }
             }
         }
-        showWorking("Creating bank...");
+        showWorking(i18n::get(StrKey::CreatingBank));
         if (bankManager_.createBank(text)) {
             // Select the newly created bank
             const auto& banks = bankManager_.list();
@@ -652,7 +652,7 @@ void UI::commitTextInput(const std::string& text) {
             }
         }
     } else if (textInputPurpose_ == TextInputPurpose::RenameBank) {
-        showWorking("Renaming bank...");
+        showWorking(i18n::get(StrKey::RenamingBank));
         if (bankManager_.renameBank(renamingBankName_, text)) {
             // Select the renamed bank
             const auto& banks = bankManager_.list();

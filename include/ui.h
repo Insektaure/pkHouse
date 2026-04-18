@@ -140,6 +140,11 @@ private:
     SDL_Texture* iconAlpha_      = nullptr;
     SDL_Texture* iconShinyAlpha_ = nullptr;
 
+    // Box-state icons for the ZL/ZR all-boxes overview
+    SDL_Texture* iconBoxFull_     = nullptr;
+    SDL_Texture* iconBoxEmpty_    = nullptr;
+    SDL_Texture* iconBoxNonEmpty_ = nullptr;
+
     // Screen dimensions (Switch: 1280x720)
     static constexpr int SCREEN_W = 1280;
     static constexpr int SCREEN_H = 720;

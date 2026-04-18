@@ -90,6 +90,9 @@ void UI::freeSprites() {
     if (iconShiny_)      { SDL_DestroyTexture(iconShiny_);      iconShiny_ = nullptr; }
     if (iconAlpha_)      { SDL_DestroyTexture(iconAlpha_);      iconAlpha_ = nullptr; }
     if (iconShinyAlpha_) { SDL_DestroyTexture(iconShinyAlpha_); iconShinyAlpha_ = nullptr; }
+    if (iconBoxFull_)     { SDL_DestroyTexture(iconBoxFull_);     iconBoxFull_ = nullptr; }
+    if (iconBoxEmpty_)    { SDL_DestroyTexture(iconBoxEmpty_);    iconBoxEmpty_ = nullptr; }
+    if (iconBoxNonEmpty_) { SDL_DestroyTexture(iconBoxNonEmpty_); iconBoxNonEmpty_ = nullptr; }
 }
 
 SDL_Texture* UI::getRibbonSprite(const std::string& filename) {
@@ -1736,11 +1739,31 @@ void UI::drawBoxViewOverlay() {
         else
             boxName = bank_.getBoxName(i);
 
-        std::string label = std::to_string(i + 1) + ": " + boxName;
+        std::string label = boxName;
         if (label.length() > 16)
             label = label.substr(0, 15) + ".";
 
-        drawTextCentered(label, cellX + BV_CELL_W / 2, cellY + BV_CELL_H / 2,
+        // Box-state icon on the left of the label
+        const auto& disp = getSlotDisplays(boxViewPanel_, i);
+        int filled = 0;
+        for (const auto& sd : disp) if (!sd.empty) ++filled;
+        int slots = maxSlots();
+        SDL_Texture* stateIcon = iconBoxEmpty_;
+        if (filled >= slots && slots > 0) stateIcon = iconBoxFull_;
+        else if (filled > 0)              stateIcon = iconBoxNonEmpty_;
+
+        const int iconSize = 22;
+        const int iconPadX = 6;
+        int iconX = cellX + iconPadX;
+        int iconY = cellY + (BV_CELL_H - iconSize) / 2;
+        if (stateIcon) {
+            SDL_Rect dst{ iconX, iconY, iconSize, iconSize };
+            SDL_RenderCopy(renderer_, stateIcon, nullptr, &dst);
+        }
+
+        int textLeft = iconX + iconSize + 4;
+        int textRight = cellX + BV_CELL_W - 4;
+        drawTextCentered(label, (textLeft + textRight) / 2, cellY + BV_CELL_H / 2,
                          T().text, fontSmall_);
     }
 

@@ -85,6 +85,9 @@ bool UI::init() {
         iconShiny_      = loadIcon("shiny.png");
         iconAlpha_      = loadIcon("alpha.png");
         iconShinyAlpha_ = loadIcon("shiny_alpha.png");
+        iconBoxFull_     = loadIcon("box_full.png");
+        iconBoxEmpty_    = loadIcon("box_empty.png");
+        iconBoxNonEmpty_ = loadIcon("box_nonempty.png");
     }
 
     // Open game controller

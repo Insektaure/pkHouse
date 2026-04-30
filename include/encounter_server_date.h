@@ -164,6 +164,7 @@ static constexpr WA9DateEntry WA9Gifts[] = {
     { 9031, 2026,  4,  2,    0,  0,  0, 0}, // Alpha Chikorita
     { 9032, 2026,  4,  2,    0,  0,  0, 0}, // Alpha Tepig
     { 9033, 2026,  4,  2,    0,  0,  0, 0}, // Alpha Totodile
+    { 9034, 2026,  4, 26,    0,  0,  0, 0}, // Shiny Volcanion
 };
 
 static constexpr size_t WA9Gifts_Count = sizeof(WA9Gifts) / sizeof(WA9Gifts[0]);

@@ -253,6 +253,22 @@ When transferring Pokemon from a bank to a save file, the Pokedex is automatical
 
 Pokedex completion rewards (Shiny Charm, diplomas) are triggered by the in-game NPC when the dex is complete.
 
+### Handling Trainer Updates
+
+When a Pokemon is placed into a save file, its handling trainer (HT) data is updated exactly as an in-game trade would.
+
+The games compare the full trainer identity (TID/SID, name, gender, game version), not just the trainer name, so a Pokemon moved to a save with the same OT name but different IDs is correctly treated as traded.
+
+- If the Pokemon **belongs to the save's trainer**, it is marked as being back with its OT.
+- If it belongs to a **different trainer**, the save's trainer is registered as its handling trainer: HT name, gender, and language are set, HT friendship is reset to the species' base value, and stale HT memories are cleared. The original OT data is never modified.
+- **No friendship loss on round-trips**: re-placing a Pokemon into a save whose trainer is already its registered handler keeps the HT friendship it has earned.
+- **Eggs** traded to a different trainer are marked as link-traded with the current date, as the games do.
+- **Let's Go**: friendship is carried over instead of reset, so CP values are unaffected.
+
+This keeps friendship routing (e.g. friendship evolutions), memories, and legality checks correct after transferring Pokemon between save files with the bank.
+
+> **_FireRed / LeafGreen_** are unaffected — Gen 3 has no handling trainer concept, so no changes are needed there.
+
 ### Export Pokemon
 
 Export Pokemon as decrypted `.pk` files compatible with PKHeX. Access from the **detail view** (single export) or the **menu** (batch export of selected Pokemon).

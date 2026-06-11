@@ -1,4 +1,5 @@
 #include "save_file.h"
+#include "handler_update.h"
 #include "pokedex.h"
 #include "binary_io.h"
 #include "md5.h"
@@ -206,6 +207,15 @@ void SaveFile::setBoxSlot(int box, int slot, Pokemon pkm) {
 
     // Ensure correct game type, refresh checksum, encrypt and write
     pkm.gameType_ = gameType_;
+
+    // Adapt handling-trainer data to this save's trainer, like PKHeX's
+    // SetPKM -> UpdateHandler does on every Pokemon written into a save
+    if (!pkm.isEmpty()) {
+        TrainerInfo trainer = getTrainerInfo();
+        if (trainer.valid)
+            updatePokemonHandler(pkm, trainer);
+    }
+
     pkm.getEncrypted(boxData_ + offset);
     // Zero the gap bytes (if any)
     if (gapBoxSlot_ > 0)

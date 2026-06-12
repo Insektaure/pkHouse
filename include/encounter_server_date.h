@@ -94,6 +94,7 @@ static constexpr WC9DateEntry WC9Gifts[] = {
     { 9024, 2024, 10, 16,    0,  0,  0, 0}, // Shiny Meloetta
     { 9025, 2024, 11,  1,    0,  0,  0, 0}, // PokéCenter Birthday Tandemaus
     { 9030, 2025, 10, 31,    0,  0,  0, 0}, // PokéCenter Fidough Birthday Gift
+    { 9035, 2026,  6,  5,    0,  0,  0, 1}, // PJCS26 Garchomp
 };
 
 static constexpr size_t WC9Gifts_Count = sizeof(WC9Gifts) / sizeof(WC9Gifts[0]);

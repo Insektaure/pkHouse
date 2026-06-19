@@ -438,6 +438,13 @@ std::string Pokemon::otName() const {
     return readUtf16String(data.data(), o.otName, 13);
 }
 
+std::string Pokemon::htName() const {
+    auto& o = ofs();
+    if (o.htName < 0)
+        return "";
+    return readUtf16String(data.data(), o.htName, 13);
+}
+
 std::string Pokemon::displayName() const {
     if (isEmpty())
         return "";

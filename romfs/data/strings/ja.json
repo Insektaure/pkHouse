@@ -99,6 +99,7 @@
     "stat_spa": "とくこう",
     "national_dex_prefix": "全国図鑑 #",
     "ot_prefix": "親：",
+    "ht_prefix": "現親：",
     "tid_prefix": "TID：",
     "sid_prefix": "SID：",
     "nature_prefix": "性格：",

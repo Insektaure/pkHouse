@@ -164,6 +164,7 @@ namespace StrKey {
     constexpr const char* StatSpA              = "stat_spa";
     constexpr const char* NationalDexPrefix    = "national_dex_prefix";
     constexpr const char* OTPrefix             = "ot_prefix";
+    constexpr const char* HTPrefix             = "ht_prefix";
     constexpr const char* TIDPrefix            = "tid_prefix";
     constexpr const char* SIDPrefix            = "sid_prefix";
     constexpr const char* NaturePrefix         = "nature_prefix";

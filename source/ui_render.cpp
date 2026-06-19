@@ -693,9 +693,10 @@ void UI::drawDetailPopup(const Pokemon& pkm) {
     // Semi-transparent dark overlay
     drawRect(0, 0, SCREEN_W, SCREEN_H, T().overlay);
 
-    // Popup rect centered
+    // Popup rect centered. Grow by one line when the optional HT row is shown
+    // so the Moves/Ribbons region keeps the same layout as the no-HT case.
     constexpr int POP_W = 900;
-    constexpr int POP_H = 550;
+    const int POP_H = 550 + (pkm.hasHandlingTrainer() ? 28 : 0);
     int popX = (SCREEN_W - POP_W) / 2;
     int popY = (SCREEN_H - POP_H) / 2;
 
@@ -798,6 +799,15 @@ void UI::drawDetailPopup(const Pokemon& pkm) {
     drawText(otStr, infoX, infoY, T().textDim, font_);
     infoY += 28;
 
+    // HT (handling trainer) — only for formats that store one
+    if (pkm.hasHandlingTrainer()) {
+        std::string ht = pkm.htName();
+        std::string htStr = i18n::get(StrKey::HTPrefix) +
+                            (ht.empty() ? i18n::get(StrKey::NoneItem) : ht);
+        drawText(htStr, infoX, infoY, T().textDim, font_);
+        infoY += 28;
+    }
+
     // Nature
     std::string natureStr = i18n::get(StrKey::NaturePrefix) + NatureName::get(pkm.nature());
     drawText(natureStr, infoX, infoY, T().textDim, font_);
@@ -812,10 +822,13 @@ void UI::drawDetailPopup(const Pokemon& pkm) {
     uint16_t item = pkm.heldItem();
     std::string itemStr = i18n::get(StrKey::HeldItemPrefix) + (item != 0 ? ItemName::get(item) : i18n::get(StrKey::NoneItem));
     drawText(itemStr, infoX, infoY, T().textDim, font_);
+    int infoBottom = infoY + 28; // baseline below the last info line
 
     // --- Below sprite: Moves ---
+    // Start below whichever extends lower: the sprite or the info column.
+    // The optional HT line can push the info column past the sprite's bottom.
     int movesX = popX + 30;
-    int movesY = sprY + LARGE_SPRITE + 46;
+    int movesY = std::max(sprY + LARGE_SPRITE + 46, infoBottom);
 
     drawText(i18n::get(StrKey::Moves), movesX, movesY, T().text, font_);
     movesY += 30;

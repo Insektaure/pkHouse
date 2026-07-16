@@ -37,6 +37,12 @@ public:
     int totalVisualRows() const;
 
 private:
+    // Subfolder under banks/ that deleted banks are moved into (soft delete).
+    // The per-game folder structure is mirrored inside it, e.g.
+    // banks/trash/za/Name.bin. No leading dot: some Switch file managers hide
+    // dot-folders, which would make trashed banks unrecoverable for users.
+    static constexpr const char* TRASH_DIR = "trash";
+
     bool allMode_ = false;
     std::string banksDir_;   // basePath + "banks/sv/" or "banks/za/"
     std::string basePath_;

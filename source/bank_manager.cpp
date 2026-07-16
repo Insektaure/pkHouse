@@ -200,11 +200,29 @@ bool BankManager::createBank(const std::string& name) {
 }
 
 bool BankManager::deleteBank(const std::string& name) {
-    std::string path = pathFor(name);
-    if (path.empty())
+    // Find the bank entry so we know both its path and which game it belongs to
+    const BankInfo* info = nullptr;
+    for (const auto& b : bankList_) {
+        if (b.name == name) { info = &b; break; }
+    }
+    if (!info)
         return false;
 
-    if (std::remove(path.c_str()) != 0)
+    // Soft delete: move the file into a trash area instead of removing it,
+    // preserving the per-game folder layout so it stays recoverable:
+    //   banks/<game>/Name.bin  ->  banks/trash/<game>/Name.bin
+    std::string trashParent = basePath_ + "banks/" + TRASH_DIR + "/";
+    mkdir(trashParent.c_str(), 0755);
+    std::string trashDir = trashParent + bankFolderNameOf(info->game) + "/";
+    mkdir(trashDir.c_str(), 0755);
+
+    // Avoid clobbering a previously deleted bank of the same name
+    std::string destPath = trashDir + name + ".bin";
+    struct stat st;
+    for (int i = 2; stat(destPath.c_str(), &st) == 0; i++)
+        destPath = trashDir + name + " (" + std::to_string(i) + ").bin";
+
+    if (std::rename(info->fullPath.c_str(), destPath.c_str()) != 0)
         return false;
 
     refresh();

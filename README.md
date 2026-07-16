@@ -128,12 +128,14 @@ Banks are local `.bin` files stored per game family. Paired games share the same
 
 From the bank selector you can:
 
-- **Create** a new bank (up to 32-character name). On Switch, available SD card space is checked before creating — if there isn't enough room, an error is shown.
-- **Rename** an existing bank
-- **Delete** a bank (with confirmation)
+- **Create** a new bank (up to 32-character name). On Switch, available SD card space is checked before creating — if there isn't enough room, an error is shown. A name that already exists in the game is rejected with a message instead of failing silently (the SD card filesystem is case-insensitive, so `MyBank` and `mybank` count as the same name).
+- **Rename** an existing bank — renaming onto a name that already exists is rejected with the same message.
+- **Delete** a bank (with confirmation). This is a **soft delete**: the file is moved to `banks/trash/<GameFamily>/` instead of being erased, so it can be recovered with a file manager. If a bank of the same name is already in the trash, a numeric suffix is added (e.g. `MyBank (2).bin`) so nothing is overwritten.
 
 Each bank has the same box capacity as its game family (32 or 40 boxes).\
 The bank list shows the number of occupied slots for each bank.
+
+Bank files are validated when the folder is listed. A `.bin` that isn't a valid pkHouse bank (missing or corrupt header — for example a stray `.bin` copied into the folder by mistake) is shown as **`[INVALID BANK FILE]`** in place of its slot count and cannot be opened.
 
 You can switch between banks from the main view via the menu. Both the save and bank are saved together before switching to prevent data inconsistency.\
 If no other bank is available when switching, the app offers to create a new one directly.\

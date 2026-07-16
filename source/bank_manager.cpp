@@ -51,10 +51,13 @@ bool BankManager::initAll(const std::string& basePath) {
             if (name.size() < 5 || name.substr(name.size() - 4) != ".bin")
                 continue;
 
+            std::string fullPath = dir + name;
+
             BankInfo info;
             info.name = name.substr(0, name.size() - 4);
-            info.fullPath = dir + name;
-            info.occupiedSlots = countOccupied(info.fullPath);
+            info.fullPath = fullPath;
+            info.valid = Bank::isValidFile(fullPath);
+            info.occupiedSlots = info.valid ? countOccupied(fullPath) : 0;
             info.game = g;
             bankList_.push_back(info);
         }
@@ -123,7 +126,8 @@ void BankManager::refresh() {
         BankInfo info;
         info.name = stem;
         info.fullPath = fullPath;
-        info.occupiedSlots = countOccupied(fullPath);
+        info.valid = Bank::isValidFile(fullPath);
+        info.occupiedSlots = info.valid ? countOccupied(fullPath) : 0;
         info.game = game_;
         bankList_.push_back(info);
     }
@@ -166,7 +170,8 @@ int BankManager::countBanks(const std::string& basePath, GameType game) {
     struct dirent* entry;
     while ((entry = readdir(d)) != nullptr) {
         std::string name = entry->d_name;
-        if (name.size() >= 5 && name.substr(name.size() - 4) == ".bin")
+        if (name.size() >= 5 && name.substr(name.size() - 4) == ".bin" &&
+            Bank::isValidFile(dir + name))
             count++;
     }
     closedir(d);

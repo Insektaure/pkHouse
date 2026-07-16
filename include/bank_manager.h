@@ -9,6 +9,7 @@ struct BankInfo {
     std::string fullPath;
     int occupiedSlots;      // 0..960
     GameType game = GameType::ZA;  // which game this bank belongs to
+    bool valid = true;      // false = stray .bin that isn't a real bank file
 };
 
 class BankManager {

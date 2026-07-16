@@ -16,6 +16,11 @@ public:
     // Load bank from file. Returns true on success; creates empty bank if file missing.
     bool load(const std::string& path);
 
+    // Lightweight header check: true only if the file exists and has a valid
+    // PKHOUSE magic + supported version. Used to filter out stray .bin files
+    // that users drop into the bank folder.
+    static bool isValidFile(const std::string& path);
+
     // Save bank to file.
     bool save(const std::string& path);
 

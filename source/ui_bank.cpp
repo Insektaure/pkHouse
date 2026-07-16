@@ -176,19 +176,27 @@ void UI::drawBankSelectorFrame() {
                     drawRectOutline(LIST_X, rowY, LIST_W, ROW_H - 4, T().cursor, 2);
                 }
 
-                // Bank name (left-aligned, indented under header)
+                // Bank name (left-aligned, indented under header) — dimmed if invalid
                 drawText(banks[idx].name, LIST_X + 30, rowY + (ROW_H - 4) / 2 - 9,
-                         T().text, font_);
+                         banks[idx].valid ? T().text : T().textDim, font_);
 
-                // Slot count (right-aligned)
-                int maxSlots = isLGPE(banks[idx].game) ? 1000 :
-                               isBDSP(banks[idx].game) ? 1200 : 960;
-                std::string slotStr = std::to_string(banks[idx].occupiedSlots) +
-                                      "/" + std::to_string(maxSlots);
-                const auto& se = getTextEntry(slotStr, font_, T().textDim);
-                if (se.tex)
-                    drawText(slotStr, LIST_X + LIST_W - 20 - se.w,
-                             rowY + (ROW_H - 4) / 2 - 9, T().textDim, font_);
+                // Right-aligned: slot count, or invalid marker for stray files
+                if (!banks[idx].valid) {
+                    std::string invStr = i18n::get(StrKey::InvalidBankFile);
+                    const auto& se = getTextEntry(invStr, font_, T().red);
+                    if (se.tex)
+                        drawText(invStr, LIST_X + LIST_W - 20 - se.w,
+                                 rowY + (ROW_H - 4) / 2 - 9, T().red, font_);
+                } else {
+                    int maxSlots = isLGPE(banks[idx].game) ? 1000 :
+                                   isBDSP(banks[idx].game) ? 1200 : 960;
+                    std::string slotStr = std::to_string(banks[idx].occupiedSlots) +
+                                          "/" + std::to_string(maxSlots);
+                    const auto& se = getTextEntry(slotStr, font_, T().textDim);
+                    if (se.tex)
+                        drawText(slotStr, LIST_X + LIST_W - 20 - se.w,
+                                 rowY + (ROW_H - 4) / 2 - 9, T().textDim, font_);
+                }
             }
         }
     } else {
@@ -224,14 +232,21 @@ void UI::drawBankSelectorFrame() {
             }
 
             drawText(banks[idx].name, LIST_X + 20, rowY + (ROW_H - 4) / 2 - 9,
-                     T().text, font_);
+                     banks[idx].valid ? T().text : T().textDim, font_);
 
-            // Slot count (right-aligned)
-            int maxSlots = isLGPE(selectedGame_) ? 1000 : isBDSP(selectedGame_) ? 1200 : 960;
-            std::string slotStr = std::to_string(banks[idx].occupiedSlots) + "/" + std::to_string(maxSlots);
-            const auto& se = getTextEntry(slotStr, font_, T().textDim);
-            if (se.tex) drawText(slotStr, LIST_X + LIST_W - 20 - se.w, rowY + (ROW_H - 4) / 2 - 9,
-                     T().textDim, font_);
+            // Right-aligned: slot count, or invalid marker for stray files
+            if (!banks[idx].valid) {
+                std::string invStr = i18n::get(StrKey::InvalidBankFile);
+                const auto& se = getTextEntry(invStr, font_, T().red);
+                if (se.tex) drawText(invStr, LIST_X + LIST_W - 20 - se.w,
+                         rowY + (ROW_H - 4) / 2 - 9, T().red, font_);
+            } else {
+                int maxSlots = isLGPE(selectedGame_) ? 1000 : isBDSP(selectedGame_) ? 1200 : 960;
+                std::string slotStr = std::to_string(banks[idx].occupiedSlots) + "/" + std::to_string(maxSlots);
+                const auto& se = getTextEntry(slotStr, font_, T().textDim);
+                if (se.tex) drawText(slotStr, LIST_X + LIST_W - 20 - se.w, rowY + (ROW_H - 4) / 2 - 9,
+                         T().textDim, font_);
+            }
         }
     }
 
@@ -424,6 +439,10 @@ void UI::handleBankSelectorInput(bool& running) {
 void UI::openSelectedBank() {
     const auto& banks = bankManager_.list();
     if (bankSelCursor_ < 0 || bankSelCursor_ >= (int)banks.size())
+        return;
+
+    // Stray .bin files that aren't real bank files can't be opened
+    if (!banks[bankSelCursor_].valid)
         return;
 
     const std::string& name = banks[bankSelCursor_].name;

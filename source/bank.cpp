@@ -17,6 +17,34 @@ void Bank::setGameType(GameType g) {
     boxNames_.resize(boxCount_);
 }
 
+bool Bank::isValidFile(const std::string& path) {
+    std::ifstream file(path, std::ios::binary);
+    if (!file.is_open())
+        return false;
+
+    // Verify magic
+    char magic[8];
+    if (!file.read(magic, 8))
+        return false;
+    if (std::memcmp(magic, MAGIC, 8) != 0)
+        return false;
+
+    // Verify version is one we understand
+    uint32_t version = 0;
+    if (!file.read(reinterpret_cast<char*>(&version), 4))
+        return false;
+    switch (version) {
+        case VERSION_FRLG:
+        case VERSION_LGPE:
+        case VERSION_LA:
+        case VERSION_40BOX:
+        case VERSION_32BOX:
+            return true;
+        default:
+            return false;
+    }
+}
+
 bool Bank::load(const std::string& path) {
     std::ifstream file(path, std::ios::binary);
     if (!file.is_open()) {

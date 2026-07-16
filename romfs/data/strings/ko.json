@@ -42,6 +42,9 @@
     "bank_already_left": "이 뱅크는 이미 왼쪽 패널에서 열려 있습니다.",
     "loading_bank": "뱅크 로딩 중...",
     "no_bank_loaded": "(뱅크 미로드)",
+    "invalid_bank_file": "[잘못된 뱅크 파일]",
+    "bank_name_exists": "이미 사용 중인 이름",
+    "bank_name_exists_body": "이 이름의 뱅크가 이미 존재합니다.",
 
     "select_profile": "프로필 선택",
     "status_profile": "A: 선택  Y: 테마  -: 정보  +: 종료",

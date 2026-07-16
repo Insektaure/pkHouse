@@ -42,6 +42,9 @@
     "bank_already_left": "Este banco ya esta abierto en el panel izquierdo.",
     "loading_bank": "Cargando banco...",
     "no_bank_loaded": "(Ningun banco cargado)",
+    "invalid_bank_file": "[ARCHIVO DE BANCO INVALIDO]",
+    "bank_name_exists": "Nombre ya usado",
+    "bank_name_exists_body": "Ya existe un banco con ese nombre.",
 
     "select_profile": "Seleccionar perfil",
     "status_profile": "A: Seleccionar  Y: Tema  -: Acerca de  +: Salir",

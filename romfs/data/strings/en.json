@@ -43,6 +43,8 @@
     "loading_bank": "Loading bank...",
     "no_bank_loaded": "(No Bank Loaded)",
     "invalid_bank_file": "[INVALID BANK FILE]",
+    "bank_name_exists": "Name Already Used",
+    "bank_name_exists_body": "A bank with that name already exists.",
 
     "select_profile": "Select Profile",
     "status_profile": "A: Select  Y: Theme  -: About  +: Quit",

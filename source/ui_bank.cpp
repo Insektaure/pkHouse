@@ -659,6 +659,12 @@ void UI::commitTextInput(const std::string& text) {
                 }
             }
         }
+        // Reject duplicate names with clear feedback instead of failing silently
+        if (bankManager_.bankExists(text)) {
+            showMessageAndWait(i18n::get(StrKey::BankNameExists),
+                i18n::get(StrKey::BankNameExistsBody));
+            return;
+        }
         showWorking(i18n::get(StrKey::CreatingBank));
         if (bankManager_.createBank(text)) {
             // Select the newly created bank
@@ -671,6 +677,13 @@ void UI::commitTextInput(const std::string& text) {
             }
         }
     } else if (textInputPurpose_ == TextInputPurpose::RenameBank) {
+        // Reject renaming onto another existing bank with clear feedback.
+        // (An unchanged name is a harmless no-op, so don't warn in that case.)
+        if (text != renamingBankName_ && bankManager_.bankExists(text)) {
+            showMessageAndWait(i18n::get(StrKey::BankNameExists),
+                i18n::get(StrKey::BankNameExistsBody));
+            return;
+        }
         showWorking(i18n::get(StrKey::RenamingBank));
         if (bankManager_.renameBank(renamingBankName_, text)) {
             // Select the renamed bank

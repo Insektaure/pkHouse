@@ -42,6 +42,9 @@
     "bank_already_left": "Этот банк уже открыт на левой панели.",
     "loading_bank": "Загрузка банка...",
     "no_bank_loaded": "(Банк не загружен)",
+    "invalid_bank_file": "[НЕВЕРНЫЙ ФАЙЛ БАНКА]",
+    "bank_name_exists": "Имя уже занято",
+    "bank_name_exists_body": "Банк с таким именем уже существует.",
 
     "select_profile": "Выбрать профиль",
     "status_profile": "A: Выбрать  Y: Тема  -: О программе  +: Выход",

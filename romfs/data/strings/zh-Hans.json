@@ -42,6 +42,9 @@
     "bank_already_left": "此银行已在左侧面板中打开。",
     "loading_bank": "正在加载银行...",
     "no_bank_loaded": "（未加载银行）",
+    "invalid_bank_file": "[无效的银行文件]",
+    "bank_name_exists": "名称已被使用",
+    "bank_name_exists_body": "已存在同名的银行。",
 
     "select_profile": "选择用户",
     "status_profile": "A：选择  Y：主题  -：关于  +：退出",

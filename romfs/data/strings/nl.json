@@ -42,6 +42,9 @@
     "bank_already_left": "Deze bank is al geopend in het linkerpaneel.",
     "loading_bank": "Bank laden...",
     "no_bank_loaded": "(Geen bank geladen)",
+    "invalid_bank_file": "[ONGELDIG BANKBESTAND]",
+    "bank_name_exists": "Naam al in gebruik",
+    "bank_name_exists_body": "Er bestaat al een bank met deze naam.",
 
     "select_profile": "Profiel selecteren",
     "status_profile": "A: Selecteren  Y: Thema  -: Over  +: Afsluiten",

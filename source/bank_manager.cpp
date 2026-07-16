@@ -229,6 +229,16 @@ bool BankManager::deleteBank(const std::string& name) {
     return true;
 }
 
+bool BankManager::bankExists(const std::string& name) const {
+    std::string safe = sanitizeName(name);
+    if (safe.empty())
+        return false;
+
+    std::string path = banksDir_ + safe + ".bin";
+    struct stat st;
+    return stat(path.c_str(), &st) == 0;
+}
+
 bool BankManager::renameBank(const std::string& oldName, const std::string& newName) {
     std::string safe = sanitizeName(newName);
     if (safe.empty())

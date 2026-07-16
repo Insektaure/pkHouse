@@ -105,6 +105,8 @@ namespace StrKey {
     constexpr const char* LoadingBank          = "loading_bank";
     constexpr const char* NoBankLoaded         = "no_bank_loaded";
     constexpr const char* InvalidBankFile      = "invalid_bank_file";
+    constexpr const char* BankNameExists       = "bank_name_exists";
+    constexpr const char* BankNameExistsBody   = "bank_name_exists_body";
 
     // ui_selectors.cpp
     constexpr const char* SelectProfile        = "select_profile";

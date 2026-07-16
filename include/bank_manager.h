@@ -19,6 +19,9 @@ public:
     const std::vector<BankInfo>& list() const;
 
     bool createBank(const std::string& name);
+    // True if a bank file with this (sanitized) name already exists in the
+    // current game folder. Used to give feedback when a create is rejected.
+    bool bankExists(const std::string& name) const;
     bool deleteBank(const std::string& name);
     bool renameBank(const std::string& oldName, const std::string& newName);
     std::string loadBank(const std::string& name, Bank& bank);

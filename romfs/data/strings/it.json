@@ -42,6 +42,9 @@
     "bank_already_left": "Questa banca e gia aperta nel pannello sinistro.",
     "loading_bank": "Caricamento banca...",
     "no_bank_loaded": "(Nessuna banca caricata)",
+    "invalid_bank_file": "[FILE BANCA NON VALIDO]",
+    "bank_name_exists": "Nome gia in uso",
+    "bank_name_exists_body": "Esiste gia una banca con questo nome.",
 
     "select_profile": "Seleziona profilo",
     "status_profile": "A: Seleziona  Y: Tema  -: Info  +: Esci",

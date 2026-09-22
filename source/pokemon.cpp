@@ -683,14 +683,13 @@ void Pokemon::loadFromEncrypted(const uint8_t* encrypted, size_t len) {
         PokeCrypto::decryptArray9(encrypted, len, data.data());
 }
 
-void Pokemon::refreshChecksum() {
+uint16_t Pokemon::computeChecksum() const {
     if (isFRLG(gameType_)) {
-        // PK3: sum u16 words from 0x20 to 0x4F (48 bytes = 24 words), store at 0x1C
+        // PK3: sum u16 words from 0x20 to 0x4F (48 bytes = 24 words)
         uint16_t chk = 0;
         for (int i = 0x20; i < 0x50; i += 2)
             chk += readU16(i);
-        writeU16(0x1C, chk);
-        return;
+        return chk;
     }
     // Checksum = sum of all 16-bit words from byte 8 to SIZE_STORED
     int end;
@@ -700,7 +699,17 @@ void Pokemon::refreshChecksum() {
     uint16_t chk = 0;
     for (int i = 8; i < end; i += 2)
         chk += readU16(i);
-    writeU16(0x06, chk);
+    return chk;
+}
+
+uint16_t Pokemon::storedChecksum() const {
+    return isFRLG(gameType_) ? readU16(0x1C) : readU16(0x06);
+}
+
+void Pokemon::refreshChecksum() {
+    uint16_t chk = computeChecksum();
+    if (isFRLG(gameType_)) writeU16(0x1C, chk);
+    else                   writeU16(0x06, chk);
 }
 
 void Pokemon::getEncrypted(uint8_t* outBuf) {

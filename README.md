@@ -239,6 +239,60 @@ The injected Pokemon is fully generated from the wondercard data — PID, IVs, n
 
 Wondercard files can be downloaded from the [Project Pokemon EventsGallery](https://github.com/projectpokemon/EventsGallery) repository.
 
+### Importing Cards
+
+Cards can be read back in. Open the **menu** (+ button) and choose **Import Card** to browse
+`cards/<GameFamily>/`.
+
+The browser shows the file list on the left and, on the right, **what the highlighted card actually
+contains** — sprite, species, level, gender, nature, ability, held item, all four moves with their types,
+IVs, OT and origin game. All of it is read out of the QR code, never from the filename, so the pane shows
+the Pokemon you would really be importing.
+
+A card that has been resized or re-cropped outside those proportions cannot be read that cheaply; the pane
+says **Press A to read this card** and the full-image search runs when you commit.
+
+Press **A** and pkHouse decodes the whole image, validates the payload, and shows the Pokemon in the
+**full detail view** — IV and EV radar charts, ribbons, technical data — with **A: Import  B: Cancel**.
+Nothing is written until you confirm.
+
+An imported Pokemon goes through exactly the same path as a bank-to-save move, so the handling trainer is
+updated as an in-game trade would and the Pokedex is registered automatically.
+
+If the target slot is already occupied, the import is refused rather than overwriting it.
+
+#### Card Validation
+
+A card is checked in this order before anything is written:
+
+| Check | Rejects |
+|-------|---------|
+| Magic `PKHC` | An image with no pkHouse card data |
+| Payload format version | A card written by a newer pkHouse |
+| Body length vs the length field | Truncated or padded data |
+| CRC-16 over the body | Corruption, partial downloads |
+| `GameType` byte in range | A damaged game field |
+| Body length vs the format's party size | Data that is not the size that game uses |
+| **Game family match** | **A card belonging to another game** |
+| The checksum the games themselves store | Data damaged inside the Pokemon |
+| Species and form present in the target game | Blobs that decode but cannot exist there |
+| Range checks on nature, ball, level, EV total, language, met date | Data read through the wrong offsets |
+
+The **game family match** is the one that matters. The folder a card sits in is a convenience for
+listing, never a guarantee: the payload carries the family it was exported from, that byte is covered by
+the CRC, and it is what gets compared. This has to be a hard gate, because placing a Pokemon writes it
+through the open game's field offsets — a Sword Pokemon written into a Scarlet save would be read with
+Gen 9 offsets and corrupted.
+
+Family, not exact version: a Sword card imports into a Shield bank, the same rule banks already follow.
+
+> **Tip:** If you drop a card into the wrong game folder, pkHouse tells you which family it belongs to and
+> offers to move the file there for you. Nothing is overwritten — a name that is already taken gets a
+> numeric suffix.
+
+Decoding uses [quirc](https://github.com/dlbeer/quirc) by Daniel Beer (ISC). A card that a chat app has
+downscaled below roughly two pixels per QR module will not decode; sharing the original file always works.
+
 ### Pokedex Auto-Registration
 
 When transferring Pokemon from a bank to a save file, the Pokedex is automatically updated to register the Pokemon as caught. This solves the issue where version-exclusive Pokemon transferred between paired games would not appear in the Pokedex.
@@ -437,6 +491,7 @@ When switching banks, the selector appears on the side being switched while the 
 | Search | Search for Pokemon across both panels |
 | Wondercard | Inject event wondercards as Pokemon (supported games only) |
 | Export Selected | Export selected Pokemon as `.pk` files (shown when Pokemon are selected) |
+| Import Card | Browse `cards/<GameFamily>/` and import a Pokemon from a card PNG |
 | Switch Bank | Save game and bank, return to bank selector |
 | Change Game | Save everything, return to game selector |
 | Save & Quit | Save everything and exit |
@@ -451,6 +506,7 @@ When switching banks, the selector appears on the side being switched while the 
 | Search | Search for Pokemon across both panels |
 | Wondercard | Inject event wondercards as Pokemon (supported games only) |
 | Export Selected | Export selected Pokemon as `.pk` files (shown when Pokemon are selected) |
+| Import Card | Browse `cards/<GameFamily>/` and import a Pokemon from a card PNG |
 | Switch Left Bank | Save both banks, switch the left bank |
 | Switch Right Bank | Save both banks, switch the right bank |
 | Change Game | Save both banks, return to game selector |
@@ -519,4 +575,5 @@ Place `pkHouse.nro` on your Switch SD card (`sdmc:/switch/pkHouse/`) and launch 
 - [PKHeX](https://github.com/kwsch/PKHeX) by kwsch — PokeCrypto research and save structure reference
 - [JKSV](https://github.com/J-D-K/JKSV) by J-D-K — Save backup and write logic reference
 - [QR Code generator library](https://www.nayuki.io/page/qr-code-generator-library) by Project Nayuki (MIT) — QR encoding for Pokemon cards
+- [quirc](https://github.com/dlbeer/quirc) by Daniel Beer (ISC) — QR decoding for card import
 - Built with [libnx](https://github.com/switchbrew/libnx) and [SDL2](https://www.libsdl.org/)

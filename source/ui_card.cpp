@@ -47,6 +47,14 @@ constexpr int PANEL_PAD  = 17;
 constexpr int CONTENT_Y  = 202;
 constexpr int SPRITE_BOX = 210;
 
+// The importer decodes only this region; keep the two definitions in step.
+static_assert(CARD_W == CardLayout::WIDTH && CARD_H == CardLayout::HEIGHT,
+              "card size must match CardLayout");
+static_assert(PANEL_X + PANEL_W - PANEL_PAD - QR_BOX == CardLayout::QR_X,
+              "QR x must match CardLayout::QR_X");
+static_assert(CONTENT_Y == CardLayout::QR_Y, "QR y must match CardLayout::QR_Y");
+static_assert(QR_BOX == CardLayout::QR_SIZE, "QR size must match CardLayout::QR_SIZE");
+
 constexpr int COL_X    = 676;          // right column
 constexpr int COL_W    = MARGIN_R - COL_X;
 constexpr int ATTR_COLS = 4;
@@ -68,7 +76,7 @@ constexpr SDL_Color C_BORDER    = {227, 232, 238, 255};
 constexpr SDL_Color C_RULE      = {232, 236, 239, 255};
 constexpr SDL_Color C_TEAL      = { 17, 125, 111, 255};
 constexpr SDL_Color C_TRACK     = {237, 241, 244, 255};
-constexpr SDL_Color C_WATERMARK = {241, 244, 247, 255};
+constexpr SDL_Color C_DEXNUM    = {214, 222, 231, 255};
 constexpr SDL_Color C_MALE      = { 56, 132, 255, 255};
 constexpr SDL_Color C_FEMALE    = {232,  76, 122, 255};
 
@@ -188,29 +196,30 @@ void drawTx(SDL_Renderer* r, TTF_Font* f, const std::string& s,
     SDL_DestroyTexture(tex);
 }
 
-// Draws text centred on (cx, cy), scaled down (never up) to fit inside
-// maxW x maxH. Used for the dex watermark, which has to fit the sprite column
-// rather than bleed off the panel now that the QR shares the space.
+// Draws text scaled down (never up) to fit inside a box, anchored to the box's
+// bottom edge and to whichever side alignRight selects. Used for the dex
+// number, which sits in a corner of the portrait panel rather than behind the
+// sprite so that all of it stays readable.
 void drawTxFit(SDL_Renderer* r, TTF_Font* f, const std::string& s,
-               int cx, int cy, int maxW, int maxH, SDL_Color c) {
-    if (!f || s.empty()) return;
+               int bx, int by, int bw, int bh, SDL_Color c, bool alignRight = false) {
+    if (!f || s.empty() || bw <= 0 || bh <= 0) return;
     SDL_Surface* surf = TTF_RenderUTF8_Blended(f, s.c_str(), c);
     if (!surf) return;
     int w = surf->w, h = surf->h;
     if (w > 0 && h > 0) {
         // Shrink on whichever axis overflows the most, keeping the aspect ratio.
-        if (w * maxH > h * maxW) {
-            h = h * maxW / w;
-            w = maxW;
-        } else if (h > maxH) {
-            w = w * maxH / h;
-            h = maxH;
+        if (w * bh > h * bw) {
+            h = h * bw / w;
+            w = bw;
+        } else if (h > bh) {
+            w = w * bh / h;
+            h = bh;
         }
     }
     SDL_Texture* tex = SDL_CreateTextureFromSurface(r, surf);
     SDL_FreeSurface(surf);
     if (!tex) return;
-    SDL_Rect dst = {cx - w / 2, cy - h / 2, w, h};
+    SDL_Rect dst = {alignRight ? bx + bw - w : bx, by + bh - h, w, h};
     SDL_RenderCopy(r, tex, nullptr, &dst);
     SDL_DestroyTexture(tex);
 }
@@ -432,20 +441,6 @@ void UI::drawCardPortrait(const Pokemon& pkm, const CardFonts& f) {
     const int spriteX   = hasQr ? PANEL_X + PANEL_PAD
                                 : PANEL_X + (PANEL_W - spriteBox) / 2;
 
-    // Dex number watermark, straddling the bottom of the sprite.
-    // It is scaled to the sprite column so all of it shows:
-    // with the QR beside it there is no longer a panel edge to bleed off, and a
-    // half-cut number just reads as a mistake.
-    if (!egg) {
-        char buf[8];
-        std::snprintf(buf, sizeof(buf), "%u", static_cast<unsigned>(species));
-        const int wmH = spriteBox * 3 / 4;
-        const int wmBottomLimit = PANEL_Y + PANEL_H - PANEL_PAD - wmH / 2;
-        const int wmY = std::min(CONTENT_Y + spriteBox - 24, wmBottomLimit);
-        drawTxFit(r, f.watermark, buf, spriteX + spriteBox / 2, wmY,
-                  spriteBox, wmH, C_WATERMARK);
-    }
-
     // Status badges: shiny, alpha, Gigantamax, egg.
     struct Badge { bool active; SDL_Texture* icon; const char* glyph; };
     const Badge badges[4] = {
@@ -497,10 +492,11 @@ void UI::drawCardPortrait(const Pokemon& pkm, const CardFonts& f) {
 
     // Type chips: stacked under the sprite when the QR shares the panel,
     // side by side when the sprite has it to itself.
+    int chipsBottom = hasQr ? CONTENT_Y + spriteBox + 14 : PANEL_Y + PANEL_H - 44;
     if (!egg) {
         SpeciesTypes::Pair types = SpeciesTypes::get(selectedGame_, species, pkm.form());
         int cx = spriteX;
-        int cy = hasQr ? CONTENT_Y + spriteBox + 14 : PANEL_Y + PANEL_H - 44;
+        int cy = chipsBottom;
         for (uint8_t t : {types.t1, types.t2}) {
             if (t >= 18) continue;
             const char* label = TYPE_NAMES[t];
@@ -508,8 +504,27 @@ void UI::drawCardPortrait(const Pokemon& pkm, const CardFonts& f) {
             panelRect(r, cx, cy, chipW, 26, 13, C_BG, C_BORDER);
             fillCircle(r, cx + 16, cy + 13, 5, TYPE_COLORS[t]);
             drawTx(r, f.micro, label, cx + 28, cy + 8, C_TEXT);
-            if (hasQr) cy += 32;
-            else       cx += chipW + 10;
+            if (hasQr) { cy += 32; chipsBottom = cy; }
+            else       { cx += chipW + 10; }
+        }
+    }
+
+    // National dex number, in the panel's bottom corner rather than behind the
+    // sprite, so none of it is hidden. It takes whatever room the type chips
+    // leave: bottom-left in the split layout, bottom-right when the sprite has
+    // the panel to itself and the chips run along the bottom-left.
+    if (!egg) {
+        char buf[8];
+        std::snprintf(buf, sizeof(buf), "%u", static_cast<unsigned>(species));
+        const int boxBottom = PANEL_Y + PANEL_H - PANEL_PAD;
+        const int boxTop = hasQr ? chipsBottom + 8 : CONTENT_Y + spriteBox + 8;
+        if (boxBottom - boxTop >= 24) {
+            if (hasQr)
+                drawTxFit(r, f.watermark, buf, spriteX, boxTop,
+                          spriteBox, boxBottom - boxTop, C_DEXNUM);
+            else
+                drawTxFit(r, f.watermark, buf, PANEL_X + PANEL_W / 2, boxTop,
+                          PANEL_W / 2 - PANEL_PAD, boxBottom - boxTop, C_DEXNUM, true);
         }
     }
 }

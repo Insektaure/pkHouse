@@ -5,6 +5,7 @@
 #include "account.h"
 #include "theme.h"
 #include "wondercard.h"
+#include "card_import.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_image.h>
@@ -205,6 +206,20 @@ private:
     int  wcListCursor_  = 0;
     int  wcListScroll_  = 0;
     std::vector<WCInfo> wcList_;
+
+    // Card import state
+    bool showCardList_ = false;
+    int  cardListCursor_ = 0;
+    int  cardListScroll_ = 0;
+    std::vector<CardFile> cardList_;
+
+    // Decoded summary of the highlighted card. Reading a QR code costs enough
+    // that it only happens once the cursor has stopped moving, and only over
+    // the region a card keeps its code in.
+    CardPayload::Parsed cardPreview_;
+    int          cardPreviewIdx_ = -1;   // which row cardPreview_ belongs to
+    uint32_t     cardPreviewSince_ = 0;  // when the cursor last landed
+    static constexpr uint32_t CARD_PREVIEW_DELAY_MS = 200;
 
     // Search/Filter state
     bool showSearchFilter_  = false;
@@ -412,7 +427,7 @@ private:
 
     // Rendering helpers
     void drawFrame();
-    void drawDetailPopup(const Pokemon& pkm);
+    void drawDetailPopup(const Pokemon& pkm, const char* footerKey = nullptr);
     void drawMenuPopup();
     void drawAboutPopup();
     void drawThemeSelectorPopup();
@@ -422,6 +437,7 @@ private:
     void drawSpeciesLetterPicker();
     void drawSpeciesListPicker();
     void drawWondercardListPopup();
+    void drawCardListPopup();
     void drawHeldOverlay();
     void drawBoxViewOverlay();
     void drawBoxPreview(int boxIdx, int anchorX, int anchorY);
@@ -462,6 +478,14 @@ private:
     void buildSpeciesListForLetter(int letterIndex);
     bool letterHasSpecies(int letterIndex) const;
     void handleWondercardListInput(const SDL_Event& event);
+    void handleCardListInput(const SDL_Event& event);
+    void updateCardPreview();
+    void drawCardPreviewPane(int paneX, int paneY, int paneW, int paneH);
+    void freeCardPreview();
+    bool showCardImportConfirm(const Pokemon& pkm);
+    void importCard(const CardFile& card);
+    bool relocateCard(const CardFile& card, GameType correctGame,
+                      std::string& outFolder);
     void injectWondercard(const WCInfo& info);
     std::string exportPokemon(const Pokemon& pkm);
 

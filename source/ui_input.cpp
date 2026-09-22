@@ -96,6 +96,7 @@ void UI::handleInput(bool& running) {
         if (showSearchFilter_)       { handleSearchFilterInput(event); continue; }
         if (showSearchResults_)      { handleSearchResultsInput(event); continue; }
         if (showWondercardList_)     { handleWondercardListInput(event); continue; }
+        if (showCardList_)           { handleCardListInput(event); continue; }
         if (showBoxView_)            { handleBoxViewInput(event); continue; }
         if (showDetail_)             { handleDetailInput(event); continue; }
 
@@ -109,7 +110,7 @@ void UI::handleInput(bool& running) {
 void UI::handleMenuInput(const SDL_Event& event, bool& running) {
     bool hasWC = gameInfo(selectedGame_).hasWondercards;
     bool hasExport = !selectedSlots_.empty();
-    int menuCount = (isDualBankMode() ? (hasWC ? 9 : 8) : (hasWC ? 8 : 7)) + (hasExport ? 1 : 0);
+    int menuCount = (isDualBankMode() ? (hasWC ? 10 : 9) : (hasWC ? 9 : 8)) + (hasExport ? 1 : 0);
     auto menuConfirm = [&]() {
         // 0=Theme, 1=Language, 2=Search (both modes)
         if (menuSelection_ == 0) {
@@ -163,7 +164,19 @@ void UI::handleMenuInput(const SDL_Event& event, bool& running) {
             showMessageAndWait(i18n::get(StrKey::ExportComplete), body);
             return;
         }
-        int sel = menuSelection_ - (hasWC ? 4 : 3) - (hasExport ? 1 : 0);
+        // Import Card sits right after Export Selected and is always shown.
+        int importIdx = exportIdx + (hasExport ? 1 : 0);
+        if (menuSelection_ == importIdx) {
+            showMenu_ = false;
+            cardList_ = scanCards(basePath_, selectedGame_);
+            cardListCursor_ = 0;
+            cardListScroll_ = 0;
+            freeCardPreview();
+            cardPreviewSince_ = SDL_GetTicks();
+            showCardList_ = true;
+            return;
+        }
+        int sel = menuSelection_ - importIdx - 1;
         if (isDualBankMode()) {
             // sel: 0=Switch Left Bank, 1=Switch Right Bank, 2=Change Game,
             // 3=Save Banks, 4=Quit
@@ -581,6 +594,20 @@ void UI::handleStickRepeat() {
             if (searchResultCursor_ >= searchResultScroll_ + visibleRows)
                 searchResultScroll_ = searchResultCursor_ - visibleRows + 1;
         }
+    } else if (showCardList_) {
+        if (stickDirY_ != 0 && !cardList_.empty()) {
+            int count = static_cast<int>(cardList_.size());
+            cardListCursor_ += stickDirY_ > 0 ? 1 : -1;
+            if (cardListCursor_ < 0) cardListCursor_ = count - 1;
+            if (cardListCursor_ >= count) cardListCursor_ = 0;
+            constexpr int ROW_H = 36;
+            int visibleRows = (550 - 40 - 50) / ROW_H;
+            if (cardListCursor_ < cardListScroll_)
+                cardListScroll_ = cardListCursor_;
+            else if (cardListCursor_ >= cardListScroll_ + visibleRows)
+                cardListScroll_ = cardListCursor_ - visibleRows + 1;
+            cardPreviewSince_ = SDL_GetTicks();
+        }
     } else if (showWondercardList_) {
         if (stickDirY_ != 0 && !wcList_.empty()) {
             int count = static_cast<int>(wcList_.size());
@@ -602,7 +629,7 @@ void UI::handleStickRepeat() {
         {
             bool hasWC = gameInfo(selectedGame_).hasWondercards;
             bool hasExport = !selectedSlots_.empty();
-            int menuCount = (isDualBankMode() ? (hasWC ? 9 : 8) : (hasWC ? 8 : 7)) + (hasExport ? 1 : 0);
+            int menuCount = (isDualBankMode() ? (hasWC ? 10 : 9) : (hasWC ? 9 : 8)) + (hasExport ? 1 : 0);
             menuSelection_ = (menuSelection_ + (stickDirY_ > 0 ? 1 : menuCount - 1)) % menuCount;
         }
     } else if (!showDetail_) {

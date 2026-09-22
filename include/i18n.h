@@ -139,6 +139,28 @@ namespace StrKey {
     constexpr const char* ExportFailed         = "export_failed";
     constexpr const char* CouldNotWrite        = "could_not_write";
     constexpr const char* SavingCard           = "saving_card";
+
+    // Card import
+    constexpr const char* MenuImportCard       = "menu_import_card";
+    constexpr const char* CardsTitle           = "cards_title";
+    constexpr const char* NoCardsFound         = "no_cards_found";
+    constexpr const char* PlaceCardsIn         = "place_cards_in";
+    constexpr const char* ReadingCard          = "reading_card";
+    constexpr const char* CardImportFailed     = "card_import_failed";
+    constexpr const char* CardNoData           = "card_no_data";
+    constexpr const char* CardNewerVersion     = "card_newer_version";
+    constexpr const char* CardDamaged          = "card_damaged";
+    constexpr const char* CardInvalid          = "card_invalid";
+    constexpr const char* CardWrongGame        = "card_wrong_game";
+    constexpr const char* CardWrongGameBody    = "card_wrong_game_body";
+    constexpr const char* CardMoved            = "card_moved";
+    constexpr const char* CardMovedBody        = "card_moved_body";
+    constexpr const char* CardMoveFailed       = "card_move_failed";
+    constexpr const char* Imported             = "imported";
+    constexpr const char* ImportedBody         = "imported_body";
+    constexpr const char* CardListFooter       = "card_list_footer";
+    constexpr const char* CardConfirmFooter    = "card_confirm_footer";
+    constexpr const char* CardPressAToRead     = "card_press_a_to_read";
     constexpr const char* ReleaseMultiConfirm  = "release_multi_confirm";
     constexpr const char* CantMovePartyBank    = "cant_move_party_bank";
     constexpr const char* SlotsOccupied        = "slots_occupied";

@@ -204,6 +204,10 @@ struct Pokemon {
 
     std::string displayName() const;
 
+    // Checksum the games themselves store inside the decrypted data. Computing
+    // it without writing lets an imported blob be verified before it is trusted.
+    uint16_t computeChecksum() const;
+    uint16_t storedChecksum() const;
     void refreshChecksum();
     void loadFromEncrypted(const uint8_t* encrypted, size_t len);
     void getEncrypted(uint8_t* outBuf);

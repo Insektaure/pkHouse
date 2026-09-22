@@ -39,7 +39,7 @@ LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*
 LIBS	:=	-lSDL2_image -lSDL2_ttf -lSDL2 \
 			-lfreetype -lharfbuzz -lpng16 -ljpeg -lwebp -lz -lbz2 \
 			-lEGL -lGLESv2 -lglapi -ldrm_nouveau \
-			-lnx
+			-lm -lnx
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing

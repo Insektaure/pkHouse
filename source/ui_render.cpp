@@ -547,6 +547,11 @@ void UI::drawFrame() {
     if (showWondercardList_) {
         drawWondercardListPopup();
     }
+
+    // Card import list popup
+    if (showCardList_) {
+        drawCardListPopup();
+    }
 }
 
 // --- Polygon rendering helpers for radar charts ---
@@ -689,7 +694,7 @@ void UI::drawRadarChart(int cx, int cy, int radius, const int values[6], int max
     }
 }
 
-void UI::drawDetailPopup(const Pokemon& pkm) {
+void UI::drawDetailPopup(const Pokemon& pkm, const char* footerKey) {
     // Semi-transparent dark overlay
     drawRect(0, 0, SCREEN_W, SCREEN_H, T().overlay);
 
@@ -935,7 +940,8 @@ void UI::drawDetailPopup(const Pokemon& pkm) {
     drawText(techBuf2, popX + 20, popY + POP_H - 50, T().textDim, fontSmall_);
 
     // Close hint at bottom
-    drawTextCentered(i18n::get(StrKey::DetailFooter), popX + POP_W / 2, popY + POP_H - 20, T().textDim, fontSmall_);
+    drawTextCentered(i18n::get(footerKey ? footerKey : StrKey::DetailFooter),
+                     popX + POP_W / 2, popY + POP_H - 20, T().textDim, fontSmall_);
 }
 
 void UI::drawMenuPopup() {
@@ -948,9 +954,9 @@ void UI::drawMenuPopup() {
     bool hasExport = !selectedSlots_.empty();
     int menuCount;
     if (isDualBankMode())
-        menuCount = hasWC ? 9 : 8;
+        menuCount = hasWC ? 10 : 9;
     else
-        menuCount = hasWC ? 8 : 7;
+        menuCount = hasWC ? 9 : 8;
     if (hasExport) menuCount++;
 
     constexpr int POP_W = 380;
@@ -973,6 +979,7 @@ void UI::drawMenuPopup() {
         i18n::get(StrKey::MenuSearch),
         i18n::get(StrKey::MenuWondercard),
         exportBuf,
+        i18n::get(StrKey::MenuImportCard),
         i18n::get(StrKey::MenuSwitchBank),
         i18n::get(StrKey::MenuChangeGame),
         i18n::get(StrKey::MenuSaveQuit),
@@ -984,6 +991,7 @@ void UI::drawMenuPopup() {
         i18n::get(StrKey::MenuSearch),
         i18n::get(StrKey::MenuWondercard),
         exportBuf,
+        i18n::get(StrKey::MenuImportCard),
         i18n::get(StrKey::MenuSwitchLeft),
         i18n::get(StrKey::MenuSwitchRight),
         i18n::get(StrKey::MenuChangeGame),
@@ -991,9 +999,9 @@ void UI::drawMenuPopup() {
         i18n::get(StrKey::MenuQuit)
     };
     // Build label list, skipping conditional items
-    std::string visibleLabels[12];
+    std::string visibleLabels[13];
     const std::string* allLabels = isDualBankMode() ? labelsApplet : labelsNormal;
-    int allCount = isDualBankMode() ? 10 : 9;
+    int allCount = isDualBankMode() ? 11 : 10;
     int vi = 0;
     for (int i = 0; i < allCount; i++) {
         if (!hasWC && i == 3) continue;     // skip Wondercard

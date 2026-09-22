@@ -38,4 +38,34 @@ uint16_t crc16(const uint8_t* data, size_t len);
 // the game type reports no usable party size.
 std::vector<uint8_t> build(const Pokemon& pkm, GameType game);
 
+// Why a payload was rejected, in the order the checks run.
+enum class Result {
+    Ok,
+    NotACard,            // magic missing - not a pkHouse card at all
+    UnsupportedVersion,  // written by a newer pkHouse
+    Truncated,           // length field disagrees with the data
+    BadChecksum,         // our CRC-16 over the body
+    UnknownGame,         // game byte outside the GameType enum
+    BadSize,             // body length is not this format's party size
+    WrongGame,           // a card for a different game family
+    BadPokemonChecksum,  // the checksum the games themselves store
+    NotPresent,          // species/form does not exist in the target game
+    Implausible,         // failed the range checks
+};
+
+struct Parsed {
+    Result   result = Result::NotACard;
+    GameType game   = GameType::ZA;  // the card's own game; meaningful once the
+                                     // result is UnknownGame or later
+    bool     gameKnown = false;      // true once the game byte has been trusted
+    Pokemon  pkm;                    // only valid when result == Ok
+};
+
+// Parses and validates a payload for the game currently open.
+//
+// The folder a card sits in is a convenience, not a guarantee: a file dropped
+// into the wrong game folder is caught here, because the payload carries the
+// family it was exported from and that byte is covered by the CRC.
+Parsed parse(const uint8_t* data, size_t len, GameType target);
+
 } // namespace CardPayload

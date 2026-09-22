@@ -111,6 +111,7 @@ void UI::shutdown() {
     freeGameIcons();
     account_.freeTextures();
     freeSprites();
+    freeCardPreview();
     if (fontLarge_) TTF_CloseFont(fontLarge_);
     if (fontSmall_) TTF_CloseFont(fontSmall_);
     if (font_) TTF_CloseFont(font_);
@@ -556,6 +557,15 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
         // Screen transition always triggers redraw
         if (screen_ != screenBefore)
             markDirty();
+        // The card browser reads the highlighted card once the cursor settles.
+        // This has to tick from the loop: markDirty() called from inside a draw
+        // would be cleared again by the dirty_ = false below.
+        if (showCardList_) {
+            int previewBefore = cardPreviewIdx_;
+            updateCardPreview();
+            if (cardPreviewIdx_ != previewBefore)
+                markDirty();
+        }
         // If a popup just activated, skip drawing here — the popup branch
         // will handle it next iteration with dirty_ still set.
         if (dirty_ && !showAbout_ && !showThemeSelector_ && !showLanguageSelector_) {

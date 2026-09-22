@@ -114,7 +114,7 @@
     "more_ribbons": "+{0}件...",
     "ivs": "個体値",
     "evs": "努力値",
-    "detail_footer": "L/R：前/次   A：逃がす   X：エクスポート   Y：PNG   B：閉じる",
+    "detail_footer": "L/R：前/次   A：逃がす   X：.pkを出力   Y：PNGカードを出力   B：閉じる",
 
     "menu_title": "メニュー",
     "menu_theme": "テーマ",

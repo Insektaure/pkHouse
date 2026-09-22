@@ -115,7 +115,7 @@
     "more_ribbons": "+{0} weitere...",
     "ivs": "DVs",
     "evs": "FP",
-    "detail_footer": "L/R: Vor/Zurueck   A: Freilassen   X: Exportieren   Y: PNG   B: Schliessen",
+    "detail_footer": "L/R: Vor/Zurueck   A: Freilassen   X: .pk exportieren   Y: PNG-Karte exportieren   B: Schliessen",
 
     "menu_title": "Menue",
     "menu_theme": "Design",

@@ -479,8 +479,8 @@ When switching banks, the selector appears on the side being switched while the 
 | ZL / ZR | Box view (save / bank) |
 | A | Pick up / Place Pokemon |
 | B | Cancel / Return held Pokemon |
-| Y | Toggle multi-select / Save Pokemon card as PNG (in detail view) |
-| X | View Pokemon details / Delete held Pokemon / Export (in detail view) |
+| Y | Toggle multi-select / Export PNG card (in detail view) |
+| X | View Pokemon details / Delete held Pokemon / Export .pk (in detail view) |
 | + | Open menu |
 | - | About |
 

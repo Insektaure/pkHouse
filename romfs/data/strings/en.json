@@ -135,7 +135,7 @@
     "more_ribbons": "+{0} more...",
     "ivs": "IVs",
     "evs": "EVs",
-    "detail_footer": "L/R: Prev/Next   A: Release   X: Export   Y: PNG   B: Close",
+    "detail_footer": "L/R: Prev/Next   A: Release   X: Export .pk   Y: Export PNG Card   B: Close",
 
     "menu_title": "Menu",
     "menu_theme": "Theme",

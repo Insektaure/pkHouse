@@ -114,7 +114,7 @@
     "more_ribbons": "+{0}개 더...",
     "ivs": "개체값",
     "evs": "노력치",
-    "detail_footer": "L/R: 이전/다음   A: 놓아주기   X: 내보내기   Y: PNG   B: 닫기",
+    "detail_footer": "L/R: 이전/다음   A: 놓아주기   X: .pk 내보내기   Y: PNG 카드 내보내기   B: 닫기",
 
     "menu_title": "메뉴",
     "menu_theme": "테마",

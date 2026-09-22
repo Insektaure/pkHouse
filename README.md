@@ -551,29 +551,52 @@ Place `pkHouse.nro` on your Switch SD card (`sdmc:/switch/pkHouse/`) and launch 
 
 ## Screenshots
 
-<div align="center">
-    <img src="screenshots/001.jpg">
-    <img src="screenshots/002.jpg">
-    <img src="screenshots/003.jpg">
-    <img src="screenshots/004.jpg">
-    <img src="screenshots/005.jpg">
-    <img src="screenshots/006.jpg">
-    <img src="screenshots/007.jpg">
-    <img src="screenshots/008.jpg">
-    <img src="screenshots/009.jpg">
-    <img src="screenshots/010.jpg">
-    <img src="screenshots/011.jpg">
-    <img src="screenshots/011_1.jpg">
-    <img src="screenshots/011_2.jpg">
-    <img src="screenshots/012.jpg">
-    <img src="screenshots/013.jpg">
-    <img src="screenshots/013_1.jpg">
-    <img src="screenshots/013_1_1.jpg">
-    <img src="screenshots/013_1_2.jpg">
-    <img src="screenshots/013_2.jpg">
-    <img src="screenshots/013_3.jpg">
-    <img src="screenshots/014.jpg">
-</div>
+### Getting in
+
+|  |  |
+|:--:|:--:|
+| <img src="screenshots/001.jpg" width="420"> | <img src="screenshots/002.jpg" width="420"> |
+| Splash screen | Profile selector |
+| <img src="screenshots/003.jpg" width="420"> | <img src="screenshots/004.jpg" width="420"> |
+| Game selector, dual bank mode | Bank selector, before any bank exists |
+
+### Moving Pokemon
+
+|  |  |
+|:--:|:--:|
+| <img src="screenshots/005.jpg" width="420"> | <img src="screenshots/006.jpg" width="420"> |
+| A bank, freshly created | Save on the left, bank on the right |
+| <img src="screenshots/007.jpg" width="420"> | <img src="screenshots/008.jpg" width="420"> |
+| Holding a Pokemon | Placed into the bank |
+| <img src="screenshots/009.jpg" width="420"> | <img src="screenshots/010.jpg" width="420"> |
+| Multi-select, numbered in pick-up order | Holding all five |
+
+### Browsing boxes
+
+|  |  |
+|:--:|:--:|
+| <img src="screenshots/011.jpg" width="420"> | <img src="screenshots/011_1.jpg" width="420"> |
+| The group placed in one go | Save box overview, with a preview of the highlighted box |
+| <img src="screenshots/011_2.jpg" width="420"> | <img src="screenshots/012.jpg" width="420"> |
+| Bank box overview | Pokemon details, with IV and EV charts |
+
+### Search and wondercards
+
+|  |  |
+|:--:|:--:|
+| <img src="screenshots/013_1.jpg" width="420"> | <img src="screenshots/013_1_1.jpg" width="420"> |
+| Search filter | Species picker, by letter |
+| <img src="screenshots/013_1_2.jpg" width="420"> | <img src="screenshots/013_2.jpg" width="420"> |
+| Species picker, with sprites | Matches highlighted in the grid |
+| <img src="screenshots/013_3.jpg" width="420"> | <img src="screenshots/013.jpg" width="420"> |
+| Wondercard list | Menu, in dual bank mode |
+
+### About, and an exported card
+
+|  |  |
+|:--:|:--:|
+| <img src="screenshots/014.jpg" width="420"> | <img src="screenshots/015.png" width="420"> |
+| About | A card exported from the detail view |
 
 ## Credits
 

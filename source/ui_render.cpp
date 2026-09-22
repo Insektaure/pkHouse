@@ -90,6 +90,7 @@ void UI::freeSprites() {
     if (iconShiny_)      { SDL_DestroyTexture(iconShiny_);      iconShiny_ = nullptr; }
     if (iconAlpha_)      { SDL_DestroyTexture(iconAlpha_);      iconAlpha_ = nullptr; }
     if (iconShinyAlpha_) { SDL_DestroyTexture(iconShinyAlpha_); iconShinyAlpha_ = nullptr; }
+    if (iconDynamax_)    { SDL_DestroyTexture(iconDynamax_);    iconDynamax_ = nullptr; }
     if (iconBoxFull_)     { SDL_DestroyTexture(iconBoxFull_);     iconBoxFull_ = nullptr; }
     if (iconBoxEmpty_)    { SDL_DestroyTexture(iconBoxEmpty_);    iconBoxEmpty_ = nullptr; }
     if (iconBoxNonEmpty_) { SDL_DestroyTexture(iconBoxNonEmpty_); iconBoxNonEmpty_ = nullptr; }

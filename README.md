@@ -371,8 +371,10 @@ The card shows, at a glance:
 - Ribbons and marks
 - A QR code carrying the entire Pokemon
 
-The card uses its own fixed light design rather than the app theme, so an exported card looks the same
-wherever it ends up shared.
+The card is painted in the app's **Default** theme colours, so it looks like the app it came from. That
+palette is fixed rather than following whichever theme is active: a card gets shared, and it should look
+the same wherever it lands. The QR tile is the one exception — it keeps a white ground and black modules
+whatever the rest of the card is painted in, because scanners need real black on real white.
 
 > **Note:** Only the public Trainer ID is printed on the card. The secret ID is deliberately left off,
 > since it would let anyone who sees the card work out the trainer's shiny frames. It is still present

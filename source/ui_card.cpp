@@ -63,22 +63,32 @@ constexpr int ATTR_W   = COL_W / ATTR_COLS;
 constexpr int FOOTER_RULE_Y = 601;
 
 // --- Palette -----------------------------------------------------------------
+//
+// Taken from the app's Default theme (see theme.cpp) so a card looks like the
+// app it came from. It stays a fixed set rather than following the active
+// theme: a card is shared, and it should look the same wherever it lands.
 
-constexpr SDL_Color C_BG        = {255, 255, 255, 255};
-constexpr SDL_Color C_ACCENT    = {228,   0,  43, 255};
-constexpr SDL_Color C_GOLD      = {193, 141,   0, 255};
-constexpr SDL_Color C_GOLD_BG   = {252, 246, 224, 255};
-constexpr SDL_Color C_TEXT      = { 27,  36,  48, 255};
-constexpr SDL_Color C_DIM       = {107, 122, 141, 255};
-constexpr SDL_Color C_LABEL     = {132, 148, 166, 255};
-constexpr SDL_Color C_PANEL     = {247, 249, 251, 255};
-constexpr SDL_Color C_BORDER    = {227, 232, 238, 255};
-constexpr SDL_Color C_RULE      = {232, 236, 239, 255};
-constexpr SDL_Color C_TEAL      = { 17, 125, 111, 255};
-constexpr SDL_Color C_TRACK     = {237, 241, 244, 255};
-constexpr SDL_Color C_DEXNUM    = {214, 222, 231, 255};
-constexpr SDL_Color C_MALE      = { 56, 132, 255, 255};
-constexpr SDL_Color C_FEMALE    = {232,  76, 122, 255};
+constexpr SDL_Color C_BG        = { 30,  30,  40, 255};  // theme bg
+constexpr SDL_Color C_PANEL     = { 45,  45,  60, 255};  // theme panelBg
+constexpr SDL_Color C_BORDER    = { 58,  58,  78, 255};
+constexpr SDL_Color C_RULE      = { 58,  58,  78, 255};
+constexpr SDL_Color C_TRACK     = { 57,  57,  76, 255};
+constexpr SDL_Color C_TEXT      = {240, 240, 240, 255};  // theme text
+constexpr SDL_Color C_DIM       = {160, 160, 170, 255};  // theme textDim
+constexpr SDL_Color C_LABEL     = {148, 148, 173, 255};  // 4.6:1 on C_PANEL
+constexpr SDL_Color C_ACCENT    = {255, 220,  50, 255};  // theme cursor
+constexpr SDL_Color C_GOLD      = {255, 215,   0, 255};  // theme shiny
+constexpr SDL_Color C_GOLD_BG   = { 77,  71,  51, 255};  // gold at 15% over C_PANEL
+constexpr SDL_Color C_TEAL      = {100, 200, 220, 255};  // theme selected
+constexpr SDL_Color C_WARN      = {220, 120, 120, 255};  // theme red, lifted for 4.5:1
+constexpr SDL_Color C_DEXNUM    = { 63,  63,  85, 255};
+constexpr SDL_Color C_MALE      = {100, 150, 255, 255};  // theme genderMale
+constexpr SDL_Color C_FEMALE    = {255, 130, 150, 255};  // theme genderFemale
+
+// The QR tile is deliberately outside the palette. Scanners need real black on
+// real white with a quiet zone, so it keeps its own ground whatever the rest of
+// the card is painted in.
+constexpr SDL_Color C_QR_BG     = {255, 255, 255, 255};
 
 // Standard type colours, indexed by the modern type IDs used in move_types.h.
 constexpr SDL_Color TYPE_COLORS[18] = {
@@ -441,15 +451,21 @@ void UI::drawCardPortrait(const Pokemon& pkm, const CardFonts& f) {
     const int spriteX   = hasQr ? PANEL_X + PANEL_PAD
                                 : PANEL_X + (PANEL_W - spriteBox) / 2;
 
-    // Status badges: shiny, alpha, Gigantamax, egg.
-    struct Badge { bool active; SDL_Texture* icon; const char* glyph; };
+    // Status badges: shiny, alpha, Gigantamax, egg. The first two are flat mask
+    // icons that take the badge's tint. The other two are real artwork, drawn
+    // in their own colours when set and only tinted down when they are not;
+    // neither is square, so both are fitted rather than dropped into the
+    // icons' box.
+    struct Badge { bool active; SDL_Texture* icon; const char* glyph; bool artwork; };
+    // The glyph is the fallback for a texture that failed to load, so a missing
+    // romfs file leaves the row legible rather than blank.
     const Badge badges[4] = {
-        {pkm.isShiny(),        iconShiny_, nullptr},
-        {pkm.isAlpha(),        iconAlpha_, nullptr},
-        {pkm.canGigantamax(),  nullptr,    "G"},
-        {egg,                  nullptr,    "E"},
+        {pkm.isShiny(),        iconShiny_,    "S", false},
+        {pkm.isAlpha(),        iconAlpha_,    "A", false},
+        {pkm.canGigantamax(),  iconDynamax_,  "G", true },
+        {egg,                  getSprite(0),  "E", true },
     };
-    constexpr SDL_Color C_BADGE_OFF = {205, 213, 222, 255};
+    constexpr SDL_Color C_BADGE_OFF = {120, 120, 144, 255};
     for (int i = 0; i < 4; i++) {
         int bx = PANEL_X + PANEL_PAD + i * 48;
         int by = PANEL_Y + 18;
@@ -458,9 +474,15 @@ void UI::drawCardPortrait(const Pokemon& pkm, const CardFonts& f) {
                   on ? C_GOLD_BG : C_BG, on ? C_GOLD : C_BORDER);
         SDL_Color tint = on ? C_GOLD : C_BADGE_OFF;
         if (badges[i].icon) {
-            SDL_SetTextureColorMod(badges[i].icon, tint.r, tint.g, tint.b);
-            SDL_Rect dst = {bx + 10, by + 10, 20, 20};
-            SDL_RenderCopy(r, badges[i].icon, nullptr, &dst);
+            const bool keepColours = badges[i].artwork && on;
+            if (!keepColours)
+                SDL_SetTextureColorMod(badges[i].icon, tint.r, tint.g, tint.b);
+            if (badges[i].artwork) {
+                blitFit(r, badges[i].icon, bx + 5, by + 5, 30, 30);
+            } else {
+                SDL_Rect dst = {bx + 10, by + 10, 20, 20};
+                SDL_RenderCopy(r, badges[i].icon, nullptr, &dst);
+            }
             SDL_SetTextureColorMod(badges[i].icon, 255, 255, 255);
         } else if (badges[i].glyph) {
             drawTx(r, f.value, badges[i].glyph, bx + 20, by + 7, tint, AlignC);
@@ -482,7 +504,7 @@ void UI::drawCardPortrait(const Pokemon& pkm, const CardFonts& f) {
     // QR code, on its own pure white tile so the quiet zone really is white.
     if (hasQr) {
         const int qx = PANEL_X + PANEL_W - PANEL_PAD - QR_BOX;
-        panelRect(r, qx, CONTENT_Y, QR_BOX, QR_BOX, 10, C_BG, C_BORDER);
+        panelRect(r, qx, CONTENT_Y, QR_BOX, QR_BOX, 10, C_QR_BG, C_BORDER);
         drawQr(r, qrcode, qx, CONTENT_Y, QR_BOX);
         const int capRight = PANEL_X + PANEL_W - PANEL_PAD;
         drawTracked(r, f.micro, "POKEMON DATA",
@@ -598,14 +620,26 @@ void UI::drawCardMoves(const Pokemon& pkm, const CardFonts& f) {
         int y = ROW_Y[i / 2];
         panelRect(r, x, y, MOVE_W, MOVE_H, 10, C_PANEL, C_BORDER);
 
+        constexpr int ICON = 24;
+        constexpr int NAME_X = 10 + ICON + 8;
+
         if (moves[i] == 0) {
-            drawTx(r, f.move, "---", x + 36, y + 9, C_DIM);
+            drawTx(r, f.move, "---", x + NAME_X, y + 9, C_DIM);
             continue;
         }
         uint8_t type = getMoveType(moves[i], selectedGame_);
-        if (type < 18)
-            fillCircle(r, x + 18, y + MOVE_H / 2, 9, TYPE_COLORS[type]);
-        drawTx(r, f.move, MoveName::get(moves[i]), x + 36, y + 9, C_TEXT);
+
+        // The same type icons the detail view uses; the coloured dot stays as a
+        // fallback so a missing icon still marks the move's type.
+        SDL_Texture* typeTex = (type < 18) ? getTypeSprite(type) : nullptr;
+        if (typeTex) {
+            SDL_Rect dst = {x + 10, y + (MOVE_H - ICON) / 2, ICON, ICON};
+            SDL_RenderCopy(r, typeTex, nullptr, &dst);
+        } else if (type < 18) {
+            fillCircle(r, x + 10 + ICON / 2, y + MOVE_H / 2, 9, TYPE_COLORS[type]);
+        }
+
+        drawTx(r, f.move, MoveName::get(moves[i]), x + NAME_X, y + 9, C_TEXT);
         if (type < 18)
             drawTx(r, f.micro, TYPE_NAMES[type], x + MOVE_W - 14, y + 14, C_LABEL, AlignR);
     }
@@ -726,7 +760,7 @@ void UI::drawCardEVs(const Pokemon& pkm, const CardFonts& f) {
 
     drawTracked(r, f.micro, "EVS", EV_X, 357, C_LABEL);
     drawTx(r, f.small, std::to_string(total) + " / 510", MARGIN_R, 353,
-           total > 510 ? C_ACCENT : C_DIM, AlignR);
+           total > 510 ? C_WARN : C_DIM, AlignR);
 
     for (int i = 0; i < 6; i++) {
         int y = ROW_Y + i * ROW_STEP;

@@ -145,6 +145,7 @@ private:
     SDL_Texture* iconShiny_      = nullptr;
     SDL_Texture* iconAlpha_      = nullptr;
     SDL_Texture* iconShinyAlpha_ = nullptr;
+    SDL_Texture* iconDynamax_    = nullptr;
 
     // Box-state icons for the ZL/ZR all-boxes overview
     SDL_Texture* iconBoxFull_     = nullptr;

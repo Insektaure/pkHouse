@@ -285,6 +285,15 @@ bool UI::showCardImportConfirm(const Pokemon& pkm) {
 // --- Input -------------------------------------------------------------------
 
 void UI::handleCardListInput(const SDL_Event& event) {
+    if (event.type == SDL_CONTROLLERAXISMOTION) {
+        if (event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX ||
+            event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY) {
+            int16_t lx = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTX);
+            int16_t ly = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTY);
+            updateStick(lx, ly);
+        }
+        return;
+    }
     if (event.type != SDL_CONTROLLERBUTTONDOWN)
         return;
 

@@ -601,7 +601,8 @@ void UI::drawCardPortrait(const Pokemon& pkm, const CardFonts& f) {
             if (SDL_Texture* tex = getTypeSprite(t))
                 blitCircular(r, tex, cx + 6 + CHIP_ICON / 2, cy + CHIP_H / 2,
                              CHIP_ICON / 2, C_BG);
-            drawTx(r, f.micro, label, cx + CHIP_TEXT_X, cy + (CHIP_H - 14) / 2, C_TEXT);
+            drawTx(r, f.micro, label, cx + CHIP_TEXT_X,
+                   cy + (CHIP_H - TTF_FontHeight(f.micro)) / 2, C_TEXT);
             if (hasQr) { cy += CHIP_H + 6; chipsBottom = cy; }
             else       { cx += chipW + 10; }
         }
@@ -714,8 +715,14 @@ void UI::drawCardMoves(const Pokemon& pkm, const CardFonts& f) {
         constexpr int ICON = 24;
         constexpr int NAME_X = 10 + ICON + 8;
 
+        // Centre each run of text on the row from its own font metrics rather
+        // than a guessed offset, so the name, the type label and the icon all
+        // share one axis.
+        const int nameY = y + (MOVE_H - TTF_FontHeight(f.move)) / 2;
+        const int typeY = y + (MOVE_H - TTF_FontHeight(f.micro)) / 2;
+
         if (moves[i] == 0) {
-            drawTx(r, f.move, "---", x + NAME_X, y + 9, C_DIM);
+            drawTx(r, f.move, "---", x + NAME_X, nameY, C_DIM);
             continue;
         }
         uint8_t type = getMoveType(moves[i], selectedGame_);
@@ -730,9 +737,9 @@ void UI::drawCardMoves(const Pokemon& pkm, const CardFonts& f) {
 
         const int typeW = (type < 18) ? textW(f.micro, TYPE_NAMES[type]) + 10 : 0;
         drawTxWithin(r, {f.move, f.body, f.small}, MoveName::get(moves[i]),
-                     x + NAME_X, y + 9, MOVE_W - 14 - NAME_X - typeW, C_TEXT);
+                     x + NAME_X, nameY, MOVE_W - 14 - NAME_X - typeW, C_TEXT);
         if (type < 18)
-            drawTx(r, f.micro, TYPE_NAMES[type], x + MOVE_W - 14, y + 14, C_LABEL, AlignR);
+            drawTx(r, f.micro, TYPE_NAMES[type], x + MOVE_W - 14, typeY, C_LABEL, AlignR);
     }
 }
 

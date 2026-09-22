@@ -1,8 +1,9 @@
 // Shareable Pokemon card renderer.
 //
 // Draws a fixed 1280x720 card into an offscreen render target and writes it to
-// <basePath>/cards/ as a PNG. The card deliberately does not follow the app
-// theme: an exported card should look the same wherever it ends up shared.
+// <basePath>/cards/<GameFamily>/ as a PNG. The card deliberately does not
+// follow the app theme: an exported card should look the same wherever it
+// ends up shared.
 
 #include "ui.h"
 #include "species_converter.h"
@@ -871,11 +872,16 @@ std::string UI::exportPokemonCard(const Pokemon& pkm) {
             c = '_';
     }
 
+    // One folder per game family, matching banks/, export/ and wondercards/.
+    // The importer leans on this: a card can only ever be listed for the family
+    // it belongs to.
     std::string dir = basePath_ + "cards/";
+    std::string gameDir = dir + bankFolderNameOf(selectedGame_) + "/";
     mkdir(dir.c_str(), 0755);
+    mkdir(gameDir.c_str(), 0755);
 
     ledBlink();
-    bool ok = IMG_SavePNG(surf, (dir + filename).c_str()) == 0;
+    bool ok = IMG_SavePNG(surf, (gameDir + filename).c_str()) == 0;
     SDL_FreeSurface(surf);
     ledOff();
 

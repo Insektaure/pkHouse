@@ -300,7 +300,7 @@ Save any Pokemon as a shareable 1280x720 PNG. Open the **detail view** (X) and p
 Cards are written to:
 
 ```
-cards/<Species> - <GameTag> - [flags] - <EC>.png
+cards/<GameFamily>/<Species> - <GameTag> - [flags] - <EC>.png
 ```
 
 The card shows, at a glance:
@@ -348,6 +348,9 @@ quiet zone for every supported game.
 Encoding uses [qrcodegen](https://www.nayuki.io/page/qr-code-generator-library) by Project Nayuki (MIT),
 vendored as `source/qrcodegen.c` and `include/qrcodegen.h`. The payload format lives in
 `include/card_payload.h`.
+
+Cards are filed per game family, using the same folder names as `banks/`, `export/` and `wondercards/`,
+so a card can only ever belong to the family it was exported from.
 
 If encoding ever fails, the card is still written: the sprite simply takes the whole panel instead of
 sharing it with the code.

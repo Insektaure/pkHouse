@@ -19,6 +19,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <initializer_list>
 #include <string>
 #include <vector>
 #include <sys/stat.h>
@@ -89,16 +90,6 @@ constexpr SDL_Color C_FEMALE    = {255, 130, 150, 255};  // theme genderFemale
 // real white with a quiet zone, so it keeps its own ground whatever the rest of
 // the card is painted in.
 constexpr SDL_Color C_QR_BG     = {255, 255, 255, 255};
-
-// Standard type colours, indexed by the modern type IDs used in move_types.h.
-constexpr SDL_Color TYPE_COLORS[18] = {
-    {168, 167, 122, 255}, {194,  46,  40, 255}, {169, 143, 243, 255},
-    {163,  62, 161, 255}, {226, 191, 101, 255}, {182, 161,  54, 255},
-    {166, 185,  26, 255}, {115,  87, 151, 255}, {183, 183, 206, 255},
-    {238, 129,  48, 255}, { 99, 144, 240, 255}, {122, 199,  76, 255},
-    {247, 208,  44, 255}, {249,  85, 135, 255}, {150, 217, 214, 255},
-    {111,  53, 252, 255}, {112,  87,  70, 255}, {214, 133, 173, 255},
-};
 
 constexpr const char* TYPE_NAMES[18] = {
     "NORMAL", "FIGHTING", "FLYING", "POISON", "GROUND", "ROCK",
@@ -234,6 +225,46 @@ void drawTxFit(SDL_Renderer* r, TTF_Font* f, const std::string& s,
     SDL_DestroyTexture(tex);
 }
 
+// Draws text at (x, y) constrained to maxW. Steps down the font ladder until
+// the string fits, and only if even the smallest is too wide does it squeeze
+// the rendered text. Ability, item and move names run long enough to collide
+// with the next column otherwise.
+void drawTxWithin(SDL_Renderer* r, const std::initializer_list<TTF_Font*>& ladder,
+                  const std::string& s, int x, int y, int maxW, SDL_Color c) {
+    if (s.empty() || ladder.size() == 0) return;
+
+    TTF_Font* ref = *ladder.begin();
+    TTF_Font* use = nullptr;
+    for (TTF_Font* f : ladder) {
+        if (!f) continue;
+        use = f;
+        if (textW(f, s) <= maxW) break;
+    }
+    if (!use) return;
+
+    // Keep a smaller size optically centred on the row the full size would fill.
+    const int dy = ref ? (TTF_FontHeight(ref) - TTF_FontHeight(use)) / 2 : 0;
+
+    if (textW(use, s) <= maxW) {
+        drawTx(r, use, s, x, y + dy, c);
+        return;
+    }
+
+    SDL_Surface* surf = TTF_RenderUTF8_Blended(use, s.c_str(), c);
+    if (!surf) return;
+    int w = surf->w, h = surf->h;
+    if (w > maxW && w > 0) {
+        h = h * maxW / w;
+        w = maxW;
+    }
+    SDL_Texture* tex = SDL_CreateTextureFromSurface(r, surf);
+    SDL_FreeSurface(surf);
+    if (!tex) return;
+    SDL_Rect dst = {x, y + dy + (TTF_FontHeight(use) - h) / 2, w, h};
+    SDL_RenderCopy(r, tex, nullptr, &dst);
+    SDL_DestroyTexture(tex);
+}
+
 // Width of a string once letter spacing is applied, matching drawTracked.
 int trackedW(TTF_Font* f, const std::string& s, int track = 1) {
     int w = 0;
@@ -255,6 +286,29 @@ void drawTracked(SDL_Renderer* r, TTF_Font* f, const std::string& s,
             drawTx(r, f, buf, x, y, c);
         x += textW(f, buf) + track;
     }
+}
+
+// Blits a square icon as a disc. SDL has no circular clip, so the corners
+// outside the circle are painted back in the known background colour, which
+// works because every place this is used sits on a flat opaque fill. The type
+// icons are full-bleed squares, and every glyph on them stays inside 88% of the
+// radius, so nothing meaningful is cropped.
+void blitCircular(SDL_Renderer* r, SDL_Texture* tex, int cx, int cy, int rad, SDL_Color bg) {
+    if (!tex || rad <= 0) return;
+
+    SDL_Rect dst = {cx - rad, cy - rad, rad * 2, rad * 2};
+    SDL_RenderCopy(r, tex, nullptr, &dst);
+
+    SDL_SetRenderDrawBlendMode(r, SDL_BLENDMODE_NONE);
+    SDL_SetRenderDrawColor(r, bg.r, bg.g, bg.b, 255);
+    for (int dy = -rad; dy < rad; dy++) {
+        const int dx = static_cast<int>(std::sqrt(static_cast<double>(rad * rad - dy * dy)));
+        if (dx >= rad) continue;
+        const int y = cy + dy;
+        SDL_RenderDrawLine(r, cx - rad, y, cx - dx - 1, y);
+        SDL_RenderDrawLine(r, cx + dx, y, cx + rad - 1, y);
+    }
+    SDL_SetRenderDrawBlendMode(r, SDL_BLENDMODE_BLEND);
 }
 
 // Scales a texture to fit inside a box, preserving aspect ratio.
@@ -512,9 +566,14 @@ void UI::drawCardPortrait(const Pokemon& pkm, const CardFonts& f) {
                     CONTENT_Y + QR_BOX + 6, C_LABEL);
     }
 
-    // Type chips: stacked under the sprite when the QR shares the panel,
-    // side by side when the sprite has it to itself.
-    int chipsBottom = hasQr ? CONTENT_Y + spriteBox + 14 : PANEL_Y + PANEL_H - 44;
+    // Type chips carry the game's own icon rather than a colour dot: a white
+    // glyph on a coloured disc reads on any ground, which several of the darker
+    // types do not as a bare dot.
+    constexpr int CHIP_H = 28;
+    constexpr int CHIP_ICON = 20;
+    constexpr int CHIP_TEXT_X = 6 + CHIP_ICON + 8;
+
+    int chipsBottom = hasQr ? CONTENT_Y + spriteBox + 14 : PANEL_Y + PANEL_H - 46;
     if (!egg) {
         SpeciesTypes::Pair types = SpeciesTypes::get(selectedGame_, species, pkm.form());
         int cx = spriteX;
@@ -522,11 +581,13 @@ void UI::drawCardPortrait(const Pokemon& pkm, const CardFonts& f) {
         for (uint8_t t : {types.t1, types.t2}) {
             if (t >= 18) continue;
             const char* label = TYPE_NAMES[t];
-            int chipW = 28 + textW(f.micro, label) + 14;
-            panelRect(r, cx, cy, chipW, 26, 13, C_BG, C_BORDER);
-            fillCircle(r, cx + 16, cy + 13, 5, TYPE_COLORS[t]);
-            drawTx(r, f.micro, label, cx + 28, cy + 8, C_TEXT);
-            if (hasQr) { cy += 32; chipsBottom = cy; }
+            int chipW = CHIP_TEXT_X + textW(f.micro, label) + 14;
+            panelRect(r, cx, cy, chipW, CHIP_H, CHIP_H / 2, C_BG, C_BORDER);
+            if (SDL_Texture* tex = getTypeSprite(t))
+                blitCircular(r, tex, cx + 6 + CHIP_ICON / 2, cy + CHIP_H / 2,
+                             CHIP_ICON / 2, C_BG);
+            drawTx(r, f.micro, label, cx + CHIP_TEXT_X, cy + (CHIP_H - 14) / 2, C_TEXT);
+            if (hasQr) { cy += CHIP_H + 6; chipsBottom = cy; }
             else       { cx += chipW + 10; }
         }
     }
@@ -566,11 +627,23 @@ void UI::drawCardAttributes(const Pokemon& pkm, const CardFonts& f) {
         return x;
     };
 
+    // Room a value has before it reaches the next column. Call this after
+    // column(), which has already advanced `col` to the following one, so `col`
+    // is the boundary. The last column runs to the margin instead; `indent` is
+    // what an icon or swatch takes before the text starts.
+    auto room = [&](int x, int indent) {
+        int limit = (col >= ATTR_COLS) ? MARGIN_R : COL_X + col * ATTR_W - 8;
+        return limit - (x + indent);
+    };
+
+    // Ability, item and move names can be far wider than a column.
+    const std::initializer_list<TTF_Font*> ladder = {f.value, f.move, f.body, f.small};
+
     // Nature, with the stat it raises and lowers underneath.
     {
         int x = column("NATURE");
         uint8_t nature = pkm.nature();
-        drawTx(r, f.value, NatureName::get(nature), x, VALUE_Y, C_TEXT);
+        drawTxWithin(r, ladder, NatureName::get(nature), x, VALUE_Y, room(x, 0), C_TEXT);
         int up = nature / 5, down = nature % 5;
         if (up != down) {
             std::string mod = std::string("+") + NATURE_STATS[up] + " -" + NATURE_STATS[down];
@@ -581,7 +654,8 @@ void UI::drawCardAttributes(const Pokemon& pkm, const CardFonts& f) {
     // Ability
     {
         int x = column("ABILITY");
-        drawTx(r, f.value, AbilityName::get(pkm.ability()), x, VALUE_Y, C_TEXT);
+        drawTxWithin(r, ladder, AbilityName::get(pkm.ability()), x, VALUE_Y,
+                     room(x, 0), C_TEXT);
     }
 
     // Held item
@@ -589,20 +663,22 @@ void UI::drawCardAttributes(const Pokemon& pkm, const CardFonts& f) {
         int x = column("HELD ITEM");
         uint16_t item = pkm.heldItem();
         panelRect(r, x, VALUE_Y + 3, 20, 20, 6, C_BG, C_BORDER);
-        drawTx(r, f.value, item != 0 ? ItemName::get(item) : "---",
-               x + 28, VALUE_Y, item != 0 ? C_TEXT : C_DIM);
+        drawTxWithin(r, ladder, item != 0 ? ItemName::get(item) : "---",
+                     x + 28, VALUE_Y, room(x, 28), item != 0 ? C_TEXT : C_DIM);
     }
 
     // Tera type: Scarlet/Violet only; the byte means something else elsewhere.
     uint8_t tera = pkm.teraType();
     if (tera <= 17) {
         int x = column("TERA TYPE");
-        fillCircle(r, x + 10, VALUE_Y + 13, 10, TYPE_COLORS[tera]);
-        drawTx(r, f.value, TYPE_NAMES[tera], x + 28, VALUE_Y, C_TEXT);
+        if (SDL_Texture* tex = getTypeSprite(tera))
+            blitCircular(r, tex, x + 11, VALUE_Y + 13, 11, C_BG);
+        drawTxWithin(r, ladder, TYPE_NAMES[tera], x + 28, VALUE_Y, room(x, 28), C_TEXT);
     } else if (tera == Pokemon::TERA_STELLAR) {
         int x = column("TERA TYPE");
-        fillCircle(r, x + 10, VALUE_Y + 13, 10, C_TEAL);
-        drawTx(r, f.value, "STELLAR", x + 28, VALUE_Y, C_TEXT);
+        if (SDL_Texture* tex = getTypeSprite(Pokemon::TERA_STELLAR))
+            blitCircular(r, tex, x + 11, VALUE_Y + 13, 11, C_BG);
+        drawTxWithin(r, ladder, "STELLAR", x + 28, VALUE_Y, room(x, 28), C_TEXT);
     }
 }
 
@@ -631,15 +707,14 @@ void UI::drawCardMoves(const Pokemon& pkm, const CardFonts& f) {
 
         // The same type icons the detail view uses; the coloured dot stays as a
         // fallback so a missing icon still marks the move's type.
-        SDL_Texture* typeTex = (type < 18) ? getTypeSprite(type) : nullptr;
-        if (typeTex) {
-            SDL_Rect dst = {x + 10, y + (MOVE_H - ICON) / 2, ICON, ICON};
-            SDL_RenderCopy(r, typeTex, nullptr, &dst);
-        } else if (type < 18) {
-            fillCircle(r, x + 10 + ICON / 2, y + MOVE_H / 2, 9, TYPE_COLORS[type]);
+        if (type < 18) {
+            if (SDL_Texture* typeTex = getTypeSprite(type))
+                blitCircular(r, typeTex, x + 10 + ICON / 2, y + MOVE_H / 2, ICON / 2, C_PANEL);
         }
 
-        drawTx(r, f.move, MoveName::get(moves[i]), x + NAME_X, y + 9, C_TEXT);
+        const int typeW = (type < 18) ? textW(f.micro, TYPE_NAMES[type]) + 10 : 0;
+        drawTxWithin(r, {f.move, f.body, f.small}, MoveName::get(moves[i]),
+                     x + NAME_X, y + 9, MOVE_W - 14 - NAME_X - typeW, C_TEXT);
         if (type < 18)
             drawTx(r, f.micro, TYPE_NAMES[type], x + MOVE_W - 14, y + 14, C_LABEL, AlignR);
     }

@@ -491,10 +491,6 @@ private:
     std::string exportPokemon(const Pokemon& pkm);
 
     // --- Card export (source/ui_card.cpp) ---
-    // Renders a 1280x720 shareable card and writes it to <basePath>/cards/.
-    // Returns the filename written, or "" on failure.
-    std::string exportPokemonCard(const Pokemon& pkm);
-    std::string renderPokemonCard(const Pokemon& pkm, const CardFonts& fonts);
 
     // Font sizes used only by the card; opened per export and closed again.
     struct CardFonts {
@@ -508,6 +504,13 @@ private:
         TTF_Font* micro     = nullptr;
         TTF_Font* watermark = nullptr;
     };
+
+    // Renders a 1280x720 shareable card and writes it to <basePath>/cards/.
+    // Returns the filename written, or "" on failure. exportPokemonCard owns
+    // the fonts; renderPokemonCard lets a batch open them once.
+    std::string exportPokemonCard(const Pokemon& pkm);
+    std::string renderPokemonCard(const Pokemon& pkm, const CardFonts& fonts);
+
     bool openCardFonts(CardFonts& f);
     void closeCardFonts(CardFonts& f);
     void drawCardHeader(const Pokemon& pkm, const CardFonts& f);

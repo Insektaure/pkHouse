@@ -288,27 +288,42 @@ void drawTracked(SDL_Renderer* r, TTF_Font* f, const std::string& s,
     }
 }
 
-// Blits a square icon as a disc. SDL has no circular clip, so the corners
-// outside the circle are painted back in the known background colour, which
-// works because every place this is used sits on a flat opaque fill. The type
-// icons are full-bleed squares, and every glyph on them stays inside 88% of the
-// radius, so nothing meaningful is cropped.
+// Blits a square icon as a disc. SDL has no circular clip, so the square is
+// masked by painting everything outside the circle back in the known background
+// colour, which works because every place this is used sits on a flat opaque
+// fill. The type icons are full-bleed squares whose glyphs all stay inside 88%
+// of the radius, so nothing meaningful is cropped.
+//
+// Pixels straddling the boundary are painted with partial alpha in proportion
+// to how much of them falls outside, which gives a smooth edge instead of a
+// stepped one. Coverage is measured from the distance to the centre rather than
+// per scanline, so the top and bottom of the disc are as clean as the sides.
+// The per-pixel loop is fine here: this runs once per card, not per frame.
 void blitCircular(SDL_Renderer* r, SDL_Texture* tex, int cx, int cy, int rad, SDL_Color bg) {
     if (!tex || rad <= 0) return;
 
     SDL_Rect dst = {cx - rad, cy - rad, rad * 2, rad * 2};
     SDL_RenderCopy(r, tex, nullptr, &dst);
 
-    SDL_SetRenderDrawBlendMode(r, SDL_BLENDMODE_NONE);
-    SDL_SetRenderDrawColor(r, bg.r, bg.g, bg.b, 255);
-    for (int dy = -rad; dy < rad; dy++) {
-        const int dx = static_cast<int>(std::sqrt(static_cast<double>(rad * rad - dy * dy)));
-        if (dx >= rad) continue;
-        const int y = cy + dy;
-        SDL_RenderDrawLine(r, cx - rad, y, cx - dx - 1, y);
-        SDL_RenderDrawLine(r, cx + dx, y, cx + rad - 1, y);
-    }
     SDL_SetRenderDrawBlendMode(r, SDL_BLENDMODE_BLEND);
+    for (int py = cy - rad; py < cy + rad; py++) {
+        const double dy = py + 0.5 - cy;
+        for (int px = cx - rad; px < cx + rad; px++) {
+            const double dx = px + 0.5 - cx;
+            const double dist = std::sqrt(dx * dx + dy * dy);
+
+            // 1 = wholly inside the disc, 0 = wholly outside, between = the
+            // fraction of the pixel the disc covers.
+            const double covered = rad + 0.5 - dist;
+            if (covered >= 1.0) continue;
+
+            const int alpha = (covered <= 0.0)
+                ? 255
+                : static_cast<int>((1.0 - covered) * 255.0 + 0.5);
+            SDL_SetRenderDrawColor(r, bg.r, bg.g, bg.b, static_cast<Uint8>(alpha));
+            SDL_RenderDrawPoint(r, px, py);
+        }
+    }
 }
 
 // Scales a texture to fit inside a box, preserving aspect ratio.
@@ -709,7 +724,8 @@ void UI::drawCardMoves(const Pokemon& pkm, const CardFonts& f) {
         // fallback so a missing icon still marks the move's type.
         if (type < 18) {
             if (SDL_Texture* typeTex = getTypeSprite(type))
-                blitCircular(r, typeTex, x + 10 + ICON / 2, y + MOVE_H / 2, ICON / 2, C_PANEL);
+                blitCircular(r, typeTex, x + 10 + ICON / 2, y + MOVE_H / 2,
+                             ICON / 2, C_PANEL);
         }
 
         const int typeW = (type < 18) ? textW(f.micro, TYPE_NAMES[type]) + 10 : 0;

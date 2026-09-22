@@ -44,16 +44,19 @@ struct PokemonOffsets {
     int heightScalar;     // u8 offset (LGPE size), -1 = N/A
     int weightScalar;     // u8 offset (LGPE size), -1 = N/A
     int htName;           // handling-trainer name, UTF16 offset, -1 = no HT (Gen3)
+    int metDate;          // met year byte; month = +1, day = +2. -1 = not stored (PK3)
+    int metLocation;      // u16 offset, -1 = special handling (PK3: u8 @0x45)
+    int version;          // origin game byte, -1 = special handling (PK3: Origins bits)
 };
 
 // Returns the offset table for a given game format.
 inline const PokemonOffsets& pokemonOffsetsFor(GameType g) {
-    //                              spec  held  pid   nat  fate fBit gend gShf form fShf ball  abi  aU8  ev    tid   sid   move  iv32  nick  ot    lvl   exp   alph aNZ  lang  fArg  gmax hSca wSca htName
-    static constexpr PokemonOffsets PK3 = {0x20, 0x22, 0x00, -1,  -1,  31,  -1,  0,   -1,  0,   -1,  -1,  false, 0x38, 0x04, 0x06, 0x2C, 0x48, -1,   -1,   -1,   0x24, -1,  false, 0x12, -1,   -1,   -1,  -1,  -1};
-    static constexpr PokemonOffsets PB7 = {0x08, 0x0A, 0x18, 0x1C, 0x1D, 0,  0x1D, 1,  0x1D, 3,  0xDC, 0x14, true, 0x1E, 0x0C, 0x0E, 0x5A, 0x74, 0x40, 0xB0, 0xEC, -1,   -1,  false, 0xE3, 0x3C, -1,   0x3A,0x3B, 0x78};
-    static constexpr PokemonOffsets PK8 = {0x08, 0x0A, 0x1C, 0x20, 0x22, 0,  0x22, 2,  0x24, 0,  0x124, 0x14, false, 0x26, 0x0C, 0x0E, 0x72, 0x8C, 0x58, 0xF8, 0x148, -1,  -1,  false, 0xE2, 0xE4, 0x16, -1,  -1,  0xA8};
-    static constexpr PokemonOffsets PA8 = {0x08, 0x0A, 0x1C, 0x20, 0x22, 0,  0x22, 2,  0x24, 0,  0x137, 0x14, false, 0x26, 0x0C, 0x0E, 0x54, 0x94, 0x60, 0x110, -1,   0x10, 0x16, false, 0xF2, 0xE4, -1,   -1,  -1,  0xB8};
-    static constexpr PokemonOffsets PA9 = {0x08, 0x0A, 0x1C, 0x20, 0x22, 0,  0x22, 1,  0x24, 0,  0x124, 0x14, false, 0x26, 0x0C, 0x0E, 0x72, 0x8C, 0x58, 0xF8, 0x148, -1,  0x23, true,  0xD5, 0xD0, -1,   -1,  -1,  0xA8};
+    //                              spec  held  pid   nat  fate fBit gend gShf form fShf ball  abi  aU8  ev    tid   sid   move  iv32  nick  ot    lvl   exp   alph aNZ  lang  fArg  gmax hSca wSca htName  metDate metLoc ver
+    static constexpr PokemonOffsets PK3 = {0x20, 0x22, 0x00, -1,  -1,  31,  -1,  0,   -1,  0,   -1,  -1,  false, 0x38, 0x04, 0x06, 0x2C, 0x48, -1,   -1,   -1,   0x24, -1,  false, 0x12, -1,   -1,   -1,  -1,  -1,   -1,    -1,    -1};
+    static constexpr PokemonOffsets PB7 = {0x08, 0x0A, 0x18, 0x1C, 0x1D, 0,  0x1D, 1,  0x1D, 3,  0xDC, 0x14, true, 0x1E, 0x0C, 0x0E, 0x5A, 0x74, 0x40, 0xB0, 0xEC, -1,   -1,  false, 0xE3, 0x3C, -1,   0x3A,0x3B, 0x78,   0xD4,  0xDA,  0xDF};
+    static constexpr PokemonOffsets PK8 = {0x08, 0x0A, 0x1C, 0x20, 0x22, 0,  0x22, 2,  0x24, 0,  0x124, 0x14, false, 0x26, 0x0C, 0x0E, 0x72, 0x8C, 0x58, 0xF8, 0x148, -1,  -1,  false, 0xE2, 0xE4, 0x16, -1,  -1,  0xA8,   0x11C, 0x122, 0xDE};
+    static constexpr PokemonOffsets PA8 = {0x08, 0x0A, 0x1C, 0x20, 0x22, 0,  0x22, 2,  0x24, 0,  0x137, 0x14, false, 0x26, 0x0C, 0x0E, 0x54, 0x94, 0x60, 0x110, -1,   0x10, 0x16, false, 0xF2, 0xE4, -1,   -1,  -1,  0xB8,   0x134, 0x13A, 0xEE};
+    static constexpr PokemonOffsets PA9 = {0x08, 0x0A, 0x1C, 0x20, 0x22, 0,  0x22, 1,  0x24, 0,  0x124, 0x14, false, 0x26, 0x0C, 0x0E, 0x72, 0x8C, 0x58, 0xF8, 0x148, -1,  0x23, true,  0xD5, 0xD0, -1,   -1,  -1,  0xA8,   0x11C, 0x122, 0xCE};
     if (isFRLG(g)) return PK3;
     if (isLGPE(g)) return PB7;
     if (g == GameType::LA) return PA8;
@@ -231,6 +234,47 @@ struct Pokemon {
     uint8_t weightScalar() const {
         int o = ofs().weightScalar;
         return (o >= 0) ? data[o] : 0;
+    }
+
+    // --- Origin / encounter data ---
+
+    // Sentinels for teraType()
+    static constexpr uint8_t TERA_NONE    = 0xFF;
+    static constexpr uint8_t TERA_STELLAR = 99;
+
+    // Met date. The year byte is an offset from 2000; 0 means "not recorded"
+    // (PK3 stores no met date at all).
+    uint16_t metYear() const {
+        int o = ofs().metDate;
+        if (o < 0 || data[o] == 0) return 0;
+        return static_cast<uint16_t>(2000 + data[o]);
+    }
+    uint8_t metMonth() const { int o = ofs().metDate; return o >= 0 ? data[o + 1] : 0; }
+    uint8_t metDay()   const { int o = ofs().metDate; return o >= 0 ? data[o + 2] : 0; }
+
+    // Met location ID. PK3 stores a single byte at 0x45.
+    uint16_t metLocation() const {
+        int o = ofs().metLocation;
+        return o >= 0 ? readU16(o) : static_cast<uint16_t>(data[0x45]);
+    }
+
+    // Origin game, as a PKHeX GameVersion value.
+    // PK3 packs it into bits 7-10 of the Origins word at 0x46.
+    uint8_t originVersion() const {
+        int o = ofs().version;
+        return o >= 0 ? data[o] : static_cast<uint8_t>((readU16(0x46) >> 7) & 0xF);
+    }
+
+    // Effective Tera type (Scarlet/Violet only; TERA_NONE for every other
+    // format, which reuses those bytes). Mirrors PKHeX TeraTypeUtil.GetTeraType:
+    // the override at 0x95 wins unless it is the "unchanged" sentinel 19.
+    uint8_t teraType() const {
+        if (!isSV(gameType_)) return TERA_NONE;
+        uint8_t orig = data[0x94];
+        uint8_t ovr  = data[0x95];
+        if (ovr <= 17 || ovr == TERA_STELLAR) return ovr;
+        if (ovr != 19) return 0;  // 18 or out of range -> Normal
+        return (orig <= TERA_STELLAR) ? orig : 0;
     }
 
     // IsAlpha: PA9 → 0x23 != 0, PA8 → 0x16 bit 5, others → false

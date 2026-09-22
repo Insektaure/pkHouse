@@ -293,6 +293,65 @@ Filenames follow the PKHeX naming convention: game tag, national dex number, for
 | Legends: Z-A | `.pa9` |
 | FireRed / LeafGreen | `.pk3` |
 
+### Pokemon Cards
+
+Save any Pokemon as a shareable 1280x720 PNG. Open the **detail view** (X) and press **Y**.
+
+Cards are written to:
+
+```
+cards/<Species> - <GameTag> - [flags] - <EC>.png
+```
+
+The card shows, at a glance:
+
+- Species sprite (form and shiny aware), name in gold when shiny, nickname and form
+- Level, gender, catch ball, national dex number
+- Status badges: shiny, alpha, Gigantamax, egg
+- Primary and secondary types
+- Nature (with the stats it raises and lowers), ability, held item, and Tera type on Scarlet / Violet
+- All 4 moves with their types
+- IVs as a hexagonal radar chart, with perfect 31s picked out in gold and a count badge
+- EVs as bars with the running total out of 510
+- Original Trainer, origin game, met date, met location, and language
+- Ribbons and marks
+- A QR code carrying the entire Pokemon
+
+The card uses its own fixed light design rather than the app theme, so an exported card looks the same
+wherever it ends up shared.
+
+> **Note:** Only the public Trainer ID is printed on the card. The secret ID is deliberately left off,
+> since it would let anyone who sees the card work out the trainer's shiny frames. It is still present
+> in the QR code, which carries the raw data, so treat a card you post publicly as you would the `.pk`
+> file itself.
+
+#### The QR code
+
+The QR code beside the sprite contains the complete decrypted Pokemon, so a card can be decoded straight
+back into a bank slot. Image metadata was the obvious place to put it, but chat apps and image hosts
+strip or re-encode it; a QR code survives re-encoding, resizing, and a photo of a screen.
+
+| Offset | Size | Field |
+|--------|------|-------|
+| 0 | 4 | Magic `PKHC` |
+| 4 | 1 | Payload format version (currently 1) |
+| 5 | 1 | `GameType` enum value — tells the reader which PKM format the body is in |
+| 6 | 2 | Body length in bytes, little endian |
+| 8 | 2 | CRC-16/CCITT-FALSE over the body, little endian |
+| 10 | N | Decrypted party-size Pokemon data, byte for byte what the `.pk` export writes |
+
+Payloads run from 110 bytes (FireRed / LeafGreen) to 386 (Legends: Arceus), which encodes to a version 7
+to version 15 QR at ECC level M. The code is drawn at a whole number of pixels per module — never scaled
+up afterwards, which is what actually breaks scanners — giving at least 4 pixels per module and a 4 module
+quiet zone for every supported game.
+
+Encoding uses [qrcodegen](https://www.nayuki.io/page/qr-code-generator-library) by Project Nayuki (MIT),
+vendored as `source/qrcodegen.c` and `include/qrcodegen.h`. The payload format lives in
+`include/card_payload.h`.
+
+If encoding ever fails, the card is still written: the sprite simply takes the whole panel instead of
+sharing it with the code.
+
 ### LED Activity Indicator
 
 The controller notification LED blinks during save and backup operations (save writes, bank saves, backup creation) to provide visual feedback that data is being written.
@@ -361,7 +420,7 @@ When switching banks, the selector appears on the side being switched while the 
 | ZL / ZR | Box view (save / bank) |
 | A | Pick up / Place Pokemon |
 | B | Cancel / Return held Pokemon |
-| Y | Toggle multi-select |
+| Y | Toggle multi-select / Save Pokemon card as PNG (in detail view) |
 | X | View Pokemon details / Delete held Pokemon / Export (in detail view) |
 | + | Open menu |
 | - | About |
@@ -456,4 +515,5 @@ Place `pkHouse.nro` on your Switch SD card (`sdmc:/switch/pkHouse/`) and launch 
 
 - [PKHeX](https://github.com/kwsch/PKHeX) by kwsch — PokeCrypto research and save structure reference
 - [JKSV](https://github.com/J-D-K/JKSV) by J-D-K — Save backup and write logic reference
+- [QR Code generator library](https://www.nayuki.io/page/qr-code-generator-library) by Project Nayuki (MIT) — QR encoding for Pokemon cards
 - Built with [libnx](https://github.com/switchbrew/libnx) and [SDL2](https://www.libsdl.org/)

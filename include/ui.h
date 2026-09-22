@@ -94,6 +94,11 @@ private:
     TTF_Font*            fontSmall_ = nullptr;
     TTF_Font*            fontLarge_ = nullptr;
 
+    // Shared system font bytes, kept so the card renderer can open its own
+    // sizes on demand without re-querying the pl service.
+    void*                fontData_     = nullptr;
+    size_t               fontDataSize_ = 0;
+
     // Sprite cache: (national dex ID | form << 16) -> texture
     std::unordered_map<uint32_t, SDL_Texture*> spriteCache_;
     std::unordered_map<uint32_t, SDL_Texture*> shinySpriteCache_;
@@ -459,6 +464,33 @@ private:
     void handleWondercardListInput(const SDL_Event& event);
     void injectWondercard(const WCInfo& info);
     std::string exportPokemon(const Pokemon& pkm);
+
+    // --- Card export (source/ui_card.cpp) ---
+    // Renders a 1280x720 shareable card and writes it to <basePath>/cards/.
+    // Returns the filename written, or "" on failure.
+    std::string exportPokemonCard(const Pokemon& pkm);
+
+    // Font sizes used only by the card; opened per export and closed again.
+    struct CardFonts {
+        TTF_Font* title     = nullptr;
+        TTF_Font* level     = nullptr;
+        TTF_Font* dex       = nullptr;
+        TTF_Font* value     = nullptr;
+        TTF_Font* move      = nullptr;
+        TTF_Font* body      = nullptr;
+        TTF_Font* small     = nullptr;
+        TTF_Font* micro     = nullptr;
+        TTF_Font* watermark = nullptr;
+    };
+    bool openCardFonts(CardFonts& f);
+    void closeCardFonts(CardFonts& f);
+    void drawCardHeader(const Pokemon& pkm, const CardFonts& f);
+    void drawCardPortrait(const Pokemon& pkm, const CardFonts& f);
+    void drawCardAttributes(const Pokemon& pkm, const CardFonts& f);
+    void drawCardMoves(const Pokemon& pkm, const CardFonts& f);
+    void drawCardIVs(const Pokemon& pkm, const CardFonts& f);
+    void drawCardEVs(const Pokemon& pkm, const CardFonts& f);
+    void drawCardFooter(const Pokemon& pkm, const CardFonts& f);
     void executeSearch();
     bool matchesSearchFilter(const Pokemon& pkm, const std::string& filterSpecies,
                              const std::string& filterOT) const;

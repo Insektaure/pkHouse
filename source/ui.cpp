@@ -57,6 +57,8 @@ bool UI::init() {
     PlFontData fontData;
     plInitialize(PlServiceType_System);
     plGetSharedFontByType(&fontData, PlSharedFontType_Standard);
+    fontData_     = fontData.address;
+    fontDataSize_ = fontData.size;
     SDL_RWops* rw = SDL_RWFromMem(fontData.address, fontData.size);
     font_ = TTF_OpenFontRW(rw, 0, 18);
     fontSmall_ = TTF_OpenFontRW(SDL_RWFromMem(fontData.address, fontData.size), 0, 14);

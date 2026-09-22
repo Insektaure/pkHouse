@@ -1,0 +1,259 @@
+2	Mystery Zone
+4	Faraway place
+6	Jubilife Village
+7	Obsidian Fieldlands
+8	Crimson Mirelands
+9	Cobalt Coastlands
+10	Coronet Highlands
+11	Alabaster Icelands
+12	Ancient Retreat
+13	Aspiration Hill
+14	Horseshoe Plains
+15	Deertrack Path
+16	Deertrack Heights
+17	Obsidian Falls
+18	Oreburrow Tunnel
+19	Nature’s Pantry
+20	The Heartwood
+21	Grandtree Arena
+22	Grueling Grove
+23	Lake Verity
+24	Sandgem Flats
+25	Tidewater Dam
+26	Floaro Gardens
+27	Ramanas Island
+28	Fieldlands Camp
+29	Heights Camp
+30	Windswept Run
+31	Floaro Gardens
+32	Worn Bridge
+33	Moss Rock
+34	Golden Lowlands
+35	Solaceon Ruins
+36	Gapejaw Bog
+37	Sludge Mound
+38	Scarlet Bog
+39	Bolderoll Slope
+40	Diamond Settlement
+41	Lake Valor
+42	Cloudpool Ridge
+43	Shrouded Ruins
+45	Holm of Trials
+46	Droning Meadow
+47	Mirelands Camp
+48	Bogbound Camp
+49	Crossing Slope
+50	Ginkgo Landing
+51	Deadwood Haunt
+52	Hideaway Bay
+53	Tombolo Walk
+54	Veilstone Cape
+55	Seagrass Haven
+56	Firespit Island
+57	Iscan’s Home
+58	Spring Path
+59	Lunker’s Lair
+60	Islespy Shore
+61	Windbreak Stand
+63	Tidal Passage
+64	Seaside Hollow
+65	Beachside Camp
+66	Coastlands Camp
+67	Turnback Cave
+68	Lava Dome Sanctum
+69	Highlands Camp
+70	Heavenward Lookout
+71	Wayward Wood
+72	Ancient Quarry
+73	Celestica Trail
+74	Lonely Spring
+75	Fabled Spring
+76	Bolderoll Ravine
+77	Stonetooth Rows
+79	Primeval Grotto
+80	Clamberclaw Cliffs
+81	Celestica Ruins
+82	Moonview Arena
+83	Summit Camp
+84	Cloudcap Pass
+85	Spear Pillar
+86	Wayward Cave
+87	Snowfields Camp
+88	Whiteout Valley
+89	Crevasse Passage
+90	Bonechill Wastes
+92	Avalugg’s Legacy
+93	Glacier Terrace
+94	Lake Acuity
+95	Snowpoint Temple
+96	Hibernal Cave
+97	Icebound Falls
+98	Avalanche Slopes
+99	Arena’s Approach
+100	Pearl Settlement
+101	Heart’s Crag
+102	Ice Column Chamber
+103	Icepeak Camp
+104	Verity Cavern
+105	Valor Cavern
+106	Cottonsedge Prairie
+107	Mountain Camp
+108	Stone Portal
+109	Temple of Sinnoh
+110	Ice Rock
+111	Acuity Cavern
+112	Icepeak Cavern
+113	Secret Hollow
+114	Galaxy Hall
+115	General Store
+116	Candy Stand
+117	Craftworks
+118	Ginkgo Guild Cart
+119	Trading Post
+120	Pastures
+121	Clothier
+122	Hairdresser
+123	Photography Studio
+124	Farm
+125	Training Grounds
+126	Folk Shrine
+127	Your Quarters
+128	Castaway Shore
+129	Sand’s Reach
+130	Sonorous Path
+131	Sacred Plaza
+132	Front Gate
+133	Seaside Gate
+134	Canala Avenue
+135	Floaro Main Street
+136	Prelude Beach
+137	Practice Field
+138	???
+139	Brava Arena
+140	Molten Arena
+141	Icepeak Arena
+142	Snowfall Hot Spring
+143	First Floor
+144	Second Floor
+145	Third Floor
+146	Basement
+147	Ursa’s Ring
+148	Diamond Heath
+149	Aipom Hill
+150	Bathers’ Lagoon
+151	Tranquility Cove
+152	Galaxy Hall
+153	Front Gate
+154	Farm
+155	Training Grounds
+30001	a Link Trade
+30002	a Link Trade
+30003	the Kanto region
+30004	the Johto region
+30005	the Hoenn region
+30006	the Sinnoh region
+30007	a distant land
+30009	the Unova region
+30010	the Kalos region
+30011	Pokémon Link
+30012	Pokémon GO
+30013	the Kanto region
+30014	the Hoenn region
+30015	the Alola region
+30016	Poké Pelago
+30017	the Johto region
+30018	Pokémon HOME
+30019	the Kanto region
+30020	the Galar region
+30021	the Hisui region
+30022	the Sinnoh region
+40001	a lovely place
+40002	a faraway place
+40003	a Pokémon movie
+40004	[~ 3]
+40005	a 2019 Pokémon movie
+40006	a 2020 Pokémon movie
+40007	a 2021 Pokémon movie
+40008	a 2022 Pokémon movie
+40009	a 2023 Pokémon movie
+40010	a 2024 Pokémon movie
+40011	the Pokémon animated show
+40012	a Pokémon Center
+40013	Pokémon Center Tohoku
+40014	a WCS
+40015	[~ 14]
+40016	WCS 2019
+40017	WCS 2020
+40018	WCS 2021
+40019	WCS 2022
+40020	WCS 2023
+40021	WCS 2024
+40022	Worlds
+40023	[~ 22]
+40024	2019 Worlds
+40025	2020 Worlds
+40026	2021 Worlds
+40027	2022 Worlds
+40028	2023 Worlds
+40029	2024 Worlds
+40030	a VGE
+40031	[~ 30]
+40032	VGE 2019
+40033	VGE 2020
+40034	VGE 2021
+40035	VGE 2022
+40036	VGE 2023
+40037	VGE 2024
+40038	a Pokémon event
+40039	a Battle Competition
+40040	a game event
+40041	the Pokémon Daisuki Club
+40042	a Pokémon TV program
+40043	a concert
+40044	an online present
+40045	the PGL
+40046	[~ 45]
+40047	a 2019 Pokémon event
+40048	a 2020 Pokémon event
+40049	a 2021 Pokémon event
+40050	a 2022 Pokémon event
+40051	a 2023 Pokémon event
+40052	a 2024 Pokémon event
+40053	a Pokémon event
+40054	[~ 53]
+40055	a 2019 Pokémon event
+40056	a 2020 Pokémon event
+40057	a 2021 Pokémon event
+40058	a 2022 Pokémon event
+40059	a 2023 Pokémon event
+40060	a 2024 Pokémon event
+40061	PokéPark
+40062	[~ 61]
+40063	PokéPark 2019
+40064	PokéPark 2020
+40065	PokéPark 2021
+40066	PokéPark 2022
+40067	PokéPark 2023
+40068	PokéPark 2024
+40069	an event site
+40070	GAME FREAK
+40071	a stadium
+40072	a VGC event
+40073	[~ 72]
+40074	the VGC 2019
+40075	the VGC 2020
+40076	the VGC 2021
+40077	the VGC 2022
+40078	the VGC 2023
+40079	the VGC 2024
+40080	a Virtual Console game
+40081	Pokémon GO
+40082	Pokémon Bank
+40083	a Pokémon shop
+40084	a demo version
+40085	the Poké Ball Plus
+40086	Pokémon HOME
+60001	a stranger
+60002	a Nursery worker
+60003	a treasure hunter
+60004	an old hot-springs visitor

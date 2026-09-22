@@ -74,6 +74,7 @@
     "exported": "Exported!",
     "export_failed": "Export Failed",
     "could_not_write": "Could not write file.",
+    "saving_card": "Saving card...",
     "release_multi_confirm": "Release {0} Pokemon?",
     "cant_move_party_bank": "Can't move party Pokemon to bank.",
     "slots_occupied": "Slots occupied",
@@ -114,7 +115,7 @@
     "more_ribbons": "+{0} more...",
     "ivs": "IVs",
     "evs": "EVs",
-    "detail_footer": "L/R: Prev/Next   A: Release   X: Export   B: Close",
+    "detail_footer": "L/R: Prev/Next   A: Release   X: Export   Y: PNG   B: Close",
 
     "menu_title": "Menu",
     "menu_theme": "Theme",

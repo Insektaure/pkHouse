@@ -74,6 +74,7 @@
     "exported": "Exportiert!",
     "export_failed": "Export fehlgeschlagen",
     "could_not_write": "Datei konnte nicht geschrieben werden.",
+    "saving_card": "Karte wird gespeichert...",
     "release_multi_confirm": "{0} Pokemon freilassen?",
     "cant_move_party_bank": "Team-Pokemon kann nicht in die Bank verschoben werden.",
     "slots_occupied": "Plaetze belegt",
@@ -114,7 +115,7 @@
     "more_ribbons": "+{0} weitere...",
     "ivs": "DVs",
     "evs": "FP",
-    "detail_footer": "L/R: Vor/Zurueck   A: Freilassen   X: Exportieren   B: Schliessen",
+    "detail_footer": "L/R: Vor/Zurueck   A: Freilassen   X: Exportieren   Y: PNG   B: Schliessen",
 
     "menu_title": "Menue",
     "menu_theme": "Design",

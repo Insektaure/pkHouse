@@ -138,6 +138,7 @@ namespace StrKey {
     constexpr const char* Exported             = "exported";
     constexpr const char* ExportFailed         = "export_failed";
     constexpr const char* CouldNotWrite        = "could_not_write";
+    constexpr const char* SavingCard           = "saving_card";
     constexpr const char* ReleaseMultiConfirm  = "release_multi_confirm";
     constexpr const char* CantMovePartyBank    = "cant_move_party_bank";
     constexpr const char* SlotsOccupied        = "slots_occupied";

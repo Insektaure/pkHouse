@@ -1,0 +1,356 @@
+2	Mystery Zone
+4	Faraway place
+6	Vert District
+7	Bleu District
+8	Magenta District
+9	Rouge District
+10	Jaune District
+11	Centrico Plaza
+12	Vernal Avenue
+13	Estival Avenue
+14	Autumnal Avenue
+15	Hibernal Avenue
+16	Saison Canal
+17	Vert Street
+18	Vert Street
+19	South Boulevard
+20	South Boulevard
+21	Vert Sector 1
+22	Vert Sector 3
+23	Coulant Waterway
+24	Vert Sector 6
+25	Vert Sector 7
+26	Station Front
+27	Vert Sector 2
+28	Vert Sector 4
+29	Vert Sector 5
+30	Vert Sector 8
+31	Vert Sector 9
+32	Vert Plaza
+33	Bleu Street
+34	Bleu Street
+35	South Boulevard
+36	South Boulevard
+37	Bleu Sector 1
+38	Bleu Sector 3
+39	Aymlis Park
+40	Bleu Sector 5
+41	Bleu Sector 7
+42	Bleu Sector 2
+43	Bleu Sector 4
+44	Espace Vide
+45	Bleu Sector 6
+46	Bleu Sector 8
+47	Bleu Sector 9
+48	Bleu Sector 10
+49	Bleu Plaza
+50	Magenta Street
+51	Magenta Street
+52	South Boulevard
+53	North Boulevard
+54	Magenta Sector 1
+55	Magenta Sector 3
+56	Magenta Sector 5
+57	Magenta Sector 6
+58	Electrical Substation
+59	Magenta Sector 2
+60	Magenta Sector 4
+61	Magenta Sector 7
+62	Quasartico Inc.
+63	Magenta Sector 8
+64	Magenta Sector 9
+65	Magenta Plaza
+66	Rouge Street
+67	Rouge Street
+68	North Boulevard
+69	North Boulevard
+70	Rouge Sector 1
+71	Rouge Sector 3
+72	Rouge Sector 4
+73	Rouge Sector 5
+74	Rouge Sector 7
+75	Rouge Sector 2
+76	Académie Étoile
+77	Rouge Sector 6
+78	Dormez Bien Cemetery
+79	Rouge Sector 8
+80	Rouge Plaza
+81	Jaune Street
+82	Jaune Street
+83	North Boulevard
+84	North Boulevard
+85	Jaune Sector 1
+86	Jaune Sector 3
+87	Jaune Sector 4
+88	Jaune Sector 5
+89	Jaune Sector 7
+90	Jaune Sector 8
+91	Jaune Sector 2
+92	Saison Canalside
+93	Jaune Sector 6
+94	Jaune Sector 9
+95	Jaune Sector 10
+96	Jaune Sector 11
+97	Jaune Sector 12
+98	Jaune Plaza
+99	Promenade du Vent
+100	Lumiose Museum
+101	Vert Pokémon Center
+102	Hotel Z
+103	Pokémon Research Lab
+104	Prism Tower
+105	Looker Bureau
+106	Quasartico Inc.
+107	Racine Construction
+108	Vert Plaza
+109	Gare de Lumiose
+110	Bleu Plaza
+111	Rust Syndicate Office
+112	Bleu Pokémon Center
+113	Vernal Pokémon Center
+114	Magenta Plaza
+115	Lysandre Café
+116	Magenta Pokémon Center
+117	Magenta Plaza Pokémon Center
+118	Rouge Plaza
+119	Hotel Richissime
+120	Rouge Pokémon Center
+121	Centrico Pokémon Center
+122	Jaune Plaza
+123	Justice Dojo
+124	Jaune Pokémon Center
+125	Hibernal Pokémon Center
+126	Hair Salon
+127	Stone Emporium
+128	Poké Ball Boutique
+129	Changing Gears
+130	Boutique Couture
+131	Restaurant Le Nah
+132	Café Cyclone
+133	Café Classe
+134	Café Introversion
+135	Empty Room (Abandoned Building)
+136	Sewer Entrance
+137	Fresh Fits
+138	BRAVELY
+139	Dessert du Moment
+140	Marché Bleu
+141	In the Zone
+142	Kickspin
+143	Triathlon Bleu
+144	DEFOG Eyewear
+145	Équipement
+146	Coiffure Clips
+147	Café Woof
+148	Café Soleil
+149	Shutterbug Café
+150	Lumiose Sewers
+151	Café Pokémon-Amie
+152	Café Rouleau
+153	Café Gallant
+154	Café Triste
+155	The Usual
+156	Énergie
+157	Le Passe-temps
+158	Porte-Chance
+159	Pinceau
+160	Naptime
+161	Soil and Sneaks
+162	Marquage
+163	Glammor Girli
+164	Glammor Pretti
+165	Glammor Sporti
+166	NIGHTSIDE
+167	Bundle Up
+168	Midnight Rite
+169	Mode Mature
+170	Wisp
+171	Mode Magnifique
+172	FILMFAN
+173	DENSOKU Lumiose
+174	Les Chaussures
+175	Atelier Heads
+176	Glammor Cuti
+177	Kikonashi
+178	SUBATOMIC
+179	SUBATOMIC 4
+180	Masterpiece
+181	Le Pays des Vêtements
+182	Triathlon Rouge
+183	Le Pays des Pieds
+184	La Tornade
+185	Restaurant Le Yeah
+186	Sushi High Roller
+187	Restaurant Le Wow
+188	Lumiose Sewers
+189	Café Kizuna
+190	Café Ultimo
+191	Café Action!
+192	Café Bataille
+193	Wild Zone 17
+194	Wild Zone 1
+195	Wild Zone 2
+196	Wild Zone 12
+197	Wild Zone 10
+198	Wild Zone 5
+199	Wild Zone 16
+200	Wild Zone 14
+201	Wild Zone 9
+202	Wild Zone 18
+203	Wild Zone 7
+204	Wild Zone 13
+205	Wild Zone 4
+206	Wild Zone 3
+207	Wild Zone 15
+208	Wild Zone 19
+209	Wild Zone 6
+210	Wild Zone 11
+211	Wild Zone 8
+212	Wild Zone 20
+213	Battle Zone
+214	Passage de la Félicité
+215	Passage Ombragé
+216	Galerie de la Lune
+217	Passage du Palais
+218	Justice Dojo
+219	Hotel Z
+220	Racine Construction
+221	Hotel Richissime
+222	Rust Syndicate Office
+223	Gare de Lumiose
+224	Quasartico Inc.
+225	Restaurant Le Nah
+226	Restaurant Le Yeah
+227	Restaurant Le Wow
+228	Sushi High Roller
+229	Looker Bureau
+230	Pokémon Research Lab
+231	Old Building
+232	Lumiose Museum
+233	Lysandre Café
+234	Lysandre Labs
+235	The Sewers
+236	Room 201
+237	Room 202
+238	Room 203
+239	Room 204
+273	Hyperspace Lumiose
+274	Hyperspace Entry Point
+275	Hyperspace Disaster Arena
+276	Hyperspace Hunting Grounds
+277	Hyperspace Sushi Paradise
+278	Hyperspace Second-Sight Arena
+279	Hyperspace Infernal Arena
+280	Hyperspace Newmoon Nightmare
+281	Hyperspace Primordial Sea
+282	Hyperspace Desolate Land
+283	Hyperspace Sky Pillar
+30001	a Link Trade
+30002	a Link Trade
+30003	the Kanto region
+30004	the Johto region
+30005	the Hoenn region
+30006	the Sinnoh region
+30007	a distant land
+30009	the Unova region
+30010	the Kalos region
+30011	Pokémon Link
+30012	Pokémon GO
+30013	the Kanto region
+30014	the Hoenn region
+30015	the Alola region
+30016	Poké Pelago
+30017	the Johto region
+30018	Pokémon HOME
+30019	the Kanto region
+30020	the Galar region
+30021	the Hisui region
+30022	the Sinnoh region
+30023	a picnic
+30024	a crystal cavern
+30025	the Paldea region
+30026	Lumiose City
+30027	the Pokémon Research Lab
+30028	Wild Zone 11
+30029	the Lumiose Museum
+30030	Académie Étoile
+30031	Magenta Sector 2
+30032	North Boulevard
+30033	Rouge Sector 1
+30034	Hyperspace Lumiose
+30035	Quasartico Inc.
+40001	a lovely place
+40002	a faraway place
+40003	a Pokémon movie
+40004	a 2024 Pokémon movie
+40005	a 2025 Pokémon movie
+40006	a 2026 Pokémon movie
+40007	a 2027 Pokémon movie
+40008	a 2028 Pokémon movie
+40009	the Pokémon animated show
+40010	a Pokémon Center
+40011	Pokémon Center Tohoku
+40012	a WCS
+40013	WCS 2024
+40014	WCS 2025
+40015	WCS 2026
+40016	WCS 2027
+40017	WCS 2028
+40018	Worlds
+40019	2024 Worlds
+40020	2025 Worlds
+40021	2026 Worlds
+40022	2027 Worlds
+40023	2028 Worlds
+40024	a VGE
+40025	VGE 2024
+40026	VGE 2025
+40027	VGE 2026
+40028	VGE 2027
+40029	VGE 2028
+40030	a Pokémon event
+40031	a Battle Competition
+40032	a game event
+40033	the Pokémon Daisuki Club
+40034	a Pokémon TV program
+40035	a concert
+40036	an online present
+40037	the PGL
+40038	a 2024 Pokémon event
+40039	a 2025 Pokémon event
+40040	a 2026 Pokémon event
+40041	a 2027 Pokémon event
+40042	a 2028 Pokémon event
+40043	a Pokémon event
+40044	a 2024 Pokémon event
+40045	a 2025 Pokémon event
+40046	a 2026 Pokémon event
+40047	a 2027 Pokémon event
+40048	a 2028 Pokémon event
+40049	PokéPark
+40050	PokéPark 2024
+40051	PokéPark 2025
+40052	PokéPark 2026
+40053	PokéPark 2027
+40054	PokéPark 2028
+40055	an event site
+40056	GAME FREAK
+40057	a stadium
+40058	a VGC event
+40059	the VGC 2024
+40060	the VGC 2025
+40061	the VGC 2026
+40062	the VGC 2027
+40063	the VGC 2028
+40064	a Virtual Console game
+40065	Pokémon GO
+40066	Pokémon Bank
+40067	a Pokémon shop
+40068	a demo version
+40069	the Poké Ball Plus
+40070	Pokémon HOME
+60001	someone far away
+60002	a Nursery worker
+60003	a treasure hunter
+60004	an old hot-springs visitor
+60005	Lumiose City

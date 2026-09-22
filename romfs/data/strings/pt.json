@@ -74,6 +74,7 @@
     "exported": "Exportado!",
     "export_failed": "Falha na exportacao",
     "could_not_write": "Nao foi possivel gravar o arquivo.",
+    "saving_card": "Salvando cartao...",
     "release_multi_confirm": "Liberar {0} Pokemon?",
     "cant_move_party_bank": "Nao e possivel mover Pokemon da equipe para o banco.",
     "slots_occupied": "Espacos ocupados",
@@ -114,7 +115,7 @@
     "more_ribbons": "+{0} mais...",
     "ivs": "IVs",
     "evs": "EVs",
-    "detail_footer": "L/R: Anterior/Proximo   A: Liberar   X: Exportar   B: Fechar",
+    "detail_footer": "L/R: Anterior/Proximo   A: Liberar   X: Exportar   Y: PNG   B: Fechar",
 
     "menu_title": "Menu",
     "menu_theme": "Tema",

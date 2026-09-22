@@ -74,6 +74,7 @@
     "exported": "Exporte !",
     "export_failed": "Echec de l'exportation",
     "could_not_write": "Impossible d'ecrire le fichier.",
+    "saving_card": "Enregistrement de la carte...",
     "release_multi_confirm": "Relacher {0} Pokemon ?",
     "cant_move_party_bank": "Impossible de deplacer un Pokemon d'equipe vers la banque.",
     "slots_occupied": "Emplacements occupes",
@@ -114,7 +115,7 @@
     "more_ribbons": "+{0} de plus...",
     "ivs": "IVs",
     "evs": "EVs",
-    "detail_footer": "L/R : Prec./Suiv.   A : Relacher   X : Exporter   B : Fermer",
+    "detail_footer": "L/R : Prec./Suiv.   A : Relacher   X : Exporter   Y : PNG   B : Fermer",
 
     "menu_title": "Menu",
     "menu_theme": "Theme",

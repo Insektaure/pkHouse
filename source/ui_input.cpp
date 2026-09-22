@@ -348,6 +348,19 @@ void UI::handleDetailInput(const SDL_Event& event) {
                 }
                 break;
             }
+            case SDL_CONTROLLER_BUTTON_X: { // Switch Y — save shareable card
+                Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(gridCols()), cursor_.panel);
+                if (!pkm.isEmpty()) {
+                    showWorking(i18n::get(StrKey::SavingCard));
+                    std::string name = exportPokemonCard(pkm);
+                    if (!name.empty())
+                        showMessageAndWait(i18n::get(StrKey::Exported), name);
+                    else
+                        showMessageAndWait(i18n::get(StrKey::ExportFailed),
+                                           i18n::get(StrKey::CouldNotWrite));
+                }
+                break;
+            }
             case SDL_CONTROLLER_BUTTON_B: // Switch A
                 tryRelease();
                 break;

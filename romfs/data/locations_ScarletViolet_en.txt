@@ -1,0 +1,225 @@
+2	Mystery Zone
+4	Faraway place
+6	South Province (Area One)
+8	Mesagoza
+10	Pokémon League
+12	South Province (Area Two)
+14	South Province (Area Four)
+16	South Province (Area Six)
+18	South Province (Area Five)
+20	South Province (Area Three)
+22	West Province (Area One)
+24	Asado Desert
+26	West Province (Area Two)
+28	West Province (Area Three)
+30	Tagtree Thicket
+32	East Province (Area Three)
+34	East Province (Area One)
+36	East Province (Area Two)
+38	Glaseado Mountain
+40	Casseroya Lake
+42	Glaseado Mountain
+44	North Province (Area Three)
+46	North Province (Area One)
+48	North Province (Area Two)
+50	Great Crater of Paldea
+52	Zero Gate
+54	Zero Gate
+56	South Paldean Sea
+58	West Paldean Sea
+60	East Paldean Sea
+62	North Paldean Sea
+64	Inlet Grotto
+66	South Province (Area Six)
+67	Alfornada Cavern
+68	Glaseado Mountain
+69	Dalizapa Passage
+70	Poco Path
+72	Mesagoza
+74	Mesagoza
+76	Cascarrafa
+78	Levincia
+80	Cabo Poco
+82	Los Platos
+84	Cortondo
+86	Artazon
+88	Porto Marinada
+90	Medali
+92	Zapapico
+94	Montenevera
+96	Alfornada
+98	North Province (Area Two)
+99	Caph Squad’s Base
+100	West Province (Area One)
+101	Segin Squad’s Base
+102	North Province (Area Three)
+103	Ruchbah Squad’s Base
+104	East Province (Area One)
+105	Schedar Squad’s Base
+106	Tagtree Thicket
+107	Navi Squad’s Base
+108	Casseroya Lake
+109	Socarrat Trail
+110	Area Zero
+111	Research Station No. 1
+112	Area Zero
+113	Research Station No. 2
+114	Area Zero
+115	Research Station No. 3
+116	Area Zero
+117	Research Station No. 4
+118	Zero Lab
+120	Zero Lab
+122	Zero Lab
+124	Area Zero
+126	Area Zero
+128	Area Zero
+130	Naranja Academy
+131	Uva Academy
+132	Kitakami Road
+134	Mossui Town
+136	Apple Hills
+138	Loyalty Plaza
+140	Reveler’s Road
+142	Kitakami Hall
+144	Oni Mountain
+146	Dreaded Den
+147	Oni Mountain
+148	Oni’s Maw
+149	Oni Mountain
+150	Oni Mountain
+152	Crystal Pool
+153	Oni Mountain Summit
+154	Crystal Pool
+155	Oni Mountain Summit
+156	Wistful Fields
+158	Mossfell Confluence
+160	Fellhorn Gorge
+162	Paradise Barrens
+164	Kitakami Wilds
+166	Timeless Woods
+167	Kitakami Wilds
+168	Infernal Pass
+169	Oni Mountain
+170	Chilling Waterhead
+172	Blueberry Academy
+174	Savanna Biome
+176	Coastal Biome
+178	Canyon Biome
+180	Polar Biome
+182	Central Plaza
+184	Savanna Plaza
+186	Coastal Plaza
+188	Canyon Plaza
+190	Polar Plaza
+192	Chargestone Cavern
+194	Torchlit Labyrinth
+196	Area Zero Underdepths
+198	Area Zero Underdepths
+200	Terarium
+30001	a Link Trade
+30002	a Link Trade
+30003	the Kanto region
+30004	the Johto region
+30005	the Hoenn region
+30006	the Sinnoh region
+30007	a distant land
+30009	the Unova region
+30010	the Kalos region
+30011	Pokémon Link
+30012	Pokémon GO
+30013	the Kanto region
+30014	the Hoenn region
+30015	the Alola region
+30016	Poké Pelago
+30017	the Johto region
+30018	Pokémon HOME
+30019	the Kanto region
+30020	the Galar region
+30021	the Hisui region
+30022	the Sinnoh region
+30023	a picnic
+30024	a crystal cavern
+40001	a lovely place
+40002	a faraway place
+40003	a Pokémon movie
+40004	a 2023 Pokémon movie
+40005	a 2024 Pokémon movie
+40006	a 2025 Pokémon movie
+40007	a 2026 Pokémon movie
+40008	a 2027 Pokémon movie
+40009	a 2028 Pokémon movie
+40010	the Pokémon animated show
+40011	a Pokémon Center
+40012	Pokémon Center Tohoku
+40013	a WCS
+40014	WCS 2023
+40015	WCS 2024
+40016	WCS 2025
+40017	WCS 2026
+40018	WCS 2027
+40019	WCS 2028
+40020	Worlds
+40021	2023 Worlds
+40022	2024 Worlds
+40023	2025 Worlds
+40024	2026 Worlds
+40025	2027 Worlds
+40026	2028 Worlds
+40027	a VGE
+40028	VGE 2023
+40029	VGE 2024
+40030	VGE 2025
+40031	VGE 2026
+40032	VGE 2027
+40033	VGE 2028
+40034	a Pokémon event
+40035	a Battle Competition
+40036	a game event
+40037	the Pokémon Daisuki Club
+40038	a Pokémon TV program
+40039	a concert
+40040	an online present
+40041	the PGL
+40042	a 2023 Pokémon event
+40043	a 2024 Pokémon event
+40044	a 2025 Pokémon event
+40045	a 2026 Pokémon event
+40046	a 2027 Pokémon event
+40047	a 2028 Pokémon event
+40048	a Pokémon event
+40049	a 2023 Pokémon event
+40050	a 2024 Pokémon event
+40051	a 2025 Pokémon event
+40052	a 2026 Pokémon event
+40053	a 2027 Pokémon event
+40054	a 2028 Pokémon event
+40055	PokéPark
+40056	PokéPark 2023
+40057	PokéPark 2024
+40058	PokéPark 2025
+40059	PokéPark 2026
+40060	PokéPark 2027
+40061	PokéPark 2028
+40062	an event site
+40063	GAME FREAK
+40064	a stadium
+40065	a VGC event
+40066	the VGC 2023
+40067	the VGC 2024
+40068	the VGC 2025
+40069	the VGC 2026
+40070	the VGC 2027
+40071	the VGC 2028
+40072	a Virtual Console game
+40073	Pokémon GO
+40074	Pokémon Bank
+40075	a Pokémon shop
+40076	a demo version
+40077	the Poké Ball Plus
+40078	Pokémon HOME
+60001	someone far away
+60002	a Nursery worker
+60003	a treasure hunter
+60004	an old hot-springs visitor
+60005	Jacq

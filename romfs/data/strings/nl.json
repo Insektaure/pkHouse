@@ -74,6 +74,7 @@
     "exported": "Geexporteerd!",
     "export_failed": "Export mislukt",
     "could_not_write": "Kan bestand niet schrijven.",
+    "saving_card": "Kaart opslaan...",
     "release_multi_confirm": "{0} Pokemon vrijlaten?",
     "cant_move_party_bank": "Kan team-Pokemon niet naar bank verplaatsen.",
     "slots_occupied": "Plekken bezet",
@@ -114,7 +115,7 @@
     "more_ribbons": "+{0} meer...",
     "ivs": "IVs",
     "evs": "EVs",
-    "detail_footer": "L/R: Vorige/Volgende   A: Vrijlaten   X: Exporteren   B: Sluiten",
+    "detail_footer": "L/R: Vorige/Volgende   A: Vrijlaten   X: Exporteren   Y: PNG   B: Sluiten",
 
     "menu_title": "Menu",
     "menu_theme": "Thema",

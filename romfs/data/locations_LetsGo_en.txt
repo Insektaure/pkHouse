@@ -1,0 +1,131 @@
+1	Mystery Zone
+2	Faraway place
+3	Route 1
+4	Route 2
+5	Route 3
+6	Route 4
+7	Route 5
+8	Route 6
+9	Route 7
+10	Route 8
+11	Route 9
+12	Route 10
+13	Route 11
+14	Route 12
+15	Route 13
+16	Route 14
+17	Route 15
+18	Route 16
+19	Route 17
+20	Route 18
+21	Route 19
+22	Route 20
+23	Route 21
+24	Route 22
+25	Route 23
+26	Route 24
+27	Route 25
+28	Pallet Town
+29	Viridian City
+30	Pewter City
+31	Cerulean City
+32	Lavender Town
+33	Vermilion City
+34	Celadon City
+35	Fuchsia City
+36	Cinnabar Island
+37	Indigo Plateau
+38	Saffron City
+39	Viridian Forest
+40	Mt. Moon
+41	Rock Tunnel
+42	Power Plant
+43	Diglett’s Cave
+44	Seafoam Islands
+45	Victory Road
+46	Cerulean Cave
+47	Pokémon Tower
+48	S.S. Anne
+49	Team Rocket Hideout
+50	GO Park complex
+51	Pokémon Mansion
+52	Silph Co.
+53	Pokémon League
+40000	﻿
+40001	a lovely place
+40002	a faraway place
+40003	a Pokémon movie
+40004	2018 Pokémon Movie
+40005	2019 Pokémon Movie
+40006	2020 Pokémon Movie
+40007	2021 Pokémon Movie
+40008	2022 Pokémon Movie
+40009	2023 Pokémon Movie
+40010	the Pokémon animated show
+40011	a Pokémon Center
+40012	Pokémon Center Tohoku
+40013	a WCS
+40014	WCS 2018
+40015	WCS 2019
+40016	WCS 2020
+40017	WCS 2021
+40018	WCS 2022
+40019	WCS 2023
+40020	Worlds
+40021	2018 Worlds
+40022	2019 Worlds
+40023	2020 Worlds
+40024	2021 Worlds
+40025	2022 Worlds
+40026	2023 Worlds
+40027	a VGE
+40028	VGE 2018
+40029	VGE 2019
+40030	VGE 2020
+40031	VGE 2021
+40032	VGE 2022
+40033	VGE 2023
+40034	a Pokémon event
+40035	a Battle Competition
+40036	a game event
+40037	the Pokémon Daisuki Club
+40038	a Pokémon TV program
+40039	a concert
+40040	an online present
+40041	the PGL
+40042	a 2018 Pokémon event
+40043	a 2019 Pokémon event
+40044	a 2020 Pokémon event
+40045	a 2021 Pokémon event
+40046	a 2022 Pokémon event
+40047	a 2023 Pokémon event
+40048	a Pokémon event
+40049	a 2018 Pokémon event
+40050	a 2019 Pokémon event
+40051	a 2020 Pokémon event
+40052	a 2021 Pokémon event
+40053	a 2022 Pokémon event
+40054	a 2023 Pokémon event
+40055	PokéPark
+40056	PokéPark 2018
+40057	PokéPark 2019
+40058	PokéPark 2020
+40059	PokéPark 2021
+40060	PokéPark 2022
+40061	PokéPark 2023
+40062	an event site
+40063	GAME FREAK
+40064	a stadium
+40065	VGC
+40066	the VGC 2018
+40067	the VGC 2019
+40068	the VGC 2020
+40069	the VGC 2021
+40070	the VGC 2022
+40071	the VGC 2023
+40072	a Virtual Console game
+40073	Pokémon GO
+40074	Pokémon Bank
+40075	a Pokémon shop
+40076	a demo version
+40077	Poké Ball Plus

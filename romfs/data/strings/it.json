@@ -74,6 +74,7 @@
     "exported": "Esportato!",
     "export_failed": "Esportazione fallita",
     "could_not_write": "Impossibile scrivere il file.",
+    "saving_card": "Salvataggio scheda...",
     "release_multi_confirm": "Rilasciare {0} Pokemon?",
     "cant_move_party_bank": "Impossibile spostare un Pokemon della squadra nella banca.",
     "slots_occupied": "Spazi occupati",
@@ -114,7 +115,7 @@
     "more_ribbons": "+{0} altri...",
     "ivs": "IVs",
     "evs": "EVs",
-    "detail_footer": "L/R: Prec./Succ.   A: Rilascia   X: Esporta   B: Chiudi",
+    "detail_footer": "L/R: Prec./Succ.   A: Rilascia   X: Esporta   Y: PNG   B: Chiudi",
 
     "menu_title": "Menu",
     "menu_theme": "Tema",

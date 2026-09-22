@@ -1,0 +1,304 @@
+2	Mystery Zone
+4	Faraway place
+6	Postwick
+8	Slumbering Weald
+12	Route 1
+14	Wedgehurst
+16	Wedgehurst Station
+18	Route 2
+20	Motostoke
+22	Motostoke Station
+24	Motostoke Stadium
+28	Route 3
+30	Galar Mine
+32	Route 4
+34	Turffield
+36	Turffield Stadium
+40	Route 5
+44	Hulbury
+46	Hulbury Station
+48	Hulbury Stadium
+52	Motostoke Outskirts
+54	Galar Mine No. 2
+56	Hammerlocke
+58	Hammerlocke Station
+60	Hammerlocke Stadium
+64	Energy Plant
+66	Tower Summit
+68	Route 6
+70	Stow-on-Side
+72	Stow-on-Side Stadium
+76	Glimwood Tangle
+78	Ballonlea
+80	Ballonlea Stadium
+84	Route 7
+86	Route 8
+88	Route 8
+89	Steamdrift Way
+90	Route 9
+92	Route 9
+93	Circhester Bay
+94	Route 9
+95	Outer Spikemuth
+96	Circhester
+98	Circhester Stadium
+102	Spikemuth
+104	Route 9 Tunnel
+106	Route 10
+108	White Hill Station
+110	Wyndon
+112	Wyndon Station
+114	Wyndon Stadium
+115	Pokémon League HQ
+116	Wyndon Stadium
+117	Locker Room
+118	Wyndon Stadium
+120	Meetup Spot
+121	Wild Area
+122	Rolling Fields
+123	Wild Area
+124	Dappled Grove
+125	Wild Area
+126	Watchtower Ruins
+127	Wild Area
+128	East Lake Axewell
+129	Wild Area
+130	West Lake Axewell
+131	Wild Area
+132	Axew’s Eye
+133	Wild Area
+134	South Lake Miloch
+135	Wild Area
+136	Giant’s Seat
+137	Wild Area
+138	North Lake Miloch
+139	Wild Area
+140	Motostoke Riverbank
+141	Wild Area
+142	Bridge Field
+143	Wild Area
+144	Stony Wilderness
+145	Wild Area
+146	Dusty Bowl
+147	Wild Area
+148	Giant’s Mirror
+149	Wild Area
+150	Hammerlocke Hills
+151	Wild Area
+152	Giant’s Cap
+153	Wild Area
+154	Lake of Outrage
+155	Wild Area
+156	Wild Area Station
+158	Battle Tower
+160	Rose Tower
+162	Pokémon Den
+164	Fields of Honor
+165	Isle of Armor
+166	Soothing Wetlands
+167	Isle of Armor
+168	Forest of Focus
+169	Isle of Armor
+170	Challenge Beach
+171	Isle of Armor
+172	Brawlers’ Cave
+173	Isle of Armor
+174	Challenge Road
+175	Isle of Armor
+176	Courageous Cavern
+177	Isle of Armor
+178	Loop Lagoon
+179	Isle of Armor
+180	Training Lowlands
+181	Isle of Armor
+182	Warm-Up Tunnel
+183	Isle of Armor
+184	Potbottom Desert
+185	Isle of Armor
+186	Workout Sea
+187	Isle of Armor
+188	Stepping-Stone Sea
+189	Isle of Armor
+190	Insular Sea
+191	Isle of Armor
+192	Honeycalm Sea
+193	Isle of Armor
+194	Honeycalm Island
+195	Isle of Armor
+196	Master Dojo
+198	Tower of Darkness
+200	Tower of Waters
+202	Armor Station
+204	Slippery Slope
+205	Crown Tundra
+206	Freezington
+207	Crown Tundra
+208	Frostpoint Field
+209	Crown Tundra
+210	Giant’s Bed
+211	Crown Tundra
+212	Old Cemetery
+213	Crown Tundra
+214	Snowslide Slope
+215	Crown Tundra
+216	Tunnel to the Top
+217	Crown Tundra
+218	Path to the Peak
+219	Crown Tundra
+220	Crown Shrine
+221	Crown Tundra
+222	Giant’s Foot
+223	Crown Tundra
+224	Roaring-Sea Caves
+225	Crown Tundra
+226	Frigid Sea
+227	Crown Tundra
+228	Three-Point Pass
+229	Crown Tundra
+230	Ballimere Lake
+231	Crown Tundra
+232	Lakeside Cave
+233	Crown Tundra
+234	Dyna Tree Hill
+235	Crown Tundra
+236	Rock Peak Ruins
+238	Iceberg Ruins
+240	Iron Ruins
+242	Split-Decision Ruins
+244	Max Lair
+246	Crown Tundra Station
+30001	a Link Trade
+30002	a Link Trade
+30003	the Kanto region
+30004	the Johto region
+30005	the Hoenn region
+30006	the Sinnoh region
+30007	a distant land
+30009	the Unova region
+30010	the Kalos region
+30011	Pokémon Link
+30012	Pokémon GO
+30013	the Kanto region
+30014	the Hoenn region
+30015	the Alola region
+30016	Poké Pelago
+30017	the Johto region
+30018	Pokémon HOME
+30019	the Kanto region
+40001	a lovely place
+40002	a faraway place
+40003	a Pokémon movie
+40004	[~ 3]
+40005	a 2019 Pokémon movie
+40006	a 2020 Pokémon movie
+40007	a 2021 Pokémon movie
+40008	a 2022 Pokémon movie
+40009	a 2023 Pokémon movie
+40010	a 2024 Pokémon movie
+40011	the Pokémon animated show
+40012	a Pokémon Center
+40013	Pokémon Center Tohoku
+40014	a WCS
+40015	[~ 14]
+40016	WCS 2019
+40017	WCS 2020
+40018	WCS 2021
+40019	WCS 2022
+40020	WCS 2023
+40021	WCS 2024
+40022	Worlds
+40023	[~ 22]
+40024	2019 Worlds
+40025	2020 Worlds
+40026	2021 Worlds
+40027	2022 Worlds
+40028	2023 Worlds
+40029	2024 Worlds
+40030	a VGE
+40031	[~ 30]
+40032	VGE 2019
+40033	VGE 2020
+40034	VGE 2021
+40035	VGE 2022
+40036	VGE 2023
+40037	VGE 2024
+40038	a Pokémon event
+40039	a Battle Competition
+40040	a game event
+40041	the Pokémon Daisuki Club
+40042	a Pokémon TV program
+40043	a concert
+40044	an online present
+40045	the PGL
+40046	[~ 45]
+40047	a 2019 Pokémon event
+40048	a 2020 Pokémon event
+40049	a 2021 Pokémon event
+40050	a 2022 Pokémon event
+40051	a 2023 Pokémon event
+40052	a 2024 Pokémon event
+40053	a Pokémon event
+40054	[~ 53]
+40055	a 2019 Pokémon event
+40056	a 2020 Pokémon event
+40057	a 2021 Pokémon event
+40058	a 2022 Pokémon event
+40059	a 2023 Pokémon event
+40060	a 2024 Pokémon event
+40061	PokéPark
+40062	[~ 61]
+40063	PokéPark 2019
+40064	PokéPark 2020
+40065	PokéPark 2021
+40066	PokéPark 2022
+40067	PokéPark 2023
+40068	PokéPark 2024
+40069	an event site
+40070	GAME FREAK
+40071	a stadium
+40072	a VGC event
+40073	[~ 72]
+40074	the VGC 2019
+40075	the VGC 2020
+40076	the VGC 2021
+40077	the VGC 2022
+40078	the VGC 2023
+40079	the VGC 2024
+40080	a Virtual Console game
+40081	Pokémon GO
+40082	Pokémon Bank
+40083	a Pokémon shop
+40084	a demo version
+40085	the Poké Ball Plus
+40086	Pokémon HOME
+40087	[~ 86]
+40088	[~ 87]
+40089	[~ 88]
+40090	[~ 89]
+40091	[~ 90]
+40092	[~ 91]
+40093	[~ 92]
+40094	[~ 93]
+40095	[~ 94]
+40096	[~ 95]
+40097	[~ 96]
+40098	[~ 97]
+40099	[~ 98]
+40100	[~ 99]
+40101	[~ 100]
+40102	[~ 101]
+40103	[~ 102]
+40104	[~ 103]
+40105	[~ 104]
+40106	[~ 105]
+40107	[~ 106]
+40108	[~ 107]
+40109	[~ 108]
+40110	[~ 109]
+40111	[~ 110]
+40112	[~ 111]
+40113	[~ 112]
+60001	a stranger
+60002	a Nursery worker
+60003	a treasure hunter
+60004	an old hot-springs visitor

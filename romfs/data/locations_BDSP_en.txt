@@ -1,0 +1,764 @@
+0	Jubilife City
+1	Jubilife City
+2	Jubilife City
+3	Jubilife City
+4	Jubilife City
+5	Jubilife City
+6	Jubilife City
+7	Jubilife City
+8	Jubilife City
+9	Jubilife City
+10	Jubilife City
+11	Jubilife City
+12	Jubilife City
+13	Jubilife City
+14	Jubilife City
+15	Jubilife City
+16	Jubilife City
+17	Jubilife City
+18	Jubilife City
+19	Jubilife City
+20	Jubilife City
+21	Jubilife City
+22	Jubilife City
+23	Jubilife City
+24	Canalave City
+25	Canalave City
+26	Canalave Gym
+27	Canalave City
+28	Canalave City
+29	Canalave City
+30	Canalave City
+31	Canalave City
+32	Canalave City
+33	Canalave City
+34	Canalave City
+35	Canalave City
+36	Canalave City
+37	Canalave City
+38	Oreburgh City
+39	Oreburgh City
+40	Oreburgh Gym
+41	Oreburgh City
+42	Oreburgh City
+43	Oreburgh City
+44	Oreburgh City
+45	Oreburgh City
+46	Oreburgh City
+47	Oreburgh City
+48	Oreburgh City
+49	Oreburgh City
+50	Oreburgh City
+51	Oreburgh City
+52	Oreburgh City
+53	Oreburgh City
+54	Eterna City
+55	Eterna City
+56	Eterna Gym
+57	Eterna Gym
+58	Eterna City
+59	Eterna City
+60	Eterna City
+61	Eterna City
+62	Eterna City
+63	Eterna City
+64	Eterna City
+65	Eterna City
+66	Eterna City
+67	Eterna City
+68	Eterna City
+69	Eterna City
+70	Eterna City
+71	Eterna City
+72	Eterna City
+73	Eterna City
+74	Hearthome City
+75	Hearthome City
+76	Hearthome Gym
+77	Hearthome Gym
+78	Hearthome Gym
+79	Hearthome Gym
+80	Hearthome Gym
+81	Hearthome Gym
+82	Hearthome Gym
+83	Hearthome Gym
+84	Hearthome Gym
+85	Hearthome Gym
+86	Hearthome Gym
+87	Hearthome Gym
+88	Hearthome Gym
+89	Hearthome City
+90	Hearthome City
+91	Hearthome City
+92	Hearthome City
+93	Hearthome City
+94	Hearthome City
+95	Hearthome City
+96	Hearthome City
+97	Hearthome City
+98	Hearthome City
+99	Hearthome City
+100	Hearthome City
+101	Hearthome City
+102	Hearthome City
+103	Hearthome City
+104	Hearthome City
+105	Hearthome City
+106	Hearthome City
+107	Hearthome City
+108	Hearthome City
+109	Hearthome City
+110	Pastoria City
+111	Pastoria City
+112	Pastoria Gym
+113	Pastoria City
+114	Pastoria City
+115	Pastoria City
+116	Pastoria City
+117	Pastoria City
+118	Pastoria City
+119	Pastoria City
+120	Pastoria City
+121	Pastoria City
+122	Pastoria City
+123	Veilstone City
+124	Veilstone Gym
+125	Veilstone City
+126	Veilstone City
+127	Veilstone City
+128	Veilstone City
+129	Veilstone City
+130	Veilstone City
+131	Veilstone City
+132	Veilstone City
+133	Veilstone City
+134	Veilstone City
+135	Veilstone City
+136	Veilstone City
+137	Veilstone City
+138	Veilstone City
+139	Veilstone City
+140	Veilstone City
+141	Veilstone City
+142	Sunyshore City
+143	Sunyshore City
+144	Sunyshore Gym
+145	Sunyshore Gym
+146	Sunyshore Gym
+147	Sunyshore City
+148	Sunyshore City
+149	Sunyshore City
+150	Sunyshore City
+151	Sunyshore City
+152	Sunyshore City
+153	Sunyshore City
+154	Sunyshore City
+155	Sunyshore City
+156	Sunyshore City
+157	Sunyshore City
+158	Sunyshore City
+159	Snowpoint City
+160	Snowpoint City
+161	Snowpoint Gym
+162	Snowpoint City
+163	Snowpoint City
+164	Snowpoint City
+165	Snowpoint City
+166	Snowpoint City
+167	Pokémon League
+168	Pokémon League
+169	Pokémon League
+170	Pokémon League
+171	Pokémon League
+172	Pokémon League
+173	Pokémon League
+174	Pokémon League
+175	Pokémon League
+176	Pokémon League
+177	Pokémon League
+178	Pokémon League
+179	Pokémon League
+180	Pokémon League
+181	Pokémon League
+182	Pokémon League
+183	Pokémon League
+184	Pokémon League
+185	Pokémon League
+186	Fight Area
+187	Fight Area
+188	Fight Area
+189	Fight Area
+190	Fight Area
+191	Fight Area
+192	Fight Area
+193	Fight Area
+194	Fight Area
+195	Oreburgh Mine
+196	Oreburgh Mine
+197	Valley Windworks
+198	Valley Windworks
+199	Eterna Forest
+200	Eterna Forest
+201	Fuego Ironworks
+202	Fuego Ironworks
+203	Mount Coronet
+204	Mount Coronet
+205	Mount Coronet
+206	Mount Coronet
+207	Mount Coronet
+208	Mount Coronet
+209	Mount Coronet
+210	Mount Coronet
+211	Mount Coronet
+212	Mount Coronet
+213	Mount Coronet
+214	Mount Coronet
+215	Mount Coronet
+216	Spear Pillar
+217	Spear Pillar
+218	Hall of Origin
+219	Great Marsh
+220	Great Marsh
+221	Great Marsh
+222	Great Marsh
+223	Great Marsh
+224	Great Marsh
+225	Solaceon Ruins
+226	Solaceon Ruins
+227	Solaceon Ruins
+228	Solaceon Ruins
+229	Solaceon Ruins
+230	Solaceon Ruins
+231	Solaceon Ruins
+232	Solaceon Ruins
+233	Solaceon Ruins
+234	Solaceon Ruins
+235	Solaceon Ruins
+236	Solaceon Ruins
+237	Solaceon Ruins
+238	Solaceon Ruins
+239	Solaceon Ruins
+240	Solaceon Ruins
+241	Solaceon Ruins
+242	Solaceon Ruins
+243	Solaceon Ruins
+244	Victory Road
+245	Victory Road
+246	Victory Road
+247	Victory Road
+248	Victory Road
+249	Victory Road
+250	Ramanas Park
+251	Amity Square
+252	Ravaged Path
+253	Floaroma Meadow
+254	Floaroma Meadow
+255	Oreburgh Gate
+256	Oreburgh Gate
+257	Fullmoon Island
+258	Fullmoon Island
+259	Stark Mountain
+260	Stark Mountain
+261	Stark Mountain
+262	Stark Mountain
+263	Sendoff Spring
+264	Turnback Cave
+265	Turnback Cave
+266	Turnback Cave
+267	Turnback Cave
+268	Turnback Cave
+269	Turnback Cave
+270	Turnback Cave
+271	Turnback Cave
+272	Turnback Cave
+273	Turnback Cave
+274	Turnback Cave
+275	Turnback Cave
+276	Turnback Cave
+277	Turnback Cave
+278	Turnback Cave
+279	Turnback Cave
+280	Turnback Cave
+281	Turnback Cave
+282	Turnback Cave
+283	Turnback Cave
+284	Turnback Cave
+285	Flower Paradise
+286	Snowpoint Temple
+287	Snowpoint Temple
+288	Snowpoint Temple
+289	Snowpoint Temple
+290	Snowpoint Temple
+291	Snowpoint Temple
+292	Wayward Cave
+293	Wayward Cave
+294	Ruin Maniac Cave
+295	Ruin Maniac Cave
+296	Maniac Tunnel
+297	Trophy Garden
+298	Iron Island
+299	Iron Island
+300	Iron Island
+301	Iron Island
+302	Iron Island
+303	Iron Island
+304	Iron Island
+305	Iron Island
+306	Old Chateau
+307	Old Chateau
+308	Old Chateau
+309	Old Chateau
+310	Old Chateau
+311	Old Chateau
+312	Old Chateau
+313	Old Chateau
+314	Old Chateau
+315	Galactic HQ
+316	Galactic HQ
+317	Galactic HQ
+318	Galactic HQ
+319	Galactic HQ
+320	Galactic HQ
+321	Galactic HQ
+322	Galactic HQ
+323	Lake Verity
+324	Lake Verity
+325	Lake Verity (Verity Cavern)
+326	Lake Valor
+327	Lake Valor
+328	Lake Valor (Valor Cavern)
+329	Lake Acuity
+330	Lake Acuity
+331	Lake Acuity (Acuity Cavern)
+332	Newmoon Island
+333	Newmoon Island
+334	Battle Park
+335	Battle Park
+336	Battle Park
+337	Battle Park
+338	Battle Park
+339	Battle Tower
+340	Battle Tower
+341	Battle Tower
+342	Battle Tower
+343	Battle Tower
+344	Battle Tower
+345	Mystery Zone
+346	Verity Lakefront
+347	Valor Lakefront
+348	Valor Lakefront
+349	Valor Lakefront
+350	Valor Lakefront
+351	Acuity Lakefront
+352	Spring Path
+353	Mystery Zone
+354	Route 201
+355	Route 202
+356	Route 203
+357	Route 204
+358	Route 204
+359	Route 205
+360	Route 205
+361	Route 205
+362	Route 206
+363	Route 206
+364	Route 207
+365	Route 208
+366	Route 208
+367	Route 209
+368	Route 209
+369	Route 209
+370	Route 209
+371	Route 209
+372	Route 209
+373	Route 210
+374	Route 210
+375	Route 210
+376	Route 210
+377	Route 211
+378	Route 211
+379	Route 212
+380	Route 212
+381	Route 212
+382	Route 212
+383	Route 212
+384	Route 212
+385	Route 213
+386	Route 213
+387	Route 213
+388	Route 213
+389	Route 213
+390	Route 213
+391	Route 213
+392	Route 214
+393	Route 214
+394	Route 215
+395	Route 216
+396	Route 216
+397	Route 217
+398	Route 217
+399	Route 217
+400	Route 218
+401	Route 218
+402	Route 218
+403	Route 219
+404	Route 221
+405	Route 221
+406	Route 221
+407	Route 222
+408	Route 222
+409	Route 222
+410	Route 222
+411	Route 224
+412	Route 225
+413	Route 225
+414	Route 227
+415	Route 227
+416	Route 228
+417	Route 228
+418	Route 228
+419	Route 228
+420	Route 229
+421	Mystery Zone
+422	Twinleaf Town
+423	Twinleaf Town
+424	Twinleaf Town
+425	Twinleaf Town
+426	Twinleaf Town
+427	Twinleaf Town
+428	Twinleaf Town
+429	Sandgem Town
+430	Sandgem Town
+431	Sandgem Town
+432	Sandgem Town
+433	Sandgem Town
+434	Sandgem Town
+435	Sandgem Town
+436	Sandgem Town
+437	Sandgem Town
+438	Floaroma Town
+439	Floaroma Town
+440	Floaroma Town
+441	Floaroma Town
+442	Floaroma Town
+443	Floaroma Town
+444	Floaroma Town
+445	Floaroma Town
+446	Solaceon Town
+447	Solaceon Town
+448	Solaceon Town
+449	Solaceon Town
+450	Solaceon Town
+451	Solaceon Town
+452	Solaceon Town
+453	Solaceon Town
+454	Solaceon Town
+455	Solaceon Town
+456	Celestic Town
+457	Celestic Town
+458	Celestic Town
+459	Celestic Town
+460	Celestic Town
+461	Celestic Town
+462	Celestic Town
+463	Celestic Town
+464	Celestic Town
+465	Survival Area
+466	Survival Area
+467	Survival Area
+468	Survival Area
+469	Survival Area
+470	Survival Area
+471	Survival Area
+472	Survival Area
+473	Resort Area
+474	Resort Area
+475	Resort Area
+476	Resort Area
+477	Resort Area
+478	Resort Area
+479	Resort Area
+480	Resort Area
+481	Resort Area
+482	Resort Area
+483	Mystery Zone
+484	Mystery Zone
+485	Route 220
+486	Route 223
+487	Route 226
+488	Route 226
+489	Route 230
+490	Seabreak Path
+491	Mystery Zone
+492	Mystery Zone
+493	Mystery Zone
+494	Eterna City
+495	Ramanas Park
+496	Ramanas Park (Discovery Room)
+497	Ramanas Park (Kanto Room)
+498	Ramanas Park (Johto Room)
+499	Ramanas Park (Soul Room)
+500	Ramanas Park (Tectonic Room)
+501	Ramanas Park (Oceanic Room)
+502	Ramanas Park (Stratospheric Room)
+503	Ramanas Park (Rainbow Room)
+504	Ramanas Park (Squall Room)
+505	Ramanas Park (Genome Room)
+506	Ramanas Park (Pure Space)
+507	Ramanas Park (Strange Space)
+508	Grand Underground
+509	Grand Underground
+510	Grand Underground
+511	Grand Underground
+512	Grand Underground
+513	Grand Underground
+514	Grand Underground
+515	Grand Underground
+516	Grand Underground
+517	Grand Underground
+518	Grand Underground
+519	Grand Underground
+520	Grand Underground
+521	Grand Underground
+522	Grand Underground
+523	Grand Underground
+524	Grand Underground
+525	Grand Underground
+526	Grand Underground
+527	Grand Underground
+528	Grand Underground
+529	Grand Underground
+530	Grand Underground
+531	Grand Underground
+532	Grand Underground
+533	Grand Underground
+534	Grand Underground
+535	Grand Underground
+536	Grand Underground
+537	Grand Underground
+538	Grand Underground
+539	Grand Underground
+540	Grand Underground
+541	Grand Underground
+542	Grand Underground
+543	Grand Underground (Spacious Cave)
+544	Grand Underground (Grassland Cave)
+545	Grand Underground (Riverbank Cave)
+546	Grand Underground (Spacious Cave)
+547	Grand Underground (Spacious Cave)
+548	Grand Underground (Swampy Cave)
+549	Grand Underground (Grassland Cave)
+550	Grand Underground (Fountainspring Cave)
+551	Grand Underground (Spacious Cave)
+552	Grand Underground (Fountainspring Cave)
+553	Grand Underground (Fountainspring Cave)
+554	Grand Underground (Spacious Cave)
+555	Grand Underground (Spacious Cave)
+556	Grand Underground (Rocky Cave)
+557	Grand Underground (Volcanic Cave)
+558	Grand Underground (Spacious Cave)
+559	Grand Underground (Rocky Cave)
+560	Grand Underground (Volcanic Cave)
+561	Grand Underground (Dazzling Cave)
+562	Grand Underground (Sandsear Cave)
+563	Grand Underground (Spacious Cave)
+564	Grand Underground (Spacious Cave)
+565	Grand Underground (Rocky Cave)
+566	Grand Underground (Spacious Cave)
+567	Grand Underground (Grassland Cave)
+568	Grand Underground (Riverbank Cave)
+569	Grand Underground (Spacious Cave)
+570	Grand Underground (Grassland Cave)
+571	Grand Underground (Fountainspring Cave)
+572	Grand Underground (Swampy Cave)
+573	Grand Underground (Spacious Cave)
+574	Grand Underground (Spacious Cave)
+575	Grand Underground (Spacious Cave)
+576	Grand Underground (Swampy Cave)
+577	Grand Underground (Riverbank Cave)
+578	Grand Underground (Icy Cave)
+579	Grand Underground (Dazzling Cave)
+580	Grand Underground (Dazzling Cave)
+581	Grand Underground (Icy Cave)
+582	Grand Underground (Icy Cave)
+583	Grand Underground (Icy Cave)
+584	Grand Underground (Spacious Cave)
+585	Grand Underground (Spacious Cave)
+586	Grand Underground (Whiteout Cave)
+587	Grand Underground (Whiteout Cave)
+588	Grand Underground (Whiteout Cave)
+589	Grand Underground (Whiteout Cave)
+590	Grand Underground (Swampy Cave)
+591	Grand Underground (Fountainspring Cave)
+592	Grand Underground (Spacious Cave)
+593	Grand Underground (Swampy Cave)
+594	Grand Underground (Spacious Cave)
+595	Grand Underground (Fountainspring Cave)
+596	Grand Underground (Rocky Cave)
+597	Grand Underground (Swampy Cave)
+598	Grand Underground (Spacious Cave)
+599	Grand Underground (Sandsear Cave)
+600	Grand Underground (Volcanic Cave)
+601	Grand Underground (Dazzling Cave)
+602	Grand Underground (Volcanic Cave)
+603	Grand Underground (Rocky Cave)
+604	Grand Underground (Fountainspring Cave)
+605	Grand Underground (Grassland Cave)
+606	Grand Underground (Spacious Cave)
+607	Grand Underground (Swampy Cave)
+608	Grand Underground (Rocky Cave)
+609	Grand Underground (Sandsear Cave)
+610	Grand Underground (Volcanic Cave)
+611	Grand Underground (Still-Water Cavern)
+612	Grand Underground (Big Bluff Cavern)
+613	Grand Underground (Sunlit Cavern)
+614	Grand Underground (Stargleam Cavern)
+615	Grand Underground (Glacial Cavern)
+616	Grand Underground (Bogsunk Cavern)
+617	Grand Underground (Typhlo Cavern)
+618	Hall of Origin
+619	Ramanas Park (Distortion Room)
+620	Grand Underground (Secret Base)
+621	Grand Underground (Secret Base)
+622	Grand Underground (Secret Base)
+623	Grand Underground (Secret Base)
+624	Ramanas Park (Distortion Room)
+625	Ramanas Park
+626	Jubilife City
+627	Grand Underground (Secret Base)
+628	Grand Underground (Secret Base)
+629	Grand Underground (Secret Base)
+630	Grand Underground (Secret Base)
+631	Grand Underground (Secret Base)
+632	Grand Underground (Secret Base)
+633	Grand Underground (Secret Base)
+634	Grand Underground (Secret Base)
+635	Grand Underground (Secret Base)
+636	Grand Underground (Secret Base)
+637	Grand Underground (Secret Base)
+638	Grand Underground (Secret Base)
+639	Grand Underground (Secret Base)
+640	Grand Underground (Secret Base)
+641	Grand Underground (Secret Base)
+642	Grand Underground (Secret Base)
+643	Grand Underground (Secret Base)
+644	Grand Underground (Secret Base)
+645	Grand Underground (Secret Base)
+646	Grand Underground (Secret Base)
+647	Grand Underground (Secret Base)
+648	Ramanas Park (Discovery Room)
+649	Ramanas Park (Kanto Room)
+650	Ramanas Park (Johto Room)
+651	Ramanas Park (Soul Room)
+652	Ramanas Park (Tectonic Room)
+653	Ramanas Park (Oceanic Room)
+654	Ramanas Park (Stratospheric Room)
+655	Ramanas Park (Rainbow Room)
+656	Ramanas Park (Squall Room)
+657	Ramanas Park (Genome Room)
+30001	a Link Trade
+30002	a Link Trade
+30003	the Kanto region
+30004	the Johto region
+30005	the Hoenn region
+30006	the Sinnoh region
+30007	a distant land
+30009	the Unova region
+30010	the Kalos region
+30011	Pokémon Link
+30012	Pokémon GO
+30013	the Kanto region
+30014	the Hoenn region
+30015	the Alola region
+30016	Poké Pelago
+30017	the Johto region
+30018	Pokémon HOME
+30019	the Kanto region
+30020	the Galar region
+30022	the Sinnoh region
+40001	a lovely place
+40002	a faraway place
+40003	a Pokémon movie
+40005	a 2019 Pokémon movie
+40006	a 2020 Pokémon movie
+40007	a 2021 Pokémon movie
+40008	a 2022 Pokémon movie
+40009	a 2023 Pokémon movie
+40010	a 2024 Pokémon movie
+40011	the Pokémon animated show
+40012	a Pokémon Center
+40013	Pokémon Center Tohoku
+40014	a WCS
+40016	WCS 2019
+40017	WCS 2020
+40018	WCS 2021
+40019	WCS 2022
+40020	WCS 2023
+40021	WCS 2024
+40022	Worlds
+40024	2019 Worlds
+40025	2020 Worlds
+40026	2021 Worlds
+40027	2022 Worlds
+40028	2023 Worlds
+40029	2024 Worlds
+40030	a VGE
+40032	VGE 2019
+40033	VGE 2020
+40034	VGE 2021
+40035	VGE 2022
+40036	VGE 2023
+40037	VGE 2024
+40038	a Pokémon event
+40039	a Battle Competition
+40040	a game event
+40041	the Pokémon Daisuki Club
+40042	a Pokémon TV program
+40043	a concert
+40044	an online present
+40045	the PGL
+40047	a 2019 Pokémon event
+40048	a 2020 Pokémon event
+40049	a 2021 Pokémon event
+40050	a 2022 Pokémon event
+40051	a 2023 Pokémon event
+40052	a 2024 Pokémon event
+40053	a Pokémon event
+40055	a 2019 Pokémon event
+40056	a 2020 Pokémon event
+40057	a 2021 Pokémon event
+40058	a 2022 Pokémon event
+40059	a 2023 Pokémon event
+40060	a 2024 Pokémon event
+40061	PokéPark
+40063	PokéPark 2019
+40064	PokéPark 2020
+40065	PokéPark 2021
+40066	PokéPark 2022
+40067	PokéPark 2023
+40068	PokéPark 2024
+40069	an event site
+40070	GAME FREAK
+40071	a stadium
+40072	a VGC event
+40074	the VGC 2019
+40075	the VGC 2020
+40076	the VGC 2021
+40077	the VGC 2022
+40078	the VGC 2023
+40079	the VGC 2024
+40080	a Virtual Console game
+40081	Pokémon GO
+40082	Pokémon Bank
+40083	a Pokémon shop
+40084	a demo version
+40085	the Poké Ball Plus
+40086	Pokémon HOME
+60001	a stranger
+60002	a Nursery worker
+60003	a treasure hunter
+60004	an old hot-springs visitor
+60005	Riley
+60006	Nursery Couple
+60007	Traveling Man
+60010	Nursery Couple

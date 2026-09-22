@@ -110,7 +110,7 @@ void UI::handleInput(bool& running) {
 void UI::handleMenuInput(const SDL_Event& event, bool& running) {
     bool hasWC = gameInfo(selectedGame_).hasWondercards;
     bool hasExport = !selectedSlots_.empty();
-    int menuCount = (isDualBankMode() ? (hasWC ? 10 : 9) : (hasWC ? 9 : 8)) + (hasExport ? 1 : 0);
+    int menuCount = (isDualBankMode() ? (hasWC ? 10 : 9) : (hasWC ? 9 : 8)) + (hasExport ? 2 : 0);
     auto menuConfirm = [&]() {
         // 0=Theme, 1=Language, 2=Search (both modes)
         if (menuSelection_ == 0) {
@@ -164,8 +164,42 @@ void UI::handleMenuInput(const SDL_Event& event, bool& running) {
             showMessageAndWait(i18n::get(StrKey::ExportComplete), body);
             return;
         }
-        // Import Card sits right after Export Selected and is always shown.
-        int importIdx = exportIdx + (hasExport ? 1 : 0);
+        // Export Cards: the same selection, written as PNG cards instead.
+        int cardsIdx = exportIdx + 1;
+        if (hasExport && menuSelection_ == cardsIdx) {
+            showMenu_ = false;
+            int total = 0;
+            for (int slot : selectedSlots_)
+                if (!getPokemonAt(selectedBox_, slot, selectedPanel_).isEmpty())
+                    total++;
+
+            // Open the card fonts once for the whole run rather than per card.
+            CardFonts fonts;
+            if (!openCardFonts(fonts)) {
+                showMessageAndWait(i18n::get(StrKey::ExportFailed),
+                                   i18n::get(StrKey::CouldNotWrite));
+                return;
+            }
+            int exported = 0, failed = 0, done = 0;
+            for (int slot : selectedSlots_) {
+                Pokemon pkm = getPokemonAt(selectedBox_, slot, selectedPanel_);
+                if (pkm.isEmpty()) continue;
+                done++;
+                showWorking(i18n::fmt(StrKey::SavingCards,
+                                      std::to_string(done), std::to_string(total)));
+                if (!renderPokemonCard(pkm, fonts).empty()) exported++;
+                else                                        failed++;
+            }
+            closeCardFonts(fonts);
+
+            std::string body = i18n::fmt(StrKey::CardsExported, std::to_string(exported));
+            if (failed > 0) body += "\n" + i18n::fmt(StrKey::ExportFailedCount, std::to_string(failed));
+            showMessageAndWait(i18n::get(StrKey::ExportComplete), body);
+            return;
+        }
+
+        // Import Card sits after both export items and is always shown.
+        int importIdx = exportIdx + (hasExport ? 2 : 0);
         if (menuSelection_ == importIdx) {
             showMenu_ = false;
             cardList_ = scanCards(basePath_, selectedGame_);
@@ -629,7 +663,7 @@ void UI::handleStickRepeat() {
         {
             bool hasWC = gameInfo(selectedGame_).hasWondercards;
             bool hasExport = !selectedSlots_.empty();
-            int menuCount = (isDualBankMode() ? (hasWC ? 10 : 9) : (hasWC ? 9 : 8)) + (hasExport ? 1 : 0);
+            int menuCount = (isDualBankMode() ? (hasWC ? 10 : 9) : (hasWC ? 9 : 8)) + (hasExport ? 2 : 0);
             menuSelection_ = (menuSelection_ + (stickDirY_ > 0 ? 1 : menuCount - 1)) % menuCount;
         }
     } else if (!showDetail_) {

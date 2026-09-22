@@ -349,7 +349,8 @@ Filenames follow the PKHeX naming convention: game tag, national dex number, for
 
 ### Pokemon Cards
 
-Save any Pokemon as a shareable 1280x720 PNG. Open the **detail view** (X) and press **Y**.
+Save any Pokemon as a shareable 1280x720 PNG. Open the **detail view** (X) and press **Y**, or select
+several Pokemon and use **menu (+) → Export Cards** to write them all in one pass.
 
 Cards are written to:
 
@@ -493,6 +494,7 @@ When switching banks, the selector appears on the side being switched while the 
 | Search | Search for Pokemon across both panels |
 | Wondercard | Inject event wondercards as Pokemon (supported games only) |
 | Export Selected | Export selected Pokemon as `.pk` files (shown when Pokemon are selected) |
+| Export Cards | Export selected Pokemon as PNG cards (shown when Pokemon are selected) |
 | Import Card | Browse `cards/<GameFamily>/` and import a Pokemon from a card PNG |
 | Switch Bank | Save game and bank, return to bank selector |
 | Change Game | Save everything, return to game selector |
@@ -508,6 +510,7 @@ When switching banks, the selector appears on the side being switched while the 
 | Search | Search for Pokemon across both panels |
 | Wondercard | Inject event wondercards as Pokemon (supported games only) |
 | Export Selected | Export selected Pokemon as `.pk` files (shown when Pokemon are selected) |
+| Export Cards | Export selected Pokemon as PNG cards (shown when Pokemon are selected) |
 | Import Card | Browse `cards/<GameFamily>/` and import a Pokemon from a card PNG |
 | Switch Left Bank | Save both banks, switch the left bank |
 | Switch Right Bank | Save both banks, switch the right bank |

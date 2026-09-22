@@ -847,10 +847,17 @@ void UI::drawCardFooter(const Pokemon& pkm, const CardFonts& f) {
 // --- Export ------------------------------------------------------------------
 
 std::string UI::exportPokemonCard(const Pokemon& pkm) {
-    if (pkm.isEmpty()) return "";
-
     CardFonts f;
     if (!openCardFonts(f)) return "";
+    std::string name = renderPokemonCard(pkm, f);
+    closeCardFonts(f);
+    return name;
+}
+
+// Renders one card with fonts the caller owns. Opening the nine sizes costs
+// real time, so exporting a boxful opens them once and calls this per Pokemon.
+std::string UI::renderPokemonCard(const Pokemon& pkm, const CardFonts& f) {
+    if (pkm.isEmpty()) return "";
 
     // Use a format the renderer advertises: not every backend can make a render
     // target out of an arbitrary one.
@@ -864,10 +871,8 @@ std::string UI::exportPokemonCard(const Pokemon& pkm) {
     if (!target && format != SDL_PIXELFORMAT_ARGB8888)
         target = SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_ARGB8888,
                                    SDL_TEXTUREACCESS_TARGET, CARD_W, CARD_H);
-    if (!target) {
-        closeCardFonts(f);
+    if (!target)
         return "";
-    }
 
     SDL_SetRenderTarget(renderer_, target);
     SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_BLEND);
@@ -888,7 +893,6 @@ std::string UI::exportPokemonCard(const Pokemon& pkm) {
 
     SDL_SetRenderTarget(renderer_, nullptr);
     SDL_DestroyTexture(target);
-    closeCardFonts(f);
     markDirty();
 
     if (!read) {

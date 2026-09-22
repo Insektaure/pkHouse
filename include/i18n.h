@@ -161,6 +161,9 @@ namespace StrKey {
     constexpr const char* CardListFooter       = "card_list_footer";
     constexpr const char* CardConfirmFooter    = "card_confirm_footer";
     constexpr const char* CardPressAToRead     = "card_press_a_to_read";
+    constexpr const char* MenuExportCards      = "menu_export_cards";
+    constexpr const char* SavingCards          = "saving_cards";
+    constexpr const char* CardsExported        = "cards_exported";
     constexpr const char* ReleaseMultiConfirm  = "release_multi_confirm";
     constexpr const char* CantMovePartyBank    = "cant_move_party_bank";
     constexpr const char* SlotsOccupied        = "slots_occupied";

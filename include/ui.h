@@ -494,6 +494,7 @@ private:
     // Renders a 1280x720 shareable card and writes it to <basePath>/cards/.
     // Returns the filename written, or "" on failure.
     std::string exportPokemonCard(const Pokemon& pkm);
+    std::string renderPokemonCard(const Pokemon& pkm, const CardFonts& fonts);
 
     // Font sizes used only by the card; opened per export and closed again.
     struct CardFonts {

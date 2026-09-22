@@ -958,7 +958,7 @@ void UI::drawMenuPopup() {
         menuCount = hasWC ? 10 : 9;
     else
         menuCount = hasWC ? 9 : 8;
-    if (hasExport) menuCount++;
+    if (hasExport) menuCount += 2;  // Export Selected + Export Cards
 
     constexpr int POP_W = 380;
     int POP_H = 50 + menuCount * 36 + 30;
@@ -971,8 +971,11 @@ void UI::drawMenuPopup() {
     drawTextCentered(i18n::get(StrKey::MenuTitle), popX + POP_W / 2, popY + 22, T().text, font_);
 
     static char exportBuf[64];
-    if (hasExport)
+    static char cardsBuf[64];
+    if (hasExport) {
         std::snprintf(exportBuf, sizeof(exportBuf), "%s", i18n::fmt(StrKey::MenuExportSelected, std::to_string((int)selectedSlots_.size())).c_str());
+        std::snprintf(cardsBuf, sizeof(cardsBuf), "%s", i18n::fmt(StrKey::MenuExportCards, std::to_string((int)selectedSlots_.size())).c_str());
+    }
 
     const std::string labelsNormal[] = {
         i18n::get(StrKey::MenuTheme),
@@ -980,6 +983,7 @@ void UI::drawMenuPopup() {
         i18n::get(StrKey::MenuSearch),
         i18n::get(StrKey::MenuWondercard),
         exportBuf,
+        cardsBuf,
         i18n::get(StrKey::MenuImportCard),
         i18n::get(StrKey::MenuSwitchBank),
         i18n::get(StrKey::MenuChangeGame),
@@ -992,6 +996,7 @@ void UI::drawMenuPopup() {
         i18n::get(StrKey::MenuSearch),
         i18n::get(StrKey::MenuWondercard),
         exportBuf,
+        cardsBuf,
         i18n::get(StrKey::MenuImportCard),
         i18n::get(StrKey::MenuSwitchLeft),
         i18n::get(StrKey::MenuSwitchRight),
@@ -1000,13 +1005,14 @@ void UI::drawMenuPopup() {
         i18n::get(StrKey::MenuQuit)
     };
     // Build label list, skipping conditional items
-    std::string visibleLabels[13];
+    std::string visibleLabels[14];
     const std::string* allLabels = isDualBankMode() ? labelsApplet : labelsNormal;
-    int allCount = isDualBankMode() ? 11 : 10;
+    int allCount = isDualBankMode() ? 12 : 11;
     int vi = 0;
     for (int i = 0; i < allCount; i++) {
         if (!hasWC && i == 3) continue;     // skip Wondercard
         if (!hasExport && i == 4) continue; // skip Export Selected
+        if (!hasExport && i == 5) continue; // skip Export Cards
         visibleLabels[vi++] = allLabels[i];
     }
 

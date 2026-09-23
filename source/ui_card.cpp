@@ -725,7 +725,7 @@ void UI::drawCardMoves(const Pokemon& pkm, const CardFonts& f) {
             drawTx(r, f.move, "---", x + NAME_X, nameY, C_DIM);
             continue;
         }
-        uint8_t type = getMoveType(moves[i], selectedGame_);
+        uint8_t type = getMoveType(moves[i], pkm.gameType_);
 
         // The same type icons the detail view uses; the coloured dot stays as a
         // fallback so a missing icon still marks the move's type.

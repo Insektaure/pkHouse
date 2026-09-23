@@ -263,6 +263,9 @@ void UI::drawGameSelectorFrame() {
         drawTextCentered(i18n::get(StrKey::SelectGame), SCREEN_W / 2, 40, T().text, font_);
     }
 
+    // The board, above the icons.
+    drawGtsRow(82, 48);
+
     int numGames = (int)availableGames_.size();
     constexpr int COLS = 6;
     constexpr int ROWS_PER_PAGE = 2;
@@ -295,7 +298,8 @@ void UI::drawGameSelectorFrame() {
         int cardY = gridStartY + r * (CARD_H + CARD_GAP);
 
         // Card background
-        if (i == gameSelCursor_ && !gameSelOnAllBanks_ && gameSelOnChevron_ == 0) {
+        if (i == gameSelCursor_ && !gameSelOnAllBanks_ && !gameSelOnGts_
+            && gameSelOnChevron_ == 0) {
             drawRect(cardX, cardY, CARD_W, CARD_H, T().menuHighlight);
             drawRectOutline(cardX, cardY, CARD_W, CARD_H, T().cursor, 3);
         } else {
@@ -430,6 +434,21 @@ void UI::handleGameSelectorInput(bool& running) {
         int pageEnd = std::min(pageStart + GAMES_PER_PAGE, numGames);
         int pageCount = pageEnd - pageStart;
 
+        // On the GTS band
+        if (gameSelOnGts_) {
+            if (dy > 0) {
+                // Into the grid, keeping the column the cursor came from.
+                gameSelOnGts_ = false;
+                int col = (gameSelCursor_ - pageStart) % COLS;
+                if (col >= pageCount) col = pageCount - 1;
+                gameSelCursor_ = pageStart + col;
+            } else if (dy < 0) {
+                gameSelOnGts_ = false;
+                gameSelOnAllBanks_ = true;
+            }
+            return;
+        }
+
         // On a chevron button
         if (gameSelOnChevron_ != 0) {
             if (dx != 0) {
@@ -451,12 +470,19 @@ void UI::handleGameSelectorInput(bool& running) {
             }
             if (dy < 0) {
                 gameSelOnChevron_ = 0;
+                gameSelOnGts_ = true;
             }
             return;
         }
 
         if (gameSelOnAllBanks_) {
-            // On "All Banks" row: up goes back to grid, left/right ignored
+            // On "All Banks" row: up goes back to the grid, down wraps round to
+            // the band at the top, left/right ignored.
+            if (dy > 0) {
+                gameSelOnAllBanks_ = false;
+                gameSelOnGts_ = true;
+                return;
+            }
             if (dy < 0) {
                 gameSelOnAllBanks_ = false;
                 // Place cursor on bottom row of current page
@@ -503,9 +529,10 @@ void UI::handleGameSelectorInput(bool& running) {
         if (col < 0) col = rowItems - 1;
         if (col >= rowItems) col = 0;
 
-        // Wrap rows (up from top goes to "All Banks")
+        // Up from the top row reaches the band rather than wrapping all the
+        // way round to "All Banks".
         if (row < 0) {
-            gameSelOnAllBanks_ = true;
+            gameSelOnGts_ = true;
             return;
         }
 
@@ -549,7 +576,9 @@ void UI::handleGameSelectorInput(bool& running) {
                     moveGrid(0, 1);
                     break;
                 case SDL_CONTROLLER_BUTTON_B: // Switch A = select
-                    if (gameSelOnChevron_ == -1 && gameSelPage_ > 0) {
+                    if (gameSelOnGts_) {
+                        enterGts();
+                    } else if (gameSelOnChevron_ == -1 && gameSelPage_ > 0) {
                         gameSelPage_--;
                         gameSelCursor_ = gameSelPage_ * GAMES_PER_PAGE;
                         gameSelOnChevron_ = 0;
@@ -582,6 +611,7 @@ void UI::handleGameSelectorInput(bool& running) {
                         gameSelCursor_ = gameSelPage_ * GAMES_PER_PAGE;
                         gameSelOnAllBanks_ = false;
                         gameSelOnChevron_ = 0;
+                        gameSelOnGts_ = false;
                     }
                     break;
                 }
@@ -591,6 +621,7 @@ void UI::handleGameSelectorInput(bool& running) {
                         gameSelCursor_ = gameSelPage_ * GAMES_PER_PAGE;
                         gameSelOnAllBanks_ = false;
                         gameSelOnChevron_ = 0;
+                        gameSelOnGts_ = false;
                     }
                     break;
                 }

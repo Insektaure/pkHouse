@@ -68,26 +68,27 @@ void UI::updateCardPreview() {
 
 // Compact summary of what the highlighted card actually contains. Everything
 // here comes from the decoded payload, never from the filename.
-void UI::drawCardPreviewPane(int paneX, int paneY, int paneW, int paneH) {
-    if (cardPreviewIdx_ != cardListCursor_) {
+void UI::drawCardPreviewPane(const CardPayload::Parsed& parsed, bool pending,
+                             int paneX, int paneY, int paneW, int paneH) {
+    if (pending) {
         drawTextCentered("...", paneX + paneW / 2, paneY + paneH / 2 - 9, T().textDim, font_);
         return;
     }
-    if (cardPreview_.result != CardPayload::Result::Ok) {
+    if (parsed.result != CardPayload::Result::Ok) {
         // A fast-path miss is not a verdict: the whole image still gets scanned
         // when the user commits, so say that rather than calling it broken.
-        const char* key = (cardPreview_.result == CardPayload::Result::NotACard)
+        const char* key = (parsed.result == CardPayload::Result::NotACard)
                         ? StrKey::CardPressAToRead
-                        : cardResultKey(cardPreview_.result);
+                        : cardResultKey(parsed.result);
         drawTextCentered(i18n::get(key), paneX + paneW / 2, paneY + paneH / 2 - 20,
                          T().textDim, fontSmall_);
-        if (cardPreview_.result == CardPayload::Result::WrongGame && cardPreview_.gameKnown)
-            drawTextCentered(gameInfo(cardPreview_.game).bankGroupName,
+        if (parsed.result == CardPayload::Result::WrongGame && parsed.gameKnown)
+            drawTextCentered(gameInfo(parsed.game).bankGroupName,
                              paneX + paneW / 2, paneY + paneH / 2 + 2, T().red, fontSmall_);
         return;
     }
 
-    const Pokemon& pkm = cardPreview_.pkm;
+    const Pokemon& pkm = parsed.pkm;
     const uint16_t species = pkm.isEgg() ? 0 : pkm.species();
     int y = paneY;
 
@@ -159,7 +160,7 @@ void UI::drawCardPreviewPane(int paneX, int paneY, int paneW, int paneH) {
         if (moves[i] == 0) {
             drawText("---", paneX + 26, y + 2, T().textDim, fontSmall_);
         } else {
-            uint8_t mtype = getMoveType(moves[i], selectedGame_);
+            uint8_t mtype = getMoveType(moves[i], pkm.gameType_);
             if (SDL_Texture* tex = getTypeSprite(mtype)) {
                 SDL_Rect d = {paneX, y, 22, 22};
                 SDL_RenderCopy(renderer_, tex, nullptr, &d);
@@ -247,7 +248,8 @@ void UI::drawCardListPopup() {
     // Separator, then the decoded summary.
     int paneX = popX + POP_W - 20 - PANE_W;
     drawRect(paneX - 14, listY, 1, listBottom - listY, T().popupBorder);
-    drawCardPreviewPane(paneX, popY + 56, PANE_W, POP_H - 56 - 46);
+    drawCardPreviewPane(cardPreview_, cardPreviewIdx_ != cardListCursor_,
+                        paneX, popY + 56, PANE_W, POP_H - 56 - 46);
 
     drawTextCentered(i18n::get(StrKey::CardListFooter), popX + POP_W / 2,
                      popY + POP_H - 22, T().textDim, fontSmall_);

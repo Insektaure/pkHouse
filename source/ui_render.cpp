@@ -695,7 +695,8 @@ void UI::drawRadarChart(int cx, int cy, int radius, const int values[6], int max
     }
 }
 
-void UI::drawDetailPopup(const Pokemon& pkm, const char* footerKey) {
+void UI::drawDetailPopup(const Pokemon& pkm, const char* footerKey,
+                         const char* badge) {
     // Semi-transparent dark overlay
     drawRect(0, 0, SCREEN_W, SCREEN_H, T().overlay);
 
@@ -708,6 +709,16 @@ void UI::drawDetailPopup(const Pokemon& pkm, const char* footerKey) {
 
     drawRect(popX, popY, POP_W, POP_H, T().panelBg);
     drawRectOutline(popX, popY, POP_W, POP_H, T().cursor, 2);
+
+    // Top-right, in the accent colour, because on the board this is the one
+    // thing that decides whether the Pokemon is any use to you.
+    if (badge != nullptr && badge[0] != '\0') {
+        const auto& be = getTextEntry(badge, fontSmall_, T().goldLabel);
+        const int bw = be.w + 20;
+        const int bx = popX + POP_W - bw - 14;
+        drawRect(bx, popY + 12, bw, 24, T().menuHighlight);
+        drawTextCentered(badge, bx + bw / 2, popY + 24, T().goldLabel, fontSmall_);
+    }
 
     // Large sprite (128x128) top-left
     constexpr int LARGE_SPRITE = 128;
@@ -853,7 +864,7 @@ void UI::drawDetailPopup(const Pokemon& pkm, const char* footerKey) {
         int iconY = my + (MOVE_ROW_H - TYPE_ICON_H) / 2;
         int txtY  = my + (MOVE_ROW_H - textH) / 2;
         if (moves[i] != 0) {
-            uint8_t mtype = getMoveType(moves[i], selectedGame_);
+            uint8_t mtype = getMoveType(moves[i], pkm.gameType_);
             SDL_Texture* typeTex = getTypeSprite(mtype);
             if (typeTex) {
                 SDL_Rect typeDst = {mx, iconY, TYPE_ICON_W, TYPE_ICON_H};

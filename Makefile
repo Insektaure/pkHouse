@@ -11,7 +11,7 @@ include $(DEVKITPRO)/libnx/switch_rules
 
 #---------------------------------------------------------------------------------
 APP_TITLE	:=	pkHouse - Local Bank System
-APP_VERSION :=	1.11.0
+APP_VERSION :=	1.12.0
 APP_AUTHOR	:=	Insektaure
 
 TARGET		:=	$(notdir $(CURDIR))
@@ -36,7 +36,11 @@ CXXFLAGS	:= $(CFLAGS) -fno-exceptions -ffunction-sections -fdata-sections -std=c
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
-LIBS	:=	-lSDL2_image -lSDL2_ttf -lSDL2 \
+# curl before mbedtls before -lz: curl needs symbols from both, and the linker
+# only looks forward. Install them with:
+#     dkp-pacman -S switch-curl switch-mbedtls
+LIBS	:=	-lcurl -lmbedtls -lmbedx509 -lmbedcrypto \
+			-lSDL2_image -lSDL2_ttf -lSDL2 \
 			-lfreetype -lharfbuzz -lpng16 -ljpeg -lwebp -lz -lbz2 \
 			-lEGL -lGLESv2 -lglapi -ldrm_nouveau \
 			-lm -lnx

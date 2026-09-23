@@ -604,6 +604,31 @@ void UI::handleStickRepeat() {
             if (idx >= total) idx = total - 1;
             speciesListCursor_ = idx;
         }
+    } else if (screen_ == AppScreen::GtsHub) {
+        if (showGtsFilter_) {
+            if (stickDirY_ != 0) {
+                int dir = stickDirY_ > 0 ? 1 : -1;
+                gtsFilterCursor_ = (gtsFilterCursor_ + dir + GTS_FILTER_ROWS) % GTS_FILTER_ROWS;
+            }
+        } else if (showGtsDeposit_) {
+            if (stickDirY_ != 0 && !gtsCards_.empty()) {
+                int count = static_cast<int>(gtsCards_.size());
+                gtsCardCursor_ = (gtsCardCursor_ + (stickDirY_ > 0 ? 1 : count - 1)) % count;
+                // Restart the settle timer, so scrolling does not decode a QR
+                // code for every row it passes over.
+                gtsCardPreviewSince_ = SDL_GetTicks();
+            }
+        } else {
+            if (stickDirX_ < 0) gtsHubCursor_ = 0;
+            if (stickDirX_ > 0 && gtsHubCursor_ == 0) gtsHubCursor_ = 1;
+            if (stickDirY_ < 0 && gtsHubCursor_ == 2) gtsHubCursor_ = 1;
+            if (stickDirY_ > 0 && gtsHubCursor_ == 1) gtsHubCursor_ = 2;
+        }
+    } else if (screen_ == AppScreen::GtsBrowse) {
+        if (!gtsDetail_) {
+            if (stickDirX_ != 0) moveGtsCursor(stickDirX_, 0);
+            if (stickDirY_ != 0) moveGtsCursor(0, stickDirY_);
+        }
     } else if (showSearchFilter_) {
         bool alpha = (selectedGame_ == GameType::LA || selectedGame_ == GameType::ZA);
         if (stickDirY_ != 0) {
@@ -1180,6 +1205,17 @@ void UI::selectAll() {
 void UI::buildAvailableSpeciesList() {
     availableSpecies_.clear();
 
+    // The GTS carries deposits from every game at once, so filtering its
+    // picker by one game's personal table would hide most of the board. Any
+    // species with a name is offerable there.
+    if (speciesPickerForGts_) {
+        for (uint16_t i = 1; i <= 1024; i++) {
+            if (!SpeciesName::get(i).empty())
+                availableSpecies_.push_back(i);
+        }
+        return;
+    }
+
     // Use IsPresentInGame flags from personal tables (extracted from PKHeX binary data)
     auto isAvailable = [&](uint16_t species) -> bool {
         if (selectedGame_ == GameType::ZA) {
@@ -1351,8 +1387,13 @@ void UI::handleSpeciesListPickerInput(const SDL_Event& event) {
 
     auto confirm = [&]() {
         uint16_t id = speciesPickerList_[speciesListCursor_];
-        searchFilter_.speciesId = id;
-        searchFilter_.speciesName = SpeciesName::get(id);
+        if (speciesPickerForGts_) {
+            gtsFilter_.species = id;
+            gtsFilter_.speciesName = SpeciesName::get(id);
+        } else {
+            searchFilter_.speciesId = id;
+            searchFilter_.speciesName = SpeciesName::get(id);
+        }
         showSpeciesListPicker_ = false;
     };
 
@@ -1396,6 +1437,12 @@ void UI::handleSearchFilterInput(const SDL_Event& event) {
     auto confirmAction = [&]() {
         switch (searchFilterCursor_) {
             case 0:
+                if (speciesPickerForGts_) {
+                    // The list is built per target, so a stale one from the
+                    // GTS would offer species this game has never seen.
+                    speciesPickerForGts_ = false;
+                    availableSpecies_.clear();
+                }
                 if (availableSpecies_.empty())
                     buildAvailableSpeciesList();
                 speciesLetterCursor_ = 0;

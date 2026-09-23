@@ -324,6 +324,17 @@ void UI::showWorking(const std::string& msg) {
     SDL_RenderPresent(renderer_);
 }
 
+void UI::drawCurrentScreen() {
+    switch (screen_) {
+        case AppScreen::ProfileSelector: drawProfileSelectorFrame(); break;
+        case AppScreen::GameSelector:    drawGameSelectorFrame();    break;
+        case AppScreen::BankSelector:    drawBankSelectorFrame();    break;
+        case AppScreen::GtsHub:          drawGtsHubFrame();          break;
+        case AppScreen::GtsBrowse:       drawGtsBrowseFrame();       break;
+        case AppScreen::MainView:        drawFrame();                break;
+    }
+}
+
 void UI::run(const std::string& basePath, const std::string& savePath) {
     basePath_ = basePath;
     savePath_ = savePath;
@@ -380,10 +391,7 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
             if (dirty_) {
                 if (theme_ != lastTheme_) { clearTextCache(); lastTheme_ = theme_; }
                 // Draw the underlying screen, then about popup on top
-                if (screen_ == AppScreen::ProfileSelector) drawProfileSelectorFrame();
-                else if (screen_ == AppScreen::GameSelector) drawGameSelectorFrame();
-                else if (screen_ == AppScreen::BankSelector) drawBankSelectorFrame();
-                else drawFrame();
+                drawCurrentScreen();
                 drawAboutPopup();
                 SDL_RenderPresent(renderer_);
                 dirty_ = false;
@@ -448,10 +456,7 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
             if (dirty_) {
                 if (theme_ != lastTheme_) { clearTextCache(); lastTheme_ = theme_; }
                 // Draw the underlying screen, then theme popup on top
-                if (screen_ == AppScreen::ProfileSelector) drawProfileSelectorFrame();
-                else if (screen_ == AppScreen::GameSelector) drawGameSelectorFrame();
-                else if (screen_ == AppScreen::BankSelector) drawBankSelectorFrame();
-                else drawFrame();
+                drawCurrentScreen();
                 drawThemeSelectorPopup();
                 SDL_RenderPresent(renderer_);
                 dirty_ = false;
@@ -517,10 +522,7 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
             if (!showLanguageSelector_) continue;
             if (dirty_) {
                 if (theme_ != lastTheme_) { clearTextCache(); lastTheme_ = theme_; }
-                if (screen_ == AppScreen::ProfileSelector) drawProfileSelectorFrame();
-                else if (screen_ == AppScreen::GameSelector) drawGameSelectorFrame();
-                else if (screen_ == AppScreen::BankSelector) drawBankSelectorFrame();
-                else drawFrame();
+                drawCurrentScreen();
                 drawLanguageSelectorPopup();
                 SDL_RenderPresent(renderer_);
                 dirty_ = false;
@@ -536,6 +538,10 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
             handleGameSelectorInput(running);
         } else if (screen_ == AppScreen::BankSelector) {
             handleBankSelectorInput(running);
+        } else if (screen_ == AppScreen::GtsHub) {
+            handleGtsHubInput(running);
+        } else if (screen_ == AppScreen::GtsBrowse) {
+            handleGtsBrowseInput(running);
         } else {
             handleInput(running);
             if (saveNow_) {
@@ -567,6 +573,12 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
             if (cardPreviewIdx_ != previewBefore)
                 markDirty();
         }
+        if (showGtsDeposit_) {
+            int previewBefore = gtsCardPreviewIdx_;
+            updateGtsCardPreview();
+            if (gtsCardPreviewIdx_ != previewBefore)
+                markDirty();
+        }
         // If a popup just activated, skip drawing here — the popup branch
         // will handle it next iteration with dirty_ still set.
         if (dirty_ && !showAbout_ && !showThemeSelector_ && !showLanguageSelector_) {
@@ -574,10 +586,7 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
                 clearTextCache();
                 lastTheme_ = theme_;
             }
-            if (screen_ == AppScreen::ProfileSelector) drawProfileSelectorFrame();
-            else if (screen_ == AppScreen::GameSelector) drawGameSelectorFrame();
-            else if (screen_ == AppScreen::BankSelector) drawBankSelectorFrame();
-            else drawFrame();
+            drawCurrentScreen();
             SDL_RenderPresent(renderer_);
             dirty_ = false;
         }
@@ -586,6 +595,7 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
 
     account_.unmountSave();
     account_.shutdown();
+    Gts::shutdown();
 }
 
 void UI::selectGame(GameType game) {

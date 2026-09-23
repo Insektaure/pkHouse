@@ -6,6 +6,7 @@
 #include "theme.h"
 #include "wondercard.h"
 #include "card_import.h"
+#include "gts.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_image.h>
@@ -19,7 +20,10 @@
 enum class Panel { Game, Bank };
 
 // App-level screen state
-enum class AppScreen { ProfileSelector, GameSelector, BankSelector, MainView };
+enum class AppScreen {
+    ProfileSelector, GameSelector, BankSelector, MainView,
+    GtsHub, GtsBrowse
+};
 
 // Purpose of text input popup
 enum class TextInputPurpose {
@@ -221,6 +225,81 @@ private:
     int          cardPreviewIdx_ = -1;   // which row cardPreview_ belongs to
     uint32_t     cardPreviewSince_ = 0;  // when the cursor last landed
     static constexpr uint32_t CARD_PREVIEW_DELAY_MS = 200;
+
+    // --- Online GTS ----------------------------------------------------------
+
+    // Cursor is on the "Online GTS" row above the game icons.
+    bool gameSelOnGts_ = false;
+
+    // Hub: 0 = browse, 1 = search, 2 = deposit.
+    int  gtsHubCursor_ = 0;
+
+    // The 60-slot browse grid. One page is exactly one request, which is why
+    // PAGE_SIZE and the grid size are the same number.
+    static constexpr int GTS_COLS = 10;
+    static constexpr int GTS_ROWS = 6;
+    static constexpr int GTS_PER_PAGE = GTS_COLS * GTS_ROWS;
+    static_assert(GTS_PER_PAGE == Gts::PAGE_SIZE,
+                  "the browse grid and a server page must hold the same number");
+
+    // Sized so six rows plus one line of detail clear the status bar. The two
+    // pixels a row gives up buy the line: the grid cannot tell you whether a
+    // Pokemon is legal, and that is the thing most worth knowing before
+    // spending a download on it.
+    static constexpr int GTS_CELL_W = 118;
+    static constexpr int GTS_CELL_H = 94;
+    static constexpr int GTS_CELL_PAD = 4;
+    static constexpr int GTS_SPRITE = 54;
+    static constexpr int GTS_GRID_TOP = 58;
+
+    Gts::Filter gtsFilter_;
+    Gts::Page   gtsPage_;
+    int  gtsCursor_ = 0;          // 0..59 within the page on screen
+    int  gtsOffset_ = 0;          // that page's offset on the board
+
+    // Detail popup over the grid. The Pokemon is fetched on open, because the
+    // listing carries only what the grid draws.
+    bool     gtsDetail_ = false;
+    Pokemon  gtsDetailPkm_;
+    GameType gtsDetailGame_ = GameType::ZA;
+    std::string gtsDetailId_;        // the listing gtsDetailPkm_ came from
+
+    // Everything fetched while this page has been on screen, by listing id.
+    //
+    // Opening the same listing twice should not ask the board twice: it is the
+    // same bytes, the wait is the only thing that changes, and a second request
+    // would be a second entry in the board's logs for one person looking once.
+    // Dropped when the page changes, so it never grows past 60.
+    std::unordered_map<std::string, Pokemon> gtsFetched_;
+    std::unordered_map<std::string, GameType> gtsFetchedGame_;
+
+    // Listings already counted as a download this session.
+    std::unordered_set<std::string> gtsCounted_;
+
+    // Deposit picker: cards from every family folder at once, since no game
+    // has been chosen at this point in the flow.
+    struct GtsCard {
+        CardFile file;
+        GameType folderGame;   // which family folder it was found in
+    };
+    std::vector<GtsCard> gtsCards_;
+    bool showGtsDeposit_   = false;
+    int  gtsCardCursor_    = 0;
+    int  gtsCardScroll_    = 0;
+    CardPayload::Parsed gtsCardPreview_;
+    int      gtsCardPreviewIdx_   = -1;
+    uint32_t gtsCardPreviewSince_ = 0;
+
+    // Search filter popup, shown over the hub. The row count is here rather
+    // than beside the popup's own enum because handleStickRepeat() scrolls the
+    // same list from another translation unit.
+    static constexpr int GTS_FILTER_ROWS = 9;
+    bool showGtsFilter_   = false;
+    int  gtsFilterCursor_ = 0;
+
+    // The species picker is shared with the local box search; this says which
+    // filter a confirmed pick belongs to.
+    bool speciesPickerForGts_ = false;
 
     // Search/Filter state
     bool showSearchFilter_  = false;
@@ -426,9 +505,43 @@ private:
     void beginTextInput(TextInputPurpose purpose);
     void commitTextInput(const std::string& text);
 
+    // --- Online GTS (source/ui_gts.cpp) ---
+    void drawGtsRow(int y, int h);            // the row above the game icons
+    void drawGtsHubFrame();
+    void handleGtsHubInput(bool& running);
+    void drawGtsBrowseFrame();
+    void handleGtsBrowseInput(bool& running);
+    void drawGtsSlot(int x, int y, const Gts::Entry& e, bool isCursor);
+    void moveGtsCursor(int dx, int dy);
+    void drawGtsFilterPopup();
+    void handleGtsFilterInput(const SDL_Event& event);
+    void drawGtsDepositPopup();
+    void handleGtsDepositInput(const SDL_Event& event);
+    void updateGtsCardPreview();
+    void enterGts();
+    bool gtsLoadPage(int offset);             // blocks; reports failure itself
+    void gtsOpenDetail();
+    void gtsSaveCurrentAsCard();
+    void gtsScanAllCards();
+    void gtsUploadSelectedCard();
+    std::string gtsEntryLabel(const Gts::Entry& e) const;
+
     // Rendering helpers
+
+    // Draws whichever screen is current. One place, because four popups draw
+    // the screen underneath themselves before drawing on top of it, and four
+    // copies of the same if-chain is four chances for a new screen to be added
+    // to three of them.
+    void drawCurrentScreen();
     void drawFrame();
-    void drawDetailPopup(const Pokemon& pkm, const char* footerKey = nullptr);
+    // `badge`, when given, is drawn in the popup's top-right corner. The GTS
+    // uses it to name the game family a listing belongs to: in a box you are
+    // already in that game, but on the board you are not, and which family a
+    // card is for decides which save it can ever be imported into.
+    //
+    // A game tag, not a game name (BDSP for example)
+    void drawDetailPopup(const Pokemon& pkm, const char* footerKey = nullptr,
+                         const char* badge = nullptr);
     void drawMenuPopup();
     void drawAboutPopup();
     void drawThemeSelectorPopup();
@@ -481,7 +594,11 @@ private:
     void handleWondercardListInput(const SDL_Event& event);
     void handleCardListInput(const SDL_Event& event);
     void updateCardPreview();
-    void drawCardPreviewPane(int paneX, int paneY, int paneW, int paneH);
+    // Draws whichever decoded card it is handed, so the importer and the GTS
+    // deposit picker can each keep their own preview without sharing state.
+    // `pending` means the cursor has moved and nothing has been decoded yet.
+    void drawCardPreviewPane(const CardPayload::Parsed& parsed, bool pending,
+                             int paneX, int paneY, int paneW, int paneH);
     void freeCardPreview();
     bool showCardImportConfirm(const Pokemon& pkm);
     void importCard(const CardFile& card);

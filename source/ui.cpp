@@ -659,6 +659,15 @@ void UI::selectGame(GameType game) {
 
     bankManager_.init(basePath_, game);
 
+    // cards/ is read from as well as written to, so it is created up front like
+    // banks/ rather than on first export: someone handed a card needs a folder
+    // already sitting there with the right name to drop it into.
+    {
+        std::string cardsParent = basePath_ + "cards/";
+        mkdir(cardsParent.c_str(), 0755);
+        mkdir((cardsParent + bankFolderNameOf(game) + "/").c_str(), 0755);
+    }
+
     // Reset bank selector state
     bankSelCursor_ = 0;
     bankSelScroll_ = 0;

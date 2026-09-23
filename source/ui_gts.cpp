@@ -160,6 +160,17 @@ void chord(SDL_Renderer* r, int cx, int cy, int radius, int dy, SDL_Color c) {
     SDL_RenderDrawLine(r, cx - dx, cy + dy, cx + dx, cy + dy);
 }
 
+// A stroke of a given thickness, laid down as overlapping discs.
+void thickLine(SDL_Renderer* r, int x1, int y1, int x2, int y2, int thickness, SDL_Color c) {
+    const double dx = x2 - x1, dy = y2 - y1;
+    const int steps = static_cast<int>(std::max(std::abs(dx), std::abs(dy))) + 1;
+    for (int i = 0; i <= steps; i++) {
+        const double s = static_cast<double>(i) / steps;
+        fillCircle(r, static_cast<int>(x1 + dx * s + 0.5),
+                      static_cast<int>(y1 + dy * s + 0.5), thickness / 2, c);
+    }
+}
+
 SDL_Color withAlpha(SDL_Color c, uint8_t a) { return {c.r, c.g, c.b, a}; }
 
 } // anonymous namespace
@@ -198,6 +209,65 @@ void UI::enterGts() {
     markDirty();
 }
 
+// --- the motif ----------------------------------------------------------------
+
+// A wireframe sphere, clipped to `clip`.
+//
+// Drawn larger than whatever it sits in, so what shows is a slice through the
+// middle: that is what makes a flat drawing read as a globe rather than as a
+// circle with lines on it. The meridians are the same circle squeezed
+// horizontally, so they crowd towards the edges the way longitude does.
+void UI::drawGtsGlobe(const SDL_Rect& clip, int cx, int cy, int radius, uint8_t wire) {
+    SDL_RenderSetClipRect(renderer_, &clip);
+
+    const SDL_Color line = withAlpha(T().text, wire);
+    const SDL_Color rim  = withAlpha(T().text, static_cast<uint8_t>(
+        std::min(255, wire * 3 / 2)));
+
+    ellipseOutline(renderer_, cx, cy, radius, radius, rim);
+    for (int i = 1; i <= 3; i++)
+        ellipseOutline(renderer_, cx, cy, radius * i / 4, radius, line);
+    for (int dy = -radius + radius / 4; dy < radius; dy += radius / 4)
+        chord(renderer_, cx, cy, radius, dy, line);
+
+    SDL_RenderSetClipRect(renderer_, nullptr);
+}
+
+// Two points and a dotted route between them.
+//
+// `lift` is how far above the straight line the route bows. A dot every other
+// sample, so it reads as a route rather than as a wire.
+void UI::drawGtsLink(int ax, int ay, int bx, int by, int lift, uint8_t trail,
+                     int dotA, int dotB) {
+    const SDL_Color dotted = withAlpha(T().goldLabel, trail);
+    const int cx = (ax + bx) / 2;
+    const int cy = (ay + by) / 2 - lift;
+
+    for (int step = 0; step <= 40; step += 2) {
+        const double s = step / 40.0, inv = 1.0 - s;
+        const int px = static_cast<int>(inv * inv * ax + 2 * inv * s * cx + s * s * bx);
+        const int py = static_cast<int>(inv * inv * ay + 2 * inv * s * cy + s * s * by);
+        fillCircle(renderer_, px, py, 1, dotted);
+    }
+    if (dotA > 0) fillCircle(renderer_, ax, ay, dotA, T().goldLabel);
+    if (dotB > 0) fillCircle(renderer_, bx, by, dotB, T().goldLabel);
+}
+
+// A scatter of stars, at positions derived from `seed` rather than from a
+// random source: the same call has to put them in the same place every redraw,
+// or the background shimmers whenever anything else changes.
+void UI::drawGtsStars(const SDL_Rect& area, int count, uint32_t seed) {
+    const SDL_Color star = withAlpha(T().text, 90);
+    uint32_t state = seed | 1u;
+    for (int i = 0; i < count; i++) {
+        state = state * 1664525u + 1013904223u;
+        const int sx = area.x + static_cast<int>((state >> 16) % static_cast<uint32_t>(area.w));
+        state = state * 1664525u + 1013904223u;
+        const int sy = area.y + static_cast<int>((state >> 16) % static_cast<uint32_t>(area.h));
+        drawRect(sx, sy, 2, 2, star);
+    }
+}
+
 // --- The row above the game icons ---------------------------------------------
 // Drawn rather than shipped as a PNG, so the band is navy and amber in the
 // default and follows the palette everywhere else.
@@ -208,58 +278,14 @@ void UI::drawGtsRow(int y, int h) {
 
     drawRect(x, y, ROW_W, h, focused ? T().menuHighlight : T().panelBg);
 
-    // --- the globe, behind everything ---------------------------------------
-    //
-    // Bigger than the band on purpose: what shows is a slice through the middle
-    // of a sphere, which is why it reads as a globe rather than as a circle.
-    // Clipped so the parts above and below simply are not drawn.
+    // --- the motif, behind everything ---------------------------------------
     {
-        SDL_Rect clip = {x, y, ROW_W, h};
+        const SDL_Rect clip = {x, y, ROW_W, h};
+        drawGtsStars({x + 600, y + 4, 450, h - 8}, 8, 0x5EEDu);
+        drawGtsGlobe(clip, x + 853, y + h / 2, 136, 38);
+
         SDL_RenderSetClipRect(renderer_, &clip);
-
-        const int gcx = x + 853;
-        const int gcy = y + h / 2;
-        constexpr int R = 136;
-
-        const SDL_Color wire = withAlpha(T().text, 38);
-        const SDL_Color rim  = withAlpha(T().text, 60);
-
-        ellipseOutline(renderer_, gcx, gcy, R, R, rim);
-        // Meridians: the same circle squeezed, so they crowd towards the edges.
-        for (int i = 1; i <= 3; i++)
-            ellipseOutline(renderer_, gcx, gcy, R * i / 4, R, wire);
-        // Parallels.
-        for (int dy = -R + 24; dy < R; dy += 34)
-            chord(renderer_, gcx, gcy, R, dy, wire);
-
-        // --- the link, over the globe ---------------------------------------
-        //
-        // Two points and a path between them: the whole idea of the screen in
-        // one motif. Dotted rather than solid so it reads as a route.
-        const SDL_Color trail = withAlpha(T().goldLabel, 200);
-        const int ax = x + 722, ay = y + 35;   // near point
-        const int bx = x + 968, by = y + 12;   // far point
-        const int cxp = x + 845, cyp = y - 18; // control, above the band
-
-        for (int step = 0; step <= 40; step++) {
-            if (step % 2 != 0) continue;       // every other sample: a dotted line
-            const double s = step / 40.0, inv = 1.0 - s;
-            const int px = static_cast<int>(inv * inv * ax + 2 * inv * s * cxp + s * s * bx);
-            const int py = static_cast<int>(inv * inv * ay + 2 * inv * s * cyp + s * s * by);
-            fillCircle(renderer_, px, py, 1, trail);
-        }
-        fillCircle(renderer_, ax, ay, 4, T().goldLabel);
-        fillCircle(renderer_, bx, by, 3, T().goldLabel);
-
-        // A scatter of stars, at fixed offsets so the band never shimmers.
-        static constexpr int STARS[][2] = {
-            {612, 12}, {664, 34}, {700, 8}, {1006, 16}, {1032, 38},
-            {760, 6}, {930, 42}, {1046, 6},
-        };
-        const SDL_Color star = withAlpha(T().text, 90);
-        for (const auto& s : STARS)
-            drawRect(x + s[0], y + s[1], 2, 2, star);
-
+        drawGtsLink(x + 722, y + 35, x + 968, y + 12, 44, 200, 4, 3);
         SDL_RenderSetClipRect(renderer_, nullptr);
     }
 
@@ -301,21 +327,52 @@ void UI::drawGtsHubFrame() {
     SDL_SetRenderDrawColor(renderer_, T().bg.r, T().bg.g, T().bg.b, 255);
     SDL_RenderClear(renderer_);
 
-    drawTextCentered(i18n::get(StrKey::GtsTitle), SCREEN_W / 2, 40, T().goldLabel, fontLarge_);
-
     constexpr int MARGIN = 60;
     constexpr int GAP    = 24;
-    constexpr int TOP    = 120;
+    constexpr int HEAD_H = 112;
+    constexpr int TOP    = 128;
     constexpr int BOT    = 640;
     const int totalH = BOT - TOP;
+    const int contentW = SCREEN_W - MARGIN * 2;
 
-    // Left: one big button, because browsing is what almost everyone wants and
-    // it should not need to be looked for.
+    // --- header ---------------------------------------------------------------
+    //
+    // The same composition as the band on the game selector, scaled up.
+    {
+        const SDL_Rect clip = {0, 0, SCREEN_W, HEAD_H};
+        drawGtsStars({640, 8, 600, HEAD_H - 16}, 14, 0x60BEu);
+        drawGtsGlobe(clip, 1060, HEAD_H / 2, 150, 34);
+
+        SDL_RenderSetClipRect(renderer_, &clip);
+        drawGtsLink(880, 78, 1180, 30, 46, 190, 4, 3);
+        SDL_RenderSetClipRect(renderer_, nullptr);
+
+        // The mark, matching the band's.
+        const int cx = MARGIN + 22, cy = HEAD_H / 2 - 2;
+        fillCircle(renderer_, cx, cy, 22, T().goldLabel);
+        ellipseOutline(renderer_, cx, cy, 13, 13, T().bg);
+        ellipseOutline(renderer_, cx, cy,  6, 13, T().bg);
+        chord(renderer_, cx, cy, 13,  0, T().bg);
+        chord(renderer_, cx, cy, 13, -7, T().bg);
+        chord(renderer_, cx, cy, 13,  7, T().bg);
+
+        drawText(i18n::get(StrKey::GtsTitle), MARGIN + 58, 30, T().goldLabel, fontLarge_);
+        drawText(i18n::get(StrKey::GtsSubtitle), MARGIN + 60, 68, T().textDim, fontSmall_);
+
+        drawRect(MARGIN, HEAD_H - 2, contentW, 2, T().goldLabel);
+    }
+
+    // --- Browse: the whole left column ----------------------------------------
+    //
     const int leftW = 620;
     const int leftX = MARGIN;
     {
         const bool focused = (gtsHubCursor_ == 0);
         drawRect(leftX, TOP, leftW, totalH, focused ? T().menuHighlight : T().panelBg);
+
+        drawGtsGlobe({leftX, TOP, leftW, totalH},
+                     leftX + leftW / 2, TOP + totalH / 2, 205, focused ? 34 : 26);
+
         drawRect(leftX, TOP, 6, totalH, T().goldLabel);
         if (focused)
             drawRectOutline(leftX, TOP, leftW, totalH, T().cursor, 3);
@@ -326,7 +383,7 @@ void UI::drawGtsHubFrame() {
                          leftX + leftW / 2, TOP + totalH / 2 + 22, T().textDim, fontSmall_);
     }
 
-    // Right: two stacked buttons.
+    // --- Search and Deposit ---------------------------------------------------
     const int rightX = leftX + leftW + GAP;
     const int rightW = SCREEN_W - rightX - MARGIN;
     const int halfH  = (totalH - GAP) / 2;
@@ -340,16 +397,62 @@ void UI::drawGtsHubFrame() {
     for (int i = 0; i < 2; i++) {
         const int by = TOP + i * (halfH + GAP);
         const bool focused = (gtsHubCursor_ == buttons[i].cursor);
+        const int midY = by + halfH / 2;
 
         drawRect(rightX, by, rightW, halfH, focused ? T().menuHighlight : T().panelBg);
+
+        // A route in each, pointing the way the action goes: searching brings
+        // something in, depositing sends something out. Kept in the bottom
+        // corner - the label and its hint are centred, and a panel only 244px
+        // tall has no room for artwork behind them.
+        {
+            const SDL_Rect clip = {rightX, by, rightW, halfH};
+            SDL_RenderSetClipRect(renderer_, &clip);
+
+            const uint8_t trail = focused ? 150 : 90;
+            const int outX = rightX + rightW - 40;
+            const int inX  = rightX + rightW - 150;
+            const int base = by + halfH - 28;
+
+            if (i == 0)
+                drawGtsLink(outX, base - 20, inX, base, 18, trail, 3, 5);   // in
+            else
+                drawGtsLink(inX, base, outX, base - 20, 18, trail, 5, 3);   // out
+
+            SDL_RenderSetClipRect(renderer_, nullptr);
+        }
+
         drawRect(rightX, by, 6, halfH, T().goldLabel);
         if (focused)
             drawRectOutline(rightX, by, rightW, halfH, T().cursor, 3);
 
-        drawTextCentered(i18n::get(buttons[i].label),
-                         rightX + rightW / 2, by + halfH / 2 - 12, T().text, font_);
-        drawTextCentered(i18n::get(buttons[i].hint),
-                         rightX + rightW / 2, by + halfH / 2 + 16, T().textDim, fontSmall_);
+        // --- the mark ---------------------------------------------------------
+        //
+        {
+            const int cx = rightX + 64;
+            const SDL_Color face = focused ? T().menuHighlight : T().panelBg;
+            fillCircle(renderer_, cx, midY, 34, T().goldLabel);
+
+            if (i == 0) {
+                // A glass: a ring and a handle away from the centre.
+                ellipseOutline(renderer_, cx - 4, midY - 4, 13, 13, face);
+                ellipseOutline(renderer_, cx - 4, midY - 4, 12, 12, face);
+                thickLine(renderer_, cx + 6, midY + 6, cx + 15, midY + 15, 5, face);
+            } else {
+                // An arrow leaving a line: something of yours going out.
+                thickLine(renderer_, cx, midY + 8, cx, midY - 12, 4, face);
+                thickLine(renderer_, cx, midY - 13, cx - 9, midY - 4, 4, face);
+                thickLine(renderer_, cx, midY - 13, cx + 9, midY - 4, 4, face);
+                drawRect(cx - 13, midY + 12, 26, 4, face);
+            }
+        }
+
+        // --- what it does -----------------------------------------------------
+        drawText(i18n::get(buttons[i].label), rightX + 116, midY - 26, T().text, font_);
+        drawText(i18n::get(buttons[i].hint), rightX + 118, midY + 4, T().textDim, fontSmall_);
+
+        drawTextCentered(">", rightX + rightW - 30, midY,
+                         focused ? T().text : T().textDim, font_);
     }
 
     drawStatusBar(i18n::get(StrKey::StatusGtsHub));

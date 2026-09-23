@@ -507,6 +507,14 @@ private:
 
     // --- Online GTS (source/ui_gts.cpp) ---
     void drawGtsRow(int y, int h);            // the row above the game icons
+
+    // The motif the board is drawn in, shared by the access band and the hub.
+    // A slice of a wireframe sphere, a dotted route between two points, and a
+    // scatter of stars - all clipped to a rectangle, all in theme colours.
+    void drawGtsGlobe(const SDL_Rect& clip, int cx, int cy, int radius, uint8_t wire);
+    void drawGtsLink(int ax, int ay, int bx, int by, int lift, uint8_t trail,
+                     int dotA, int dotB);
+    void drawGtsStars(const SDL_Rect& area, int count, uint32_t seed);
     void drawGtsHubFrame();
     void handleGtsHubInput(bool& running);
     void drawGtsBrowseFrame();

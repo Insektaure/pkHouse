@@ -250,13 +250,8 @@ void UI::drawBankSelectorFrame() {
         }
     }
 
-    // Status bar
-    if (bankManager_.isAllMode())
-        drawStatusBar(i18n::get(StrKey::StatusBankAll));
-    else
-        drawStatusBar(i18n::get(StrKey::StatusBankNormal));
-
-    // Profile | Game name (bottom right, gold)
+    // Profile | Game name (bottom right, gold). Built first so the hint row
+    // knows how much of the bar is already spoken for.
     {
         std::string label;
         if (allBanksMode_)
@@ -270,6 +265,22 @@ void UI::drawBankSelectorFrame() {
             label += gameDisplayNameOf(selectedGame_);
         }
         const auto& e = getTextEntry(label, fontSmall_, T().goldLabel);
+
+        if (bankManager_.isAllMode()) {
+            const ButtonHint hints[] = {
+                {"A", StrKey::HintOpen},  {"Y", StrKey::HintTheme},
+                {"B", StrKey::HintBack},  {"-", StrKey::HintAbout},
+            };
+            drawHintBar(hints, 4, std::string(), e.w);
+        } else {
+            const ButtonHint hints[] = {
+                {"A", StrKey::HintOpen},   {"X", StrKey::HintNew},
+                {"Y", StrKey::HintRename}, {"+", StrKey::HintDelete},
+                {"B", StrKey::HintBack},   {"-", StrKey::HintAbout},
+            };
+            drawHintBar(hints, 6, std::string(), e.w);
+        }
+
         if (e.tex) drawText(label, SCREEN_W - e.w - 15, SCREEN_H - 26, T().goldLabel, fontSmall_);
     }
 

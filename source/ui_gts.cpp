@@ -455,7 +455,12 @@ void UI::drawGtsHubFrame() {
                          focused ? T().text : T().textDim, font_);
     }
 
-    drawStatusBar(i18n::get(StrKey::StatusGtsHub));
+    {
+        const ButtonHint hints[] = {
+            {"A", StrKey::HintSelect3}, {"B", StrKey::HintBack2}, {"Y", StrKey::HintTheme},
+        };
+        drawHintBar(hints, 3);
+    }
 
     if (showGtsFilter_)  drawGtsFilterPopup();
     if (showGtsDeposit_) drawGtsDepositPopup();
@@ -741,7 +746,17 @@ void UI::drawGtsBrowseFrame() {
         drawText(right, gridX + gridW - te.w, infoY, rightColor, fontSmall_);
     }
 
-    drawStatusBar(i18n::get(gtsDetail_ ? StrKey::StatusGtsDetail : StrKey::StatusGtsBrowse));
+    if (gtsDetail_) {
+        const ButtonHint hints[] = {
+            {"Y", StrKey::HintSaveAsCard}, {"B", StrKey::HintClose},
+        };
+        drawHintBar(hints, 2);
+    } else {
+        const ButtonHint hints[] = {
+            {"A", StrKey::HintOpen2}, {"L/R", StrKey::HintPage2}, {"B", StrKey::HintBack2},
+        };
+        drawHintBar(hints, 3);
+    }
 
     if (gtsDetail_)
         drawDetailPopup(gtsDetailPkm_, StrKey::StatusGtsDetail,
@@ -1188,8 +1203,21 @@ void UI::drawGtsDepositPopup() {
     drawCardPreviewPane(gtsCardPreview_, gtsCardPreviewIdx_ != gtsCardCursor_,
                         paneX, listY, paneW, POP_H - 96);
 
-    drawTextCentered(i18n::get(StrKey::StatusGtsDeposit), popX + POP_W / 2,
-                     popY + POP_H - 20, T().textDim, fontSmall_);
+    {
+        // Inside the popup, so it is centred rather than laid along the bar.
+        const ButtonHint hints[] = {
+            {"A", StrKey::HintDeposit}, {"B", StrKey::HintCancel2},
+        };
+        int w = 0;
+        for (const auto& hint : hints)
+            w += measureButtonHint(hint.button, i18n::get(hint.labelKey));
+        w += 20;
+        int hx = popX + (POP_W - w) / 2;
+        for (const auto& hint : hints) {
+            hx += drawButtonHint(hx, popY + POP_H - 32, hint.button,
+                                 i18n::get(hint.labelKey)) + 20;
+        }
+    }
 }
 
 void UI::handleGtsDepositInput(const SDL_Event& event) {

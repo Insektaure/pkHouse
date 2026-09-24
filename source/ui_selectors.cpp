@@ -70,7 +70,13 @@ void UI::drawProfileSelectorFrame() {
         drawTextCentered(name, cardX + CARD_W / 2, cardY + ICON_SIZE + 24, T().text, fontSmall_);
     }
 
-    drawStatusBar(i18n::get(StrKey::StatusProfile));
+    {
+        const ButtonHint hints[] = {
+            {"A", StrKey::HintSelect2}, {"Y", StrKey::HintTheme},
+            {"-", StrKey::HintAbout},   {"+", StrKey::HintQuit},
+        };
+        drawHintBar(hints, 4);
+    }
 }
 
 void UI::handleProfileSelectorInput(bool& running) {
@@ -402,15 +408,34 @@ void UI::drawGameSelectorFrame() {
                          canRight ? T().text : T().textDim, font_);
     }
 
+    // The hint bar, built from parts rather than from one pre-formatted string:
+    // the button names are hardware and never translated, so only the verbs go
+    // through i18n, and L/R gets a key wide enough to hold it.
+    {
+        ButtonHint hints[6];
+        int n = 0;
+        hints[n++] = {"A", StrKey::HintSelect2};
+        hints[n++] = {"B", selectedProfile_ >= 0 ? StrKey::HintBack : StrKey::HintQuit};
+        if (totalPages > 1)
+            hints[n++] = {"L/R", StrKey::HintPage};
+        hints[n++] = {"Y", StrKey::HintTheme};
+        hints[n++] = {"-", StrKey::HintAbout};
+        if (selectedProfile_ >= 0)
+            hints[n++] = {"+", StrKey::HintQuit};
+
+        // Whatever goes bottom-right on this screen, so the keys stop short of it.
+        std::string right;
+        if (selectedProfile_ >= 0) right = account_.profiles()[selectedProfile_].nickname;
+        else if (appletMode_)      right = i18n::get(StrKey::DualBankMode);
+        const int reserve = right.empty() ? 0
+                          : getTextEntry(right, fontSmall_, T().goldLabel).w;
+        drawHintBar(hints, n, std::string(), reserve);
+    }
+
     if (selectedProfile_ >= 0) {
-        drawStatusBar(totalPages > 1 ? i18n::get(StrKey::StatusGameBackPage)
-                                     : i18n::get(StrKey::StatusGameBack));
         std::string profileLabel = account_.profiles()[selectedProfile_].nickname;
         const auto& e = getTextEntry(profileLabel, fontSmall_, T().goldLabel);
         if (e.tex) drawText(profileLabel, SCREEN_W - e.w - 15, SCREEN_H - 26, T().goldLabel, fontSmall_);
-    } else {
-        drawStatusBar(totalPages > 1 ? i18n::get(StrKey::StatusGameQuitPage)
-                                     : i18n::get(StrKey::StatusGameQuit));
     }
     if (appletMode_) {
         std::string modeLabel = i18n::get(StrKey::DualBankMode);

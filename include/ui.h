@@ -575,6 +575,33 @@ private:
     void drawRectOutline(int x, int y, int w, int h, SDL_Color color, int thickness);
     void drawStatusBar(const std::string& msg);
 
+    // --- hint bar ------------------------------------------------------------
+
+    // One thing a button does. `button` is the hardware label and is never
+    // translated -- A, B, X and Y are the same everywhere -- so only `labelKey`
+    // goes through i18n. HINT_DPAD draws the d-pad cross instead of text, which
+    // is what stops "D-Pad" and "Steuerkreuz" having to fit inside a circle.
+    struct ButtonHint {
+        const char* button;
+        const char* labelKey;
+    };
+    static constexpr const char* HINT_DPAD = "\x01";
+
+    // Draws one hint at (x, y) and returns how wide it was, so a row can be
+    // laid out without measuring twice.
+    int  drawButtonHint(int x, int y, const char* button, const std::string& label);
+    int  measureButtonHint(const char* button, const std::string& label);
+
+    // A row of them along the status bar.
+    //
+    // `message` is the contextual text some screens lead with - what is being
+    // held, how many are selected - drawn before the keys. `rightReserve` is
+    // how much of the bar the caller intends to use on the right, so a language
+    // with long labels drops hints from the end instead of running underneath
+    // the profile and game name.
+    void drawHintBar(const ButtonHint* hints, int count,
+                     const std::string& message = std::string(), int rightReserve = 0);
+
     // Input handling
     void handleInput(bool& running);
     void handleMenuInput(const SDL_Event& event, bool& running);

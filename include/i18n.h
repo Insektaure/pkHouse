@@ -330,6 +330,42 @@ namespace StrKey {
     constexpr const char* LabelDualBank        = "label_dual_bank";
     constexpr const char* Left                 = "left";
     constexpr const char* Right                = "right";
+    // ui_render.cpp - hint bar: one label per button, one message per state
+    constexpr const char* HintMove                 = "hint_move";
+    constexpr const char* HintBox                  = "hint_box";
+    constexpr const char* HintPickPlace            = "hint_pick_place";
+    constexpr const char* HintSelect               = "hint_select";
+    constexpr const char* HintAll                  = "hint_all";
+    constexpr const char* HintCancel               = "hint_cancel";
+    constexpr const char* HintDetail               = "hint_detail";
+    constexpr const char* HintOpen                 = "hint_open";
+    constexpr const char* HintTheme                = "hint_theme";
+    constexpr const char* HintBack                 = "hint_back";
+    constexpr const char* HintAbout                = "hint_about";
+    constexpr const char* HintNew                  = "hint_new";
+    constexpr const char* HintRename               = "hint_rename";
+    constexpr const char* HintDelete               = "hint_delete";
+    constexpr const char* HintSelect2              = "hint_select2";
+    constexpr const char* HintQuit                 = "hint_quit";
+    constexpr const char* HintPage                 = "hint_page";
+    constexpr const char* HintSelect3              = "hint_select3";
+    constexpr const char* HintBack2                = "hint_back2";
+    constexpr const char* HintOpen2                = "hint_open2";
+    constexpr const char* HintPage2                = "hint_page2";
+    constexpr const char* HintSaveAsCard           = "hint_save_as_card";
+    constexpr const char* HintClose                = "hint_close";
+    constexpr const char* HintDeposit              = "hint_deposit";
+    constexpr const char* HintCancel2              = "hint_cancel2";
+    constexpr const char* HintPlace                = "hint_place";
+    constexpr const char* HintReturn               = "hint_return";
+    constexpr const char* HintClear                = "hint_clear";
+    constexpr const char* HintMenu                 = "hint_menu";
+    constexpr const char* HintPickUp               = "hint_pick_up";
+    constexpr const char* HintToggleDrag           = "hint_toggle_drag";
+    constexpr const char* MsgHoldingSingle         = "msg_holding_single";
+    constexpr const char* MsgHoldingMulti          = "msg_holding_multi";
+    constexpr const char* MsgSearch                = "msg_search";
+    constexpr const char* MsgSelected              = "msg_selected";
 
     // ui_gts.cpp - the online GTS
     constexpr const char* GtsTitle             = "gts_title";

@@ -416,6 +416,42 @@ so a card can only ever belong to the family it was exported from.
 If encoding ever fails, the card is still written: the sprite simply takes the whole panel instead of
 sharing it with the code.
 
+### Online GTS
+
+A public board for cards: leave a Pokemon on it for anyone to take, and take what other people have left.
+Reached from the row above the game icons, before a game is picked — the board carries every game at once,
+and what you take off it is saved as a card rather than dropped into a save, so it can be imported into
+whichever game you open next.
+
+**Browse** shows 60 Pokemon at a time in one panel, moved through like a box, with L/R paging. The line
+under the grid carries what the cells cannot: whether the Pokemon is legal, which game family it belongs
+to, its nature, ability, IV and EV totals, and held item. A opens the full detail view — the same one the
+boxes use, with the game family shown in the corner — and Y saves it into `cards/<GameFamily>/`.
+
+**Search** filters by species, game family, shiny, egg and minimum IV total, sorted by newest or most
+downloaded. The species picker is the one the box search already uses.
+
+**Deposit** lists the cards you have already exported, from every game folder at once, decodes the one you
+pick and shows it in full before uploading. Depositing the same Pokemon twice does nothing — the board
+deduplicates on a hash of the payload, so a blob that was taken down cannot be re-listed as though it
+were new.
+
+#### Legality
+
+A deposit is listed the moment it arrives, marked as not yet checked.
+
+Judging a Pokemon properly means encounter and RNG analysis: a legality script goes over the board every 15 minutes and writes each verdict back.
+
+- Browsing shows legal Pokemon only, unless that is turned off in the search filter
+- An illegal deposit cannot be downloaded at all, even if a verdict lands while you are looking at it
+
+#### Your identity on the board
+
+The board attributes a deposit to an id kept in `sdmc:/config/pkHouse/gts_id.txt`, made on first use.
+
+> **Warning:** a deposit is public. Anyone can browse it, download it and keep it, and taking it off the
+> board later does not reach copies people already have.
+
 ### LED Activity Indicator
 
 The controller notification LED blinks during save and backup operations (save writes, bank saves, backup creation) to provide visual feedback that data is being written.
@@ -451,8 +487,8 @@ This works automatically with no configuration required.
 
 | Button | Action |
 |--------|--------|
-| D-Pad | Navigate game grid, chevron buttons, and "View All Banks" option |
-| A | Select game / Change page / View All Banks |
+| D-Pad | Navigate game grid, chevron buttons, "Online GTS" and "View All Banks" |
+| A | Select game / Change page / Open the online GTS / View All Banks |
 | L / R | Previous / Next page |
 | B | Back to profile selector |
 | Y | Theme selector |
@@ -460,6 +496,16 @@ This works automatically with no configuration required.
 | + | Quit |
 
 When more than 12 games are available, the game selector is paginated. Use L/R or navigate to the chevron buttons on either side to switch pages.
+
+### Online GTS
+
+| Button | Action |
+|--------|--------|
+| D-Pad | Move between Browse, Search and Deposit / move the browse grid |
+| A | Select / open a listing |
+| L / R | Previous / next page of the board |
+| Y | Save the open listing as a card / Theme selector on the hub |
+| B | Back |
 
 ### Bank Selector
 
@@ -527,10 +573,11 @@ When switching banks, the selector appears on the side being switched while the 
 ### Prerequisites
 
 - [devkitPro](https://devkitpro.org/) with the devkitA64 toolchain
-- Switch portlibs: SDL2, SDL2_image, SDL2_ttf
+- Switch portlibs: SDL2, SDL2_image, SDL2_ttf, and curl with mbedTLS for the online GTS
 
 ```bash
-dkp-pacman -S switch-sdl2 switch-sdl2_image switch-sdl2_ttf switch-freetype switch-harfbuzz
+dkp-pacman -S switch-sdl2 switch-sdl2_image switch-sdl2_ttf switch-freetype switch-harfbuzz \
+             switch-curl switch-mbedtls
 ```
 
 ### Build

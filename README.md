@@ -649,6 +649,17 @@ Place `pkHouse.nro` on your Switch SD card (`sdmc:/switch/pkHouse/`) and launch 
 | <img src="screenshots/014.jpg" width="420"> | <img src="screenshots/015.png" width="420"> |
 | About | A card exported from the detail view |
 
+### The online GTS
+
+|  |  |
+|:--:|:--:|
+| <img src="screenshots/016.jpg" width="420"> | <img src="screenshots/017.jpg" width="420"> |
+| The GTS row, above the game icons | Browse, search or deposit |
+| <img src="screenshots/020.jpg" width="420"> | <img src="screenshots/021.jpg" width="420"> |
+| 60 listings a page, legality and spread underneath | A listing in full; Y saves it as a card |
+| <img src="screenshots/019.jpg" width="420"> | <img src="screenshots/018.jpg" width="420"> |
+| Search filter | Picking a card to deposit, decoded before it is sent |
+
 ## Credits
 
 - [PKHeX](https://github.com/kwsch/PKHeX) by kwsch — PokeCrypto research and save structure reference

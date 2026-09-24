@@ -243,92 +243,6 @@ The injected Pokemon is fully generated from the wondercard data — PID, IVs, n
 
 Wondercard files can be downloaded from the [Project Pokemon EventsGallery](https://github.com/projectpokemon/EventsGallery) repository.
 
-### Importing Cards
-
-Cards can be read back in. Open the **menu** (+ button) and choose **Import Card** to browse
-`cards/<GameFamily>/`.
-
-The browser shows the file list on the left and, on the right, **what the highlighted card actually
-contains** — sprite, species, level, gender, nature, ability, held item, all four moves with their types,
-IVs, OT and origin game. All of it is read out of the QR code, never from the filename, so the pane shows
-the Pokemon you would really be importing.
-
-A card that has been resized or re-cropped outside those proportions cannot be read that cheaply; the pane
-says **Press A to read this card** and the full-image search runs when you commit.
-
-Press **A** and pkHouse decodes the whole image, validates the payload, and shows the Pokemon in the
-**full detail view** — IV and EV radar charts, ribbons, technical data — with **A: Import  B: Cancel**.
-Nothing is written until you confirm.
-
-An imported Pokemon goes through exactly the same path as a bank-to-save move, so the handling trainer is
-updated as an in-game trade would and the Pokedex is registered automatically.
-
-If the target slot is already occupied, the import is refused rather than overwriting it.
-
-#### Card Validation
-
-A card is checked in this order before anything is written:
-
-| Check | Rejects |
-|-------|---------|
-| Magic `PKHC` | An image with no pkHouse card data |
-| Payload format version | A card written by a newer pkHouse |
-| Body length vs the length field | Truncated or padded data |
-| CRC-16 over the body | Corruption, partial downloads |
-| `GameType` byte in range | A damaged game field |
-| Body length vs the format's party size | Data that is not the size that game uses |
-| **Game family match** | **A card belonging to another game** |
-| The checksum the games themselves store | Data damaged inside the Pokemon |
-| Species and form present in the target game | Blobs that decode but cannot exist there |
-| Range checks on nature, ball, level, EV total, language, met date | Data read through the wrong offsets |
-
-The **game family match** is the one that matters. The folder a card sits in is a convenience for
-listing, never a guarantee: the payload carries the family it was exported from, that byte is covered by
-the CRC, and it is what gets compared. This has to be a hard gate, because placing a Pokemon writes it
-through the open game's field offsets — a Sword Pokemon written into a Scarlet save would be read with
-Gen 9 offsets and corrupted.
-
-Family, not exact version: a Sword card imports into a Shield bank, the same rule banks already follow.
-
-> **Tip:** If you drop a card into the wrong game folder, pkHouse tells you which family it belongs to and
-> offers to move the file there for you. Nothing is overwritten — a name that is already taken gets a
-> numeric suffix.
-
-Decoding uses [quirc](https://github.com/dlbeer/quirc) by Daniel Beer (ISC). A card that a chat app has
-downscaled below roughly two pixels per QR module will not decode; sharing the original file always works.
-
-### Pokedex Auto-Registration
-
-When transferring Pokemon from a bank to a save file, the Pokedex is automatically updated to register the Pokemon as caught. This solves the issue where version-exclusive Pokemon transferred between paired games would not appear in the Pokedex.
-
-| Game Family                       | What gets registered                                                                                             |
-|-----------------------------------|------------------------------------------------------------------------------------------------------------------|
-| Scarlet / Violet (+ DLCs)         | Caught, seen, heard, gender, language (Pokemon + save), shiny, display, neighbor discovery                       |
-| Sword / Shield (+ DLCs)           | Caught, seen (all gender/shiny regions), language, display, battled count, Gigantamax, Alcremie forms, Eternatus |
-| Brilliant Diamond / Shining Pearl | Caught, gender, shiny, language, alternate form tracking (Unown, Rotom, Arceus, etc.)                            |
-| Let's Go Pikachu / Eevee          | Caught, seen, display, language, size tracking (height/weight), capture count                                    |
-| FireRed / LeafGreen               | Caught, seen (with all 3 copy sync), Unown/Spinda PID                                                            |
-
-> **_Legends: Arceus_** and **_Legends: Z-A_** are excluded from auto-registration as all Pokemon are obtainable in a single playthrough without trading.
-
-Pokedex completion rewards (Shiny Charm, diplomas) are triggered by the in-game NPC when the dex is complete.
-
-### Handling Trainer Updates
-
-When a Pokemon is placed into a save file, its handling trainer (HT) data is updated exactly as an in-game trade would.
-
-The games compare the full trainer identity (TID/SID, name, gender, game version), not just the trainer name, so a Pokemon moved to a save with the same OT name but different IDs is correctly treated as traded.
-
-- If the Pokemon **belongs to the save's trainer**, it is marked as being back with its OT.
-- If it belongs to a **different trainer**, the save's trainer is registered as its handling trainer: HT name, gender, and language are set, HT friendship is reset to the species' base value, and stale HT memories are cleared. The original OT data is never modified.
-- **No friendship loss on round-trips**: re-placing a Pokemon into a save whose trainer is already its registered handler keeps the HT friendship it has earned.
-- **Eggs** traded to a different trainer are marked as link-traded with the current date, as the games do.
-- **Let's Go**: friendship is carried over instead of reset, so CP values are unaffected.
-
-This keeps friendship routing (e.g. friendship evolutions), memories, and legality checks correct after transferring Pokemon between save files with the bank.
-
-> **_FireRed / LeafGreen_** are unaffected — Gen 3 has no handling trainer concept, so no changes are needed there.
-
 ### Export Pokemon
 
 Export Pokemon as decrypted `.pk` files compatible with PKHeX. Access from the **detail view** (single export) or the **menu** (batch export of selected Pokemon).
@@ -415,6 +329,92 @@ so a card can only ever belong to the family it was exported from.
 
 If encoding ever fails, the card is still written: the sprite simply takes the whole panel instead of
 sharing it with the code.
+
+### Importing Cards
+
+Cards can be read back in. Open the **menu** (+ button) and choose **Import Card** to browse
+`cards/<GameFamily>/`.
+
+The browser shows the file list on the left and, on the right, **what the highlighted card actually
+contains** — sprite, species, level, gender, nature, ability, held item, all four moves with their types,
+IVs, OT and origin game. All of it is read out of the QR code, never from the filename, so the pane shows
+the Pokemon you would really be importing.
+
+A card that has been resized or re-cropped outside those proportions cannot be read that cheaply; the pane
+says **Press A to read this card** and the full-image search runs when you commit.
+
+Press **A** and pkHouse decodes the whole image, validates the payload, and shows the Pokemon in the
+**full detail view** — IV and EV radar charts, ribbons, technical data — with **A: Import  B: Cancel**.
+Nothing is written until you confirm.
+
+An imported Pokemon goes through exactly the same path as a bank-to-save move, so the handling trainer is
+updated as an in-game trade would and the Pokedex is registered automatically.
+
+If the target slot is already occupied, the import is refused rather than overwriting it.
+
+#### Card Validation
+
+A card is checked in this order before anything is written:
+
+| Check | Rejects |
+|-------|---------|
+| Magic `PKHC` | An image with no pkHouse card data |
+| Payload format version | A card written by a newer pkHouse |
+| Body length vs the length field | Truncated or padded data |
+| CRC-16 over the body | Corruption, partial downloads |
+| `GameType` byte in range | A damaged game field |
+| Body length vs the format's party size | Data that is not the size that game uses |
+| **Game family match** | **A card belonging to another game** |
+| The checksum the games themselves store | Data damaged inside the Pokemon |
+| Species and form present in the target game | Blobs that decode but cannot exist there |
+| Range checks on nature, ball, level, EV total, language, met date | Data read through the wrong offsets |
+
+The **game family match** is the one that matters. The folder a card sits in is a convenience for
+listing, never a guarantee: the payload carries the family it was exported from, that byte is covered by
+the CRC, and it is what gets compared. This has to be a hard gate, because placing a Pokemon writes it
+through the open game's field offsets — a Sword Pokemon written into a Scarlet save would be read with
+Gen 9 offsets and corrupted.
+
+Family, not exact version: a Sword card imports into a Shield bank, the same rule banks already follow.
+
+> **Tip:** If you drop a card into the wrong game folder, pkHouse tells you which family it belongs to and
+> offers to move the file there for you. Nothing is overwritten — a name that is already taken gets a
+> numeric suffix.
+
+Decoding uses [quirc](https://github.com/dlbeer/quirc) by Daniel Beer (ISC). A card that a chat app has
+downscaled below roughly two pixels per QR module will not decode; sharing the original file always works.
+
+### Pokedex Auto-Registration
+
+When transferring Pokemon from a bank to a save file, the Pokedex is automatically updated to register the Pokemon as caught. This solves the issue where version-exclusive Pokemon transferred between paired games would not appear in the Pokedex.
+
+| Game Family                       | What gets registered                                                                                             |
+|-----------------------------------|------------------------------------------------------------------------------------------------------------------|
+| Scarlet / Violet (+ DLCs)         | Caught, seen, heard, gender, language (Pokemon + save), shiny, display, neighbor discovery                       |
+| Sword / Shield (+ DLCs)           | Caught, seen (all gender/shiny regions), language, display, battled count, Gigantamax, Alcremie forms, Eternatus |
+| Brilliant Diamond / Shining Pearl | Caught, gender, shiny, language, alternate form tracking (Unown, Rotom, Arceus, etc.)                            |
+| Let's Go Pikachu / Eevee          | Caught, seen, display, language, size tracking (height/weight), capture count                                    |
+| FireRed / LeafGreen               | Caught, seen (with all 3 copy sync), Unown/Spinda PID                                                            |
+
+> **_Legends: Arceus_** and **_Legends: Z-A_** are excluded from auto-registration as all Pokemon are obtainable in a single playthrough without trading.
+
+Pokedex completion rewards (Shiny Charm, diplomas) are triggered by the in-game NPC when the dex is complete.
+
+### Handling Trainer Updates
+
+When a Pokemon is placed into a save file, its handling trainer (HT) data is updated exactly as an in-game trade would.
+
+The games compare the full trainer identity (TID/SID, name, gender, game version), not just the trainer name, so a Pokemon moved to a save with the same OT name but different IDs is correctly treated as traded.
+
+- If the Pokemon **belongs to the save's trainer**, it is marked as being back with its OT.
+- If it belongs to a **different trainer**, the save's trainer is registered as its handling trainer: HT name, gender, and language are set, HT friendship is reset to the species' base value, and stale HT memories are cleared. The original OT data is never modified.
+- **No friendship loss on round-trips**: re-placing a Pokemon into a save whose trainer is already its registered handler keeps the HT friendship it has earned.
+- **Eggs** traded to a different trainer are marked as link-traded with the current date, as the games do.
+- **Let's Go**: friendship is carried over instead of reset, so CP values are unaffected.
+
+This keeps friendship routing (e.g. friendship evolutions), memories, and legality checks correct after transferring Pokemon between save files with the bank.
+
+> **_FireRed / LeafGreen_** are unaffected — Gen 3 has no handling trainer concept, so no changes are needed there.
 
 ### Online GTS
 

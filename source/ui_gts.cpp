@@ -815,9 +815,15 @@ void UI::drawGtsBrowseFrame() {
         drawHintBar(hints, 3);
     }
 
-    if (gtsDetail_)
-        drawDetailPopup(gtsDetailPkm_, StrKey::StatusGtsDetail,
-                        gameInfo(gtsDetailGame_).gameTag);
+    if (gtsDetail_) {
+        // The chip names the game family: on the board you are in no game,
+        // and the family decides which saves can ever take this Pokemon.
+        const ButtonHint detailHints[] = {
+            {"Y", StrKey::HintSaveAsCard}, {"B", StrKey::HintClose},
+        };
+        drawDetailPopup(gtsDetailPkm_, detailHints, 2,
+                        std::string("GTS \xc2\xb7 ") + gameInfo(gtsDetailGame_).gameTag);
+    }
 }
 
 // Wraps in both directions, and never parks on the empty tail of a short last
@@ -865,6 +871,12 @@ void UI::handleGtsBrowseInput(bool& running) {
                     break;
                 case SDL_CONTROLLER_BUTTON_X:      // Switch Y = save as card
                     gtsSaveCurrentAsCard();
+                    break;
+                case SDL_CONTROLLER_BUTTON_DPAD_UP:
+                    scrollDetailRibbons(-1, gtsDetailPkm_);
+                    break;
+                case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+                    scrollDetailRibbons(+1, gtsDetailPkm_);
                     break;
             }
             continue;
@@ -919,6 +931,7 @@ void UI::gtsOpenDetail() {
         gtsDetailPkm_  = cached->second;
         gtsDetailGame_ = gtsFetchedGame_[e.id];
         gtsDetailId_   = e.id;
+        detailRibbonScroll_ = 0;
         gtsDetail_ = true;
         markDirty();
         return;
@@ -939,6 +952,7 @@ void UI::gtsOpenDetail() {
     gtsDetailPkm_  = pkm;
     gtsDetailGame_ = game;
     gtsDetailId_   = e.id;
+    detailRibbonScroll_ = 0;
     gtsDetail_ = true;
     markDirty();
 }

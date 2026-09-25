@@ -393,6 +393,7 @@ void UI::handleDetailInput(const SDL_Event& event) {
             if (!pkm.isEmpty()) {
                 cursor_.col = next % cols;
                 cursor_.row = next / cols;
+                detailRibbonScroll_ = 0;
                 return;
             }
         }
@@ -428,6 +429,11 @@ void UI::handleDetailInput(const SDL_Event& event) {
             }
             case SDL_CONTROLLER_BUTTON_B: // Switch A
                 tryRelease();
+                break;
+            case SDL_CONTROLLER_BUTTON_DPAD_UP:
+            case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+                scrollDetailRibbons(event.cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_UP ? -1 : +1,
+                                    getPokemonAt(cursor_.box, cursor_.slot(gridCols()), cursor_.panel));
                 break;
             case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
                 detailNav(-1);
@@ -510,8 +516,10 @@ void UI::handleNormalInput(const SDL_Event& event) {
                     }
                 } else {
                     Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(gridCols()), cursor_.panel);
-                    if (!pkm.isEmpty())
+                    if (!pkm.isEmpty()) {
                         showDetail_ = true;
+                        detailRibbonScroll_ = 0;
+                    }
                 }
                 break;
             }
@@ -749,6 +757,7 @@ void UI::handleBumperRepeat() {
             if (!pkm.isEmpty()) {
                 cursor_.col = next % cols;
                 cursor_.row = next / cols;
+                detailRibbonScroll_ = 0;
                 break;
             }
         }

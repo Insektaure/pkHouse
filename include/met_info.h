@@ -30,3 +30,20 @@ namespace BallName {
     const char* get(uint8_t ball);
 
 } // namespace BallName
+
+// Upper-case English type names, indexed by PKHeX MoveType (0 Normal .. 17
+// Fairy). Used as small labels, which is why they are not translated.
+namespace TypeName {
+    const char* get(uint8_t type);   // "" when out of range
+}
+
+// Short names of the five stats a nature can raise or lower, in nature order
+// (a nature's id / 5 is the stat it raises, id % 5 the one it lowers).
+namespace NatureStat {
+    const char* get(int index);      // "Atk", "Def", "Spe", "SpA", "SpD"
+}
+
+// Pokemon language byte -> three-letter tag ("ENG", "JPN", ...).
+namespace LanguageTag {
+    const char* get(uint8_t lang);   // "---" when unknown
+}

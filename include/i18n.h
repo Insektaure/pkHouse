@@ -159,7 +159,6 @@ namespace StrKey {
     constexpr const char* Imported             = "imported";
     constexpr const char* ImportedBody         = "imported_body";
     constexpr const char* CardListFooter       = "card_list_footer";
-    constexpr const char* CardConfirmFooter    = "card_confirm_footer";
     constexpr const char* CardPressAToRead     = "card_press_a_to_read";
     constexpr const char* MenuExportCards      = "menu_export_cards";
     constexpr const char* SavingCards          = "saving_cards";
@@ -205,7 +204,6 @@ namespace StrKey {
     constexpr const char* MoreRibbons          = "more_ribbons";
     constexpr const char* IVs                  = "ivs";
     constexpr const char* EVs                  = "evs";
-    constexpr const char* DetailFooter         = "detail_footer";
 
     // ui_render.cpp - menu popup
     constexpr const char* MenuTitle            = "menu_title";
@@ -387,6 +385,24 @@ namespace StrKey {
     constexpr const char* HintSaveBank             = "hint_save_bank";
     constexpr const char* HintLeftRight            = "hint_left_right";
 
+    // ui_render.cpp - Pokemon summary (UI 2.0)
+    constexpr const char* SumTera                  = "sum_tera";
+    constexpr const char* SumOrigin                = "sum_origin";
+    constexpr const char* SumMet                   = "sum_met";
+    constexpr const char* SumLocation              = "sum_location";
+    constexpr const char* SumLang                  = "sum_lang";
+    constexpr const char* SumNoRibbons             = "sum_no_ribbons";
+    constexpr const char* HintRibbons              = "hint_ribbons";
+    constexpr const char* HintPrevNext             = "hint_prev_next";
+    constexpr const char* HintRelease              = "hint_release";
+    constexpr const char* HintExportPk             = "hint_export_pk";
+    constexpr const char* HintExportCard           = "hint_export_card";
+    constexpr const char* HintImport               = "hint_import";
+    constexpr const char* SumRibbonOne             = "sum_ribbon_one";
+    constexpr const char* SumRibbonMany            = "sum_ribbon_many";
+    constexpr const char* SumMarkOne               = "sum_mark_one";
+    constexpr const char* SumMarkMany              = "sum_mark_many";
+
     // ui_gts.cpp - the online GTS
     constexpr const char* GtsTitle             = "gts_title";
     constexpr const char* GtsSubtitle          = "gts_subtitle";
@@ -427,7 +443,6 @@ namespace StrKey {
     constexpr const char* GtsSortPopular       = "gts_sort_popular";
     constexpr const char* StatusGtsHub         = "status_gts_hub";
     constexpr const char* StatusGtsBrowse      = "status_gts_browse";
-    constexpr const char* StatusGtsDetail      = "status_gts_detail";
     constexpr const char* StatusGtsDeposit     = "status_gts_deposit";
     constexpr const char* GtsVerdictLegal          = "gts_verdict_legal";
     constexpr const char* GtsVerdictPending        = "gts_verdict_pending";

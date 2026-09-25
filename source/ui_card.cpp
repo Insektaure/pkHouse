@@ -35,9 +35,17 @@ constexpr int MARGIN_R   = 1234;
 constexpr int TOP_RULE_H = 8;
 
 constexpr int PANEL_X = 46;
-constexpr int PANEL_Y = 138;
+constexpr int CARD_PANEL_Y = 138;
 constexpr int PANEL_W = 600;
-constexpr int PANEL_H = 444;
+constexpr int CARD_PANEL_H = 444;
+
+// The width the portrait panel is actually drawn at. The drawing code below
+// is made of UI members, where an unqualified PANEL_W always found the box
+// view's UI::PANEL_W (610) rather than the 600 above, and every card in
+// circulation was drawn that way. Named apart so the card keeps exactly that
+// geometry whatever the box view's own layout constants become; PANEL_Y and
+// PANEL_H are prefixed for the same reason.
+constexpr int CARD_PANEL_W_DRAWN = 610;
 
 // The portrait panel is split: sprite on the left, QR on the right. 340 is not
 // arbitrary -- a full Pokemon payload encodes to a version 15 QR (77 modules),
@@ -95,6 +103,18 @@ constexpr const char* TYPE_NAMES[18] = {
     "NORMAL", "FIGHTING", "FLYING", "POISON", "GROUND", "ROCK",
     "BUG", "GHOST", "STEEL", "FIRE", "WATER", "GRASS",
     "ELECTRIC", "PSYCHIC", "ICE", "DRAGON", "DARK", "FAIRY",
+};
+
+// PKHeX Ball enum (PKHeX.Core/Game/Enums/Ball.cs)
+constexpr const char* BALL_NAMES[38] = {
+    "", "Master Ball", "Ultra Ball", "Great Ball", "Poke Ball", "Safari Ball",
+    "Net Ball", "Dive Ball", "Nest Ball", "Repeat Ball", "Timer Ball",
+    "Luxury Ball", "Premier Ball", "Dusk Ball", "Heal Ball", "Quick Ball",
+    "Cherish Ball", "Fast Ball", "Level Ball", "Lure Ball", "Heavy Ball",
+    "Love Ball", "Friend Ball", "Moon Ball", "Sport Ball", "Dream Ball",
+    "Beast Ball", "Strange Ball", "Poke Ball", "Great Ball", "Ultra Ball",
+    "Feather Ball", "Wing Ball", "Jet Ball", "Heavy Ball", "Leaden Ball",
+    "Gigaton Ball", "Origin Ball",
 };
 
 // Nature stat order: index 0-4 maps to these stats.
@@ -276,6 +296,44 @@ void drawTracked(SDL_Renderer* r, TTF_Font* f, const std::string& s,
     }
 }
 
+// Blits a square icon as a disc. SDL has no circular clip, so the square is
+// masked by painting everything outside the circle back in the known background
+// colour, which works because every place this is used sits on a flat opaque
+// fill. The type icons are full-bleed squares whose glyphs all stay inside 88%
+// of the radius, so nothing meaningful is cropped.
+//
+// Pixels straddling the boundary are painted with partial alpha in proportion
+// to how much of them falls outside, which gives a smooth edge instead of a
+// stepped one. Coverage is measured from the distance to the centre rather than
+// per scanline, so the top and bottom of the disc are as clean as the sides.
+// The per-pixel loop is fine here: this runs once per card, not per frame.
+void blitCircular(SDL_Renderer* r, SDL_Texture* tex, int cx, int cy, int rad, SDL_Color bg) {
+    if (!tex || rad <= 0) return;
+
+    SDL_Rect dst = {cx - rad, cy - rad, rad * 2, rad * 2};
+    SDL_RenderCopy(r, tex, nullptr, &dst);
+
+    SDL_SetRenderDrawBlendMode(r, SDL_BLENDMODE_BLEND);
+    for (int py = cy - rad; py < cy + rad; py++) {
+        const double dy = py + 0.5 - cy;
+        for (int px = cx - rad; px < cx + rad; px++) {
+            const double dx = px + 0.5 - cx;
+            const double dist = std::sqrt(dx * dx + dy * dy);
+
+            // 1 = wholly inside the disc, 0 = wholly outside, between = the
+            // fraction of the pixel the disc covers.
+            const double covered = rad + 0.5 - dist;
+            if (covered >= 1.0) continue;
+
+            const int alpha = (covered <= 0.0)
+                ? 255
+                : static_cast<int>((1.0 - covered) * 255.0 + 0.5);
+            SDL_SetRenderDrawColor(r, bg.r, bg.g, bg.b, static_cast<Uint8>(alpha));
+            SDL_RenderDrawPoint(r, px, py);
+        }
+    }
+}
+
 // Scales a texture to fit inside a box, preserving aspect ratio.
 void blitFit(SDL_Renderer* r, SDL_Texture* tex, int bx, int by, int bw, int bh) {
     if (!tex) return;
@@ -414,9 +472,9 @@ void UI::drawCardHeader(const Pokemon& pkm, const CardFonts& f) {
     rx -= 20;
 
     uint8_t ballId = pkm.ball();
-    if (const char* ballName = BallName::get(ballId); ballName[0] != '\0') {
-        drawTx(r, f.body, ballName, rx, 70, C_TEXT, AlignR);
-        rx -= textW(f.body, ballName) + 8;
+    if (ballId > 0 && ballId < 38) {
+        drawTx(r, f.body, BALL_NAMES[ballId], rx, 70, C_TEXT, AlignR);
+        rx -= textW(f.body, BALL_NAMES[ballId]) + 8;
         if (SDL_Texture* ballTex = getBallSprite(ballId)) {
             SDL_Rect dst = {rx - 26, 67, 26, 26};
             SDL_RenderCopy(r, ballTex, nullptr, &dst);
@@ -444,7 +502,7 @@ void UI::drawCardHeader(const Pokemon& pkm, const CardFonts& f) {
 
 void UI::drawCardPortrait(const Pokemon& pkm, const CardFonts& f) {
     SDL_Renderer* r = renderer_;
-    panelRect(r, PANEL_X, PANEL_Y, PANEL_W, PANEL_H, 16, C_PANEL, C_BORDER);
+    panelRect(r, PANEL_X, CARD_PANEL_Y, CARD_PANEL_W_DRAWN, CARD_PANEL_H, 16, C_PANEL, C_BORDER);
 
     const bool egg = pkm.isEgg();
     const uint16_t species = egg ? 0 : pkm.species();
@@ -468,7 +526,7 @@ void UI::drawCardPortrait(const Pokemon& pkm, const CardFonts& f) {
 
     const int spriteBox = hasQr ? SPRITE_BOX : 300;
     const int spriteX   = hasQr ? PANEL_X + PANEL_PAD
-                                : PANEL_X + (PANEL_W - spriteBox) / 2;
+                                : PANEL_X + (CARD_PANEL_W_DRAWN - spriteBox) / 2;
 
     // Status badges: shiny, alpha, Gigantamax, egg. The first two are flat mask
     // icons that take the badge's tint. The other two are real artwork, drawn
@@ -487,7 +545,7 @@ void UI::drawCardPortrait(const Pokemon& pkm, const CardFonts& f) {
     constexpr SDL_Color C_BADGE_OFF = {120, 120, 144, 255};
     for (int i = 0; i < 4; i++) {
         int bx = PANEL_X + PANEL_PAD + i * 48;
-        int by = PANEL_Y + 18;
+        int by = CARD_PANEL_Y + 18;
         const bool on = badges[i].active;
         panelRect(r, bx, by, 40, 40, 12,
                   on ? C_GOLD_BG : C_BG, on ? C_GOLD : C_BORDER);
@@ -522,10 +580,10 @@ void UI::drawCardPortrait(const Pokemon& pkm, const CardFonts& f) {
 
     // QR code, on its own pure white tile so the quiet zone really is white.
     if (hasQr) {
-        const int qx = PANEL_X + PANEL_W - PANEL_PAD - QR_BOX;
+        const int qx = PANEL_X + CARD_PANEL_W_DRAWN - PANEL_PAD - QR_BOX;
         panelRect(r, qx, CONTENT_Y, QR_BOX, QR_BOX, 10, C_QR_BG, C_BORDER);
         drawQr(r, qrcode, qx, CONTENT_Y, QR_BOX);
-        const int capRight = PANEL_X + PANEL_W - PANEL_PAD;
+        const int capRight = PANEL_X + CARD_PANEL_W_DRAWN - PANEL_PAD;
         drawTracked(r, f.micro, "POKEMON DATA",
                     capRight - trackedW(f.micro, "POKEMON DATA"),
                     CONTENT_Y + QR_BOX + 6, C_LABEL);
@@ -538,7 +596,7 @@ void UI::drawCardPortrait(const Pokemon& pkm, const CardFonts& f) {
     constexpr int CHIP_ICON = 20;
     constexpr int CHIP_TEXT_X = 6 + CHIP_ICON + 8;
 
-    int chipsBottom = hasQr ? CONTENT_Y + spriteBox + 14 : PANEL_Y + PANEL_H - 46;
+    int chipsBottom = hasQr ? CONTENT_Y + spriteBox + 14 : CARD_PANEL_Y + CARD_PANEL_H - 46;
     if (!egg) {
         SpeciesTypes::Pair types = SpeciesTypes::get(selectedGame_, species, pkm.form());
         int cx = spriteX;
@@ -565,15 +623,15 @@ void UI::drawCardPortrait(const Pokemon& pkm, const CardFonts& f) {
     if (!egg) {
         char buf[8];
         std::snprintf(buf, sizeof(buf), "%u", static_cast<unsigned>(species));
-        const int boxBottom = PANEL_Y + PANEL_H - PANEL_PAD;
+        const int boxBottom = CARD_PANEL_Y + CARD_PANEL_H - PANEL_PAD;
         const int boxTop = hasQr ? chipsBottom + 8 : CONTENT_Y + spriteBox + 8;
         if (boxBottom - boxTop >= 24) {
             if (hasQr)
                 drawTxFit(r, f.watermark, buf, spriteX, boxTop,
                           spriteBox, boxBottom - boxTop, C_DEXNUM);
             else
-                drawTxFit(r, f.watermark, buf, PANEL_X + PANEL_W / 2, boxTop,
-                          PANEL_W / 2 - PANEL_PAD, boxBottom - boxTop, C_DEXNUM, true);
+                drawTxFit(r, f.watermark, buf, PANEL_X + CARD_PANEL_W_DRAWN / 2, boxTop,
+                          CARD_PANEL_W_DRAWN / 2 - PANEL_PAD, boxBottom - boxTop, C_DEXNUM, true);
         }
     }
 }

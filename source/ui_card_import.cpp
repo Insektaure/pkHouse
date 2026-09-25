@@ -263,22 +263,33 @@ bool UI::showCardImportConfirm(const Pokemon& pkm) {
     if (!renderer_) return false;
     markDirty();
 
+    detailRibbonScroll_ = 0;
     int result = -1;
+    bool redraw = true;   // only after something changed, like every other screen
     while (result < 0) {
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT)
                 result = 0;
             if (event.type == SDL_CONTROLLERBUTTONDOWN) {
-                if (event.cbutton.button == SDL_CONTROLLER_BUTTON_B) result = 1; // Switch A
-                if (event.cbutton.button == SDL_CONTROLLER_BUTTON_A) result = 0; // Switch B
+                redraw = true;
+                switch (event.cbutton.button) {
+                    case SDL_CONTROLLER_BUTTON_B: result = 1; break; // Switch A
+                    case SDL_CONTROLLER_BUTTON_A: result = 0; break; // Switch B
+                    case SDL_CONTROLLER_BUTTON_DPAD_UP:   scrollDetailRibbons(-1, pkm); break;
+                    case SDL_CONTROLLER_BUTTON_DPAD_DOWN: scrollDetailRibbons(+1, pkm); break;
+                }
             }
         }
 
-        SDL_SetRenderDrawColor(renderer_, T().bg.r, T().bg.g, T().bg.b, 255);
-        SDL_RenderClear(renderer_);
-        drawDetailPopup(pkm, StrKey::CardConfirmFooter);
-        SDL_RenderPresent(renderer_);
+        if (redraw && result < 0) {
+            const ButtonHint hints[] = {
+                {"A", StrKey::HintImport}, {"B", StrKey::HintCancel},
+            };
+            drawDetailPopup(pkm, hints, 2, std::string());
+            SDL_RenderPresent(renderer_);
+            redraw = false;
+        }
         SDL_Delay(16);
     }
     return result == 1;

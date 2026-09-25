@@ -821,7 +821,7 @@ void UI::drawInfoStrip() {
             const uint8_t type = getMoveType(moves[i], pkm.gameType_);
             if (type < 18)
                 if (SDL_Texture* typeTex = getTypeSprite(type))
-                    blitCircular(renderer_, typeTex, mx + 8 + ICON_R, mcy, ICON_R, T().buttonBg);
+                    blitDisc(renderer_, typeTex, mx + 8 + ICON_R, mcy, ICON_R, T().buttonBg);
             drawText(fitText(MoveName::get(moves[i]), fMove, mx + PILL_W - 8 - nameX),
                      nameX, nameY, T().text, fMove);
         }
@@ -977,11 +977,28 @@ void UI::drawFrame() {
     else
         bankBox_ = cursor_.box;
 
-    // The overview covers the whole screen, and no other popup can be opened
-    // on top of it, so the box view underneath would only be painted over.
+    // The overview and the summary cover the whole screen, and no other popup
+    // can be opened on top of them, so the box view underneath would only be
+    // painted over.
     if (showBoxView_) {
         drawBoxViewOverlay();
         return;
+    }
+    if (showDetail_) {
+        Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(gridCols()), cursor_.panel);
+        if (!pkm.isEmpty()) {
+            // Same keys as the old popup's footer.
+            const ButtonHint hints[] = {
+                {"L/R", StrKey::HintPrevNext},
+                {"A",   StrKey::HintRelease},
+                {"X",   StrKey::HintExportPk},
+                {"Y",   StrKey::HintExportCard},
+                {"B",   StrKey::HintClose},
+            };
+            drawDetailPopup(pkm, hints, 5, detailWhere());
+            return;
+        }
+        showDetail_ = false;
     }
 
     drawTopBar();
@@ -1045,16 +1062,6 @@ void UI::drawFrame() {
     if (holding_)
         drawHeldOverlay();
 
-    // Detail popup overlay
-    if (showDetail_) {
-        Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(gridCols()), cursor_.panel);
-        if (pkm.isEmpty()) {
-            showDetail_ = false;
-        } else {
-            drawDetailPopup(pkm);
-        }
-    }
-
     // Menu popup overlay
     if (showMenu_) {
         drawMenuPopup();
@@ -1085,407 +1092,6 @@ void UI::drawFrame() {
     if (showCardList_) {
         drawCardListPopup();
     }
-}
-
-// --- Polygon rendering helpers for radar charts ---
-// Unit vectors for a regular hexagon (top, top-right, bottom-right, bottom, bottom-left, top-left)
-static constexpr double HEX_COS[6] = { 0.0,  0.866025,  0.866025, 0.0, -0.866025, -0.866025 };
-static constexpr double HEX_SIN[6] = {-1.0, -0.5,       0.5,      1.0,  0.5,      -0.5      };
-
-namespace {
-
-void fillConvexPolygon(SDL_Renderer* renderer, const SDL_Point pts[], int count, SDL_Color color) {
-    if (count < 3) return;
-    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
-
-    int minY = pts[0].y, maxY = pts[0].y;
-    for (int i = 1; i < count; i++) {
-        if (pts[i].y < minY) minY = pts[i].y;
-        if (pts[i].y > maxY) maxY = pts[i].y;
-    }
-
-    for (int y = minY; y <= maxY; y++) {
-        int minX = 99999, maxX = -99999;
-        for (int i = 0; i < count; i++) {
-            int j = (i + 1) % count;
-            int y0 = pts[i].y, y1 = pts[j].y;
-            if ((y0 <= y && y1 > y) || (y1 <= y && y0 > y)) {
-                int x = pts[i].x + (int)((long long)(y - y0) * (pts[j].x - pts[i].x) / (y1 - y0));
-                if (x < minX) minX = x;
-                if (x > maxX) maxX = x;
-            }
-        }
-        if (minX <= maxX)
-            SDL_RenderDrawLine(renderer, minX, y, maxX, y);
-    }
-}
-
-void drawPolygonOutline(SDL_Renderer* renderer, const SDL_Point pts[], int count, SDL_Color color) {
-    if (count < 2) return;
-    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
-    for (int i = 0; i < count; i++) {
-        int j = (i + 1) % count;
-        SDL_RenderDrawLine(renderer, pts[i].x, pts[i].y, pts[j].x, pts[j].y);
-    }
-}
-
-} // anonymous namespace
-
-void UI::drawRadarChart(int cx, int cy, int radius, const int values[6], int maxVal) {
-    const std::string labels[6] = {i18n::get(StrKey::StatHP), i18n::get(StrKey::StatAtk),
-        i18n::get(StrKey::StatDef), i18n::get(StrKey::StatSpe), i18n::get(StrKey::StatSpD), i18n::get(StrKey::StatSpA)};
-    constexpr int N = 6;
-    constexpr int LABEL_MARGIN = 12;
-
-    // Compute hex vertices (starting from top, clockwise)
-    SDL_Point outer[N];
-    for (int i = 0; i < N; i++) {
-        outer[i].x = cx + static_cast<int>(radius * HEX_COS[i]);
-        outer[i].y = cy + static_cast<int>(radius * HEX_SIN[i]);
-    }
-
-    // Guide lines from center to each vertex
-    SDL_Color guide = {T().textDim.r, T().textDim.g, T().textDim.b, 50};
-    SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_BLEND);
-    SDL_SetRenderDrawColor(renderer_, guide.r, guide.g, guide.b, guide.a);
-    for (int i = 0; i < N; i++)
-        SDL_RenderDrawLine(renderer_, cx, cy, outer[i].x, outer[i].y);
-
-    // Intermediate ring at 50%
-    SDL_Point mid[N];
-    for (int i = 0; i < N; i++) {
-        mid[i].x = cx + static_cast<int>(radius * 0.5 * HEX_COS[i]);
-        mid[i].y = cy + static_cast<int>(radius * 0.5 * HEX_SIN[i]);
-    }
-    drawPolygonOutline(renderer_, mid, N, guide);
-
-    // Outer hex border
-    drawPolygonOutline(renderer_, outer, N, T().textDim);
-
-    // Compute data polygon vertices
-    SDL_Point data[N];
-    for (int i = 0; i < N; i++) {
-        double frac = maxVal > 0 ? std::min(1.0, static_cast<double>(values[i]) / maxVal) : 0.0;
-        double r = radius * frac;
-        data[i].x = cx + static_cast<int>(r * HEX_COS[i]);
-        data[i].y = cy + static_cast<int>(r * HEX_SIN[i]);
-    }
-
-    // Fill data polygon using triangle fan from center (handles concave shapes)
-    SDL_Color fill = {T().cursor.r, T().cursor.g, T().cursor.b, 60};
-    for (int i = 0; i < N; i++) {
-        int j = (i + 1) % N;
-        SDL_Point tri[3] = {{cx, cy}, data[i], data[j]};
-        fillConvexPolygon(renderer_, tri, 3, fill);
-    }
-
-    // Data polygon outline
-    SDL_Color outline = {T().cursor.r, T().cursor.g, T().cursor.b, 200};
-    drawPolygonOutline(renderer_, data, N, outline);
-
-    // Small dots at each data vertex
-    SDL_SetRenderDrawBlendMode(renderer_, SDL_BLENDMODE_BLEND);
-    SDL_SetRenderDrawColor(renderer_, outline.r, outline.g, outline.b, outline.a);
-    for (int i = 0; i < N; i++) {
-        SDL_Rect dot = {data[i].x - 2, data[i].y - 2, 5, 5};
-        SDL_RenderFillRect(renderer_, &dot);
-    }
-
-    // Labels and values around the chart
-    for (int i = 0; i < N; i++) {
-        int lx = cx + static_cast<int>((radius + LABEL_MARGIN) * HEX_COS[i]);
-        int ly = cy + static_cast<int>((radius + LABEL_MARGIN) * HEX_SIN[i]);
-
-        const std::string& name = labels[i];
-        std::string valStr = std::to_string(values[i]);
-
-        SDL_Color nameColor = T().goldLabel;
-        SDL_Color valColor = (values[i] >= maxVal) ? T().shiny
-                           : (values[i] == 0)      ? T().textDim
-                           :                          T().text;
-
-        auto& ne = getTextEntry(name, fontSmall_, nameColor);
-        int nw = ne.w, nh = ne.h;
-        auto& ve = getTextEntry(valStr, fontSmall_, valColor);
-        int vw = ve.w, vh = ve.h;
-
-        if (i == 0) { // Top: centered, name then value downward
-            drawText(name, lx - nw / 2, ly - nh * 2 - 2, nameColor, fontSmall_);
-            drawText(valStr, lx - vw / 2, ly - vh, valColor, fontSmall_);
-        } else if (i == 3) { // Bottom: centered, value then name downward
-            drawText(valStr, lx - vw / 2, ly, valColor, fontSmall_);
-            drawText(name, lx - nw / 2, ly + vh + 2, nameColor, fontSmall_);
-        } else if (i == 1 || i == 2) { // Right: left-aligned
-            drawText(name, lx + 4, ly - nh, nameColor, fontSmall_);
-            drawText(valStr, lx + 4, ly + 2, valColor, fontSmall_);
-        } else { // Left (4, 5): right-aligned
-            drawText(name, lx - nw - 4, ly - nh, nameColor, fontSmall_);
-            drawText(valStr, lx - vw - 4, ly + 2, valColor, fontSmall_);
-        }
-    }
-}
-
-void UI::drawDetailPopup(const Pokemon& pkm, const char* footerKey,
-                         const char* badge) {
-    // Semi-transparent dark overlay
-    drawRect(0, 0, SCREEN_W, SCREEN_H, T().overlay);
-
-    // Popup rect centered. Grow by one line when the optional HT row is shown
-    // so the Moves/Ribbons region keeps the same layout as the no-HT case.
-    constexpr int POP_W = 900;
-    const int POP_H = 550 + (pkm.hasHandlingTrainer() ? 28 : 0);
-    int popX = (SCREEN_W - POP_W) / 2;
-    int popY = (SCREEN_H - POP_H) / 2;
-
-    drawRect(popX, popY, POP_W, POP_H, T().panelBg);
-    drawRectOutline(popX, popY, POP_W, POP_H, T().cursor, 2);
-
-    // Top-right, in the accent colour, because on the board this is the one
-    // thing that decides whether the Pokemon is any use to you.
-    if (badge != nullptr && badge[0] != '\0') {
-        const auto& be = getTextEntry(badge, fontSmall_, T().goldLabel);
-        const int bw = be.w + 20;
-        const int bx = popX + POP_W - bw - 14;
-        drawRect(bx, popY + 12, bw, 24, T().menuHighlight);
-        drawTextCentered(badge, bx + bw / 2, popY + 24, T().goldLabel, fontSmall_);
-    }
-
-    // Large sprite (128x128) top-left
-    constexpr int LARGE_SPRITE = 128;
-    int sprX = popX + 20;
-    int sprY = popY + 20;
-
-    SDL_Texture* sprite = nullptr;
-    uint8_t pkmForm = pkm.form();
-    if (pkm.isEgg()) {
-        sprite = getSprite(0);
-    } else if (pkm.isShiny()) {
-        sprite = getShinySprite(pkm.species(), pkmForm);
-        if (!sprite) sprite = getSprite(pkm.species(), pkmForm);
-    } else {
-        sprite = getSprite(pkm.species(), pkmForm);
-    }
-    if (sprite) {
-        int texW, texH;
-        SDL_QueryTexture(sprite, nullptr, nullptr, &texW, &texH);
-        int dstW, dstH;
-        if (texW > 0 && texH > 0) {
-            float scale = std::min(static_cast<float>(LARGE_SPRITE) / texW,
-                                   static_cast<float>(LARGE_SPRITE) / texH);
-            dstW = static_cast<int>(texW * scale);
-            dstH = static_cast<int>(texH * scale);
-        } else {
-            dstW = LARGE_SPRITE;
-            dstH = LARGE_SPRITE;
-        }
-        int dx = sprX + (LARGE_SPRITE - dstW) / 2;
-        int dy = sprY + (LARGE_SPRITE - dstH) / 2;
-        SDL_Rect dst = {dx, dy, dstW, dstH};
-        SDL_RenderCopy(renderer_, sprite, nullptr, &dst);
-    }
-
-    // Shiny/Alpha icon next to sprite
-    SDL_Texture* statusIcon = nullptr;
-    if (pkm.isShiny() && pkm.isAlpha())
-        statusIcon = iconShinyAlpha_;
-    else if (pkm.isShiny())
-        statusIcon = iconShiny_;
-    else if (pkm.isAlpha())
-        statusIcon = iconAlpha_;
-    if (statusIcon) {
-        SDL_Rect iconDst = {sprX + LARGE_SPRITE + 4, sprY, 20, 20};
-        SDL_RenderCopy(renderer_, statusIcon, nullptr, &iconDst);
-    }
-
-    // --- Left column info (next to sprite) ---
-    int infoX = sprX + LARGE_SPRITE + 30;
-    int infoY = sprY + 4;
-
-    // Ball icon + Species name + level + gender
-    constexpr int BALL_SZ = 24;
-    int nameStartX = infoX;
-    uint8_t ballId = pkm.ball();
-    if (ballId > 0) {
-        SDL_Texture* ballTex = getBallSprite(ballId);
-        if (ballTex) {
-            int textH = TTF_FontHeight(font_);
-            int by = infoY + (textH - BALL_SZ) / 2;
-            SDL_Rect ballDst = {infoX, by, BALL_SZ, BALL_SZ};
-            SDL_RenderCopy(renderer_, ballTex, nullptr, &ballDst);
-            nameStartX += BALL_SZ + 4;
-        }
-    }
-    std::string specName = SpeciesName::get(pkm.species());
-    SDL_Color nameColor = pkm.isShiny() ? T().shiny : T().text;
-    drawText(specName, nameStartX, infoY, nameColor, font_);
-
-    std::string lvlStr = "  " + i18n::get(StrKey::LvPrefix) + std::to_string(pkm.level());
-    int nameW = getTextEntry(specName, font_, nameColor).w;
-    drawText(lvlStr, nameStartX + nameW, infoY, T().text, font_);
-
-    // Gender symbol
-    uint8_t g = pkm.gender();
-    int afterLvl = nameStartX + nameW;
-    int lvlW = getTextEntry(lvlStr, font_, T().text).w;
-    afterLvl += lvlW + 4;
-    if (g == 0)
-        drawText("\xe2\x99\x82", afterLvl, infoY, T().genderMale, font_);
-    else if (g == 1)
-        drawText("\xe2\x99\x80", afterLvl, infoY, T().genderFemale, font_);
-
-    infoY += 30;
-
-    // National dex ID
-    std::string idStr = i18n::get(StrKey::NationalDexPrefix) + std::to_string(pkm.species());
-    drawText(idStr, infoX, infoY, T().textDim, font_);
-    infoY += 28;
-
-    // OT + TID/SID
-    std::string otStr = i18n::get(StrKey::OTPrefix) + pkm.otName() + " | " + i18n::get(StrKey::TIDPrefix) + std::to_string(pkm.displayTid())
-                        + " | " + i18n::get(StrKey::SIDPrefix) + std::to_string(pkm.displaySid());
-    drawText(otStr, infoX, infoY, T().textDim, font_);
-    infoY += 28;
-
-    // HT (handling trainer) — only for formats that store one
-    if (pkm.hasHandlingTrainer()) {
-        std::string ht = pkm.htName();
-        std::string htStr = i18n::get(StrKey::HTPrefix) +
-                            (ht.empty() ? i18n::get(StrKey::NoneItem) : ht);
-        drawText(htStr, infoX, infoY, T().textDim, font_);
-        infoY += 28;
-    }
-
-    // Nature
-    std::string natureStr = i18n::get(StrKey::NaturePrefix) + NatureName::get(pkm.nature());
-    drawText(natureStr, infoX, infoY, T().textDim, font_);
-    infoY += 28;
-
-    // Ability
-    std::string abilityStr = i18n::get(StrKey::AbilityPrefix) + AbilityName::get(pkm.ability());
-    drawText(abilityStr, infoX, infoY, T().textDim, font_);
-    infoY += 28;
-
-    // Held item
-    uint16_t item = pkm.heldItem();
-    std::string itemStr = i18n::get(StrKey::HeldItemPrefix) + (item != 0 ? ItemName::get(item) : i18n::get(StrKey::NoneItem));
-    drawText(itemStr, infoX, infoY, T().textDim, font_);
-    int infoBottom = infoY + 28; // baseline below the last info line
-
-    // --- Below sprite: Moves ---
-    // Start below whichever extends lower: the sprite or the info column.
-    // The optional HT line can push the info column past the sprite's bottom.
-    int movesX = popX + 30;
-    int movesY = std::max(sprY + LARGE_SPRITE + 46, infoBottom);
-
-    drawText(i18n::get(StrKey::Moves), movesX, movesY, T().text, font_);
-    movesY += 30;
-
-    constexpr int TYPE_ICON_W = 25;
-    constexpr int TYPE_ICON_H = 25;
-    constexpr int MOVE_ROW_H = 28;
-    constexpr int MOVE_COL_W = 230;
-    int textH = TTF_FontHeight(font_);
-    uint16_t moves[4] = {pkm.move1(), pkm.move2(), pkm.move3(), pkm.move4()};
-    for (int i = 0; i < 4; i++) {
-        int col = i % 2;
-        int row = i / 2;
-        int mx = movesX + 10 + col * MOVE_COL_W;
-        int my = movesY + row * MOVE_ROW_H;
-        int iconY = my + (MOVE_ROW_H - TYPE_ICON_H) / 2;
-        int txtY  = my + (MOVE_ROW_H - textH) / 2;
-        if (moves[i] != 0) {
-            uint8_t mtype = getMoveType(moves[i], pkm.gameType_);
-            SDL_Texture* typeTex = getTypeSprite(mtype);
-            if (typeTex) {
-                SDL_Rect typeDst = {mx, iconY, TYPE_ICON_W, TYPE_ICON_H};
-                SDL_RenderCopy(renderer_, typeTex, nullptr, &typeDst);
-            }
-            drawText(MoveName::get(moves[i]), mx + TYPE_ICON_W + 6, txtY, T().textDim, font_);
-        } else {
-            drawText("---", mx + TYPE_ICON_W + 6, txtY, T().textDim, font_);
-        }
-    }
-    movesY += MOVE_ROW_H * 2;
-
-    // --- Ribbons & Marks below moves ---
-    auto ribbons = pkm.getRibbonsAndMarks();
-    if (!ribbons.empty()) {
-        movesY += 16;
-        std::string ribTitle = i18n::fmt(StrKey::RibbonsMarks, std::to_string(ribbons.size()));
-        drawText(ribTitle, movesX, movesY, T().text, font_);
-        movesY += 30;
-
-        // Two columns, small font with sprite icons
-        int col1X = movesX + 4;
-        int col2X = movesX + 230;
-        int ribbonY = movesY;
-        constexpr int RIB_ROW_H = 26;
-        constexpr int ICON_SZ = 18;
-        constexpr int ICON_PAD = 4;
-        int maxY = popY + POP_H - 74;
-        int col = 0;
-
-        for (size_t i = 0; i < ribbons.size(); i++) {
-            int x = (col == 0) ? col1X : col2X;
-            if (ribbonY + RIB_ROW_H > maxY) {
-                int remaining = static_cast<int>(ribbons.size() - i);
-                drawText(i18n::fmt(StrKey::MoreRibbons, std::to_string(remaining)), x, ribbonY, T().textDim, font_);
-                break;
-            }
-
-            // Center both icon and text vertically within the row
-            int textH = TTF_FontHeight(font_);
-            int contentH = std::max(ICON_SZ, textH);
-            int baseY = ribbonY + (RIB_ROW_H - contentH) / 2;
-            int iconY = baseY + (contentH - ICON_SZ) / 2;
-            int textY = baseY + (contentH - textH) / 2;
-
-            SDL_Texture* ribTex = getRibbonSprite(ribbons[i].filename);
-            if (ribTex) {
-                SDL_Rect dst = {x, iconY, ICON_SZ, ICON_SZ};
-                SDL_RenderCopy(renderer_, ribTex, nullptr, &dst);
-            }
-
-            drawText(ribbons[i].name, x + ICON_SZ + ICON_PAD, textY, T().textDim, font_);
-
-            col++;
-            if (col >= 2) {
-                col = 0;
-                ribbonY += RIB_ROW_H;
-            }
-        }
-    }
-
-    // --- Right column: IV and EV radar charts ---
-    // Order: HP, Atk, Def, Spe, SpD, SpA (clockwise from top)
-    int chartCX = popX + POP_W * 3 / 4;
-    constexpr int CHART_RADIUS = 65;
-
-    // IVs radar chart
-    drawTextCentered(i18n::get(StrKey::IVs), chartCX, popY + 18, T().text, font_);
-    int ivsRadar[] = {pkm.ivHp(), pkm.ivAtk(), pkm.ivDef(), pkm.ivSpe(), pkm.ivSpD(), pkm.ivSpA()};
-    drawRadarChart(chartCX, popY + 150, CHART_RADIUS, ivsRadar, 31);
-
-    // EVs radar chart
-    drawTextCentered(i18n::get(StrKey::EVs), chartCX, popY + 283, T().text, font_);
-    int evsRadar[] = {pkm.evHp(), pkm.evAtk(), pkm.evDef(), pkm.evSpe(), pkm.evSpD(), pkm.evSpA()};
-    drawRadarChart(chartCX, popY + 415, CHART_RADIUS, evsRadar, 252);
-
-    // PID, EC, ID, TSV (bottom-left, small font, two lines)
-    uint16_t tsv = (pkm.tid() ^ pkm.sid()) >> 4;
-    char techBuf1[64], techBuf2[64];
-    snprintf(techBuf1, sizeof(techBuf1), "PID: %08X   EC: %08X",
-             pkm.pid(), pkm.encryptionConstant());
-    snprintf(techBuf2, sizeof(techBuf2), "ID: %05u/%05u   TSV: %04u",
-             pkm.tid(), pkm.sid(), tsv);
-    drawText(techBuf1, popX + 20, popY + POP_H - 66, T().textDim, fontSmall_);
-    drawText(techBuf2, popX + 20, popY + POP_H - 50, T().textDim, fontSmall_);
-
-    // Close hint at bottom
-    drawTextCentered(i18n::get(footerKey ? footerKey : StrKey::DetailFooter),
-                     popX + POP_W / 2, popY + POP_H - 20, T().textDim, fontSmall_);
 }
 
 void UI::drawMenuPopup() {

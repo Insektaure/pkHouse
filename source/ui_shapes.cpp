@@ -106,7 +106,7 @@ int UI::drawTextTracked(const std::string& text, int x, int y, SDL_Color color,
 // stepped one. Coverage is measured from the distance to the centre rather than
 // per scanline, so the top and bottom of the disc are as clean as the sides.
 // The per-pixel loop is fine here: this runs once per card, not per frame.
-void blitCircular(SDL_Renderer* r, SDL_Texture* tex, int cx, int cy, int rad, SDL_Color bg) {
+void blitDisc(SDL_Renderer* r, SDL_Texture* tex, int cx, int cy, int rad, SDL_Color bg) {
     if (!tex || rad <= 0) return;
 
     SDL_Rect dst = {cx - rad, cy - rad, rad * 2, rad * 2};

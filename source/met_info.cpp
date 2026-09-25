@@ -110,3 +110,36 @@ static constexpr const char* BALL_NAMES[38] = {
 const char* BallName::get(uint8_t ball) {
     return ball < 38 ? BALL_NAMES[ball] : "";
 }
+
+// --- Types, nature stats, languages -------------------------------------------
+
+static constexpr const char* TYPE_NAMES[18] = {
+    "NORMAL", "FIGHTING", "FLYING", "POISON", "GROUND", "ROCK",
+    "BUG", "GHOST", "STEEL", "FIRE", "WATER", "GRASS",
+    "ELECTRIC", "PSYCHIC", "ICE", "DRAGON", "DARK", "FAIRY",
+};
+
+const char* TypeName::get(uint8_t type) {
+    return type < 18 ? TYPE_NAMES[type] : "";
+}
+
+const char* NatureStat::get(int index) {
+    static constexpr const char* STATS[5] = {"Atk", "Def", "Spe", "SpA", "SpD"};
+    return (index >= 0 && index < 5) ? STATS[index] : "";
+}
+
+const char* LanguageTag::get(uint8_t lang) {
+    switch (lang) {
+        case 1:  return "JPN";
+        case 2:  return "ENG";
+        case 3:  return "FRE";
+        case 4:  return "ITA";
+        case 5:  return "GER";
+        case 7:  return "SPA";
+        case 8:  return "KOR";
+        case 9:  return "CHS";
+        case 10: return "CHT";
+        default: return "---";
+    }
+}
+

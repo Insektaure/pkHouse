@@ -18,8 +18,9 @@
 
 // Draws `tex` into a disc of radius `rad` centred on (cx, cy), masking the
 // corners with `bg` - the colour behind it - with an anti-aliased rim. Used for
-// the type icons on the card export and in the box view info strip.
-void blitCircular(SDL_Renderer* r, SDL_Texture* tex, int cx, int cy, int rad, SDL_Color bg);
+// the type icons in the box view info strip and the summary. The card export
+// keeps its own copy (ui_card.cpp) so its output never depends on this one.
+void blitDisc(SDL_Renderer* r, SDL_Texture* tex, int cx, int cy, int rad, SDL_Color bg);
 
 // Which panel the cursor is on
 enum class Panel { Game, Bank };
@@ -618,14 +619,6 @@ private:
     // to three of them.
     void drawCurrentScreen();
     void drawFrame();
-    // `badge`, when given, is drawn in the popup's top-right corner. The GTS
-    // uses it to name the game family a listing belongs to: in a box you are
-    // already in that game, but on the board you are not, and which family a
-    // card is for decides which save it can ever be imported into.
-    //
-    // A game tag, not a game name (BDSP for example)
-    void drawDetailPopup(const Pokemon& pkm, const char* footerKey = nullptr,
-                         const char* badge = nullptr);
     void drawMenuPopup();
     void drawAboutPopup();
     void drawThemeSelectorPopup();
@@ -646,7 +639,6 @@ private:
     void drawBoxPreview(int boxIdx, const SDL_Rect& card);
     int  panelBoxCount(Panel panel) const;
     std::string panelBoxName(Panel panel, int box) const;
-    void drawRadarChart(int cx, int cy, int radius, const int values[6], int maxVal);
     // --- Box view (UI 2.0) ---
     void drawTopBar();
     // One box panel. Everything it shows - which box, its name, the tag above
@@ -700,6 +692,33 @@ private:
     void drawFooterBar(const ButtonHint* hints, int count,
                        const std::string& message = std::string(), int rightReserve = -1);
     int  drawFooterKey(int x, int cy, const char* button, bool measureOnly);
+
+    // --- Pokemon summary (source/ui_summary.cpp) ----------------------------
+    //
+    // Full screen, shaped like the exported card without its QR code; the
+    // QR's place holds the complete ribbon and mark list. Shared by the box
+    // view (X), the GTS listing and the card import confirmation, which is why
+    // the caller supplies the footer keys and `where`: the chip beside the
+    // name saying where this Pokemon is - a box and slot, or on the GTS the
+    // game family it belongs to, which decides which saves can ever take it.
+    void drawDetailPopup(const Pokemon& pkm, const ButtonHint* hints, int hintCount,
+                         const std::string& where);
+    void drawSummaryHeader(const Pokemon& pkm, const std::string& where);
+    void drawSummaryPortrait(const Pokemon& pkm);
+    void drawSummaryRibbons(const Pokemon& pkm, int x, int y, int w, int h);
+    void drawSummaryAttributes(const Pokemon& pkm);
+    void drawSummaryMoves(const Pokemon& pkm);
+    void drawSummaryIVs(const Pokemon& pkm);
+    void drawSummaryEVs(const Pokemon& pkm);
+    void drawSummaryProvenance(const Pokemon& pkm);
+
+    // The ribbon list scrolls with the D-pad when it is longer than its tile.
+    // Reset whenever a different Pokemon is shown.
+    int  detailRibbonScroll_ = 0;
+    static constexpr int SUM_RIBBON_ROWS = 14;
+    void scrollDetailRibbons(int dir, const Pokemon& pkm);
+    // Box view context for the chip: "Save · Box 1 · 3 / 26".
+    std::string detailWhere();
 
     // Input handling
     void handleInput(bool& running);

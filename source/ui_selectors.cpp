@@ -53,9 +53,22 @@ void UI::refreshBankCounts() {
 void UI::loadProfileSaveCounts() {
     const int count = account_.profileCount();
     profileSaveCounts_.assign(count, 0);
-    for (int i = 0; i < count; i++)
-        for (GameType g : ALL_GAMES)
-            if (account_.hasSaveData(i, g)) profileSaveCounts_[i]++;
+    constexpr int GAMES = static_cast<int>(sizeof(ALL_GAMES) / sizeof(ALL_GAMES[0]));
+    const int total = count * GAMES;
+    uint32_t lastDraw = 0;
+    for (int i = 0; i < count; i++) {
+        for (int g = 0; g < GAMES; g++) {
+            if (account_.hasSaveData(i, ALL_GAMES[g])) profileSaveCounts_[i]++;
+            // One check per game per profile: a bar is worth it, redrawn at
+            // most every 30 ms so drawing never costs more than the checks.
+            const uint32_t now = SDL_GetTicks();
+            if (now - lastDraw >= 30) {
+                lastDraw = now;
+                showWorking(i18n::get(StrKey::LoadingProfiles), false,
+                            static_cast<float>(i * GAMES + g + 1) / total);
+            }
+        }
+    }
 }
 
 int UI::backupStats(int profile, GameType game, time_t& newest) const {
@@ -285,8 +298,7 @@ void UI::selectProfile(int index) {
     gameSelOnAllBanks_ = false;
     gameSelOnGts_ = false;
     rebuildGameSelList();
-    showWorking(i18n::get(StrKey::LoadingGameIcons));
-    loadGameIcons();
+    loadGameIcons();   // shows its own progress
     screen_ = AppScreen::GameSelector;
 }
 
@@ -297,65 +309,64 @@ void UI::loadGameIcons() {
     std::string cacheDir = basePath_ + "cache/";
     mkdir(cacheDir.c_str(), 0755);
 
-    bool needSystem = false;
-    for (GameType game : availableGames_) {
-        // Try loading from cache first
+    // One pass: the cached JPEG when there is one, the system's otherwise
+    // (saved to the cache for next time). Progress after each game, since the
+    // system fetch is the slow part and the wait is otherwise unexplained.
+    const int total = static_cast<int>(availableGames_.size());
+    auto report = [&](int done) {
+        showWorking(i18n::get(StrKey::LoadingGameIcons), false,
+                    total ? static_cast<float>(done) / total : 1.0f);
+    };
+    report(0);
+
+    bool nsReady = false;
+    for (int i = 0; i < total; i++) {
+        const GameType game = availableGames_[i];
         char hexId[32];
         std::snprintf(hexId, sizeof(hexId), "%016lX", titleIdOf(game));
-        std::string cachePath = cacheDir + hexId + ".jpg";
+        const std::string cachePath = cacheDir + hexId + ".jpg";
 
-        SDL_Surface* surf = IMG_Load(cachePath.c_str());
-        if (surf) {
+        if (SDL_Surface* surf = IMG_Load(cachePath.c_str())) {
             SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer_, surf);
             SDL_FreeSurface(surf);
             if (tex)
                 gameIconCache_[game] = tex;
+            report(i + 1);
             continue;
         }
-        needSystem = true;
-    }
 
-    // Fetch uncached icons from system
-    if (needSystem) {
-        nsInitialize();
-        for (GameType game : availableGames_) {
-            if (gameIconCache_.count(game))
-                continue; // already loaded from cache
-
-            NsApplicationControlData ctrlData;
-            std::memset(&ctrlData, 0, sizeof(ctrlData));
-            uint64_t controlSize = 0;
-            Result rc = nsGetApplicationControlData(NsApplicationControlSource_Storage,
-                            titleIdOf(game), &ctrlData, sizeof(ctrlData), &controlSize);
-            if (R_FAILED(rc) || controlSize <= sizeof(NacpStruct))
-                continue;
-
-            size_t iconSize = controlSize - sizeof(NacpStruct);
+        if (!nsReady) {
+            nsInitialize();
+            nsReady = true;
+        }
+        NsApplicationControlData ctrlData;
+        std::memset(&ctrlData, 0, sizeof(ctrlData));
+        uint64_t controlSize = 0;
+        Result rc = nsGetApplicationControlData(NsApplicationControlSource_Storage,
+                        titleIdOf(game), &ctrlData, sizeof(ctrlData), &controlSize);
+        if (R_SUCCEEDED(rc) && controlSize > sizeof(NacpStruct)) {
+            const size_t iconSize = controlSize - sizeof(NacpStruct);
 
             // Save JPEG to cache
-            char hexId[32];
-            std::snprintf(hexId, sizeof(hexId), "%016lX", titleIdOf(game));
-            std::string cachePath = cacheDir + hexId + ".jpg";
-            FILE* f = std::fopen(cachePath.c_str(), "wb");
-            if (f) {
+            if (FILE* f = std::fopen(cachePath.c_str(), "wb")) {
                 std::fwrite(ctrlData.icon, 1, iconSize, f);
                 std::fclose(f);
             }
 
             // Decode and create texture
-            SDL_RWops* rw = SDL_RWFromMem(ctrlData.icon, iconSize);
-            if (!rw)
-                continue;
-            SDL_Surface* surf = IMG_Load_RW(rw, 1);
-            if (!surf)
-                continue;
-            SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer_, surf);
-            SDL_FreeSurface(surf);
-            if (tex)
-                gameIconCache_[game] = tex;
+            if (SDL_RWops* rw = SDL_RWFromMem(ctrlData.icon, iconSize)) {
+                if (SDL_Surface* surf = IMG_Load_RW(rw, 1)) {
+                    SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer_, surf);
+                    SDL_FreeSurface(surf);
+                    if (tex)
+                        gameIconCache_[game] = tex;
+                }
+            }
         }
-        nsExit();
+        report(i + 1);
     }
+    if (nsReady)
+        nsExit();
 }
 
 void UI::freeGameIcons() {
@@ -585,6 +596,10 @@ void UI::drawFlowTopBar(const std::string& title, const std::vector<std::string>
     x += 17;
     TTF_Font* fTitle = uiFont(20, true);
     drawText(title, x, baselineTopGs(fTitle, cy + 8), T().text, fTitle);
+    drawSteps(steps, current, 634, cy);
+}
+
+void UI::drawSteps(const std::vector<std::string>& steps, int current, int centerX, int cy) {
     if (steps.empty()) return;
 
     TTF_Font* fStep = uiFont(15, true);
@@ -597,7 +612,7 @@ void UI::drawFlowTopBar(const std::string& title, const std::vector<std::string>
         total += widths.back();
     }
     total += CHEV * (static_cast<int>(steps.size()) - 1);
-    int sx = 634 - total / 2;
+    int sx = centerX - total / 2;
     for (size_t i = 0; i < steps.size(); i++) {
         const bool cur = (static_cast<int>(i) == current);
         const bool done = (static_cast<int>(i) < current);

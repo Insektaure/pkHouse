@@ -503,7 +503,8 @@ bool UI::gtsLoadPage(int offset) {
         if (offset == 0) {
             showMessageAndWait(i18n::get(StrKey::GtsTitle),
                                i18n::get(gtsFilter_.isDefault() ? StrKey::GtsEmpty
-                                                                : StrKey::GtsNoResults));
+                                                                : StrKey::GtsNoResults),
+                               DialogKind::Info);
             return false;
         }
         return false;
@@ -902,7 +903,7 @@ void UI::gtsSaveCurrentAsCard() {
     // The card renderer writes into cards/<family>/, and which family that is
     // comes from the Pokemon itself rather than from whatever game happens to
     // be selected - nothing is selected here.
-    showWorking(i18n::get(StrKey::SavingCard));
+    showWorking(i18n::get(StrKey::SavingCard), true);
 
     const GameType previous = selectedGame_;
     selectedGame_ = gtsDetailGame_;
@@ -922,7 +923,7 @@ void UI::gtsSaveCurrentAsCard() {
         Gts::markDownloaded(gtsDetailId_);
 
     showMessageAndWait(i18n::get(StrKey::Exported),
-                       std::string(bankFolderNameOf(gtsDetailGame_)) + "/" + filename);
+                       std::string(bankFolderNameOf(gtsDetailGame_)) + "/" + filename, DialogKind::Success);
 }
 
 // --- Search filter ------------------------------------------------------------
@@ -1279,8 +1280,10 @@ void UI::gtsUploadSelectedCard() {
         return;
     }
 
+    ConfirmStyle st;
+    st.confirmKey = StrKey::HintDeposit;
     if (!showConfirmDialog(i18n::get(StrKey::GtsUploadConfirm),
-                           i18n::fmt(StrKey::GtsUploadConfirmBody, parsed.pkm.displayName())))
+                           i18n::fmt(StrKey::GtsUploadConfirmBody, parsed.pkm.displayName()), st))
         return;
 
     // Rebuilt from the decoded Pokemon rather than carved out of the PNG: build()
@@ -1305,9 +1308,9 @@ void UI::gtsUploadSelectedCard() {
         // Not an error: the board deduplicates on the payload, so the same
         // Pokemon exported twice is one listing, and saying so is friendlier
         // than a second copy appearing that nobody asked for.
-        showMessageAndWait(i18n::get(StrKey::GtsDuplicate), i18n::get(StrKey::GtsDuplicateBody));
+        showMessageAndWait(i18n::get(StrKey::GtsDuplicate), i18n::get(StrKey::GtsDuplicateBody), DialogKind::Info);
     } else {
-        showMessageAndWait(i18n::get(StrKey::GtsDeposited), i18n::get(StrKey::GtsDepositedBody));
+        showMessageAndWait(i18n::get(StrKey::GtsDeposited), i18n::get(StrKey::GtsDepositedBody), DialogKind::Success);
     }
     showGtsDeposit_ = false;
 }

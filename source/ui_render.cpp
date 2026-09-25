@@ -98,6 +98,8 @@ void UI::freeSprites() {
     if (iconGlobe_)      { SDL_DestroyTexture(iconGlobe_);      iconGlobe_ = nullptr; }
     if (iconBank_)       { SDL_DestroyTexture(iconBank_);       iconBank_ = nullptr; }
     if (iconCheck_)      { SDL_DestroyTexture(iconCheck_);      iconCheck_ = nullptr; }
+    if (iconTrash_)      { SDL_DestroyTexture(iconTrash_);      iconTrash_ = nullptr; }
+    if (iconWarn_)       { SDL_DestroyTexture(iconWarn_);       iconWarn_ = nullptr; }
 }
 
 SDL_Texture* UI::getRibbonSprite(const std::string& filename) {

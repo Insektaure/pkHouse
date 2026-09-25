@@ -23,6 +23,23 @@
 // keeps its own copy (ui_card.cpp) so its output never depends on this one.
 void blitDisc(SDL_Renderer* r, SDL_Texture* tex, int cx, int cy, int rad, SDL_Color bg);
 
+// What a message is about, for its icon (UI 2.0 dialogs, source/ui_dialog.cpp).
+enum class DialogKind { Info, Success, Error };
+
+// How a confirmation looks and asks (8a / 8b). The defaults are a plain
+// "B Cancel / A Confirm" question.
+struct ConfirmStyle {
+    const char* confirmKey = nullptr;  // label of the A button; "Confirm" when null
+    bool danger  = false;              // red: something is lost
+    bool hold    = false;              // A must be held for UI::HOLD_MS (Pokemon would be lost)
+    bool warning = false;              // amber warning icon rather than the info one
+    std::string note;                  // red line above the buttons
+    // The thing being acted on, drawn in a row under the text (a bank, a
+    // Pokemon). `objectH` is its height; nothing is drawn when it is 0.
+    int objectH = 0;
+    std::function<void(int x, int y, int w)> drawObject;
+};
+
 // Which panel the cursor is on. Preview is never under the cursor: it is the
 // bank picker's look at a bank that has not been opened (UI::previewBank_).
 enum class Panel { Game, Bank, Preview };
@@ -91,10 +108,18 @@ public:
     bool init();
     void shutdown();
     void showSplash();
-    int  drawBodyText(const std::string& body, int startY, const std::string& footer);
-    void showMessageAndWait(const std::string& title, const std::string& body);
-    bool showConfirmDialog(const std::string& title, const std::string& body);
-    void showWorking(const std::string& msg);
+    // Modal, over the current screen dimmed. A (or B) closes a message; a
+    // confirmation returns true on A - once held long enough when style.hold.
+    void showMessageAndWait(const std::string& title, const std::string& body,
+                            DialogKind kind = DialogKind::Error);
+    bool showConfirmDialog(const std::string& title, const std::string& body,
+                           const ConfirmStyle& style = ConfirmStyle());
+    // A blocking operation is running: a dialog over the current screen,
+    // dimmed (8b "blocking · progress"). `writing` adds the "don't close"
+    // warning, for anything that writes to the SD card; `progress` in 0..1
+    // adds a bar, for work that knows how far along it is.
+    void showWorking(const std::string& msg, bool writing = false, float progress = -1.0f);
+    bool screenDrawn_ = false;   // a screen has been shown: something to dim
     void setAppletMode(bool mode) { appletMode_ = mode; }
     bool isDualBankMode() const { return appletMode_ || allBanksMode_; }
     void run(const std::string& basePath, const std::string& savePath);
@@ -439,7 +464,7 @@ private:
     // How many games each profile has a save for, shown on its card. Read
     // once, not per frame: counting opens every game's save data.
     std::vector<int> profileSaveCounts_;
-    void loadProfileSaveCounts();
+    void loadProfileSaveCounts();   // shows its own progress dialog
 
     // Backups of one game's save for a profile: how many there are, and when
     // the newest was made (0 when there is none). Backups are per game and
@@ -457,6 +482,7 @@ private:
     std::unordered_map<GameType, SDL_Texture*> gameIconCache_;
     std::unordered_map<GameType, int> gameBankCounts_;
     void refreshBankCounts();
+    // Shows its own progress dialog.
     void loadGameIcons();
     void freeGameIcons();
     void enterAllBanksMode();
@@ -493,6 +519,9 @@ private:
     void drawFlowTopBar(const std::string& title, const std::vector<std::string>& steps,
                         int current);
     void drawGameSelTopRight();
+    // The step row itself, centred on (centerX, cy).
+    void drawSteps(const std::vector<std::string>& steps, int current, int centerX, int cy);
+
     void drawCheckDisc(int cx, int cy, int radius, SDL_Color disc, SDL_Color tick);
     static SDL_Color gameTint(GameType g);
     // Like wrapText, but breaks anywhere: for paths, which have no spaces.
@@ -673,6 +702,31 @@ private:
     void handleBankSelectorInput(bool& running);
     void openSelectedBank();
     void drawDeleteConfirmPopup();
+    uint32_t deleteHoldStart_ = 0;     // A held on the delete dialog since (0 = not)
+    void tickDeleteHold();
+    void deleteSelectedBank();
+
+    // --- Dialogs (source/ui_dialog.cpp) ---
+    // Long enough to let go when A was pressed by mistake.
+    static constexpr uint32_t HOLD_MS = 2000;
+    enum class DialogIcon { Info, Success, Warning, Trash };
+    enum class ButtonStyle { Neutral, Primary, Danger, Hold };
+    struct DialogButton {
+        const char* key;               // "A", "B"
+        std::string label;
+        ButtonStyle style = ButtonStyle::Neutral;
+        float       held = 0.0f;       // Hold: how far along, 0..1
+    };
+    void drawDialogBackdrop();
+    void drawDialog(DialogIcon icon, const std::string& title, const std::string& body,
+                    int objectH, const std::function<void(int, int, int)>& drawObject,
+                    const std::string& note, const std::vector<DialogButton>& buttons,
+                    const std::string& footnote);
+    void drawBankObjectRow(const BankInfo& bank, int x, int y, int w);
+    ConfirmStyle releaseStyle(Panel from, const Pokemon* pkm, const std::string& where);
+    void drawPokemonObjectRow(const Pokemon& pkm, const std::string& where, int x, int y, int w);
+    SDL_Texture* iconTrash_ = nullptr;
+    SDL_Texture* iconWarn_  = nullptr;
 
     // --- Bank picker (UI 2.0) ---
     //

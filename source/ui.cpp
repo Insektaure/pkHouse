@@ -93,6 +93,8 @@ bool UI::init() {
         iconGlobe_       = loadIcon("globe.png");
         iconBank_        = loadIcon("bank.png");
         iconCheck_       = loadIcon("check.png");
+        iconTrash_       = loadIcon("trash.png");
+        iconWarn_        = loadIcon("warn.png");
     }
 
     // Open game controller
@@ -197,133 +199,79 @@ void UI::showSplash() {
     SDL_DestroyTexture(tex);
 }
 
-int UI::drawBodyText(const std::string& body, int startY, const std::string& footer) {
-    int lineY = startY;
-    std::string remaining = body;
-    while (!remaining.empty()) {
-        size_t nl = remaining.find('\n');
-        std::string line = (nl != std::string::npos) ? remaining.substr(0, nl) : remaining;
-        drawTextCentered(line, SCREEN_W / 2, lineY, T().textDim, font_);
-        lineY += 24;
-        if (nl == std::string::npos) break;
-        remaining = remaining.substr(nl + 1);
-    }
-    drawTextCentered(footer, SCREEN_W / 2, lineY + 20, T().textDim, fontSmall_);
-    return lineY;
-}
-
-void UI::showMessageAndWait(const std::string& title, const std::string& body) {
+void UI::showWorking(const std::string& msg, bool writing, float progress) {
     if (!renderer_) return;
-    markDirty(); // Force redraw after modal returns
+    markDirty(); // Force redraw after the operation returns
 
-    bool waiting = true;
-    while (waiting) {
-        SDL_Event event;
-        while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_QUIT) {
-                waiting = false;
-            }
-            if (event.type == SDL_CONTROLLERBUTTONDOWN) {
-                if (event.cbutton.button == SDL_CONTROLLER_BUTTON_A) // Switch B
-                    waiting = false;
-            }
-        }
-
+    // What was on screen, dimmed. Before anything has been shown (loading
+    // profiles at start) there is nothing to dim: just the ground and logo.
+    if (screenDrawn_) {
+        drawCurrentScreen();
+    } else {
         SDL_SetRenderDrawColor(renderer_, T().bg.r, T().bg.g, T().bg.b, 255);
         SDL_RenderClear(renderer_);
-
-        drawTextCentered(title, SCREEN_W / 2, SCREEN_H / 2 - 40, T().red, fontLarge_);
-        drawBodyText(body, SCREEN_H / 2 + 5, i18n::get(StrKey::PressBToDismiss));
-
-        SDL_RenderPresent(renderer_);
-        SDL_Delay(16);
+        drawRect(0, 0, SCREEN_W, ACCENT_RULE_H, T().accent);
+        drawLogo(32, 40);
     }
-}
+    drawRect(0, 0, SCREEN_W, SCREEN_H, SDL_Color{T().bg.r, T().bg.g, T().bg.b, 190});
 
-bool UI::showConfirmDialog(const std::string& title, const std::string& body) {
-    if (!renderer_) return false;
-    markDirty(); // Force redraw after modal returns
+    // The dialog: a spinner badge and the message, then the bar and the
+    // warning when they apply.
+    constexpr int W = 520, PAD = 24, BADGE = 48;
+    TTF_Font* fTitle = uiFont(20, true);
+    TTF_Font* fNote  = uiFont(13, true);
+    const int textX = PAD + BADGE + 16, textW = W - textX - PAD;
+    const auto lines = wrapText(msg, fTitle, textW, 2);
+    const int titleH = static_cast<int>(lines.size()) * 26;
+    int h = PAD + std::max(BADGE, titleH) + PAD;
+    if (progress >= 0.0f) h += 30;
+    const auto noteLines = writing ? wrapText(i18n::get(StrKey::WorkNoClose), fNote, W - 2 * PAD - 44, 2)
+                                   : std::vector<std::string>();
+    const int noteH = noteLines.empty() ? 0 : 18 + static_cast<int>(noteLines.size()) * 18;
+    if (noteH) h += noteH + 16;
 
-    int result = -1; // -1 = undecided
-    while (result < 0) {
-        SDL_Event event;
-        while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_QUIT) {
-                result = 0;
-            }
-            if (event.type == SDL_CONTROLLERBUTTONDOWN) {
-                if (event.cbutton.button == SDL_CONTROLLER_BUTTON_B) // Switch A = confirm
-                    result = 1;
-                if (event.cbutton.button == SDL_CONTROLLER_BUTTON_A) // Switch B = cancel
-                    result = 0;
-            }
+    const int x = (SCREEN_W - W) / 2, y = (SCREEN_H - h) / 2;
+    fillRounded(x + 3, y + 6, W, h, 18, SDL_Color{0, 0, 0, 90});
+    fillRounded(x, y, W, h, 18, T().panelBg);
+    strokeRounded(x, y, W, h, 18, 1, T().panelBorder);
+
+    // Spinner: a faint ring with one bright quarter.
+    {
+        const int cx = x + PAD + BADGE / 2, cy = y + PAD + BADGE / 2;
+        fillDisc(cx, cy, BADGE / 2, T().badgeBg);
+        constexpr int R = 12, STROKE = 3;
+        strokeRounded(cx - R, cy - R, R * 2, R * 2, R, STROKE,
+                      SDL_Color{T().accent.r, T().accent.g, T().accent.b, 70});
+        if (SDL_Texture* q = cornerTexture(R, STROKE)) {
+            SDL_SetTextureColorMod(q, T().accent.r, T().accent.g, T().accent.b);
+            SDL_SetTextureAlphaMod(q, 255);
+            SDL_Rect dst = {cx, cy - R, R, R};
+            SDL_RenderCopyEx(renderer_, q, nullptr, &dst, 0, nullptr, SDL_FLIP_HORIZONTAL);
         }
-
-        SDL_SetRenderDrawColor(renderer_, T().bg.r, T().bg.g, T().bg.b, 255);
-        SDL_RenderClear(renderer_);
-
-        drawTextCentered(title, SCREEN_W / 2, SCREEN_H / 2 - 40, T().red, fontLarge_);
-        drawBodyText(body, SCREEN_H / 2 + 5, i18n::get(StrKey::AContinueBCancel));
-
-        SDL_RenderPresent(renderer_);
-        SDL_Delay(16);
-    }
-    return result == 1;
-}
-
-void UI::showWorking(const std::string& msg) {
-    if (!renderer_) return;
-    markDirty(); // Force redraw after modal returns
-
-    SDL_SetRenderDrawColor(renderer_, T().bg.r, T().bg.g, T().bg.b, 255);
-    SDL_RenderClear(renderer_);
-
-    // Dark card behind gear + message
-    constexpr int POP_W = 400;
-    constexpr int POP_H = 160;
-    int popX = (SCREEN_W - POP_W) / 2;
-    int popY = (SCREEN_H - POP_H) / 2;
-    drawRect(popX, popY, POP_W, POP_H, T().panelBg);
-    drawRectOutline(popX, popY, POP_W, POP_H, T().textDim, 2);
-
-    // Draw gear icon
-    int gearCX = SCREEN_W / 2;
-    int gearCY = popY + 58;
-    constexpr int OUTER_R = 28;
-    constexpr int INNER_R = 18;
-    constexpr int HOLE_R  = 9;
-    constexpr int TEETH    = 8;
-    constexpr int TOOTH_W  = 12;
-    constexpr int TOOTH_H  = 14;
-
-    // Filled circle helper (scanline)
-    auto fillCircle = [&](int cx, int cy, int r, SDL_Color c) {
-        SDL_SetRenderDrawColor(renderer_, c.r, c.g, c.b, c.a);
-        for (int dy = -r; dy <= r; dy++) {
-            int dx = static_cast<int>(std::sqrt(r * r - dy * dy));
-            SDL_RenderDrawLine(renderer_, cx - dx, cy + dy, cx + dx, cy + dy);
-        }
-    };
-
-    // Tooth rectangles around the gear (8 teeth at 45-degree intervals)
-    SDL_Color gearColor = T().arrow;
-    SDL_SetRenderDrawColor(renderer_, gearColor.r, gearColor.g, gearColor.b, gearColor.a);
-    for (int i = 0; i < TEETH; i++) {
-        double angle = i * (3.14159265 * 2.0 / TEETH);
-        int tx = gearCX + static_cast<int>((INNER_R + TOOTH_H / 2) * std::cos(angle));
-        int ty = gearCY + static_cast<int>((INNER_R + TOOTH_H / 2) * std::sin(angle));
-        SDL_Rect tooth = {tx - TOOTH_W / 2, ty - TOOTH_W / 2, TOOTH_W, TOOTH_W};
-        SDL_RenderFillRect(renderer_, &tooth);
     }
 
-    // Gear body circle
-    fillCircle(gearCX, gearCY, OUTER_R, gearColor);
+    int ty = y + PAD + std::max(0, (BADGE - titleH) / 2) + 1;
+    for (const auto& l : lines) { drawText(l, x + textX, ty, T().text, fTitle); ty += 26; }
+    int by = y + PAD + std::max(BADGE, titleH) + PAD;
 
-    // Center hole
-    fillCircle(gearCX, gearCY, HOLE_R, T().panelBg);
+    if (progress >= 0.0f) {
+        const float p = std::clamp(progress, 0.0f, 1.0f);
+        TTF_Font* f = uiFont(14, true);
+        const std::string pct = std::to_string(static_cast<int>(p * 100.0f + 0.5f)) + "%";
+        const int barW = W - 2 * PAD - 56;
+        fillRounded(x + PAD, by, barW, 10, 5, T().bg);
+        fillRounded(x + PAD, by, std::max(10, static_cast<int>(barW * p)), 10, 5, T().accent);
+        drawText(pct, x + W - PAD - textWidth(pct, f), by + 5 - TTF_FontHeight(f) / 2, T().text, f);
+        by += 30;
+    }
 
-    // Message text below gear
-    drawTextCentered(msg, SCREEN_W / 2, popY + POP_H - 32, T().text, font_);
+    if (noteH) {
+        const SDL_Color w = T().statusWarn;
+        fillRounded(x + PAD, by, W - 2 * PAD, noteH, 10, SDL_Color{w.r, w.g, w.b, 40});
+        fillDisc(x + PAD + 16, by + noteH / 2, 4, T().accent);
+        for (size_t i = 0; i < noteLines.size(); i++)
+            drawText(noteLines[i], x + PAD + 30, by + 9 + static_cast<int>(i) * 18, T().accent, fNote);
+    }
 
     SDL_RenderPresent(renderer_);
 }
@@ -354,8 +302,7 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
         screen_ = AppScreen::GameSelector;
         availableGames_.assign(std::begin(ALL_GAMES), std::end(ALL_GAMES));
         refreshBankCounts();
-        showWorking(i18n::get(StrKey::LoadingGameIcons));
-        loadGameIcons();
+        loadGameIcons();   // shows its own progress
     } else {
         showWorking(i18n::get(StrKey::LoadingProfiles));
         if (account_.init() && account_.loadProfiles(renderer_)) {
@@ -365,8 +312,7 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
             screen_ = AppScreen::GameSelector;
             availableGames_.assign(std::begin(ALL_GAMES), std::end(ALL_GAMES));
             refreshBankCounts();
-            showWorking(i18n::get(StrKey::LoadingGameIcons));
-            loadGameIcons();
+            loadGameIcons();   // shows its own progress
         }
     }
 
@@ -547,7 +493,7 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
                     running = true;
                 } else {
                     if (!isDualBankMode()) {
-                        showWorking(i18n::get(StrKey::Saving));
+                        showWorking(i18n::get(StrKey::Saving), true);
                         ledBlink();
                         if (save_.isLoaded())
                             save_.save(savePath_);
@@ -593,6 +539,7 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
             drawCurrentScreen();
             SDL_RenderPresent(renderer_);
             dirty_ = false;
+            screenDrawn_ = true;
         }
         SDL_Delay(16);
     }
@@ -645,7 +592,10 @@ void UI::selectGame(GameType game) {
                 size_t freeSpace = (size_t)vfs.f_bavail * vfs.f_bsize;
                 if (freeSpace < saveSize * 2) {
                     std::string msg = i18n::fmt(StrKey::LowStorageBody, formatSize(freeSpace), formatSize(saveSize));
-                    if (!showConfirmDialog(i18n::get(StrKey::LowStorage), msg)) {
+                    ConfirmStyle st;
+                    st.warning = true;
+                    st.confirmKey = StrKey::DlgContinue;
+                    if (!showConfirmDialog(i18n::get(StrKey::LowStorage), msg, st)) {
                         account_.unmountSave();
                         return;
                     }
@@ -676,8 +626,11 @@ void UI::selectGame(GameType game) {
                 lastBackupDir_ = backupDir;
                 lastBackupWhen_ = time(nullptr);
                 if (!ok) {
+                    ConfirmStyle st;
+                    st.warning = true;
+                    st.confirmKey = StrKey::DlgContinue;
                     if (!showConfirmDialog(i18n::get(StrKey::BackupFailed),
-                            i18n::get(StrKey::BackupFailedBody))) {
+                            i18n::get(StrKey::BackupFailedBody), st)) {
                         account_.unmountSave();
                         return;
                     }
@@ -742,7 +695,7 @@ std::string UI::buildBackupDir(GameType game) const {
 }
 
 bool UI::saveBankFiles() {
-    showWorking(i18n::get(StrKey::Saving));
+    showWorking(i18n::get(StrKey::Saving), true);
     ledBlink();
     // Written now: the "Last edited" dates follow without asking the SD card.
     const time_t now = time(nullptr);

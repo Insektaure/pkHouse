@@ -179,7 +179,7 @@ void UI::handleMenuInput(const SDL_Event& event, bool& running) {
             }
             std::string body = i18n::fmt(StrKey::PokemonExported, std::to_string(exported));
             if (failed > 0) body += "\n" + i18n::fmt(StrKey::ExportFailedCount, std::to_string(failed));
-            showMessageAndWait(i18n::get(StrKey::ExportComplete), body);
+            showMessageAndWait(i18n::get(StrKey::ExportComplete), body, DialogKind::Success);
             return;
         }
         // Export Cards: the same selection, written as PNG cards instead.
@@ -204,7 +204,8 @@ void UI::handleMenuInput(const SDL_Event& event, bool& running) {
                 if (pkm.isEmpty()) continue;
                 done++;
                 showWorking(i18n::fmt(StrKey::SavingCards,
-                                      std::to_string(done), std::to_string(total)));
+                                      std::to_string(done), std::to_string(total)),
+                            true, total ? static_cast<float>(done - 1) / total : 0.0f);
                 if (!renderPokemonCard(pkm, fonts).empty()) exported++;
                 else                                        failed++;
             }
@@ -212,7 +213,7 @@ void UI::handleMenuInput(const SDL_Event& event, bool& running) {
 
             std::string body = i18n::fmt(StrKey::CardsExported, std::to_string(exported));
             if (failed > 0) body += "\n" + i18n::fmt(StrKey::ExportFailedCount, std::to_string(failed));
-            showMessageAndWait(i18n::get(StrKey::ExportComplete), body);
+            showMessageAndWait(i18n::get(StrKey::ExportComplete), body, DialogKind::Success);
             return;
         }
 
@@ -239,8 +240,10 @@ void UI::handleMenuInput(const SDL_Event& event, bool& running) {
                     if (b.name != activeBankName_) avail++;
                 if (avail == 0) {
                     showMenu_ = false;
+                    ConfirmStyle st;
+                    st.confirmKey = StrKey::DlgCreateBank;
                     if (!showConfirmDialog(i18n::get(StrKey::NoBanksAvailable),
-                            i18n::get(StrKey::CreateNewBank))) return;
+                            i18n::get(StrKey::CreateNewBank), st)) return;
                     if (!saveBankFiles()) return;
                     bankManager_.refresh();
                     bankSelTarget_ = Panel::Game;
@@ -260,8 +263,10 @@ void UI::handleMenuInput(const SDL_Event& event, bool& running) {
                     if (b.name != leftBankName_) avail++;
                 if (avail == 0) {
                     showMenu_ = false;
+                    ConfirmStyle st;
+                    st.confirmKey = StrKey::DlgCreateBank;
                     if (!showConfirmDialog(i18n::get(StrKey::NoBanksAvailable),
-                            i18n::get(StrKey::CreateNewBank))) return;
+                            i18n::get(StrKey::CreateNewBank), st)) return;
                     if (!saveBankFiles()) return;
                     bankManager_.refresh();
                     bankSelTarget_ = Panel::Bank;
@@ -296,7 +301,7 @@ void UI::handleMenuInput(const SDL_Event& event, bool& running) {
             // sel: 0=Switch Bank, 1=Change Game, 2=Save & Quit, 3=Quit Without Saving
             if (sel == 0) {
                 if (!saveBankFiles()) { showMenu_ = false; return; }
-                showWorking(i18n::get(StrKey::Saving));
+                showWorking(i18n::get(StrKey::Saving), true);
                 ledBlink();
                 if (save_.isLoaded())
                     save_.save(savePath_);
@@ -308,7 +313,7 @@ void UI::handleMenuInput(const SDL_Event& event, bool& running) {
             } else if (sel == 1) {
                 // Change Game — save everything, unmount, go to game selector
                 if (!saveBankFiles()) { showMenu_ = false; return; }
-                showWorking(i18n::get(StrKey::Saving));
+                showWorking(i18n::get(StrKey::Saving), true);
                 ledBlink();
                 if (save_.isLoaded())
                     save_.save(savePath_);
@@ -356,6 +361,27 @@ void UI::handleMenuInput(const SDL_Event& event, bool& running) {
     }
 }
 
+// Releasing is destructive (8b): red, A held (HOLD_MS), the Pokemon shown
+// when there is one, and what can or cannot bring it back.
+ConfirmStyle UI::releaseStyle(Panel from, const Pokemon* pkm, const std::string& where) {
+    ConfirmStyle st;
+    st.danger = true;
+    st.hold = true;
+    st.confirmKey = StrKey::DlgHoldRelease;
+    const bool fromSave = from == Panel::Game && !isDualBankMode();
+    // A save was backed up when it was opened; a bank never is.
+    st.note = i18n::get(fromSave && lastBackup_ == BackupOutcome::Saved
+                        ? StrKey::DlgBackupNote : StrKey::DlgCantUndo);
+    if (pkm) {
+        const Pokemon copy = *pkm;
+        st.objectH = 62;
+        st.drawObject = [this, copy, where](int x, int y, int w) {
+            drawPokemonObjectRow(copy, where, x, y, w);
+        };
+    }
+    return st;
+}
+
 void UI::handleDetailInput(const SDL_Event& event) {
     auto tryRelease = [&]() {
         int box = cursor_.box;
@@ -368,9 +394,10 @@ void UI::handleDetailInput(const SDL_Event& event) {
         }
         Pokemon pkm = getPokemonAt(box, slot, cursor_.panel);
         if (pkm.isEmpty()) return;
-        std::string name = pkm.displayName();
-        if (showConfirmDialog(i18n::get(StrKey::ReleasePokemon),
-                i18n::fmt(StrKey::ReleaseConfirm, name))) {
+        const bool fromSave = cursor_.panel == Panel::Game && !isDualBankMode();
+        if (showConfirmDialog(i18n::fmt(StrKey::ReleaseConfirm, pkm.displayName()),
+                              i18n::get(fromSave ? StrKey::DlgReleaseSaveSub : StrKey::DlgReleaseBankSub),
+                              releaseStyle(cursor_.panel, &pkm, detailWhere()))) {
             clearPokemonAt(box, slot, cursor_.panel);
             // Remove from multi-select if selected
             if (!selectedSlots_.empty() && cursor_.panel == selectedPanel_
@@ -410,7 +437,7 @@ void UI::handleDetailInput(const SDL_Event& event) {
                 if (!pkm.isEmpty()) {
                     std::string name = exportPokemon(pkm);
                     if (!name.empty())
-                        showMessageAndWait(i18n::get(StrKey::Exported), name);
+                        showMessageAndWait(i18n::get(StrKey::Exported), name, DialogKind::Success);
                     else
                         showMessageAndWait(i18n::get(StrKey::ExportFailed), i18n::get(StrKey::CouldNotWrite));
                 }
@@ -419,10 +446,10 @@ void UI::handleDetailInput(const SDL_Event& event) {
             case SDL_CONTROLLER_BUTTON_X: { // Switch Y — save shareable card
                 Pokemon pkm = getPokemonAt(cursor_.box, cursor_.slot(gridCols()), cursor_.panel);
                 if (!pkm.isEmpty()) {
-                    showWorking(i18n::get(StrKey::SavingCard));
+                    showWorking(i18n::get(StrKey::SavingCard), true);
                     std::string name = exportPokemonCard(pkm);
                     if (!name.empty())
-                        showMessageAndWait(i18n::get(StrKey::Exported), name);
+                        showMessageAndWait(i18n::get(StrKey::Exported), name, DialogKind::Success);
                     else
                         showMessageAndWait(i18n::get(StrKey::ExportFailed),
                                            i18n::get(StrKey::CouldNotWrite));
@@ -503,9 +530,20 @@ void UI::handleNormalInput(const SDL_Event& event) {
                             i18n::get(StrKey::CantReleaseParty));
                         break;
                     }
-                    int count = heldMulti_.empty() ? 1 : (int)heldMulti_.size();
-                    std::string msg = i18n::fmt(StrKey::ReleaseMultiConfirm, std::to_string(count));
-                    if (showConfirmDialog(i18n::get(StrKey::ReleasePokemon), msg)) {
+                    // Where it was picked up from decides what the dialog says.
+                    const bool multi = !heldMulti_.empty();
+                    const Panel from = multi ? heldMultiSource_
+                                     : !swapHistory_.empty() ? swapHistory_.front().panel : cursor_.panel;
+                    const std::string title = multi && heldMulti_.size() > 1
+                        ? i18n::fmt(StrKey::ReleaseMultiConfirm, std::to_string(heldMulti_.size()))
+                        : i18n::fmt(StrKey::ReleaseConfirm,
+                                    (multi ? heldMulti_[0] : heldPkm_).displayName());
+                    const Pokemon* one = multi ? (heldMulti_.size() == 1 ? &heldMulti_[0] : nullptr) : &heldPkm_;
+                    const bool fromSave = from == Panel::Game && !isDualBankMode();
+                    const std::string where = i18n::get(fromSave ? StrKey::TabSave : StrKey::TabBank);
+                    if (showConfirmDialog(title,
+                            i18n::get(fromSave ? StrKey::DlgReleaseSaveSub : StrKey::DlgReleaseBankSub),
+                            releaseStyle(from, one, where))) {
                         heldMulti_.clear();
                         heldMultiSlots_.clear();
                         heldPkm_ = Pokemon{};
@@ -2099,7 +2137,7 @@ void UI::injectWondercard(const WCInfo& info) {
         : (isDualBankMode() ? i18n::get(StrKey::LocRight) : i18n::get(StrKey::LocBank));
     showMessageAndWait(i18n::get(StrKey::Injected),
         i18n::fmt(StrKey::InjectedBody, SpeciesName::get(natId), panelName,
-                  std::to_string(box + 1), std::to_string(slot + 1)));
+                  std::to_string(box + 1), std::to_string(slot + 1)), DialogKind::Success);
 }
 
 std::string UI::exportPokemon(const Pokemon& pkm) {

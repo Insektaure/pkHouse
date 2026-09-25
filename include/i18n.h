@@ -60,8 +60,6 @@ inline const char* langDisplayName(const std::string& code) {
 
 namespace StrKey {
     // ui.cpp - dialogs & modals
-    constexpr const char* PressBToDismiss     = "press_b_dismiss";
-    constexpr const char* AContinueBCancel     = "a_continue_b_cancel";
     constexpr const char* LoadingGameIcons     = "loading_game_icons";
     constexpr const char* LoadingProfiles      = "loading_profiles";
     constexpr const char* Saving               = "saving";
@@ -78,9 +76,6 @@ namespace StrKey {
     constexpr const char* AllBanks             = "all_banks";
     constexpr const char* StatusBankAll        = "status_bank_all";
     constexpr const char* StatusBankNormal     = "status_bank_normal";
-    constexpr const char* DeleteBankConfirm    = "delete_bank_confirm";
-    constexpr const char* CannotUndo           = "cannot_undo";
-    constexpr const char* AConfirmBCancel      = "a_confirm_b_cancel";
     constexpr const char* CannotDelete         = "cannot_delete";
     constexpr const char* BankCurrentlyLoaded  = "bank_currently_loaded";
     constexpr const char* DeletingBank         = "deleting_bank";
@@ -124,7 +119,6 @@ namespace StrKey {
     constexpr const char* CreateNewBank        = "create_new_bank";
     constexpr const char* PartyPokemon         = "party_pokemon";
     constexpr const char* CantReleaseParty     = "cant_release_party";
-    constexpr const char* ReleasePokemon       = "release_pokemon";
     constexpr const char* ReleaseConfirm       = "release_confirm";
     constexpr const char* Exported             = "exported";
     constexpr const char* ExportFailed         = "export_failed";
@@ -476,6 +470,27 @@ namespace StrKey {
     constexpr const char* StFull                   = "st_full";
     constexpr const char* ChipAllBanks             = "chip_all_banks";
     constexpr const char* ChipDual                 = "chip_dual";
+    constexpr const char* WorkNoClose              = "work_no_close";
+
+    // dialogs (UI 2.0)
+    constexpr const char* DlgOk                    = "dlg_ok";
+    constexpr const char* DlgConfirm               = "dlg_confirm";
+    constexpr const char* DlgContinue              = "dlg_continue";
+    constexpr const char* DlgCreateBank            = "dlg_create_bank";
+    constexpr const char* DlgDeleteBank            = "dlg_delete_bank";
+    constexpr const char* DlgHoldDelete            = "dlg_hold_delete";
+    constexpr const char* DlgHoldRelease           = "dlg_hold_release";
+    constexpr const char* DlgKeepHolding           = "dlg_keep_holding";
+    constexpr const char* DlgHoldHint              = "dlg_hold_hint";
+    constexpr const char* DlgCantUndo              = "dlg_cant_undo";
+    constexpr const char* DlgLost                  = "dlg_lost";
+    constexpr const char* DlgDeleteBankTitle       = "dlg_delete_bank_title";
+    constexpr const char* DlgDeleteEmptySub        = "dlg_delete_empty_sub";
+    constexpr const char* DlgDeleteFullSub         = "dlg_delete_full_sub";
+    constexpr const char* DlgReleaseSaveSub        = "dlg_release_save_sub";
+    constexpr const char* DlgReleaseBankSub        = "dlg_release_bank_sub";
+    constexpr const char* DlgBackupNote            = "dlg_backup_note";
+    constexpr const char* DlgEdited                = "dlg_edited";
 
     // ui_gts.cpp - the online GTS
     constexpr const char* GtsTitle             = "gts_title";

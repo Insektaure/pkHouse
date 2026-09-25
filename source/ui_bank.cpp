@@ -639,13 +639,17 @@ void UI::handleBankSelectorInput(bool& running) {
                     showAbout_ = true;
                     break;
                 case SDL_CONTROLLER_BUTTON_START: // + = delete
-                    if (bankCount > 0 && !onNew && !bankManager_.isAllMode())
+                    if (bankCount > 0 && !onNew && !bankManager_.isAllMode()) {
                         showDeleteConfirm_ = true;
+                        deleteHoldStart_ = 0;
+                    }
                     break;
             }
         }
 
     }
+
+    tickDeleteHold();
 
     // Joystick repeat navigation
     if (stickDirY_ != 0 && bankSelRowCount() > 0 && !showDeleteConfirm_) {
@@ -746,60 +750,88 @@ void UI::openSelectedBank() {
 
 // --- Delete Confirmation ---
 
+// 8a: the bank, what is lost, and - when Pokemon would be - a held A.
 void UI::drawDeleteConfirmPopup() {
-    drawRect(0, 0, SCREEN_W, SCREEN_H, T().overlay);
-
-    constexpr int POP_W = 500;
-    constexpr int POP_H = 180;
-    int popX = (SCREEN_W - POP_W) / 2;
-    int popY = (SCREEN_H - POP_H) / 2;
-
-    drawRect(popX, popY, POP_W, POP_H, T().panelBg);
-    drawRectOutline(popX, popY, POP_W, POP_H, T().red, 2);
-
     const auto& banks = bankManager_.list();
-    std::string bankName = (bankSelCursor_ >= 0 && bankSelCursor_ < (int)banks.size())
-        ? banks[bankSelCursor_].name : "";
+    if (bankSelCursor_ < 0 || bankSelCursor_ >= (int)banks.size()) return;
+    const BankInfo& bank = banks[bankSelCursor_];
+    const bool hasPokemon = bank.occupiedSlots > 0;
 
-    drawTextCentered(i18n::fmt(StrKey::DeleteBankConfirm, bankName),
-                     popX + POP_W / 2, popY + 50, T().text, font_);
-    drawTextCentered(i18n::get(StrKey::CannotUndo),
-                     popX + POP_W / 2, popY + 85, T().red, fontSmall_);
-    drawTextCentered(i18n::get(StrKey::AConfirmBCancel),
-                     popX + POP_W / 2, popY + POP_H - 25, T().textDim, fontSmall_);
+    // Dim what the picker already drew under it.
+    drawRect(0, 0, SCREEN_W, SCREEN_H, SDL_Color{T().bg.r, T().bg.g, T().bg.b, 190});
+
+    const float held = deleteHoldStart_
+        ? static_cast<float>(SDL_GetTicks() - deleteHoldStart_) / HOLD_MS : 0.0f;
+    std::vector<DialogButton> buttons = {{"B", i18n::get(StrKey::HintCancel)}};
+    if (hasPokemon)
+        buttons.push_back({"A", i18n::get(deleteHoldStart_ ? StrKey::DlgKeepHolding : StrKey::DlgHoldDelete),
+                           ButtonStyle::Hold, held});
+    else
+        buttons.push_back({"A", i18n::get(StrKey::DlgDeleteBank), ButtonStyle::Danger});
+
+    drawDialog(DialogIcon::Trash,
+               i18n::fmt(StrKey::DlgDeleteBankTitle, bank.name),
+               i18n::get(hasPokemon ? StrKey::DlgDeleteFullSub : StrKey::DlgDeleteEmptySub),
+               62, [&](int x, int y, int w) { drawBankObjectRow(bank, x, y, w); },
+               hasPokemon ? i18n::fmt(StrKey::DlgLost, std::to_string(bank.occupiedSlots))
+                          : i18n::get(StrKey::DlgCantUndo),
+               buttons, hasPokemon ? i18n::get(StrKey::DlgHoldHint) : std::string());
+}
+
+// The delete itself, once confirmed (pressed, or held long enough).
+void UI::deleteSelectedBank() {
+    deleteHoldStart_ = 0;
+    const auto& banks = bankManager_.list();
+    if (bankSelCursor_ < 0 || bankSelCursor_ >= (int)banks.size())
+        return;
+    const std::string name = banks[bankSelCursor_].name;
+    // Cannot delete a bank that is currently loaded
+    if (name == activeBankName_ || (isDualBankMode() && name == leftBankName_)) {
+        showDeleteConfirm_ = false;
+        showMessageAndWait(i18n::get(StrKey::CannotDelete), i18n::get(StrKey::BankCurrentlyLoaded));
+        return;
+    }
+    // Closed first, so the progress dialog is not drawn over it.
+    showDeleteConfirm_ = false;
+    showWorking(i18n::get(StrKey::DeletingBank), true);
+    bankManager_.deleteBank(name);
+    int newCount = (int)bankManager_.list().size();
+    if (bankSelCursor_ >= newCount && newCount > 0)
+        bankSelCursor_ = newCount - 1;
+    clearBankPreview();
+    markDirty();
 }
 
 void UI::handleDeleteConfirmEvent(const SDL_Event& event) {
-    auto tryDelete = [&]() {
-        const auto& banks = bankManager_.list();
-        if (bankSelCursor_ < 0 || bankSelCursor_ >= (int)banks.size())
-            return;
-        const std::string& name = banks[bankSelCursor_].name;
-        // Cannot delete a bank that is currently loaded
-        if (name == activeBankName_ || (isDualBankMode() && name == leftBankName_)) {
-            showDeleteConfirm_ = false;
-            showMessageAndWait(i18n::get(StrKey::CannotDelete), i18n::get(StrKey::BankCurrentlyLoaded));
-            return;
-        }
-        showWorking(i18n::get(StrKey::DeletingBank));
-        bankManager_.deleteBank(name);
-        int newCount = (int)bankManager_.list().size();
-        if (bankSelCursor_ >= newCount && newCount > 0)
-            bankSelCursor_ = newCount - 1;
-        clearBankPreview();
-        showDeleteConfirm_ = false;
-    };
+    const auto& banks = bankManager_.list();
+    const bool hasPokemon = bankSelCursor_ >= 0 && bankSelCursor_ < (int)banks.size()
+                          && banks[bankSelCursor_].occupiedSlots > 0;
 
     if (event.type == SDL_CONTROLLERBUTTONDOWN) {
         switch (event.cbutton.button) {
-            case SDL_CONTROLLER_BUTTON_B: // Switch A = confirm
-                tryDelete();
+            case SDL_CONTROLLER_BUTTON_B: // Switch A = confirm: a press, or a held second
+                if (hasPokemon) deleteHoldStart_ = SDL_GetTicks();
+                else            deleteSelectedBank();
                 break;
             case SDL_CONTROLLER_BUTTON_A: // Switch B = cancel
+                deleteHoldStart_ = 0;
                 showDeleteConfirm_ = false;
                 break;
         }
     }
+    // Letting go early cancels the hold, not the dialog.
+    if (event.type == SDL_CONTROLLERBUTTONUP && event.cbutton.button == SDL_CONTROLLER_BUTTON_B)
+        deleteHoldStart_ = 0;
+}
+
+// Called every loop while the delete dialog is up: finishes a hold that has
+// lasted long enough, and keeps the fill moving until then.
+void UI::tickDeleteHold() {
+    if (!showDeleteConfirm_ || !deleteHoldStart_) return;
+    if (SDL_GetTicks() - deleteHoldStart_ < HOLD_MS)
+        markDirty();
+    else
+        deleteSelectedBank();
 }
 
 // --- Text Input ---
@@ -895,7 +927,7 @@ void UI::commitTextInput(const std::string& text) {
                 i18n::get(StrKey::BankNameExistsBody));
             return;
         }
-        showWorking(i18n::get(StrKey::CreatingBank));
+        showWorking(i18n::get(StrKey::CreatingBank), true);
         if (bankManager_.createBank(text)) {
             // Select the newly created bank
             const auto& banks = bankManager_.list();
@@ -915,7 +947,7 @@ void UI::commitTextInput(const std::string& text) {
                 i18n::get(StrKey::BankNameExistsBody));
             return;
         }
-        showWorking(i18n::get(StrKey::RenamingBank));
+        showWorking(i18n::get(StrKey::RenamingBank), true);
         if (bankManager_.renameBank(renamingBankName_, text)) {
             // Select the renamed bank
             const auto& banks = bankManager_.list();

@@ -401,7 +401,7 @@ void UI::importCard(const CardFile& card) {
         std::string moved;
         if (relocateCard(card, parsed.game, moved)) {
             showMessageAndWait(i18n::get(StrKey::CardMoved),
-                               i18n::fmt(StrKey::CardMovedBody, moved));
+                               i18n::fmt(StrKey::CardMovedBody, moved), DialogKind::Success);
             cardList_ = scanCards(basePath_, selectedGame_);
             cardListCursor_ = 0;
             cardListScroll_ = 0;
@@ -453,5 +453,5 @@ void UI::importCard(const CardFile& card) {
     showMessageAndWait(i18n::get(StrKey::Imported),
         i18n::fmt(StrKey::ImportedBody,
                   std::vector<std::string>{SpeciesName::get(parsed.pkm.species()), panelName,
-                                           std::to_string(box + 1), std::to_string(slot + 1)}));
+                                           std::to_string(box + 1), std::to_string(slot + 1)}), DialogKind::Success);
 }

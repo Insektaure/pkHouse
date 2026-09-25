@@ -235,11 +235,6 @@
     "controls_line2": "L/R: Switch Box    ZL/ZR: Box View    +: Menu    -: About",
     "press_minus_b_close": "Press - or B to close",
 
-    "box_view_left": "Left Bank Boxes",
-    "box_view_save": "Save Boxes",
-    "box_view_bank": "Bank Boxes",
-    "box_view_footer_rename": "A: Go to Box  Y: Rename  B: Cancel  D-Pad: Navigate",
-    "box_view_footer": "A: Go to Box  B: Cancel  D-Pad: Navigate",
 
     "status_main": "D-Pad: Move  L/R: Box  A: Pick/Place  Y: Select  YY: All  B: Cancel  X: Detail",
     "status_search": "Search: {0} matches  |  B: Clear  +: Menu",

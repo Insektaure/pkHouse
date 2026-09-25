@@ -235,11 +235,6 @@
     "controls_line2": "L/R: Cambiar caja    ZL/ZR: Vista de cajas    +: Menu    -: Acerca de",
     "press_minus_b_close": "Pulsa - o B para cerrar",
 
-    "box_view_left": "Cajas del banco izquierdo",
-    "box_view_save": "Cajas de guardado",
-    "box_view_bank": "Cajas del banco",
-    "box_view_footer_rename": "A: Ir a caja  Y: Renombrar  B: Cancelar  D-Pad: Navegar",
-    "box_view_footer": "A: Ir a caja  B: Cancelar  D-Pad: Navegar",
 
     "status_main": "D-Pad: Mover  L/R: Caja  A: Coger/Soltar  Y: Seleccionar  YY: Todo  B: Cancelar  X: Detalle",
     "status_search": "Busqueda: {0} resultados  |  B: Borrar  +: Menu",

@@ -235,11 +235,6 @@
     "controls_line2": "L/R：ボックス切替    ZL/ZR：ボックス一覧    +：メニュー    -：情報",
     "press_minus_b_close": "-またはBボタンで閉じる",
 
-    "box_view_left": "左バンクのボックス",
-    "box_view_save": "セーブのボックス",
-    "box_view_bank": "バンクのボックス",
-    "box_view_footer_rename": "A：ボックスへ移動  Y：名前変更  B：キャンセル  十字キー：操作",
-    "box_view_footer": "A：ボックスへ移動  B：キャンセル  十字キー：操作",
 
     "status_main": "十字キー：移動  L/R：ボックス  A：取る/置く  Y：選択  YY：全選択  B：キャンセル  X：詳細",
     "status_search": "検索：{0}件一致  |  B：クリア  +：メニュー",

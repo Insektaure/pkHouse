@@ -312,11 +312,6 @@ namespace StrKey {
     constexpr const char* PressMinusBClose     = "press_minus_b_close";
 
     // ui_render.cpp - box view overlay
-    constexpr const char* BoxViewLeft          = "box_view_left";
-    constexpr const char* BoxViewSave          = "box_view_save";
-    constexpr const char* BoxViewBank          = "box_view_bank";
-    constexpr const char* BoxViewFooterRename  = "box_view_footer_rename";
-    constexpr const char* BoxViewFooter        = "box_view_footer";
 
     // ui_render.cpp - main status bar
     constexpr const char* StatusMain           = "status_main";

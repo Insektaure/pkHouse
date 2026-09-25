@@ -94,9 +94,6 @@ void UI::freeSprites() {
     if (iconShinyAlpha_) { SDL_DestroyTexture(iconShinyAlpha_); iconShinyAlpha_ = nullptr; }
     if (iconDynamax_)    { SDL_DestroyTexture(iconDynamax_);    iconDynamax_ = nullptr; }
     if (iconHouse_)      { SDL_DestroyTexture(iconHouse_);      iconHouse_ = nullptr; }
-    if (iconBoxFull_)     { SDL_DestroyTexture(iconBoxFull_);     iconBoxFull_ = nullptr; }
-    if (iconBoxEmpty_)    { SDL_DestroyTexture(iconBoxEmpty_);    iconBoxEmpty_ = nullptr; }
-    if (iconBoxNonEmpty_) { SDL_DestroyTexture(iconBoxNonEmpty_); iconBoxNonEmpty_ = nullptr; }
 }
 
 SDL_Texture* UI::getRibbonSprite(const std::string& filename) {
@@ -559,11 +556,11 @@ void UI::drawBoxPanel(Panel panelId, bool isActive) {
         strokeRounded(kx, keyY, KEY_W, KEY_H, 8, 1, T().buttonBorder);
         const int kcx = kx + KEY_W / 2;
         if (side == 0) {
-            fillArrow(kcx - 8, keyCy, 8, -1, keyText);
+            fillArrow(kcx - 8, keyCy, 8, ArrowDir::Left, keyText);
             drawTextCentered("L", kcx + 5, keyCy, keyText, keyFont);
         } else {
             drawTextCentered("R", kcx - 5, keyCy, keyText, keyFont);
-            fillArrow(kcx + 8, keyCy, 8, +1, keyText);
+            fillArrow(kcx + 8, keyCy, 8, ArrowDir::Right, keyText);
         }
     }
 
@@ -896,11 +893,18 @@ int UI::drawFooterKey(int x, int cy, const char* button, bool measureOnly) {
 
         const int kx = x + w;
         if (cap == HINT_DPAD) {
+            // A cross-shaped key with an arrow in each arm. Not a round cap
+            // with a cross in it: that is exactly what the + key looks like.
             if (!measureOnly) {
-                fillDisc(kx + CAP / 2, cy, CAP / 2, T().keyCap);
-                constexpr int ARM = 13, THICK = 3;
-                drawRect(kx + CAP / 2 - THICK / 2, cy - ARM / 2, THICK, ARM, T().keyCapText);
-                drawRect(kx + CAP / 2 - ARM / 2, cy - THICK / 2, ARM, THICK, T().keyCapText);
+                constexpr int ARM = 9;          // width of each arm
+                const int kcx = kx + CAP / 2;
+                fillRounded(kcx - ARM / 2, cy - CAP / 2, ARM, CAP, 3, T().keyCap);
+                fillRounded(kx, cy - ARM / 2, CAP, ARM, 3, T().keyCap);
+                constexpr float OFS = 8.0f, SIZE = 4.0f;  // arrow centre from key centre
+                fillArrow(kcx + 0.5f, cy - OFS + 0.5f, SIZE, ArrowDir::Up,    T().keyCapText);
+                fillArrow(kcx + 0.5f, cy + OFS + 0.5f, SIZE, ArrowDir::Down,  T().keyCapText);
+                fillArrow(kcx - OFS + 0.5f, cy + 0.5f, SIZE, ArrowDir::Left,  T().keyCapText);
+                fillArrow(kcx + OFS + 0.5f, cy + 0.5f, SIZE, ArrowDir::Right, T().keyCapText);
             }
             w += CAP;
         } else if (cap.size() == 1) {

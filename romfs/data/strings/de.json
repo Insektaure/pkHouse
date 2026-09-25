@@ -235,11 +235,6 @@
     "controls_line2": "L/R: Box wechseln    ZL/ZR: Box-Uebersicht    +: Menue    -: Info",
     "press_minus_b_close": "- oder B zum Schliessen",
 
-    "box_view_left": "Linke Bank-Boxen",
-    "box_view_save": "Speicher-Boxen",
-    "box_view_bank": "Bank-Boxen",
-    "box_view_footer_rename": "A: Zur Box  Y: Umbenennen  B: Abbrechen  Steuerkreuz: Navigieren",
-    "box_view_footer": "A: Zur Box  B: Abbrechen  Steuerkreuz: Navigieren",
 
     "status_main": "Steuerkreuz: Bewegen  L/R: Box  A: Nehmen/Ablegen  Y: Waehlen  YY: Alle  B: Abbrechen  X: Detail",
     "status_search": "Suche: {0} Treffer  |  B: Loeschen  +: Menue",

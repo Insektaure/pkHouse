@@ -235,11 +235,6 @@
     "controls_line2": "L/R: Box wisselen    ZL/ZR: Boxoverzicht    +: Menu    -: Over",
     "press_minus_b_close": "Druk op - of B om te sluiten",
 
-    "box_view_left": "Linkerbank-boxen",
-    "box_view_save": "Opslag-boxen",
-    "box_view_bank": "Bank-boxen",
-    "box_view_footer_rename": "A: Ga naar box  Y: Hernoemen  B: Annuleren  D-Pad: Navigeren",
-    "box_view_footer": "A: Ga naar box  B: Annuleren  D-Pad: Navigeren",
 
     "status_main": "D-Pad: Bewegen  L/R: Box  A: Pakken/Plaatsen  Y: Selecteren  YY: Alles  B: Annuleren  X: Detail",
     "status_search": "Zoeken: {0} resultaten  |  B: Wissen  +: Menu",

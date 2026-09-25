@@ -235,11 +235,6 @@
     "controls_line2": "L/R : Changer de boite    ZL/ZR : Vue des boites    + : Menu    - : A propos",
     "press_minus_b_close": "Appuyez sur - ou B pour fermer",
 
-    "box_view_left": "Boites de la banque gauche",
-    "box_view_save": "Boites de la sauvegarde",
-    "box_view_bank": "Boites de la banque",
-    "box_view_footer_rename": "A : Aller a la boite  Y : Renommer  B : Annuler  D-Pad : Naviguer",
-    "box_view_footer": "A : Aller a la boite  B : Annuler  D-Pad : Naviguer",
 
     "status_main": "D-Pad : Deplacer  L/R : Boite  A : Prendre/Poser  Y : Selectionner  YY : Tout  B : Annuler  X : Detail",
     "status_search": "Recherche : {0} resultats  |  B : Effacer  + : Menu",

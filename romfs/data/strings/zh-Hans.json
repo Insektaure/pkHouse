@@ -235,11 +235,6 @@
     "controls_line2": "L/R：切换盒子    ZL/ZR：盒子总览    +：菜单    -：关于",
     "press_minus_b_close": "按-或B关闭",
 
-    "box_view_left": "左侧银行盒子",
-    "box_view_save": "存档盒子",
-    "box_view_bank": "银行盒子",
-    "box_view_footer_rename": "A：前往盒子  Y：重命名  B：取消  十字键：导航",
-    "box_view_footer": "A：前往盒子  B：取消  十字键：导航",
 
     "status_main": "十字键：移动  L/R：盒子  A：拿取/放下  Y：选择  YY：全选  B：取消  X：详情",
     "status_search": "搜索：{0}个匹配  |  B：清除  +：菜单",

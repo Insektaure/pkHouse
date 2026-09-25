@@ -235,11 +235,6 @@
     "controls_line2": "L/R: 박스 변경    ZL/ZR: 박스 목록    +: 메뉴    -: 정보",
     "press_minus_b_close": "- 또는 B 버튼으로 닫기",
 
-    "box_view_left": "왼쪽 뱅크 박스",
-    "box_view_save": "세이브 박스",
-    "box_view_bank": "뱅크 박스",
-    "box_view_footer_rename": "A: 박스로 이동  Y: 이름 변경  B: 취소  십자키: 탐색",
-    "box_view_footer": "A: 박스로 이동  B: 취소  십자키: 탐색",
 
     "status_main": "십자키: 이동  L/R: 박스  A: 잡기/놓기  Y: 선택  YY: 전체  B: 취소  X: 상세",
     "status_search": "검색: {0}건 일치  |  B: 지우기  +: 메뉴",

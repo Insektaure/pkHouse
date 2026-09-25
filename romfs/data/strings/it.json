@@ -235,11 +235,6 @@
     "controls_line2": "L/R: Cambia box    ZL/ZR: Vista box    +: Menu    -: Info",
     "press_minus_b_close": "Premi - o B per chiudere",
 
-    "box_view_left": "Box della banca sinistra",
-    "box_view_save": "Box di salvataggio",
-    "box_view_bank": "Box della banca",
-    "box_view_footer_rename": "A: Vai al box  Y: Rinomina  B: Annulla  D-Pad: Naviga",
-    "box_view_footer": "A: Vai al box  B: Annulla  D-Pad: Naviga",
 
     "status_main": "D-Pad: Muovi  L/R: Box  A: Prendi/Posa  Y: Seleziona  YY: Tutti  B: Annulla  X: Dettaglio",
     "status_search": "Ricerca: {0} risultati  |  B: Cancella  +: Menu",

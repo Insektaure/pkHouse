@@ -274,15 +274,17 @@ void UI::fillDisc(int cx, int cy, int radius, SDL_Color c) {
     fillRounded(cx - radius, cy - radius, radius * 2, radius * 2, radius, c);
 }
 
-void UI::fillArrow(int cx, int cy, int size, int dir, SDL_Color c) {
-    const float half = size / 2.0f;
-    const float tipX  = dir < 0 ? cx - half : cx + half;
-    const float baseX = dir < 0 ? cx + half : cx - half;
-    const SDL_Color col = c;
-    SDL_Vertex v[3] = {
-        {{tipX,  static_cast<float>(cy)},        col, {0, 0}},
-        {{baseX, static_cast<float>(cy) - half}, col, {0, 0}},
-        {{baseX, static_cast<float>(cy) + half}, col, {0, 0}},
-    };
+void UI::fillArrow(float cx, float cy, float size, ArrowDir dir, SDL_Color c) {
+    const float h = size / 2.0f;
+    SDL_FPoint p[3];
+    switch (dir) {
+        case ArrowDir::Left:  p[0] = {cx - h, cy}; p[1] = {cx + h, cy - h}; p[2] = {cx + h, cy + h}; break;
+        case ArrowDir::Right: p[0] = {cx + h, cy}; p[1] = {cx - h, cy - h}; p[2] = {cx - h, cy + h}; break;
+        case ArrowDir::Up:    p[0] = {cx, cy - h}; p[1] = {cx - h, cy + h}; p[2] = {cx + h, cy + h}; break;
+        case ArrowDir::Down:  p[0] = {cx, cy + h}; p[1] = {cx - h, cy - h}; p[2] = {cx + h, cy - h}; break;
+    }
+    SDL_Vertex v[3];
+    for (int i = 0; i < 3; i++)
+        v[i] = {p[i], c, {0, 0}};
     SDL_RenderGeometry(renderer_, nullptr, v, 3, nullptr, 0);
 }

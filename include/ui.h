@@ -181,8 +181,9 @@ private:
     void dashRounded(int x, int y, int w, int h, int radius, SDL_Color c,
                        int dash = 4, int gap = 3);
     void fillDisc(int cx, int cy, int radius, SDL_Color c);
-    // A small solid triangle pointing left (dir < 0) or right (dir > 0).
-    void fillArrow(int cx, int cy, int size, int dir, SDL_Color c);
+    enum class ArrowDir { Left, Right, Up, Down };
+    // A small solid triangle centred on (cx, cy), `size` long and wide.
+    void fillArrow(float cx, float cy, float size, ArrowDir dir, SDL_Color c);
 
     // Status icons
     SDL_Texture* iconShiny_      = nullptr;
@@ -191,10 +192,6 @@ private:
     SDL_Texture* iconDynamax_    = nullptr;
     SDL_Texture* iconHouse_      = nullptr;
 
-    // Box-state icons for the ZL/ZR all-boxes overview
-    SDL_Texture* iconBoxFull_     = nullptr;
-    SDL_Texture* iconBoxEmpty_    = nullptr;
-    SDL_Texture* iconBoxNonEmpty_ = nullptr;
 
     // Screen dimensions (Switch: 1280x720)
     static constexpr int SCREEN_W = 1280;

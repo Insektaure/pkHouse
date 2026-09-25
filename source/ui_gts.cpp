@@ -113,17 +113,6 @@ void fillCircle(SDL_Renderer* r, int cx, int cy, int radius, SDL_Color c) {
     }
 }
 
-// A pill: a half-disc at each end and a rect between them.
-void fillPill(SDL_Renderer* r, int x, int y, int w, int h, SDL_Color c) {
-    const int radius = h / 2;
-    fillCircle(r, x + radius, y + radius, radius, c);
-    fillCircle(r, x + w - radius - 1, y + radius, radius, c);
-
-    SDL_SetRenderDrawColor(r, c.r, c.g, c.b, c.a);
-    SDL_Rect middle = {x + radius, y, w - radius * 2, h};
-    SDL_RenderFillRect(r, &middle);
-}
-
 // One outline of an ellipse, plotted by walking y. Used for the globe: its
 // outline is a circle, and each meridian is the same ellipse squeezed
 // horizontally, which is what makes a flat drawing read as a sphere.
@@ -271,56 +260,6 @@ void UI::drawGtsStars(const SDL_Rect& area, int count, uint32_t seed) {
 // --- The row above the game icons ---------------------------------------------
 // Drawn rather than shipped as a PNG, so the band is navy and amber in the
 // default and follows the palette everywhere else.
-void UI::drawGtsRow(int y, int h) {
-    constexpr int ROW_W = 1160;
-    const int x = (SCREEN_W - ROW_W) / 2;
-    const bool focused = gameSelOnGts_;
-
-    drawRect(x, y, ROW_W, h, focused ? T().menuHighlight : T().panelBg);
-
-    // --- the motif, behind everything ---------------------------------------
-    {
-        const SDL_Rect clip = {x, y, ROW_W, h};
-        drawGtsStars({x + 600, y + 4, 450, h - 8}, 8, 0x5EEDu);
-        drawGtsGlobe(clip, x + 853, y + h / 2, 136, 38);
-
-        SDL_RenderSetClipRect(renderer_, &clip);
-        drawGtsLink(x + 722, y + 35, x + 968, y + 12, 44, 200, 4, 3);
-        SDL_RenderSetClipRect(renderer_, nullptr);
-    }
-
-    // --- the mark ------------------------------------------------------------
-    {
-        const int cx = x + 24, cy = y + 24;
-        fillCircle(renderer_, cx, cy, 20, T().goldLabel);
-
-        // A globe cut out of the disc, in the band's own colour.
-        const SDL_Color cut = focused ? T().menuHighlight : T().panelBg;
-        ellipseOutline(renderer_, cx, cy, 12, 12, cut);
-        ellipseOutline(renderer_, cx, cy, 5, 12, cut);
-        chord(renderer_, cx, cy, 12, 0, cut);
-        chord(renderer_, cx, cy, 12, -7, cut);
-        chord(renderer_, cx, cy, 12, 7, cut);
-    }
-
-    // --- what it is ----------------------------------------------------------
-    drawText(i18n::get(StrKey::GtsTitle), x + 57, y + 6, T().text, font_);
-    drawText(i18n::get(StrKey::GtsSubtitle), x + 57, y + 27, T().textDim, fontSmall_);
-
-    // --- the way in ----------------------------------------------------------
-    {
-        constexpr int PILL_W = 81, PILL_H = 32;
-        const int px = x + 1071, py = y + 8;
-        fillPill(renderer_, px, py, PILL_W, PILL_H, T().goldLabel);
-        drawTextCentered(i18n::get(StrKey::GtsOpen), px + 32, py + PILL_H / 2,
-                         T().textOnBadge, fontSmall_);
-        drawTextCentered(">", px + 63, py + PILL_H / 2, T().textOnBadge, fontSmall_);
-    }
-
-    if (focused)
-        drawRectOutline(x, y, ROW_W, h, T().cursor, 3);
-}
-
 // --- Hub ----------------------------------------------------------------------
 
 void UI::drawGtsHubFrame() {

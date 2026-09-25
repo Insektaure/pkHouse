@@ -197,6 +197,8 @@ private:
     SDL_Texture* iconShinyAlpha_ = nullptr;
     SDL_Texture* iconDynamax_    = nullptr;
     SDL_Texture* iconHouse_      = nullptr;
+    SDL_Texture* iconGlobe_      = nullptr;
+    SDL_Texture* iconBank_       = nullptr;
 
 
     // Screen dimensions (Switch: 1280x720)
@@ -305,7 +307,7 @@ private:
 
     // --- Online GTS ----------------------------------------------------------
 
-    // Cursor is on the "Online GTS" row above the game icons.
+    // Cursor is on the "Online GTS" tile above the game grid.
     bool gameSelOnGts_ = false;
 
     // Hub: 0 = browse, 1 = search, 2 = deposit.
@@ -437,18 +439,17 @@ private:
     std::vector<int> profileSaveCounts_;
     void loadProfileSaveCounts();
 
-    // When the newest backup of one game's save was made for a profile, 0 when
-    // there is none. Backups are per game and only made when a save is opened,
-    // so this belongs to the game selector, not the profile cards.
-    time_t lastBackupTime(int profile, GameType game) const;
+    // Backups of one game's save for a profile: how many there are, and when
+    // the newest was made (0 when there is none). Backups are per game and
+    // only made when a save is opened, which is why the game selector shows
+    // them and the profile cards do not.
+    int backupStats(int profile, GameType game, time_t& newest) const;
     std::string relativeDay(time_t t) const;
 
     // Game selector state
     GameType selectedGame_ = GameType::ZA;
-    int gameSelCursor_ = 0;
-    int gameSelPage_ = 0;
-    bool gameSelOnAllBanks_ = false;  // cursor is on "View All Banks" option
-    int gameSelOnChevron_ = 0;        // 0=none, -1=left chevron, 1=right chevron
+    int gameSelCursor_ = 0;           // index into gameSelList_
+    bool gameSelOnAllBanks_ = false;  // cursor is on the "All banks" tile
     bool allBanksMode_ = false;       // entered bank selector via "View All Banks"
     std::vector<GameType> availableGames_;
     std::unordered_map<GameType, SDL_Texture*> gameIconCache_;
@@ -457,6 +458,42 @@ private:
     void loadGameIcons();
     void freeGameIcons();
     void enterAllBanksMode();
+
+    // --- Game selector (UI 2.0) ---
+    //
+    // L/R step through the filters; the grid scrolls one row at a time to keep
+    // the cursor in view. Filters with no game in them are not offered.
+    enum GameFilter { GF_ALL, GF_RECENT, GF_GEN9, GF_GEN8, GF_GEN7, GF_GEN3, GF_COUNT };
+    int gameSelFilter_ = GF_ALL;
+    int gameSelScroll_ = 0;           // first grid row on screen
+    std::vector<int> gameSelList_;    // indices into availableGames_, filtered
+    static int gameGeneration(GameType g);
+    bool gameMatchesFilter(GameType g, int filter) const;
+    std::vector<int> visibleGameFilters() const;
+    void rebuildGameSelList();
+    void stepGameFilter(int dir);
+
+    // What the cards and the detail panel show, read when the list is built
+    // rather than per frame: it means listing directories.
+    struct GameSelInfo {
+        int    backups = 0;
+        time_t lastBackup = 0;
+        std::vector<std::string> banks;
+    };
+    std::unordered_map<GameType, GameSelInfo> gameSelInfo_;
+    int allBanksTotal_ = 0;           // for the "All banks" tile
+    int allBanksFamilies_ = 0;
+    std::vector<std::pair<GameType, int>> allBanksByFamily_;  // families with banks
+
+    void drawGameSelTopBar();
+    void drawGameSelTiles();
+    void drawGameSelFilters();
+    void drawGameCard(int listIdx, const SDL_Rect& r, bool isCursor);
+    void drawGameDetailPanel();
+    void drawGameIcon(GameType g, int x, int y, int size, int radius, SDL_Color bg);
+    // Up to two lines of `text` in `maxW`, split at spaces; returns the lines.
+    std::vector<std::string> wrapText(const std::string& text, TTF_Font* f, int maxW,
+                                      int maxLines = 2);
 
     // Owned save + bank manager (initialized after game selection)
     SaveFile save_;
@@ -599,7 +636,6 @@ private:
     void commitTextInput(const std::string& text);
 
     // --- Online GTS (source/ui_gts.cpp) ---
-    void drawGtsRow(int y, int h);            // the row above the game icons
 
     // The motif the board is drawn in, shared by the access band and the hub.
     // A slice of a wireframe sphere, a dotted route between two points, and a

@@ -28,6 +28,15 @@ public:
     std::string pathFor(const std::string& name) const;
     static int countOccupied(const std::string& filePath);
     static int countBanks(const std::string& basePath, GameType game);
+    // Names (without .bin) of the valid banks countBanks counts, sorted.
+    static std::vector<std::string> bankNames(const std::string& basePath, GameType game);
+
+    // One representative game per bank folder, in game card order. Paired
+    // games (Sword/Shield...) share a folder, so this is one per family.
+    static constexpr GameType FAMILY_GAMES[] = {
+        GameType::GP, GameType::Sw, GameType::BD,
+        GameType::LA, GameType::S, GameType::ZA, GameType::FR
+    };
 
     // Scan all game folders and build a combined bank list
     bool initAll(const std::string& basePath);

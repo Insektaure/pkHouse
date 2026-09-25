@@ -283,6 +283,7 @@ void UI::handleMenuInput(const SDL_Event& event, bool& running) {
                 activeBankPath_.clear();
                 allBanksMode_ = false;
                 gameSelOnAllBanks_ = false;
+                refreshBankCounts();   // new banks, and the backup just made
                 screen_ = AppScreen::GameSelector;
                 showMenu_ = false;
             } else if (sel == 3) {
@@ -318,6 +319,7 @@ void UI::handleMenuInput(const SDL_Event& event, bool& running) {
                 activeBankPath_.clear();
                 allBanksMode_ = false;
                 gameSelOnAllBanks_ = false;
+                refreshBankCounts();   // new banks, and the backup just made
                 screen_ = AppScreen::GameSelector;
                 showMenu_ = false;
             } else if (sel == 2) {

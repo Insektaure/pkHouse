@@ -32,15 +32,9 @@ bool BankManager::initAll(const std::string& basePath) {
     allMode_ = true;
     bankList_.clear();
 
-    // One representative game per unique bank folder (matches game card order)
-    constexpr GameType folderGames[] = {
-        GameType::GP, GameType::Sw, GameType::BD,
-        GameType::LA, GameType::S, GameType::ZA, GameType::FR
-    };
-
     std::string banksParent = basePath + "banks/";
 
-    for (GameType g : folderGames) {
+    for (GameType g : FAMILY_GAMES) {
         std::string dir = banksParent + bankFolderNameOf(g) + "/";
         DIR* d = opendir(dir.c_str());
         if (!d) continue;
@@ -176,6 +170,24 @@ int BankManager::countBanks(const std::string& basePath, GameType game) {
     }
     closedir(d);
     return count;
+}
+
+std::vector<std::string> BankManager::bankNames(const std::string& basePath, GameType game) {
+    std::vector<std::string> names;
+    std::string dir = basePath + "banks/" + bankFolderNameOf(game) + "/";
+    DIR* d = opendir(dir.c_str());
+    if (!d) return names;
+
+    struct dirent* entry;
+    while ((entry = readdir(d)) != nullptr) {
+        std::string name = entry->d_name;
+        if (name.size() >= 5 && name.substr(name.size() - 4) == ".bin" &&
+            Bank::isValidFile(dir + name))
+            names.push_back(name.substr(0, name.size() - 4));
+    }
+    closedir(d);
+    std::sort(names.begin(), names.end());
+    return names;
 }
 
 bool BankManager::createBank(const std::string& name) {

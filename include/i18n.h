@@ -112,15 +112,11 @@ namespace StrKey {
     constexpr const char* StatusProfile        = "status_profile";
     constexpr const char* NoSaveData           = "no_save_data";
     constexpr const char* NoSaveDataBody       = "no_save_data_body";
-    constexpr const char* SelectGameDual       = "select_game_dual";
     constexpr const char* DualBankHint         = "dual_bank_hint";
-    constexpr const char* SelectGame           = "select_game";
-    constexpr const char* ViewAllBanks         = "view_all_banks";
     constexpr const char* StatusGameBackPage   = "status_game_back_page";
     constexpr const char* StatusGameBack       = "status_game_back";
     constexpr const char* StatusGameQuitPage   = "status_game_quit_page";
     constexpr const char* StatusGameQuit       = "status_game_quit";
-    constexpr const char* DualBankMode         = "dual_bank_mode";
     constexpr const char* NoBanksTitle         = "no_banks_title";
     constexpr const char* NoBanksAnyGame       = "no_banks_any_game";
 
@@ -339,7 +335,6 @@ namespace StrKey {
     constexpr const char* HintDelete               = "hint_delete";
     constexpr const char* HintSelect2              = "hint_select2";
     constexpr const char* HintQuit                 = "hint_quit";
-    constexpr const char* HintPage                 = "hint_page";
     constexpr const char* HintSelect3              = "hint_select3";
     constexpr const char* HintBack2                = "hint_back2";
     constexpr const char* HintOpen2                = "hint_open2";
@@ -418,6 +413,35 @@ namespace StrKey {
     constexpr const char* RelYears                 = "rel_years";
     constexpr const char* ModeTitle                = "mode_title";
     constexpr const char* AppletNote               = "applet_note";
+
+    // ui_selectors.cpp - game selector (UI 2.0)
+    constexpr const char* GsTitle                  = "gs_title";
+    constexpr const char* StepGame                 = "step_game";
+    constexpr const char* StepBackup               = "step_backup";
+    constexpr const char* StepBank                 = "step_bank";
+    constexpr const char* TabAll                   = "tab_all";
+    constexpr const char* TabRecent                = "tab_recent";
+    constexpr const char* TabGen                   = "tab_gen";
+    constexpr const char* GsCount                  = "gs_count";
+    constexpr const char* GenLabel                 = "gen_label";
+    constexpr const char* NoBackupYet              = "no_backup_yet";
+    constexpr const char* DsSaveFile               = "ds_save_file";
+    constexpr const char* DsFound                  = "ds_found";
+    constexpr const char* DsBankOnly               = "ds_bank_only";
+    constexpr const char* DsLastBackup             = "ds_last_backup";
+    constexpr const char* DsBackupsSd              = "ds_backups_sd";
+    constexpr const char* DsBoxFormat              = "ds_box_format";
+    constexpr const char* DsBanks                  = "ds_banks";
+    constexpr const char* DsSingleFamily           = "ds_single_family";
+    constexpr const char* DsSharedWith             = "ds_shared_with";
+    constexpr const char* DsBtnBackup              = "ds_btn_backup";
+    constexpr const char* DsBtnBank                = "ds_btn_bank";
+    constexpr const char* DsBackupNote             = "ds_backup_note";
+    constexpr const char* DsNoBanks                = "ds_no_banks";
+    constexpr const char* DsMore                   = "ds_more";
+    constexpr const char* AllBanksSub              = "all_banks_sub";
+    constexpr const char* HintFilter               = "hint_filter";
+    constexpr const char* ModeApplet               = "mode_applet";
 
     // ui_gts.cpp - the online GTS
     constexpr const char* GtsTitle             = "gts_title";

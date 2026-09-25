@@ -343,13 +343,12 @@ void UI::handleBankSelectorInput(bool& running) {
                             cursor_.panel = Panel::Bank;
                         }
                     } else {
-                        if (!allBanksMode_) {
+                        if (!allBanksMode_)
                             account_.unmountSave();
-                            int cnt = BankManager::countBanks(basePath_, selectedGame_);
-                            gameBankCounts_[selectedGame_] = cnt;
-                            gameBankCounts_[pairedGame(selectedGame_)] = cnt;
-                        }
                         allBanksMode_ = false;
+                        // Banks may have been created or renamed, and opening
+                        // the save made a backup: the cards should say so.
+                        refreshBankCounts();
                         screen_ = AppScreen::GameSelector;
                     }
                     break;

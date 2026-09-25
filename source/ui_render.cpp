@@ -651,12 +651,7 @@ void UI::drawBoxPanel(Panel panelId, bool isActive) {
     }
 }
 
-void UI::drawTopBar() {
-    drawRect(0, 0, SCREEN_W, ACCENT_RULE_H, T().accent);
-    const int cy = ACCENT_RULE_H + (TOPBAR_H - ACCENT_RULE_H) / 2 - 4;
-
-    // Logo
-    int x = 32;
+int UI::drawLogo(int x, int cy) {
     if (iconHouse_) {
         SDL_SetTextureColorMod(iconHouse_, T().accent.r, T().accent.g, T().accent.b);
         SDL_Rect dst = {x, cy - 12, 24, 24};
@@ -664,9 +659,16 @@ void UI::drawTopBar() {
         x += 24 + 12;
     }
     TTF_Font* fLogo = uiFont(24, true);
+    drawText("pkHouse", x, baselineTop(fLogo, cy + 8), T().text, fLogo);
+    return x + textWidth("pkHouse", fLogo);
+}
+
+void UI::drawTopBar() {
+    drawRect(0, 0, SCREEN_W, ACCENT_RULE_H, T().accent);
+    const int cy = ACCENT_RULE_H + (TOPBAR_H - ACCENT_RULE_H) / 2 - 4;
+
+    int x = drawLogo(32, cy) + 16;
     const int baseline = cy + 8;
-    drawText("pkHouse", x, baselineTop(fLogo, baseline), T().text, fLogo);
-    x += textWidth("pkHouse", fLogo) + 16;
 
     drawRect(x, cy - 14, 1, 28, T().divider);
     x += 17;

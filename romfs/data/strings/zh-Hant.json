@@ -46,7 +46,6 @@
     "bank_name_exists": "名稱已被使用",
     "bank_name_exists_body": "已存在同名的銀行。",
 
-    "select_profile": "選擇使用者",
     "status_profile": "A：選擇  Y：主題  -：關於  +：退出",
     "no_save_data": "無存檔資料",
     "no_save_data_body": "未找到此使用者的相容寶可夢存檔資料。",
@@ -362,5 +361,20 @@
     "sum_ribbon_one": "獎章 {0}個",
     "sum_ribbon_many": "獎章 {0}個",
     "sum_mark_one": "證章 {0}個",
-    "sum_mark_many": "證章 {0}個"
+    "sum_mark_many": "證章 {0}個",
+    "prof_title": "今天誰來交換？",
+    "prof_subtitle": "選擇要開啟存檔的 Switch 使用者。",
+    "prof_saves_one": "找到 {0} 個存檔",
+    "prof_saves_many": "找到 {0} 個存檔",
+    "prof_no_saves": "沒有存檔",
+    "prof_last_backup": "上次備份：{0}",
+    "prof_no_backups": "尚無備份",
+    "rel_today": "今天",
+    "rel_yesterday": "昨天",
+    "rel_days": "{0} 天前",
+    "rel_weeks": "{0} 週前",
+    "rel_months": "{0} 個月前",
+    "rel_years": "{0} 年前",
+    "mode_title": "標題模式 · 完整存檔存取",
+    "applet_note": "從相簿啟動？小程式模式下只能在倉庫之間轉移。"
 }

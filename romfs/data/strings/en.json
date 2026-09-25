@@ -46,7 +46,6 @@
     "bank_name_exists": "Name Already Used",
     "bank_name_exists_body": "A bank with that name already exists.",
 
-    "select_profile": "Select Profile",
     "status_profile": "A: Select  Y: Theme  -: About  +: Quit",
     "no_save_data": "No Save Data",
     "no_save_data_body": "No supported Pokemon save data found for this profile.",
@@ -362,5 +361,20 @@
     "sum_ribbon_one": "{0} ribbon",
     "sum_ribbon_many": "{0} ribbons",
     "sum_mark_one": "{0} mark",
-    "sum_mark_many": "{0} marks"
+    "sum_mark_many": "{0} marks",
+    "prof_title": "Who’s trading today?",
+    "prof_subtitle": "Pick the Switch profile whose saves you want to open.",
+    "prof_saves_one": "{0} save found",
+    "prof_saves_many": "{0} saves found",
+    "prof_no_saves": "No saves found",
+    "prof_last_backup": "Last backup {0}",
+    "prof_no_backups": "No backups yet",
+    "rel_today": "today",
+    "rel_yesterday": "yesterday",
+    "rel_days": "{0} days ago",
+    "rel_weeks": "{0} weeks ago",
+    "rel_months": "{0} months ago",
+    "rel_years": "{0} years ago",
+    "mode_title": "Title override · full save access",
+    "applet_note": "Launched from the album? Only bank-to-bank transfers are available in applet mode."
 }

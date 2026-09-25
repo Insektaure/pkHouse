@@ -171,3 +171,14 @@ inline const char* bankFolderNameOf(GameType g) { return gameInfo(g).bankFolderN
 inline const char* gamePathNameOf(GameType g)   { return gameInfo(g).gamePathName; }
 inline const char* pkFileExtension(GameType g)  { return gameInfo(g).pkExtension; }
 inline int         pkPartySize(GameType g)      { return gameInfo(g).pkPartySize; }
+
+// Every game, in menu order. The game selector lists them in this order, and
+// the profile selector counts a profile's saves over it.
+inline constexpr GameType ALL_GAMES[] = {
+    GameType::GP, GameType::GE, GameType::Sw, GameType::Sh,
+    GameType::BD, GameType::SP, GameType::LA, GameType::S,
+    GameType::V, GameType::ZA, GameType::FR, GameType::LG,
+    GameType::FR_ES, GameType::LG_ES, GameType::FR_DE, GameType::LG_DE,
+    GameType::FR_IT, GameType::LG_IT, GameType::FR_FR, GameType::LG_FR,
+    GameType::FR_JA, GameType::LG_JA
+};

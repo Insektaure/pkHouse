@@ -46,7 +46,6 @@
     "bank_name_exists": "이미 사용 중인 이름",
     "bank_name_exists_body": "이 이름의 뱅크가 이미 존재합니다.",
 
-    "select_profile": "프로필 선택",
     "status_profile": "A: 선택  Y: 테마  -: 정보  +: 종료",
     "no_save_data": "세이브 데이터 없음",
     "no_save_data_body": "이 프로필에서 호환되는 포켓몬 세이브 데이터를 찾을 수 없습니다.",
@@ -362,5 +361,20 @@
     "sum_ribbon_one": "리본 {0}개",
     "sum_ribbon_many": "리본 {0}개",
     "sum_mark_one": "증표 {0}개",
-    "sum_mark_many": "증표 {0}개"
+    "sum_mark_many": "증표 {0}개",
+    "prof_title": "오늘은 누가 교환하나요?",
+    "prof_subtitle": "세이브를 열 Switch 사용자를 선택하세요.",
+    "prof_saves_one": "세이브 {0}개",
+    "prof_saves_many": "세이브 {0}개",
+    "prof_no_saves": "세이브 없음",
+    "prof_last_backup": "마지막 백업: {0}",
+    "prof_no_backups": "백업 없음",
+    "rel_today": "오늘",
+    "rel_yesterday": "어제",
+    "rel_days": "{0}일 전",
+    "rel_weeks": "{0}주 전",
+    "rel_months": "{0}개월 전",
+    "rel_years": "{0}년 전",
+    "mode_title": "타이틀 모드 · 세이브 전체 접근",
+    "applet_note": "앨범에서 실행했나요? 애플릿 모드에서는 뱅크 간 이동만 가능합니다."
 }

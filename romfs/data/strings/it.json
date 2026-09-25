@@ -46,7 +46,6 @@
     "bank_name_exists": "Nome gia in uso",
     "bank_name_exists_body": "Esiste gia una banca con questo nome.",
 
-    "select_profile": "Seleziona profilo",
     "status_profile": "A: Seleziona  Y: Tema  -: Info  +: Esci",
     "no_save_data": "Nessun salvataggio",
     "no_save_data_body": "Nessun dato di salvataggio Pokemon compatibile trovato per questo profilo.",
@@ -362,5 +361,20 @@
     "sum_ribbon_one": "{0} fiocco",
     "sum_ribbon_many": "{0} fiocchi",
     "sum_mark_one": "{0} emblema",
-    "sum_mark_many": "{0} emblemi"
+    "sum_mark_many": "{0} emblemi",
+    "prof_title": "Chi scambia oggi?",
+    "prof_subtitle": "Scegli il profilo Switch di cui aprire i salvataggi.",
+    "prof_saves_one": "{0} salvataggio trovato",
+    "prof_saves_many": "{0} salvataggi trovati",
+    "prof_no_saves": "Nessun salvataggio",
+    "prof_last_backup": "Ultimo backup {0}",
+    "prof_no_backups": "Nessun backup",
+    "rel_today": "oggi",
+    "rel_yesterday": "ieri",
+    "rel_days": "{0} giorni fa",
+    "rel_weeks": "{0} settimane fa",
+    "rel_months": "{0} mesi fa",
+    "rel_years": "{0} anni fa",
+    "mode_title": "Modalità titolo · accesso completo ai salvataggi",
+    "applet_note": "Avviato dall’album? In modalità applet sono disponibili solo i trasferimenti tra banche."
 }

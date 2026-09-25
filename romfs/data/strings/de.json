@@ -46,7 +46,6 @@
     "bank_name_exists": "Name bereits vergeben",
     "bank_name_exists_body": "Eine Bank mit diesem Namen existiert bereits.",
 
-    "select_profile": "Profil waehlen",
     "status_profile": "A: Waehlen  Y: Design  -: Info  +: Beenden",
     "no_save_data": "Keine Speicherdaten",
     "no_save_data_body": "Keine unterstuetzten Pokemon-Speicherdaten fuer dieses Profil gefunden.",
@@ -362,5 +361,20 @@
     "sum_ribbon_one": "{0} Band",
     "sum_ribbon_many": "{0} Bänder",
     "sum_mark_one": "{0} Zeichen",
-    "sum_mark_many": "{0} Zeichen"
+    "sum_mark_many": "{0} Zeichen",
+    "prof_title": "Wer tauscht heute?",
+    "prof_subtitle": "Wähle das Switch-Profil, dessen Spielstände du öffnen möchtest.",
+    "prof_saves_one": "{0} Spielstand gefunden",
+    "prof_saves_many": "{0} Spielstände gefunden",
+    "prof_no_saves": "Keine Spielstände",
+    "prof_last_backup": "Letzte Sicherung {0}",
+    "prof_no_backups": "Noch keine Sicherungen",
+    "rel_today": "heute",
+    "rel_yesterday": "gestern",
+    "rel_days": "vor {0} Tagen",
+    "rel_weeks": "vor {0} Wochen",
+    "rel_months": "vor {0} Monaten",
+    "rel_years": "vor {0} Jahren",
+    "mode_title": "Titelmodus · voller Speicherzugriff",
+    "applet_note": "Über das Album gestartet? Im Applet-Modus sind nur Übertragungen zwischen Banken möglich."
 }

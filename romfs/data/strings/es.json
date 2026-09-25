@@ -46,7 +46,6 @@
     "bank_name_exists": "Nombre ya usado",
     "bank_name_exists_body": "Ya existe un banco con ese nombre.",
 
-    "select_profile": "Seleccionar perfil",
     "status_profile": "A: Seleccionar  Y: Tema  -: Acerca de  +: Salir",
     "no_save_data": "Sin datos de guardado",
     "no_save_data_body": "No se encontraron datos de guardado de Pokemon compatibles para este perfil.",
@@ -362,5 +361,20 @@
     "sum_ribbon_one": "{0} cinta",
     "sum_ribbon_many": "{0} cintas",
     "sum_mark_one": "{0} emblema",
-    "sum_mark_many": "{0} emblemas"
+    "sum_mark_many": "{0} emblemas",
+    "prof_title": "¿Quién intercambia hoy?",
+    "prof_subtitle": "Elige el perfil de Switch cuyas partidas quieres abrir.",
+    "prof_saves_one": "{0} partida encontrada",
+    "prof_saves_many": "{0} partidas encontradas",
+    "prof_no_saves": "No hay partidas",
+    "prof_last_backup": "Última copia {0}",
+    "prof_no_backups": "Aún no hay copias",
+    "rel_today": "hoy",
+    "rel_yesterday": "ayer",
+    "rel_days": "hace {0} días",
+    "rel_weeks": "hace {0} semanas",
+    "rel_months": "hace {0} meses",
+    "rel_years": "hace {0} años",
+    "mode_title": "Modo título · acceso completo a partidas",
+    "applet_note": "¿Iniciado desde el álbum? En modo applet solo se pueden hacer transferencias entre bancos."
 }

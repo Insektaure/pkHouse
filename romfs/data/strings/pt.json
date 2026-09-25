@@ -46,7 +46,6 @@
     "bank_name_exists": "Nome ja utilizado",
     "bank_name_exists_body": "Ja existe um banco com esse nome.",
 
-    "select_profile": "Selecionar perfil",
     "status_profile": "A: Selecionar  Y: Tema  -: Sobre  +: Sair",
     "no_save_data": "Sem dados de save",
     "no_save_data_body": "Nenhum dado de save Pokemon compativel encontrado para este perfil.",
@@ -362,5 +361,20 @@
     "sum_ribbon_one": "{0} fita",
     "sum_ribbon_many": "{0} fitas",
     "sum_mark_one": "{0} marca",
-    "sum_mark_many": "{0} marcas"
+    "sum_mark_many": "{0} marcas",
+    "prof_title": "Quem vai trocar hoje?",
+    "prof_subtitle": "Escolha o perfil do Switch cujos jogos salvos quer abrir.",
+    "prof_saves_one": "{0} jogo salvo encontrado",
+    "prof_saves_many": "{0} jogos salvos encontrados",
+    "prof_no_saves": "Nenhum jogo salvo",
+    "prof_last_backup": "Último backup {0}",
+    "prof_no_backups": "Nenhum backup ainda",
+    "rel_today": "hoje",
+    "rel_yesterday": "ontem",
+    "rel_days": "há {0} dias",
+    "rel_weeks": "há {0} semanas",
+    "rel_months": "há {0} meses",
+    "rel_years": "há {0} anos",
+    "mode_title": "Modo título · acesso total aos jogos salvos",
+    "applet_note": "Iniciado pelo álbum? No modo applet só há transferências entre bancos."
 }

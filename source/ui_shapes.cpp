@@ -155,8 +155,11 @@ SDL_Texture* UI::cornerTexture(int radius, int stroke) {
     }
 
     constexpr int SS = 4;  // 4x4 samples per pixel
+    // CORNER_MASK is the outside of the arc instead of the inside: painted in
+    // a background colour it rounds off whatever square is underneath.
+    const bool mask = (stroke == CORNER_MASK);
     const double outer = radius;
-    const double inner = stroke > 0 ? radius - stroke : -1.0;
+    const double inner = (stroke > 0 && !mask) ? radius - stroke : -1.0;
     Uint32* px = static_cast<Uint32*>(surf->pixels);
     const int pitch = surf->pitch / 4;
     for (int y = 0; y < radius; y++) {
@@ -172,6 +175,7 @@ SDL_Texture* UI::cornerTexture(int radius, int stroke) {
                     if (d <= outer && d > inner) hits++;
                 }
             }
+            if (mask) hits = SS * SS - hits;
             const Uint8 a = static_cast<Uint8>(hits * 255 / (SS * SS));
             px[y * pitch + x] = SDL_MapRGBA(surf->format, 255, 255, 255, a);
         }
@@ -267,6 +271,15 @@ void UI::dashRounded(int x, int y, int w, int h, int radius, SDL_Color c,
     hLine(y + h - 1);
     vLine(x);
     vLine(x + w - 1);
+}
+
+void UI::blitRounded(SDL_Texture* tex, int x, int y, int w, int h, int radius, SDL_Color bg) {
+    if (!tex || w <= 0 || h <= 0) return;
+    SDL_Rect dst = {x, y, w, h};
+    SDL_RenderCopy(renderer_, tex, nullptr, &dst);
+    radius = std::min({radius, w / 2, h / 2});
+    if (SDL_Texture* m = radius > 0 ? cornerTexture(radius, CORNER_MASK) : nullptr)
+        drawCorners(renderer_, m, x, y, w, h, radius, bg);
 }
 
 void UI::fillDisc(int cx, int cy, int radius, SDL_Color c) {

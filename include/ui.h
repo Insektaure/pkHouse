@@ -15,6 +15,7 @@
 #include <vector>
 #include <unordered_set>
 #include <functional>
+#include <ctime>
 
 // Draws `tex` into a disc of radius `rad` centred on (cx, cy), masking the
 // corners with `bg` - the colour behind it - with an anti-aliased rim. Used for
@@ -174,6 +175,7 @@ private:
     // Anti-aliased quarter discs and quarter rings, white, one per radius and
     // stroke width, tinted with a colour mod when drawn.
     std::unordered_map<uint32_t, SDL_Texture*> cornerCache_;
+    static constexpr int CORNER_MASK = 0xFFFF;   // stroke value: outside of the arc
     SDL_Texture* cornerTexture(int radius, int stroke);
     void freeShapeCache();
 
@@ -182,6 +184,9 @@ private:
     void dashRounded(int x, int y, int w, int h, int radius, SDL_Color c,
                        int dash = 4, int gap = 3);
     void fillDisc(int cx, int cy, int radius, SDL_Color c);
+    // `tex` scaled into the rect with rounded corners, masked in `bg` - the
+    // colour behind it - the way blitDisc masks a disc.
+    void blitRounded(SDL_Texture* tex, int x, int y, int w, int h, int radius, SDL_Color bg);
     enum class ArrowDir { Left, Right, Up, Down };
     // A small solid triangle centred on (cx, cy), `size` long and wide.
     void fillArrow(float cx, float cy, float size, ArrowDir dir, SDL_Color c);
@@ -427,6 +432,17 @@ private:
     int profileSelCursor_ = 0;
     int selectedProfile_ = -1;
 
+    // How many games each profile has a save for, shown on its card. Read
+    // once, not per frame: counting opens every game's save data.
+    std::vector<int> profileSaveCounts_;
+    void loadProfileSaveCounts();
+
+    // When the newest backup of one game's save was made for a profile, 0 when
+    // there is none. Backups are per game and only made when a save is opened,
+    // so this belongs to the game selector, not the profile cards.
+    time_t lastBackupTime(int profile, GameType game) const;
+    std::string relativeDay(time_t t) const;
+
     // Game selector state
     GameType selectedGame_ = GameType::ZA;
     int gameSelCursor_ = 0;
@@ -640,6 +656,9 @@ private:
     int  panelBoxCount(Panel panel) const;
     std::string panelBoxName(Panel panel, int box) const;
     // --- Box view (UI 2.0) ---
+    // House icon and "pkHouse", vertically centred on cy. Returns the x just
+    // past the wordmark.
+    int  drawLogo(int x, int cy);
     void drawTopBar();
     // One box panel. Everything it shows - which box, its name, the tag above
     // it - comes from the current state, so the bank selector can draw the

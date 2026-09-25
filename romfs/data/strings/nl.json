@@ -46,7 +46,6 @@
     "bank_name_exists": "Naam al in gebruik",
     "bank_name_exists_body": "Er bestaat al een bank met deze naam.",
 
-    "select_profile": "Profiel selecteren",
     "status_profile": "A: Selecteren  Y: Thema  -: Over  +: Afsluiten",
     "no_save_data": "Geen opslaggegevens",
     "no_save_data_body": "Geen compatibele Pokemon-opslaggegevens gevonden voor dit profiel.",
@@ -362,5 +361,20 @@
     "sum_ribbon_one": "{0} lint",
     "sum_ribbon_many": "{0} linten",
     "sum_mark_one": "{0} embleem",
-    "sum_mark_many": "{0} emblemen"
+    "sum_mark_many": "{0} emblemen",
+    "prof_title": "Wie ruilt er vandaag?",
+    "prof_subtitle": "Kies het Switch-profiel waarvan je de opslag wilt openen.",
+    "prof_saves_one": "{0} opslag gevonden",
+    "prof_saves_many": "{0} opslagen gevonden",
+    "prof_no_saves": "Geen opslag gevonden",
+    "prof_last_backup": "Laatste back-up {0}",
+    "prof_no_backups": "Nog geen back-ups",
+    "rel_today": "vandaag",
+    "rel_yesterday": "gisteren",
+    "rel_days": "{0} dagen geleden",
+    "rel_weeks": "{0} weken geleden",
+    "rel_months": "{0} maanden geleden",
+    "rel_years": "{0} jaar geleden",
+    "mode_title": "Titelmodus · volledige toegang tot opslag",
+    "applet_note": "Gestart vanuit het album? In appletmodus zijn alleen overdrachten tussen banken mogelijk."
 }

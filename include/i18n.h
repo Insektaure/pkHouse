@@ -109,7 +109,6 @@ namespace StrKey {
     constexpr const char* BankNameExistsBody   = "bank_name_exists_body";
 
     // ui_selectors.cpp
-    constexpr const char* SelectProfile        = "select_profile";
     constexpr const char* StatusProfile        = "status_profile";
     constexpr const char* NoSaveData           = "no_save_data";
     constexpr const char* NoSaveDataBody       = "no_save_data_body";
@@ -402,6 +401,23 @@ namespace StrKey {
     constexpr const char* SumRibbonMany            = "sum_ribbon_many";
     constexpr const char* SumMarkOne               = "sum_mark_one";
     constexpr const char* SumMarkMany              = "sum_mark_many";
+
+    // ui_selectors.cpp - profile selector (UI 2.0)
+    constexpr const char* ProfTitle                = "prof_title";
+    constexpr const char* ProfSubtitle             = "prof_subtitle";
+    constexpr const char* ProfSavesOne             = "prof_saves_one";
+    constexpr const char* ProfSavesMany            = "prof_saves_many";
+    constexpr const char* ProfNoSaves              = "prof_no_saves";
+    constexpr const char* ProfLastBackup           = "prof_last_backup";
+    constexpr const char* ProfNoBackups            = "prof_no_backups";
+    constexpr const char* RelToday                 = "rel_today";
+    constexpr const char* RelYesterday             = "rel_yesterday";
+    constexpr const char* RelDays                  = "rel_days";
+    constexpr const char* RelWeeks                 = "rel_weeks";
+    constexpr const char* RelMonths                = "rel_months";
+    constexpr const char* RelYears                 = "rel_years";
+    constexpr const char* ModeTitle                = "mode_title";
+    constexpr const char* AppletNote               = "applet_note";
 
     // ui_gts.cpp - the online GTS
     constexpr const char* GtsTitle             = "gts_title";

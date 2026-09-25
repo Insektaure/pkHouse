@@ -46,7 +46,6 @@
     "bank_name_exists": "名前は使用済み",
     "bank_name_exists_body": "この名前のバンクはすでに存在します。",
 
-    "select_profile": "プロフィールを選択",
     "status_profile": "A：選択  Y：テーマ  -：情報  +：終了",
     "no_save_data": "セーブデータなし",
     "no_save_data_body": "このプロフィールに対応するポケモンのセーブデータが見つかりません。",
@@ -362,5 +361,20 @@
     "sum_ribbon_one": "リボン {0}個",
     "sum_ribbon_many": "リボン {0}個",
     "sum_mark_one": "あかし {0}個",
-    "sum_mark_many": "あかし {0}個"
+    "sum_mark_many": "あかし {0}個",
+    "prof_title": "今日は誰が交換する？",
+    "prof_subtitle": "セーブデータを開くSwitchのユーザーを選んでください。",
+    "prof_saves_one": "セーブデータ {0}件",
+    "prof_saves_many": "セーブデータ {0}件",
+    "prof_no_saves": "セーブデータなし",
+    "prof_last_backup": "最終バックアップ：{0}",
+    "prof_no_backups": "バックアップなし",
+    "rel_today": "今日",
+    "rel_yesterday": "昨日",
+    "rel_days": "{0}日前",
+    "rel_weeks": "{0}週間前",
+    "rel_months": "{0}か月前",
+    "rel_years": "{0}年前",
+    "mode_title": "タイトルモード · セーブに完全アクセス",
+    "applet_note": "アルバムから起動しましたか？アプレットモードではバンク間の移動のみ可能です。"
 }

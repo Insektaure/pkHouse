@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
+#include <dirent.h>
 #include <sys/stat.h>
 
 #include <switch.h>
@@ -19,64 +20,160 @@ void UI::refreshBankCounts() {
     }
 }
 
-// --- Profile Selector ---
+// --- Profile selector (UI 2.0) -----------------------------------------------------
+//
+// Laid out after external/UI_2.0 "Start · Select profile": a card per Switch
+// profile with its icon, name and how many games it has saves for.
+
+void UI::loadProfileSaveCounts() {
+    const int count = account_.profileCount();
+    profileSaveCounts_.assign(count, 0);
+    for (int i = 0; i < count; i++)
+        for (GameType g : ALL_GAMES)
+            if (account_.hasSaveData(i, g)) profileSaveCounts_[i]++;
+}
+
+time_t UI::lastBackupTime(int profile, GameType game) const {
+    if (profile < 0 || profile >= account_.profileCount()) return 0;
+
+    // backups/<profile>/<game>/<profile>_YYYY-MM-DD_HH-MM-SS/ (see
+    // buildBackupDir). The time is read from the folder name, which is what
+    // the backup was named after, rather than from a file date.
+    const std::string dir = basePath_ + "backups/" + account_.profiles()[profile].pathSafeName
+                          + "/" + gamePathNameOf(game) + "/";
+    DIR* runs = opendir(dir.c_str());
+    if (!runs) return 0;
+    time_t newest = 0;
+    while (dirent* r = readdir(runs)) {
+        const std::string name = r->d_name;
+        if (name.size() < 19) continue;
+        struct tm t{};
+        if (std::sscanf(name.c_str() + name.size() - 19, "%4d-%2d-%2d_%2d-%2d-%2d",
+                        &t.tm_year, &t.tm_mon, &t.tm_mday,
+                        &t.tm_hour, &t.tm_min, &t.tm_sec) != 6)
+            continue;
+        t.tm_year -= 1900;
+        t.tm_mon  -= 1;
+        t.tm_isdst = -1;
+        const time_t when = mktime(&t);
+        if (when > newest) newest = when;
+    }
+    closedir(runs);
+    return newest;
+}
+
+std::string UI::relativeDay(time_t t) const {
+    const time_t now = time(nullptr);
+    // Calendar days, not 24-hour spans: last night is "yesterday".
+    struct tm a = *localtime(&now);
+    struct tm b = *localtime(&t);
+    a.tm_hour = b.tm_hour = 12;
+    a.tm_min = b.tm_min = a.tm_sec = b.tm_sec = 0;
+    const long days = static_cast<long>(std::difftime(mktime(&a), mktime(&b)) / 86400.0 + 0.5);
+    if (days <= 0)  return i18n::get(StrKey::RelToday);
+    if (days == 1)  return i18n::get(StrKey::RelYesterday);
+    if (days < 14)  return i18n::fmt(StrKey::RelDays,   std::to_string(days));
+    if (days < 60)  return i18n::fmt(StrKey::RelWeeks,  std::to_string(days / 7));
+    if (days < 365) return i18n::fmt(StrKey::RelMonths, std::to_string(days / 30));
+    return i18n::fmt(StrKey::RelYears, std::to_string(days / 365));
+}
 
 void UI::drawProfileSelectorFrame() {
     SDL_SetRenderDrawColor(renderer_, T().bg.r, T().bg.g, T().bg.b, 255);
     SDL_RenderClear(renderer_);
+    drawRect(0, 0, SCREEN_W, ACCENT_RULE_H, T().accent);
+    drawLogo(32, 40);
 
-    drawTextCentered(i18n::get(StrKey::SelectProfile), SCREEN_W / 2, 40, T().text, font_);
+    // Launch mode. This screen only exists when launched over a title - the
+    // album applet goes straight to the game list - so it always says so.
+    {
+        TTF_Font* f = uiFont(13, true);
+        const std::string mode = i18n::get(StrKey::ModeTitle);
+        const int w = 16 + 8 + 8 + textWidth(mode, f) + 14;
+        const int x = SCREEN_W - 32 - w, y = 23, h = 34;
+        const SDL_Color ok = T().statusOk;
+        fillRounded(x, y, w, h, 10, SDL_Color{ok.r, ok.g, ok.b, 36});
+        fillDisc(x + 16, y + h / 2, 4, ok);
+        drawText(mode, x + 16 + 8 + 8, y + h / 2 - TTF_FontHeight(f) / 2, ok, f);
+    }
+
+    drawTextCentered(i18n::get(StrKey::ProfTitle), SCREEN_W / 2, 160, T().text, uiFont(40, true));
+    drawTextCentered(i18n::get(StrKey::ProfSubtitle), SCREEN_W / 2, 206, T().textDim, uiFont(17));
 
     const auto& profiles = account_.profiles();
-    int count = (int)profiles.size();
+    const int count = (int)profiles.size();
+    if (count > 0) {
+        // Up to eight profiles on a Switch: the cards narrow to fit.
+        // Icon, name and save count, with the same margin above and below;
+        // centred between the subtitle and the note at the bottom.
+        constexpr int GAP = 24, CARD_H = 284, CARD_Y = 279;
+        const int cardW = std::min(220, (INFO_W - (count - 1) * GAP) / count);
+        const int icon = std::min(160, cardW - 40);
+        const int totalW = count * cardW + (count - 1) * GAP;
+        const int x0 = (SCREEN_W - totalW) / 2;
 
-    constexpr int CARD_W = 160;
-    constexpr int CARD_H = 200;
-    constexpr int CARD_GAP = 20;
-    constexpr int ICON_SIZE = 128;
+        // Placeholder tints for a profile without an icon.
+        const SDL_Color tints[3] = {T().accentSave, SDL_Color{240, 128, 90, 255}, T().accentBank};
 
-    int totalW = count * CARD_W + (count - 1) * CARD_GAP;
-    int startX = (SCREEN_W - totalW) / 2;
-    int startY = (SCREEN_H - CARD_H) / 2;
+        TTF_Font* fName   = uiFont(20, true);
+        TTF_Font* fSaves  = uiFont(14, true);
+        for (int i = 0; i < count; i++) {
+            const int x = x0 + i * (cardW + GAP);
+            const bool cur = (i == profileSelCursor_);
+            const SDL_Color cardBg = cur ? T().slotFull : T().panelBg;
+            if (cur)
+                strokeRounded(x - 7, CARD_Y - 7, cardW + 14, CARD_H + 14, 24, 4, T().accent);
+            fillRounded(x, CARD_Y, cardW, CARD_H, 18, cardBg);
+            strokeRounded(x, CARD_Y, cardW, CARD_H, 18, 1, cur ? T().cellBorder : T().panelBorder);
 
-    for (int i = 0; i < count; i++) {
-        int cardX = startX + i * (CARD_W + CARD_GAP);
-        int cardY = startY;
+            const int ix = x + (cardW - icon) / 2, iy = CARD_Y + 23;
+            if (profiles[i].iconTexture) {
+                blitRounded(profiles[i].iconTexture, ix, iy, icon, icon, 22, cardBg);
+            } else {
+                const SDL_Color t = tints[i % 3];
+                const SDL_Color bg = {static_cast<Uint8>((t.r + cardBg.r * 3) / 4),
+                                      static_cast<Uint8>((t.g + cardBg.g * 3) / 4),
+                                      static_cast<Uint8>((t.b + cardBg.b * 3) / 4), 255};
+                fillRounded(ix, iy, icon, icon, 22, bg);
+                const std::string& nick = profiles[i].nickname;
+                if (!nick.empty()) {
+                    std::string initial(1, nick[0]);
+                    if (initial[0] >= 'a' && initial[0] <= 'z') initial[0] -= 'a' - 'A';
+                    // Keep a multi-byte first letter whole.
+                    const unsigned char lead = static_cast<unsigned char>(nick[0]);
+                    const size_t len = lead < 0x80 ? 1 : (lead & 0xE0) == 0xC0 ? 2
+                                     : (lead & 0xF0) == 0xE0 ? 3 : 4;
+                    if (len > 1) initial = nick.substr(0, len);
+                    drawTextCentered(initial, ix + icon / 2, iy + icon / 2, t,
+                                     uiFont(std::max(24, icon * 2 / 5), true));
+                }
+            }
 
-        if (i == profileSelCursor_) {
-            drawRect(cardX, cardY, CARD_W, CARD_H, T().menuHighlight);
-            drawRectOutline(cardX, cardY, CARD_W, CARD_H, T().cursor, 3);
-        } else {
-            drawRect(cardX, cardY, CARD_W, CARD_H, T().panelBg);
-        }
+            const int cx = x + cardW / 2;
+            const int nameY = iy + icon + 30;
+            drawTextCentered(fitText(profiles[i].nickname, fName, cardW - 24), cx, nameY,
+                             T().text, fName);
 
-        int iconX = cardX + (CARD_W - ICON_SIZE) / 2;
-        int iconY = cardY + 10;
-
-        if (profiles[i].iconTexture) {
-            SDL_Rect dst = {iconX, iconY, ICON_SIZE, ICON_SIZE};
-            SDL_RenderCopy(renderer_, profiles[i].iconTexture, nullptr, &dst);
-        } else {
-            drawRect(iconX, iconY, ICON_SIZE, ICON_SIZE, T().iconPlaceholder);
-            if (!profiles[i].nickname.empty()) {
-                std::string initial(1, profiles[i].nickname[0]);
-                drawTextCentered(initial, iconX + ICON_SIZE / 2, iconY + ICON_SIZE / 2,
-                                 T().text, font_);
+            if (i < (int)profileSaveCounts_.size()) {
+                const int saves = profileSaveCounts_[i];
+                const std::string line = saves == 0 ? i18n::get(StrKey::ProfNoSaves)
+                    : i18n::fmt(saves == 1 ? StrKey::ProfSavesOne : StrKey::ProfSavesMany,
+                                std::to_string(saves));
+                drawTextCentered(fitText(line, fSaves, cardW - 20), cx, nameY + 40,
+                                 T().textDim, fSaves);
             }
         }
-
-        std::string name = profiles[i].nickname;
-        if (name.length() > 14) name = name.substr(0, 13) + ".";
-        drawTextCentered(name, cardX + CARD_W / 2, cardY + ICON_SIZE + 24, T().text, fontSmall_);
     }
 
-    {
-        const ButtonHint hints[] = {
-            {"A", StrKey::HintSelect2}, {"Y", StrKey::HintTheme},
-            {"-", StrKey::HintAbout},   {"+", StrKey::HintQuit},
-        };
-        drawHintBar(hints, 4);
-    }
+    drawTextCentered(fitText(i18n::get(StrKey::AppletNote), uiFont(13), INFO_W), SCREEN_W / 2, 637,
+                     T().textDim, uiFont(13));
+
+    const ButtonHint hints[] = {
+        {"A", StrKey::HintSelect2},
+        {"-", StrKey::HintAbout},
+        {"+", StrKey::HintQuit},
+    };
+    drawFooterBar(hints, 3);
 }
 
 void UI::handleProfileSelectorInput(bool& running) {
@@ -113,11 +210,6 @@ void UI::handleProfileSelectorInput(bool& running) {
                 case SDL_CONTROLLER_BUTTON_B: // Switch A = select
                     selectProfile(profileSelCursor_);
                     break;
-                case SDL_CONTROLLER_BUTTON_X: // Switch Y = theme
-                    showThemeSelector_ = true;
-                    themeSelCursor_ = themeIndex_;
-                    themeSelOriginal_ = themeIndex_;
-                    break;
                 case SDL_CONTROLLER_BUTTON_BACK: // - = about
                     showAbout_ = true;
                     break;
@@ -149,15 +241,7 @@ void UI::selectProfile(int index) {
 
     // Build filtered game list: only games with save data for this profile
     availableGames_.clear();
-    constexpr GameType allGames[] = {
-        GameType::GP, GameType::GE, GameType::Sw, GameType::Sh,
-        GameType::BD, GameType::SP, GameType::LA, GameType::S,
-        GameType::V, GameType::ZA, GameType::FR, GameType::LG,
-        GameType::FR_ES, GameType::LG_ES, GameType::FR_DE, GameType::LG_DE,
-        GameType::FR_IT, GameType::LG_IT, GameType::FR_FR, GameType::LG_FR,
-        GameType::FR_JA, GameType::LG_JA
-    };
-    for (GameType g : allGames) {
+    for (GameType g : ALL_GAMES) {
         if (account_.hasSaveData(index, g))
             availableGames_.push_back(g);
     }

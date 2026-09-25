@@ -46,7 +46,6 @@
     "bank_name_exists": "名称已被使用",
     "bank_name_exists_body": "已存在同名的银行。",
 
-    "select_profile": "选择用户",
     "status_profile": "A：选择  Y：主题  -：关于  +：退出",
     "no_save_data": "无存档数据",
     "no_save_data_body": "未找到此用户的兼容宝可梦存档数据。",
@@ -362,5 +361,20 @@
     "sum_ribbon_one": "奖章 {0}个",
     "sum_ribbon_many": "奖章 {0}个",
     "sum_mark_one": "证章 {0}个",
-    "sum_mark_many": "证章 {0}个"
+    "sum_mark_many": "证章 {0}个",
+    "prof_title": "今天谁来交换？",
+    "prof_subtitle": "选择要打开存档的 Switch 用户。",
+    "prof_saves_one": "找到 {0} 个存档",
+    "prof_saves_many": "找到 {0} 个存档",
+    "prof_no_saves": "没有存档",
+    "prof_last_backup": "上次备份：{0}",
+    "prof_no_backups": "尚无备份",
+    "rel_today": "今天",
+    "rel_yesterday": "昨天",
+    "rel_days": "{0} 天前",
+    "rel_weeks": "{0} 周前",
+    "rel_months": "{0} 个月前",
+    "rel_years": "{0} 年前",
+    "mode_title": "标题模式 · 完整存档访问",
+    "applet_note": "从相册启动？小程序模式下只能在仓库之间转移。"
 }

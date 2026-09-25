@@ -55,24 +55,29 @@ bool UI::init() {
     // PlSharedFontType_ChineseTraditional) require loading separate system fonts.
     // SDL_ttf does not support font fallback chains, so supporting these languages
     // would require switching the primary font based on the active language.
-    PlFontData fontData;
-    plInitialize(PlServiceType_System);
-    plGetSharedFontByType(&fontData, PlSharedFontType_Standard);
-    fontData_     = fontData.address;
-    fontDataSize_ = fontData.size;
-    SDL_RWops* rw = SDL_RWFromMem(fontData.address, fontData.size);
-    font_ = TTF_OpenFontRW(rw, 0, 18);
-    fontSmall_ = TTF_OpenFontRW(SDL_RWFromMem(fontData.address, fontData.size), 0, 14);
-    fontLarge_ = TTF_OpenFontRW(SDL_RWFromMem(fontData.address, fontData.size), 0, 28);
-
-    if (!font_ || !fontSmall_) {
-        if (!font_)
-            font_ = TTF_OpenFont("romfs:/fonts/default.ttf", 18);
-        if (!fontSmall_)
-            fontSmall_ = TTF_OpenFont("romfs:/fonts/default.ttf", 14);
+    //
+    // The console's own font is the only one: pkHouse ships none. Without it
+    // nothing can be drawn, so init fails and main explains why on the text
+    // console, which needs no font file.
+    //
+    // pl:u, not pl:s: since system 16.0.0 the shared font is only handed out
+    // through pl:u (see libnx pl.h). The old pl:s call failed silently on
+    // current firmware, and the bundled copy of this font covered for it.
+    PlFontData fontData{};
+    if (R_SUCCEEDED(plInitialize(PlServiceType_User)) &&
+        R_SUCCEEDED(plGetSharedFontByType(&fontData, PlSharedFontType_Standard)) &&
+        fontData.address && fontData.size) {
+        fontData_     = fontData.address;
+        fontDataSize_ = fontData.size;
+        font_      = TTF_OpenFontRW(SDL_RWFromMem(fontData.address, fontData.size), 1, 18);
+        fontSmall_ = TTF_OpenFontRW(SDL_RWFromMem(fontData.address, fontData.size), 1, 14);
+        fontLarge_ = TTF_OpenFontRW(SDL_RWFromMem(fontData.address, fontData.size), 1, 28);
     }
-    if (!fontLarge_)
-        fontLarge_ = TTF_OpenFont("romfs:/fonts/default.ttf", 28);
+    if (!font_ || !fontSmall_ || !fontLarge_) {
+        initError_ = "The console's system font could not be loaded.";
+        shutdown();
+        return false;
+    }
 
     // Load status icons
     {

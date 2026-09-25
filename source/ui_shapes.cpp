@@ -11,11 +11,10 @@ TTF_Font* UI::uiFont(int size, bool bold) {
     if (it != uiFonts_.end())
         return it->second;
 
+    // The system font init() checked; the only one there is.
     TTF_Font* f = nullptr;
     if (fontData_)
         f = TTF_OpenFontRW(SDL_RWFromMem(fontData_, static_cast<int>(fontDataSize_)), 1, size);
-    if (!f)
-        f = TTF_OpenFont("romfs:/fonts/default.ttf", size);
     if (f && bold)
         TTF_SetFontStyle(f, TTF_STYLE_BOLD);
 

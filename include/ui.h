@@ -107,6 +107,9 @@ class UI {
 public:
     bool init();
     void shutdown();
+    // Why init() failed, for main to show on the text console; empty when it
+    // did not or the failure is SDL's own.
+    const std::string& initError() const { return initError_; }
     void showSplash();
     // Modal, over the current screen dimmed. A (or B) closes a message; a
     // confirmation returns true on A - once held long enough when style.hold.
@@ -133,6 +136,7 @@ public:
     void run(const std::string& basePath, const std::string& savePath);
 
 private:
+    std::string          initError_;
     SDL_Window*          window_    = nullptr;
     SDL_Renderer*        renderer_  = nullptr;
     SDL_GameController*  pad_       = nullptr;

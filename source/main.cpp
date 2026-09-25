@@ -8,6 +8,28 @@
 #include <fstream>
 #include <cstdio>
 
+// Startup failed before anything could be drawn: say so on the libnx text
+// console, which draws with its own built-in font, and wait for +.
+static void showStartupError(const std::string& reason) {
+    consoleInit(nullptr);
+    padConfigureInput(1, HidNpadStyleSet_NpadStandard);
+    PadState pad;
+    padInitializeDefault(&pad);
+
+    std::printf("\n  pkHouse could not start.\n\n");
+    std::printf("  %s\n\n", reason.empty() ? "The display could not be initialised." : reason.c_str());
+    std::printf("  Restarting the console usually fixes this.\n\n");
+    std::printf("  Press + to exit.\n");
+    consoleUpdate(nullptr);
+
+    while (appletMainLoop()) {
+        padUpdate(&pad);
+        if (padGetButtonsDown(&pad) & HidNpadButton_Plus) break;
+        consoleUpdate(nullptr);
+    }
+    consoleExit(nullptr);
+}
+
 int main(int argc, char* argv[]) {
     romfsInit();
 
@@ -81,6 +103,7 @@ int main(int argc, char* argv[]) {
     // Initialize UI first so we can show errors
     UI ui;
     if (!ui.init()) {
+        showStartupError(ui.initError());
         romfsExit();
         return 1;
     }

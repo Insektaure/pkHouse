@@ -393,8 +393,6 @@ bool UI::openCardFonts(CardFonts& f) {
         TTF_Font* font = nullptr;
         if (fontData_ && fontDataSize_)
             font = TTF_OpenFontRW(SDL_RWFromMem(fontData_, fontDataSize_), 1, size);
-        if (!font)
-            font = TTF_OpenFont("romfs:/fonts/default.ttf", size);
         if (font && bold)
             TTF_SetFontStyle(font, TTF_STYLE_BOLD);
         return font;

@@ -436,7 +436,7 @@
     "dlg_edited": "수정 {0}",
     "loading_banks": "뱅크를 불러오는 중…",
     "about_tagline": "로컬 뱅크 시스템",
-    "about_desc": "Nintendo Switch용 포켓몬 박스 관리 도구. 세이브 파일과 뱅크 간에 포켓몬을 이동할 수 있습니다.",
+    "about_desc": "Nintendo Switch용 포켓몬 박스 관리 도구.\n세이브 파일과 뱅크 간에 포켓몬을 이동할 수 있습니다.",
     "about_game_version": "게임 버전",
     "about_built_on": "기반",
     "ctl_pick_place": "잡기/놓기",

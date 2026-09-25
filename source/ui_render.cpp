@@ -1843,11 +1843,17 @@ void UI::drawAboutPopup() {
         bx -= textWidth(by, fBy);
         drawText(by, bx, iy + 44, T().textDim, fBy);
 
-        // Description, under the name, clear of the right-hand block.
+        // Description, under the name, clear of the right-hand block: one
+        // sentence per line, as the text breaks them.
         TTF_Font* fDesc = uiFont(15);
-        const auto lines = wrapText(i18n::get(StrKey::AboutDesc), fDesc, bx - 20 - tx, 2);
-        for (size_t i = 0; i < lines.size(); i++)
-            drawText(lines[i], tx, iy + 36 + static_cast<int>(i) * 20, T().textDim, fDesc);
+        const std::string desc = i18n::get(StrKey::AboutDesc);
+        const size_t nl = desc.find('\n');
+        const std::string line1 = desc.substr(0, nl);
+        const std::string line2 = nl == std::string::npos ? std::string() : desc.substr(nl + 1);
+        const int room = bx - 20 - tx;
+        drawText(fitText(line1, fDesc, room), tx, iy + 36, T().textDim, fDesc);
+        if (!line2.empty())
+            drawText(fitText(line2, fDesc, room), tx, iy + 56, T().textDim, fDesc);
     }
     drawRect(x, y + 126, W, 1, T().panelBorder);
 
@@ -1864,7 +1870,9 @@ void UI::drawAboutPopup() {
             {GameType::ZA, "Legends: Z-A",                      "v2.0.2"},
             {GameType::FR, "FireRed / LeafGreen",               "v1.0.0"},
         };
-        const int lx = x + PAD, lw = 458, ty = y + 150;
+        // 400 is twice what the longest title needs; the rest goes to the
+        // right column, whose translated labels are the long ones.
+        const int lx = x + PAD, lw = 400, ty = y + 150;
         drawTextTracked(toUpperUtf8(i18n::get(StrKey::SupportedGames)), lx, ty, T().accentBank, fTag, 2);
         TTF_Font* fNote = uiFont(12);
         const std::string gv = i18n::get(StrKey::AboutGameVersion);
@@ -1886,7 +1894,7 @@ void UI::drawAboutPopup() {
 
     // --- Controls and credits, right -----------------------------------------------
     {
-        const int cx = x + 511, cw = W - PAD - 511;
+        const int cx = x + PAD + 400 + 24, cw = W - PAD - (PAD + 400 + 24);
         int cy = y + 150;
         drawTextTracked(toUpperUtf8(i18n::get(StrKey::Controls)), cx, cy, T().accentBank, fTag, 2);
         cy += 22;
@@ -1920,12 +1928,17 @@ void UI::drawAboutPopup() {
         TTF_Font* fBy   = uiFont(13);
         TTF_Font* fLine = uiFont(12);
         for (const auto& c : credits) {
-            fillRounded(cx, cy, cw, 56, 10, T().bg);
+            // The credit sentence wraps to a second line when a language
+            // needs it (Japanese and Russian do), rather than being cut.
+            const auto lines = wrapText(i18n::get(c.line), fLine, cw - 24, 2);
+            const int ch = 32 + static_cast<int>(lines.size()) * 16 + 6;
+            fillRounded(cx, cy, cw, ch, 10, T().bg);
             drawText(c.project, cx + 12, cy + 8, T().text, fProj);
             const int pw = textWidth(c.project, fProj);
             drawText(std::string("by ") + c.author, cx + 12 + pw + 6, cy + 10, T().textDim, fBy);
-            drawText(fitText(i18n::get(c.line), fLine, cw - 24), cx + 12, cy + 32, T().textDim, fLine);
-            cy += 63;
+            for (size_t i = 0; i < lines.size(); i++)
+                drawText(lines[i], cx + 12, cy + 32 + static_cast<int>(i) * 16, T().textDim, fLine);
+            cy += ch + 7;
         }
     }
 

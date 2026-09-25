@@ -512,28 +512,58 @@ void UI::stepGameFilter(int dir) {
 
 std::vector<std::string> UI::wrapText(const std::string& text, TTF_Font* f, int maxW,
                                       int maxLines) {
-    std::vector<std::string> lines;
+    // Breaks at spaces; a word wider than the line on its own - which is what
+    // a Japanese or Chinese sentence is, having no spaces - is broken between
+    // characters instead of being cut. Each line remembers where it starts in
+    // `text`, so when there are more lines than room the last one shown is
+    // simply the rest of the text, cut to fit.
+    struct Line { std::string s; size_t start; };
+    std::vector<Line> out;
     std::string line;
+    size_t lineStart = 0;
+
     size_t i = 0;
-    while (i < text.size()) {
+    while (i <= text.size()) {
         size_t sp = text.find(' ', i);
         if (sp == std::string::npos) sp = text.size();
         const std::string word = text.substr(i, sp - i);
-        const std::string tryLine = line.empty() ? word : line + " " + word;
-        if (!line.empty() && textWidth(tryLine, f) > maxW) {
-            lines.push_back(line);
-            if ((int)lines.size() == maxLines - 1) {
-                // Last line: the rest, cut to fit.
-                lines.push_back(fitText(text.substr(i), f, maxW));
-                return lines;
-            }
+        const std::string joined = line.empty() ? word : line + " " + word;
+        if (textWidth(joined, f) <= maxW) {
+            if (line.empty()) lineStart = i;
+            line = joined;
+        } else if (!line.empty() && textWidth(word, f) <= maxW) {
+            out.push_back({line, lineStart});
             line = word;
+            lineStart = i;
         } else {
-            line = tryLine;
+            // Too wide even alone: character by character, carrying on from
+            // whatever the current line already holds.
+            if (!line.empty()) { out.push_back({line, lineStart}); line.clear(); }
+            lineStart = i;
+            for (size_t c = 0; c < word.size(); ) {
+                const unsigned char lead = static_cast<unsigned char>(word[c]);
+                const size_t len = lead < 0x80 ? 1 : (lead & 0xE0) == 0xC0 ? 2
+                                 : (lead & 0xF0) == 0xE0 ? 3 : 4;
+                const std::string cp = word.substr(c, len);
+                if (!line.empty() && textWidth(line + cp, f) > maxW) {
+                    out.push_back({line, lineStart});
+                    line.clear();
+                    lineStart = i + c;
+                }
+                line += cp;
+                c += len;
+            }
         }
+        if (sp >= text.size()) break;
         i = sp + 1;
     }
-    if (!line.empty()) lines.push_back(fitText(line, f, maxW));
+    if (!line.empty()) out.push_back({line, lineStart});
+
+    std::vector<std::string> lines;
+    for (int n = 0; n < (int)out.size() && n < maxLines; n++) {
+        const bool last = (n == maxLines - 1) && (int)out.size() > maxLines;
+        lines.push_back(last ? fitText(text.substr(out[n].start), f, maxW) : out[n].s);
+    }
     return lines;
 }
 

@@ -436,7 +436,7 @@
     "dlg_edited": "更新 {0}",
     "loading_banks": "バンクを読み込んでいます…",
     "about_tagline": "ローカルバンクシステム",
-    "about_desc": "Nintendo Switch用ポケモンボックス管理ツール。セーブデータとバンク間でポケモンを移動できます。",
+    "about_desc": "Nintendo Switch用ポケモンボックス管理ツール。\nセーブデータとバンク間でポケモンを移動できます。",
     "about_game_version": "ゲームのバージョン",
     "about_built_on": "使用技術",
     "ctl_pick_place": "取る/置く",

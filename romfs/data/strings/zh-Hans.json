@@ -436,7 +436,7 @@
     "dlg_edited": "修改于{0}",
     "loading_banks": "正在读取仓库…",
     "about_tagline": "本地仓库系统",
-    "about_desc": "Nintendo Switch宝可梦盒子管理工具。在存档和银行之间移动宝可梦。",
+    "about_desc": "Nintendo Switch宝可梦盒子管理工具。\n在存档和银行之间移动宝可梦。",
     "about_game_version": "游戏版本",
     "about_built_on": "基于",
     "ctl_pick_place": "拿取/放下",

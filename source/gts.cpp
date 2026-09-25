@@ -392,6 +392,7 @@ Gts::Entry parseEntry(const json& j) {
     e.form     = static_cast<uint8_t>(clamp(jsonInt(j, "form", 0), 0, 255));
     e.level    = static_cast<uint8_t>(clamp(jsonInt(j, "level", 0), 0, 100));
     e.shiny    = jsonBool(j, "shiny", false);
+    e.alpha    = jsonBool(j, "alpha", false);
     e.gender   = static_cast<uint8_t>(clamp(jsonInt(j, "gender", 3), 0, 3));
     e.nature   = static_cast<uint8_t>(clamp(jsonInt(j, "nature", 0), 0, 24));
     e.ball     = static_cast<uint8_t>(clamp(jsonInt(j, "ball", 0), 0, 37));

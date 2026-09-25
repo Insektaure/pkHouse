@@ -40,6 +40,7 @@ struct Entry {
     uint8_t  form     = 0;
     uint8_t  level    = 0;           // 0 = the server could not extract one
     bool     shiny    = false;
+    bool     alpha    = false;   // Legends: Arceus and Z-A only
     uint8_t  gender   = 3;           // 0 male, 1 female, 2 none, 3 not extracted
     uint8_t  nature   = 0;
     uint8_t  ball     = 0;

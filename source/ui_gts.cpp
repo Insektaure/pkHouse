@@ -627,24 +627,35 @@ void UI::drawGtsSlot(int x, int y, const Gts::Entry& e, bool isCursor) {
         SDL_RenderCopy(renderer_, sprite, nullptr, &dst);
     }
 
-    if (e.shiny && iconShiny_) {
-        SDL_Rect dst = { x + GTS_CELL_W - 20, y + 3, 16, 16 };
-        SDL_RenderCopy(renderer_, iconShiny_, nullptr, &dst);
-    }
-
-    // Name, then level and gender on one line beneath it.
+    // Laid out like a box slot, so a cell reads the same whichever screen it is
+    // on: name under the sprite in the shiny colour when it is one, level at
+    // the bottom, gender top-right, and shiny/alpha top-left.
     std::string label = gtsEntryLabel(e);
     if (label.size() > 11) label = label.substr(0, 10) + ".";
-    drawTextCentered(label, x + GTS_CELL_W / 2, y + GTS_SPRITE + 10, T().text, fontSmall_);
+    drawTextCentered(label, x + GTS_CELL_W / 2, y + GTS_SPRITE + 10,
+                     e.shiny ? T().shiny : T().text, fontSmall_);
 
-    if (!e.egg) {
-        std::string line;
-        if (e.level > 0) line = "Lv" + std::to_string(e.level);
-        SDL_Color lineColor = T().textDim;
-        if (e.gender == 0)      { line += line.empty() ? "" : " "; line += "M"; lineColor = T().genderMale; }
-        else if (e.gender == 1) { line += line.empty() ? "" : " "; line += "F"; lineColor = T().genderFemale; }
-        if (!line.empty())
-            drawTextCentered(line, x + GTS_CELL_W / 2, y + GTS_SPRITE + 26, lineColor, fontSmall_);
+    if (!e.egg && e.level > 0) {
+        const std::string lvl = i18n::get(StrKey::LvPrefix) + std::to_string(e.level);
+        drawTextCentered(lvl, x + GTS_CELL_W / 2, y + GTS_CELL_H - 12, T().textDim, fontSmall_);
+    }
+
+    // Gender, top-right. The glyphs rather than M/F: they are what the boxes
+    // use and they do not need translating.
+    if (e.gender == 0)
+        drawText("\xe2\x99\x82", x + GTS_CELL_W - 16, y + 2, T().genderMale, fontSmall_);
+    else if (e.gender == 1)
+        drawText("\xe2\x99\x80", x + GTS_CELL_W - 16, y + 2, T().genderFemale, fontSmall_);
+
+    // Shiny / alpha / both, top-left.
+    SDL_Texture* statusIcon = nullptr;
+    if (e.shiny && e.alpha) statusIcon = iconShinyAlpha_;
+    else if (e.shiny)       statusIcon = iconShiny_;
+    else if (e.alpha)       statusIcon = iconAlpha_;
+
+    if (statusIcon) {
+        SDL_Rect iconDst = { x + 2, y + 2, 14, 14 };
+        SDL_RenderCopy(renderer_, statusIcon, nullptr, &iconDst);
     }
 }
 

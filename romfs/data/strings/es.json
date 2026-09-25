@@ -333,5 +333,14 @@
     "msg_holding_single": "Sosteniendo: {0} Nv.{1}",
     "msg_holding_multi": "Sosteniendo {0} Pokemon{1}",
     "msg_search": "Busqueda: {0} resultados",
-    "msg_selected": "{0} seleccionado(s){1}"
+    "msg_selected": "{0} seleccionado(s){1}",
+    "tag_save": "PARTIDA",
+    "tag_bank": "BANCO",
+    "status_save_clean": "Partida cargada · sin cambios",
+    "status_banks_clean": "Bancos cargados · sin cambios",
+    "status_unsaved": "Cambios sin guardar",
+    "info_empty_slot": "Espacio vacío",
+    "info_ev_total": "EV {0} / 510",
+    "info_perfect_ivs": "{0} × 31",
+    "info_ot": "EO {0} {1}"
 }

@@ -333,5 +333,14 @@
     "msg_holding_single": "들고 있음: {0} Lv.{1}",
     "msg_holding_multi": "포켓몬 {0}마리 들고 있음{1}",
     "msg_search": "검색: {0}건 일치",
-    "msg_selected": "{0}건 선택{1}"
+    "msg_selected": "{0}건 선택{1}",
+    "tag_save": "세이브",
+    "tag_bank": "뱅크",
+    "status_save_clean": "세이브 불러옴 · 변경 없음",
+    "status_banks_clean": "뱅크 불러옴 · 변경 없음",
+    "status_unsaved": "저장되지 않은 변경",
+    "info_empty_slot": "빈 칸",
+    "info_ev_total": "노력치 {0} / 510",
+    "info_perfect_ivs": "{0} × 31",
+    "info_ot": "어버이 {0} {1}"
 }

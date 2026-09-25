@@ -333,5 +333,14 @@
     "msg_holding_single": "Tenuto: {0} Lv.{1}",
     "msg_holding_multi": "{0} Pokemon tenuti{1}",
     "msg_search": "Ricerca: {0} risultati",
-    "msg_selected": "{0} selezionato/i{1}"
+    "msg_selected": "{0} selezionato/i{1}",
+    "tag_save": "SALVATAGGIO",
+    "tag_bank": "BANCA",
+    "status_save_clean": "Salvataggio caricato · nessuna modifica",
+    "status_banks_clean": "Banche caricate · nessuna modifica",
+    "status_unsaved": "Modifiche non salvate",
+    "info_empty_slot": "Spazio vuoto",
+    "info_ev_total": "EV {0} / 510",
+    "info_perfect_ivs": "{0} × 31",
+    "info_ot": "AO {0} {1}"
 }

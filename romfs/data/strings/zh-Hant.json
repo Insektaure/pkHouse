@@ -333,5 +333,14 @@
     "msg_holding_single": "持有：{0} Lv.{1}",
     "msg_holding_multi": "持有{0}隻寶可夢{1}",
     "msg_search": "搜尋：{0}個符合",
-    "msg_selected": "已選{0}個{1}"
+    "msg_selected": "已選{0}個{1}",
+    "tag_save": "存檔",
+    "tag_bank": "倉庫",
+    "status_save_clean": "已載入存檔 · 無變更",
+    "status_banks_clean": "已載入倉庫 · 無變更",
+    "status_unsaved": "有未儲存的變更",
+    "info_empty_slot": "空位",
+    "info_ev_total": "努力值 {0} / 510",
+    "info_perfect_ivs": "{0} × 31",
+    "info_ot": "初訓家 {0} {1}"
 }

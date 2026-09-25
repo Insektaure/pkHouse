@@ -66,9 +66,37 @@ struct Theme {
 
     // LGPE party marker
     SDL_Color partyMark;
+
+    // --- UI 2.0 ---------------------------------------------------------------
+    // Roles introduced by the 2.0 mockups. Screens that have not been redone
+    // yet still draw with the roles above.
+
+    SDL_Color accent;          // top rule, logo, cursor ring, active page dot
+    SDL_Color accentSave;      // the save panel's tag and page dot
+    SDL_Color accentBank;      // the bank panel's tag and page dot
+    SDL_Color panelBorder;     // 1px rim around panels and the info strip
+    SDL_Color divider;         // vertical rules, footer rule
+    SDL_Color textMuted;       // quieter than textDim: counts, version
+
+    SDL_Color cellBorder;      // rim of a filled slot
+    SDL_Color cellCursor;      // filled slot under the cursor
+    SDL_Color cellEmptyBorder; // dashed rim of an empty slot
+    SDL_Color dot;             // inactive page dot
+
+    SDL_Color buttonBg;        // L/R keys, move pills
+    SDL_Color buttonBorder;
+    SDL_Color keyCap;          // footer button glyphs
+    SDL_Color keyCapText;
+
+    SDL_Color statusOk;        // "save loaded, no changes"
+    SDL_Color statusWarn;      // "unsaved changes"
+    SDL_Color alphaMark;
+    SDL_Color badgeBg;         // "3 x 31" perfect-IV pill
 };
 
-inline constexpr int THEME_COUNT = 7;
+// One theme for now. The table and the selector stay so that more can be
+// added later without touching the screens.
+inline constexpr int THEME_COUNT = 1;
 
 const Theme& getTheme(int index);
 const char*  getThemeName(int index);

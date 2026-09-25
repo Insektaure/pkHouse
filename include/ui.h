@@ -16,6 +16,11 @@
 #include <unordered_set>
 #include <functional>
 
+// Draws `tex` into a disc of radius `rad` centred on (cx, cy), masking the
+// corners with `bg` - the colour behind it - with an anti-aliased rim. Used for
+// the type icons on the card export and in the box view info strip.
+void blitCircular(SDL_Renderer* r, SDL_Texture* tex, int cx, int cy, int rad, SDL_Color bg);
+
 // Which panel the cursor is on
 enum class Panel { Game, Bank };
 
@@ -145,11 +150,46 @@ private:
     const TextCacheEntry& getTextEntry(const std::string& text, TTF_Font* f, SDL_Color color);
     void clearTextCache();
 
+    // Extra sizes of the system font for the 2.0 screens, opened on first use.
+    // Bold is TTF's synthetic bold on the same face: the shared font has no
+    // bold cut, and a bundled one would lose the Japanese glyphs.
+    std::unordered_map<int, TTF_Font*> uiFonts_;
+    TTF_Font* uiFont(int size, bool bold = false);
+    void closeUiFonts();
+
+    int  textWidth(const std::string& text, TTF_Font* f);
+    // `text` cut at a code point boundary and ended with "..." so it fits in
+    // maxW; returned unchanged when it already fits.
+    std::string fitText(const std::string& text, TTF_Font* f, int maxW);
+
+    // Text with extra space between letters, for the small caps labels. Drawn
+    // one code point at a time, so it is for short strings only.
+    int  drawTextTracked(const std::string& text, int x, int y, SDL_Color color,
+                         TTF_Font* f, int tracking);
+    int  measureTextTracked(const std::string& text, TTF_Font* f, int tracking);
+
+    // --- Shapes (source/ui_shapes.cpp) ---------------------------------------
+
+    // Anti-aliased quarter discs and quarter rings, white, one per radius and
+    // stroke width, tinted with a colour mod when drawn.
+    std::unordered_map<uint32_t, SDL_Texture*> cornerCache_;
+    SDL_Texture* cornerTexture(int radius, int stroke);
+    void freeShapeCache();
+
+    void fillRounded(int x, int y, int w, int h, int radius, SDL_Color c);
+    void strokeRounded(int x, int y, int w, int h, int radius, int stroke, SDL_Color c);
+    void dashRounded(int x, int y, int w, int h, int radius, SDL_Color c,
+                       int dash = 4, int gap = 3);
+    void fillDisc(int cx, int cy, int radius, SDL_Color c);
+    // A small solid triangle pointing left (dir < 0) or right (dir > 0).
+    void fillArrow(int cx, int cy, int size, int dir, SDL_Color c);
+
     // Status icons
     SDL_Texture* iconShiny_      = nullptr;
     SDL_Texture* iconAlpha_      = nullptr;
     SDL_Texture* iconShinyAlpha_ = nullptr;
     SDL_Texture* iconDynamax_    = nullptr;
+    SDL_Texture* iconHouse_      = nullptr;
 
     // Box-state icons for the ZL/ZR all-boxes overview
     SDL_Texture* iconBoxFull_     = nullptr;
@@ -160,23 +200,51 @@ private:
     static constexpr int SCREEN_W = 1280;
     static constexpr int SCREEN_H = 720;
 
-    // Layout
-    static constexpr int PANEL_W   = 610;
-    static constexpr int PANEL_X_L = 15;
-    static constexpr int PANEL_X_R = 655;
-    static constexpr int BOX_HDR_Y = 10;
-    static constexpr int BOX_HDR_H = 40;
-    static constexpr int GRID_Y    = 55;
+    // --- Box view layout (UI 2.0) ---------------------------------------------
+    //
+    // Measured off the mockup (external/UI_2.0), 1280x720:
+    //   0..4     accent rule
+    //   4..72    top bar: logo, game, trainer, save status
+    //   72..572  the two box panels
+    //   578..661 info strip for the Pokemon under the cursor
+    //   668..720 footer: button hints and version
+    // The info strip sits in the middle of the space between the panels and
+    // the footer, so it has the same gap above and below.
+    static constexpr int ACCENT_RULE_H = 4;
+    static constexpr int TOPBAR_H      = 72;
 
-    // Grid cells: 6 cols x 5 rows
-    static constexpr int CELL_W   = 96;
-    static constexpr int CELL_H   = 120;
-    static constexpr int CELL_PAD = 5;
+    static constexpr int PANEL_Y   = 72;
+    static constexpr int PANEL_H   = 500;
+    static constexpr int FOOTER_Y  = 668;
+    static constexpr int INFO_H    = 83;
+    static constexpr int INFO_Y    = PANEL_Y + PANEL_H
+                                   + (FOOTER_Y - (PANEL_Y + PANEL_H) - INFO_H) / 2;
+    static constexpr int PANEL_W   = 596;
+    static constexpr int PANEL_X_L = 32;
+    static constexpr int PANEL_X_R = 652;
+    static constexpr int PANEL_RADIUS = 14;
+
+    // Grid cells: 6 cols x 5 rows (5 x 5 for LGPE), centred in the panel.
+    static constexpr int GRID_Y     = PANEL_Y + 75;
+    static constexpr int CELL_W     = 87;
+    static constexpr int CELL_H     = 72;
+    static constexpr int CELL_GAP   = 8;
+    static constexpr int CELL_RADIUS = 10;
 
     // Sprite size within a cell
-    static constexpr int SPRITE_SIZE = 68;
+    static constexpr int SPRITE_SIZE = 56;
 
-    // Status bar
+    // Page dots under the grid, one per box.
+    static constexpr int DOTS_Y = PANEL_Y + 481;
+
+    // Info strip
+    static constexpr int INFO_X = 32;
+    static constexpr int INFO_W = 1216;
+
+    // Footer
+    static constexpr int FOOTER_H = SCREEN_H - FOOTER_Y;
+
+    // Legacy status bar height, still used by the screens not yet redone.
     static constexpr int STATUS_BAR_H = 40;
 
     // Box view overlay layout
@@ -430,6 +498,11 @@ private:
     bool dirty_ = true;
     void markDirty() { dirty_ = true; }
 
+    // Something in the save or a bank differs from what is on disk. Set by
+    // every write through setPokemonAt/clearPokemonAt and box renames, cleared
+    // when the files are written or freshly loaded. Shown in the top bar.
+    bool unsavedChanges_ = false;
+
     // Main view state
     Cursor cursor_;
     int    gameBox_ = 0;
@@ -564,9 +637,17 @@ private:
     void drawBoxViewOverlay();
     void drawBoxPreview(int boxIdx, int anchorX, int anchorY);
     void drawRadarChart(int cx, int cy, int radius, const int values[6], int maxVal);
-    void drawPanel(int panelX, const std::string& boxName, int boxIdx,
-                   int totalBoxes, bool isActive, SaveFile* save, Bank* bank, int box,
-                   Panel panelId);
+    // --- Box view (UI 2.0) ---
+    void drawTopBar();
+    // One box panel. Everything it shows - which box, its name, the tag above
+    // it - comes from the current state, so the bank selector can draw the
+    // same panel beside its list.
+    void drawBoxPanel(Panel panelId, bool isActive);
+    void drawInfoStrip();
+    SDL_Rect slotRect(Panel panelId, int col, int row) const;
+    SDL_Texture* spriteFor(uint16_t species, uint8_t form, bool shiny, bool egg);
+    void drawSpriteFit(SDL_Texture* tex, int cx, int cy, int size, Uint8 alpha = 255);
+
     void drawSlot(int x, int y, const SlotDisplay& sd, bool isCursor, int selectOrder,
                   int highlightState = 0, bool isParty = false);
     void drawText(const std::string& text, int x, int y, SDL_Color color, TTF_Font* f);
@@ -601,6 +682,12 @@ private:
     // the profile and game name.
     void drawHintBar(const ButtonHint* hints, int count,
                      const std::string& message = std::string(), int rightReserve = 0);
+
+    // The 2.0 footer: a rule, hints as key caps, version on the right. The old
+    // drawHintBar stays for the screens that have not been redone.
+    void drawFooterBar(const ButtonHint* hints, int count,
+                       const std::string& message = std::string());
+    int  drawFooterKey(int x, int cy, const char* button, bool measureOnly);
 
     // Input handling
     void handleInput(bool& running);

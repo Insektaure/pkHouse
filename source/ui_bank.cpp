@@ -27,40 +27,13 @@ void UI::drawBankSelectorFrame() {
             // Dual mode: selector on left, keep right bank visible
             selCenterX = PANEL_X_L + PANEL_W / 2;
             selAreaX = PANEL_X_L;
-            auto truncName = [](const std::string& s, size_t max) -> std::string {
-                if (s.size() <= max) return s;
-                std::string t = s.substr(0, max - 3);
-                t += "(..)";
-                return t;
-            };
-            std::string rightBoxName = truncName(activeBankName_, 16) + " - " + bank_.getBoxName(bankBox_);
-            drawPanel(PANEL_X_R, rightBoxName, bankBox_, bank_.boxCount(),
-                      false, nullptr, &bank_, bankBox_, Panel::Bank);
+            drawBoxPanel(Panel::Bank, false);
         } else {
-            // Normal mode or dual switching right bank: selector on right
+            // Normal mode or dual switching right bank: selector on right,
+            // save (or left bank) visible on the left
             selCenterX = PANEL_X_R + PANEL_W / 2;
             selAreaX = PANEL_X_R;
-            auto truncName = [](const std::string& s, size_t max) -> std::string {
-                if (s.size() <= max) return s;
-                std::string t = s.substr(0, max - 3);
-                t += "(..)";
-                return t;
-            };
-            // Draw left panel (save or left bank)
-            if (isDualBankMode()) {
-                if (!leftBankName_.empty()) {
-                    std::string leftBoxName = truncName(leftBankName_, 16) + " - " + bankLeft_.getBoxName(gameBox_);
-                    drawPanel(PANEL_X_L, leftBoxName, gameBox_, bankLeft_.boxCount(),
-                              false, nullptr, &bankLeft_, gameBox_, Panel::Game);
-                } else {
-                    drawPanel(PANEL_X_L, i18n::get(StrKey::NoBankLoaded), 0, 1,
-                              false, nullptr, nullptr, 0, Panel::Game);
-                }
-            } else {
-                std::string gameBoxName = save_.getBoxName(gameBox_);
-                drawPanel(PANEL_X_L, gameBoxName, gameBox_, save_.boxCount(),
-                          false, &save_, nullptr, gameBox_, Panel::Game);
-            }
+            drawBoxPanel(Panel::Game, false);
         }
     }
 
@@ -509,6 +482,7 @@ void UI::openSelectedBank() {
         }
     }
 
+    unsavedChanges_ = false;  // everything on screen was just read from disk
     screen_ = AppScreen::MainView;
     invalidateAllSlotDisplays();
 
@@ -707,8 +681,10 @@ void UI::commitTextInput(const std::string& text) {
             }
         }
     } else if (textInputPurpose_ == TextInputPurpose::RenameBoxName) {
-        if (renamingBoxBank_ && !text.empty())
+        if (renamingBoxBank_ && !text.empty()) {
             renamingBoxBank_->setBoxName(renamingBoxIdx_, text);
+            unsavedChanges_ = true;
+        }
     } else if (textInputPurpose_ == TextInputPurpose::SearchSpecies) {
         searchFilter_.speciesName = text;
     } else if (textInputPurpose_ == TextInputPurpose::SearchOT) {

@@ -21,3 +21,12 @@ namespace VersionName {
     const char* get(uint8_t version);
 
 } // namespace VersionName
+
+// Poke Ball names, keyed by the PKHeX Ball value stored on the Pokemon
+// (see Pokemon::ball).
+namespace BallName {
+
+    // Returns the ball's display name, or "" when the value is unknown.
+    const char* get(uint8_t ball);
+
+} // namespace BallName

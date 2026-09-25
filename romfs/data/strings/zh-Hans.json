@@ -333,5 +333,14 @@
     "msg_holding_single": "持有：{0} Lv.{1}",
     "msg_holding_multi": "持有{0}只宝可梦{1}",
     "msg_search": "搜索：{0}个匹配",
-    "msg_selected": "已选{0}个{1}"
+    "msg_selected": "已选{0}个{1}",
+    "tag_save": "存档",
+    "tag_bank": "仓库",
+    "status_save_clean": "已载入存档 · 无更改",
+    "status_banks_clean": "已载入仓库 · 无更改",
+    "status_unsaved": "有未保存的更改",
+    "info_empty_slot": "空位",
+    "info_ev_total": "努力值 {0} / 510",
+    "info_perfect_ivs": "{0} × 31",
+    "info_ot": "初训家 {0} {1}"
 }

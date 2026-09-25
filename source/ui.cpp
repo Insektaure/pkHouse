@@ -91,6 +91,7 @@ bool UI::init() {
         iconBoxFull_     = loadIcon("box_full.png");
         iconBoxEmpty_    = loadIcon("box_empty.png");
         iconBoxNonEmpty_ = loadIcon("box_nonempty.png");
+        iconHouse_       = loadIcon("house.png");
     }
 
     // Open game controller
@@ -112,7 +113,9 @@ void UI::shutdown() {
     freeGameIcons();
     account_.freeTextures();
     freeSprites();
+    freeShapeCache();
     freeCardPreview();
+    closeUiFonts();
     if (fontLarge_) TTF_CloseFont(fontLarge_);
     if (fontSmall_) TTF_CloseFont(fontSmall_);
     if (font_) TTF_CloseFont(font_);
@@ -719,5 +722,7 @@ bool UI::saveBankFiles() {
         if (!activeBankPath_.empty()) bank_.save(activeBankPath_);
     }
     ledOff();
+    // Every caller outside dual-bank mode writes the save right after this.
+    unsavedChanges_ = false;
     return true;
 }

@@ -367,6 +367,17 @@ namespace StrKey {
     constexpr const char* MsgSearch                = "msg_search";
     constexpr const char* MsgSelected              = "msg_selected";
 
+    // ui_render.cpp - box view (UI 2.0)
+    constexpr const char* TagSave                  = "tag_save";
+    constexpr const char* TagBank                  = "tag_bank";
+    constexpr const char* StatusSaveClean          = "status_save_clean";
+    constexpr const char* StatusBanksClean         = "status_banks_clean";
+    constexpr const char* StatusUnsaved            = "status_unsaved";
+    constexpr const char* InfoEmptySlot            = "info_empty_slot";
+    constexpr const char* InfoEvTotal              = "info_ev_total";
+    constexpr const char* InfoPerfectIvs           = "info_perfect_ivs";
+    constexpr const char* InfoOt                   = "info_ot";
+
     // ui_gts.cpp - the online GTS
     constexpr const char* GtsTitle             = "gts_title";
     constexpr const char* GtsSubtitle          = "gts_subtitle";

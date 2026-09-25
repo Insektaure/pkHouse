@@ -333,5 +333,14 @@
     "msg_holding_single": "Держит: {0} Ур.{1}",
     "msg_holding_multi": "Держит {0} покемонов{1}",
     "msg_search": "Поиск: {0} совпадений",
-    "msg_selected": "Выбрано: {0}{1}"
+    "msg_selected": "Выбрано: {0}{1}",
+    "tag_save": "СОХРАНЕНИЕ",
+    "tag_bank": "БАНК",
+    "status_save_clean": "Сохранение загружено · без изменений",
+    "status_banks_clean": "Банки загружены · без изменений",
+    "status_unsaved": "Несохранённые изменения",
+    "info_empty_slot": "Пустая ячейка",
+    "info_ev_total": "EV {0} / 510",
+    "info_perfect_ivs": "{0} × 31",
+    "info_ot": "ТЛ {0} {1}"
 }

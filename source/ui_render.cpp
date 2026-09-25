@@ -2,6 +2,7 @@
 #include "i18n.h"
 #include "species_converter.h"
 #include "move_types.h"
+#include "met_info.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -92,6 +93,7 @@ void UI::freeSprites() {
     if (iconAlpha_)      { SDL_DestroyTexture(iconAlpha_);      iconAlpha_ = nullptr; }
     if (iconShinyAlpha_) { SDL_DestroyTexture(iconShinyAlpha_); iconShinyAlpha_ = nullptr; }
     if (iconDynamax_)    { SDL_DestroyTexture(iconDynamax_);    iconDynamax_ = nullptr; }
+    if (iconHouse_)      { SDL_DestroyTexture(iconHouse_);      iconHouse_ = nullptr; }
     if (iconBoxFull_)     { SDL_DestroyTexture(iconBoxFull_);     iconBoxFull_ = nullptr; }
     if (iconBoxEmpty_)    { SDL_DestroyTexture(iconBoxEmpty_);    iconBoxEmpty_ = nullptr; }
     if (iconBoxNonEmpty_) { SDL_DestroyTexture(iconBoxNonEmpty_); iconBoxNonEmpty_ = nullptr; }
@@ -333,6 +335,88 @@ void UI::drawStatusBar(const std::string& msg) {
     drawText(msg, 15, SCREEN_H - 26, T().statusText, fontSmall_);
 }
 
+// --- Box view (UI 2.0) ------------------------------------------------------------
+//
+// Laid out after external/UI_2.0 "Box view (Save <-> Bank)". Everything below
+// the top bar is either one of the two box panels, the info strip for the
+// Pokemon under the cursor, or the footer.
+
+namespace {
+
+std::string utf16ToUtf8(const std::u16string& s) {
+    std::string out;
+    for (char16_t c : s) {
+        if (c < 0x80) {
+            out += static_cast<char>(c);
+        } else if (c < 0x800) {
+            out += static_cast<char>(0xC0 | (c >> 6));
+            out += static_cast<char>(0x80 | (c & 0x3F));
+        } else {
+            out += static_cast<char>(0xE0 | (c >> 12));
+            out += static_cast<char>(0x80 | ((c >> 6) & 0x3F));
+            out += static_cast<char>(0x80 | (c & 0x3F));
+        }
+    }
+    return out;
+}
+
+// ASCII upper case, for the small caps panel tags. Anything outside ASCII is
+// left alone rather than guessed at.
+std::string upperAscii(std::string s) {
+    for (char& c : s)
+        if (c >= 'a' && c <= 'z') c = static_cast<char>(c - 'a' + 'A');
+    return s;
+}
+
+// Labels like "Dual Bank | " were written to sit before the game name in the
+// old status bar; the top bar has its own separators.
+std::string trimLabel(std::string s) {
+    while (!s.empty() && (s.back() == ' ' || s.back() == '|'))
+        s.pop_back();
+    return s;
+}
+
+// Draws `text` so its baseline sits on `baseline`, which is what lines up runs
+// of different sizes on one row.
+int baselineTop(TTF_Font* f, int baseline) {
+    return baseline - TTF_FontAscent(f);
+}
+
+} // anonymous namespace
+
+SDL_Rect UI::slotRect(Panel panelId, int col, int row) const {
+    const int panelX = (panelId == Panel::Game) ? PANEL_X_L : PANEL_X_R;
+    const int cols = gridCols();
+    const int gridW = cols * CELL_W + (cols - 1) * CELL_GAP;
+    const int x0 = panelX + (PANEL_W - gridW) / 2;
+    return {x0 + col * (CELL_W + CELL_GAP), GRID_Y + row * (CELL_H + CELL_GAP),
+            CELL_W, CELL_H};
+}
+
+SDL_Texture* UI::spriteFor(uint16_t species, uint8_t form, bool shiny, bool egg) {
+    if (egg) return getSprite(0);
+    if (shiny)
+        if (SDL_Texture* t = getShinySprite(species, form)) return t;
+    return getSprite(species, form);
+}
+
+void UI::drawSpriteFit(SDL_Texture* tex, int cx, int cy, int size, Uint8 alpha) {
+    if (!tex) return;
+    int tw = 0, th = 0;
+    SDL_QueryTexture(tex, nullptr, nullptr, &tw, &th);
+    int dw = size, dh = size;
+    if (tw > 0 && th > 0) {
+        const float scale = std::min(static_cast<float>(size) / tw,
+                                     static_cast<float>(size) / th);
+        dw = static_cast<int>(tw * scale);
+        dh = static_cast<int>(th * scale);
+    }
+    SDL_Rect dst = {cx - dw / 2, cy - dh / 2, dw, dh};
+    if (alpha != 255) SDL_SetTextureAlphaMod(tex, alpha);
+    SDL_RenderCopy(renderer_, tex, nullptr, &dst);
+    if (alpha != 255) SDL_SetTextureAlphaMod(tex, 255);
+}
+
 const std::vector<UI::SlotDisplay>& UI::getSlotDisplays(Panel panel, int box) {
     BoxDisplayKey key{panel, box};
     auto it = slotDisplayCache_.find(key);
@@ -373,159 +457,161 @@ void UI::invalidateSlotDisplay(Panel panel, int box) {
 
 void UI::drawSlot(int x, int y, const SlotDisplay& sd, bool isCursor, int selectOrder,
                   int highlightState, bool isParty) {
-    SDL_Color bgColor;
-    if (sd.empty) {
-        bgColor = T().slotEmpty;
-    } else if (sd.egg) {
-        bgColor = T().slotEgg;
-    } else {
-        bgColor = T().slotFull;
-    }
-
-    // Slot background
-    drawRect(x, y, CELL_W, CELL_H, bgColor);
-
-    // LGPE party member outline
-    if (isParty)
-        drawRectOutline(x + 1, y + 1, CELL_W - 2, CELL_H - 2, T().partyMark, 2);
-
-    // Search match outline (drawn early so it frames the slot content)
-    if (highlightState == 1)
-        drawRectOutline(x + 1, y + 1, CELL_W - 2, CELL_H - 2, T().searchMatch, 2);
-
-    // Selection outline (drawn before cursor so cursor overlays it)
-    if (selectOrder > 0) {
-        SDL_Color selColor = positionPreserve_ ? T().selectedPos : T().selected;
-        drawRectOutline(x + 1, y + 1, CELL_W - 2, CELL_H - 2, selColor, 2);
-    }
-
-    // Cursor highlight
+    // Cursor: a ring outside the cell with a gap, so it never covers the
+    // markers drawn on the cell's own rim.
     if (isCursor)
-        drawRectOutline(x, y, CELL_W, CELL_H, T().cursor, 3);
+        strokeRounded(x - 6, y - 6, CELL_W + 12, CELL_H + 12, CELL_RADIUS + 5, 3, T().accent);
+
+    if (sd.empty) {
+        fillRounded(x, y, CELL_W, CELL_H, CELL_RADIUS,
+                      isCursor ? T().cellCursor : T().slotEmpty);
+        dashRounded(x, y, CELL_W, CELL_H, CELL_RADIUS, T().cellEmptyBorder);
+    } else {
+        SDL_Color bg = sd.egg ? T().slotEgg : T().slotFull;
+        fillRounded(x, y, CELL_W, CELL_H, CELL_RADIUS, isCursor ? T().cellCursor : bg);
+        strokeRounded(x, y, CELL_W, CELL_H, CELL_RADIUS, 1, T().cellBorder);
+    }
+
+    // Rim markers, weakest first so the strongest one shows: LGPE party
+    // member, search match, then multi-select.
+    const SDL_Color selColor = positionPreserve_ ? T().selectedPos : T().selected;
+    if (isParty)
+        strokeRounded(x, y, CELL_W, CELL_H, CELL_RADIUS, 2, T().partyMark);
+    if (highlightState == 1)
+        strokeRounded(x, y, CELL_W, CELL_H, CELL_RADIUS, 2, T().searchMatch);
+    if (selectOrder > 0)
+        strokeRounded(x, y, CELL_W, CELL_H, CELL_RADIUS, 2, selColor);
 
     if (!sd.empty) {
-        // Draw sprite centered in top portion of cell (form-aware, shiny variant if available)
-        SDL_Texture* sprite = nullptr;
-        if (sd.egg) {
-            sprite = getSprite(0);
-        } else if (sd.shiny) {
-            sprite = getShinySprite(sd.species, sd.form);
-            if (!sprite) sprite = getSprite(sd.species, sd.form);
-        } else {
-            sprite = getSprite(sd.species, sd.form);
+        drawSpriteFit(spriteFor(sd.species, sd.form, sd.shiny, sd.egg),
+                      x + CELL_W / 2, y + CELL_H / 2, SPRITE_SIZE);
+
+        // Shiny top-left, alpha top-right. The shiny icon is white and takes
+        // the accent colour here.
+        constexpr int ICON = 13;
+        if (sd.shiny && iconShiny_) {
+            SDL_SetTextureColorMod(iconShiny_, T().accent.r, T().accent.g, T().accent.b);
+            SDL_Rect dst = {x + 7, y + 7, ICON, ICON};
+            SDL_RenderCopy(renderer_, iconShiny_, nullptr, &dst);
+            SDL_SetTextureColorMod(iconShiny_, 255, 255, 255);
         }
-
-        if (sprite) {
-            int texW, texH;
-            SDL_QueryTexture(sprite, nullptr, nullptr, &texW, &texH);
-
-            int dstW, dstH;
-            if (texW > 0 && texH > 0) {
-                float scale = std::min(static_cast<float>(SPRITE_SIZE) / texW,
-                                       static_cast<float>(SPRITE_SIZE) / texH);
-                dstW = static_cast<int>(texW * scale);
-                dstH = static_cast<int>(texH * scale);
-            } else {
-                dstW = SPRITE_SIZE;
-                dstH = SPRITE_SIZE;
-            }
-
-            int sprX = x + (CELL_W - dstW) / 2;
-            int sprY = y + 4 + (SPRITE_SIZE - dstH) / 2;
-            SDL_Rect dst = {sprX, sprY, dstW, dstH};
-            SDL_RenderCopy(renderer_, sprite, nullptr, &dst);
-        }
-
-        // Species name below sprite
-        SDL_Color nameColor = sd.shiny ? T().shiny : T().text;
-        drawTextCentered(sd.name, x + CELL_W / 2, y + SPRITE_SIZE + 10, nameColor, fontSmall_);
-
-        // Level at the bottom
-        if (!sd.egg) {
-            std::string lvlStr = i18n::get(StrKey::LvPrefix) + std::to_string(sd.level);
-            drawTextCentered(lvlStr, x + CELL_W / 2, y + CELL_H - 12, T().textDim, fontSmall_);
-        }
-
-        // Gender indicator (top-right corner)
-        if (sd.gender == 0)
-            drawText("\xe2\x99\x82", x + CELL_W - 16, y + 2, T().genderMale, fontSmall_);
-        else if (sd.gender == 1)
-            drawText("\xe2\x99\x80", x + CELL_W - 16, y + 2, T().genderFemale, fontSmall_);
-
-        // Shiny / Alpha icon (top-left corner)
-        SDL_Texture* statusIcon = nullptr;
-        if (sd.shiny && sd.alpha)
-            statusIcon = iconShinyAlpha_;
-        else if (sd.shiny)
-            statusIcon = iconShiny_;
-        else if (sd.alpha)
-            statusIcon = iconAlpha_;
-
-        if (statusIcon) {
-            SDL_Rect iconDst = {x + 2, y + 2, 14, 14};
-            SDL_RenderCopy(renderer_, statusIcon, nullptr, &iconDst);
+        if (sd.alpha && iconAlpha_) {
+            SDL_Rect dst = {x + CELL_W - 7 - ICON, y + 7, ICON, ICON};
+            SDL_RenderCopy(renderer_, iconAlpha_, nullptr, &dst);
         }
     }
 
-    // Numbered badge on top of everything
+    // Selection order, bottom-right.
     if (selectOrder > 0) {
-        std::string num = std::to_string(selectOrder);
-        auto& numEntry = getTextEntry(num, font_, positionPreserve_ ? T().selectedPos : T().selected);
-        int tw = numEntry.w, th = numEntry.h;
-        int badgeR = std::max(tw, th) / 2 + 6;
-        int cx = x + CELL_W / 2;
-        int cy = y + CELL_H / 2;
-
-        SDL_Color badgeColor = positionPreserve_ ? T().selectedPos : T().selected;
-        SDL_SetRenderDrawColor(renderer_, badgeColor.r, badgeColor.g, badgeColor.b, 220);
-        for (int dy2 = -badgeR; dy2 <= badgeR; dy2++) {
-            int dx2 = static_cast<int>(std::sqrt(badgeR * badgeR - dy2 * dy2));
-            SDL_RenderDrawLine(renderer_, cx - dx2, cy + dy2, cx + dx2, cy + dy2);
-        }
-        drawTextCentered(num, cx, cy, T().textOnBadge, font_);
+        const int cx = x + CELL_W - 13, cy = y + CELL_H - 13;
+        fillDisc(cx, cy, 10, selColor);
+        drawTextCentered(std::to_string(selectOrder), cx, cy, T().textOnBadge,
+                         uiFont(13, true));
     }
 
     // Search dim overlay (drawn last so it covers everything)
     if (highlightState == -1)
-        drawRect(x, y, CELL_W, CELL_H, T().searchDim);
+        fillRounded(x, y, CELL_W, CELL_H, CELL_RADIUS, T().searchDim);
 }
 
-void UI::drawPanel(int panelX, const std::string& boxName, int boxIdx,
-                   int totalBoxes, bool isActive, SaveFile* save, Bank* bank, int box,
-                   Panel panelId) {
-    // Panel background
-    drawRect(panelX, 0, PANEL_W, SCREEN_H - 35, T().panelBg);
+void UI::drawBoxPanel(Panel panelId, bool isActive) {
+    const bool left = (panelId == Panel::Game);
+    const int px = left ? PANEL_X_L : PANEL_X_R;
+    const int box = left ? gameBox_ : bankBox_;
+    const SDL_Color accent = left ? T().accentSave : T().accentBank;
 
-    // Box name header with arrows
-    SDL_Color hdrColor = isActive ? T().boxName : T().textDim;
-    drawTextCentered("<", panelX + 20, BOX_HDR_Y + BOX_HDR_H / 2, T().arrow, font_);
-    std::string hdrText = boxName + " (" + std::to_string(boxIdx + 1) + "/" + std::to_string(totalBoxes) + ")";
-    // Truncate if too wide for panel (leave room for arrows)
-    int maxHdrW = PANEL_W - 80;
-    int tw = getTextEntry(hdrText, font_, hdrColor).w;
-    if (tw > maxHdrW) {
-        while (hdrText.size() > 5 && tw > maxHdrW) {
-            hdrText = hdrText.substr(0, hdrText.size() - 5) + "(..)";
-            tw = getTextEntry(hdrText, font_, hdrColor).w;
+    // What this panel shows: the save, or one of the two banks.
+    std::string tag, title;
+    int boxCount = 1;
+    bool loaded = true;
+    if (left && !isDualBankMode()) {
+        tag = i18n::get(StrKey::TagSave) + std::string(" \xc2\xb7 ") + gameDisplayNameOf(selectedGame_);
+        title = save_.getBoxName(box);
+        boxCount = save_.boxCount();
+    } else if (left && leftBankName_.empty()) {
+        tag = i18n::get(StrKey::TagBank);
+        title = i18n::get(StrKey::NoBankLoaded);
+        loaded = false;
+    } else {
+        const Bank& b = left ? bankLeft_ : bank_;
+        tag = i18n::get(StrKey::TagBank) + std::string(" \xc2\xb7 ")
+            + (left ? leftBankName_ : activeBankName_);
+        title = b.getBoxName(box);
+        boxCount = b.boxCount();
+    }
+
+    // Panel
+    fillRounded(px, PANEL_Y, PANEL_W, PANEL_H, PANEL_RADIUS, T().panelBg);
+    strokeRounded(px, PANEL_Y, PANEL_W, PANEL_H, PANEL_RADIUS, 1, T().panelBorder);
+
+    // L / R keys. They move the box of whichever panel the cursor is in, so
+    // only that panel's pair is lit.
+    constexpr int KEY_W = 56, KEY_H = 44, KEY_INSET = 17;
+    const SDL_Color keyText = isActive ? T().text : T().textMuted;
+    TTF_Font* keyFont = uiFont(16, true);
+    const int keyY = PANEL_Y + KEY_INSET;
+    const int keyCy = keyY + KEY_H / 2;
+    for (int side = 0; side < 2; side++) {
+        const int kx = side == 0 ? px + KEY_INSET : px + PANEL_W - KEY_INSET - KEY_W;
+        fillRounded(kx, keyY, KEY_W, KEY_H, 8, T().buttonBg);
+        strokeRounded(kx, keyY, KEY_W, KEY_H, 8, 1, T().buttonBorder);
+        const int kcx = kx + KEY_W / 2;
+        if (side == 0) {
+            fillArrow(kcx - 8, keyCy, 8, -1, keyText);
+            drawTextCentered("L", kcx + 5, keyCy, keyText, keyFont);
+        } else {
+            drawTextCentered("R", kcx - 5, keyCy, keyText, keyFont);
+            fillArrow(kcx + 8, keyCy, 8, +1, keyText);
         }
     }
-    drawTextCentered(hdrText, panelX + PANEL_W / 2, BOX_HDR_Y + BOX_HDR_H / 2, hdrColor, font_);
-    drawTextCentered(">", panelX + PANEL_W - 20, BOX_HDR_Y + BOX_HDR_H / 2, T().arrow, font_);
 
-    // Grid: dynamic columns x 5 rows
-    int cols = gridCols();
-    int gridStartX = panelX + (PANEL_W - (cols * (CELL_W + CELL_PAD) - CELL_PAD)) / 2;
-    int gridStartY = GRID_Y;
+    // Tag and title, centred between the keys.
+    const int cx = px + PANEL_W / 2;
+    const int maxW = PANEL_W - 2 * (KEY_INSET + KEY_W + 12);
+    {
+        TTF_Font* f = uiFont(12, true);
+        constexpr int TRACK = 2;
+        // fitText measures without tracking, so shrink its budget until the
+        // tracked result fits, always cutting from the full tag.
+        const std::string full = upperAscii(tag);
+        std::string t = full;
+        for (int budget = textWidth(full, f); budget > 0 && measureTextTracked(t, f, TRACK) > maxW; ) {
+            budget -= 8;
+            t = fitText(full, f, budget);
+        }
+        const int w = measureTextTracked(t, f, TRACK);
+        drawTextTracked(t, cx - w / 2, PANEL_Y + 15, accent, f, TRACK);
+    }
 
     const auto& displays = getSlotDisplays(panelId, box);
+    {
+        TTF_Font* fTitle = uiFont(22, true);
+        TTF_Font* fCount = uiFont(15);
+        std::string count;
+        if (loaded) {
+            int filled = 0;
+            for (const auto& sd : displays)
+                if (!sd.empty) filled++;
+            count = std::to_string(filled) + " / " + std::to_string((int)displays.size());
+        }
+        const int countW = count.empty() ? 0 : textWidth(count, fCount) + 8;
+        const std::string t = fitText(title, fTitle, maxW - countW);
+        const int titleW = textWidth(t, fTitle);
+        const int x0 = cx - (titleW + countW) / 2;
+        const int baseline = PANEL_Y + 56;
+        drawText(t, x0, baselineTop(fTitle, baseline), T().text, fTitle);
+        if (!count.empty())
+            drawText(count, x0 + titleW + 8, baselineTop(fCount, baseline), T().textMuted, fCount);
+    }
 
+    // Grid
+    const int cols = gridCols();
     for (int row = 0; row < 5; row++) {
         for (int col = 0; col < cols; col++) {
-            int slot = row * cols + col;
-            int cellX = gridStartX + col * (CELL_W + CELL_PAD);
-            int cellY = gridStartY + row * (CELL_H + CELL_PAD);
-
+            const int slot = row * cols + col;
+            if (slot >= (int)displays.size()) continue;
             const auto& sd = displays[slot];
+            const SDL_Rect r = slotRect(panelId, col, row);
 
             bool isCursor = isActive && cursor_.col == col && cursor_.row == row;
             int selOrder = 0;
@@ -541,14 +627,338 @@ void UI::drawPanel(int panelX, const std::string& boxName, int boxIdx,
             int hlState = 0;
             if (searchHighlightActive_ && !sd.empty)
                 hlState = isSearchMatch(panelId, box, slot) ? 1 : -1;
-            bool partySlot = save && save->isLGPEPartySlot(box, slot);
-            drawSlot(cellX, cellY, sd, isCursor, selOrder, hlState, partySlot);
+            bool partySlot = left && !isDualBankMode() && save_.isLGPEPartySlot(box, slot);
+            drawSlot(r.x, r.y, sd, isCursor, selOrder, hlState, partySlot);
+        }
+    }
+
+    // Page dots, one per box, the current one drawn as a pill.
+    if (loaded && boxCount > 1) {
+        constexpr int DOT = 5, PILL = 14, GAP = 5;
+        const int total = boxCount * (DOT + GAP) - GAP + (PILL - DOT);
+        if (total <= PANEL_W - 40) {
+            int x = cx - total / 2;
+            for (int i = 0; i < boxCount; i++) {
+                const bool cur = (i == box);
+                const int w = cur ? PILL : DOT;
+                fillRounded(x, DOTS_Y, w, DOT, DOT / 2, cur ? accent : T().dot);
+                x += w + GAP;
+            }
+        } else {
+            // More boxes than dots fit: say where we are instead.
+            drawTextCentered(std::to_string(box + 1) + " / " + std::to_string(boxCount),
+                             cx, DOTS_Y + 2, T().textMuted, uiFont(13));
         }
     }
 }
 
+void UI::drawTopBar() {
+    drawRect(0, 0, SCREEN_W, ACCENT_RULE_H, T().accent);
+    const int cy = ACCENT_RULE_H + (TOPBAR_H - ACCENT_RULE_H) / 2 - 4;
+
+    // Logo
+    int x = 32;
+    if (iconHouse_) {
+        SDL_SetTextureColorMod(iconHouse_, T().accent.r, T().accent.g, T().accent.b);
+        SDL_Rect dst = {x, cy - 12, 24, 24};
+        SDL_RenderCopy(renderer_, iconHouse_, nullptr, &dst);
+        x += 24 + 12;
+    }
+    TTF_Font* fLogo = uiFont(24, true);
+    const int baseline = cy + 8;
+    drawText("pkHouse", x, baselineTop(fLogo, baseline), T().text, fLogo);
+    x += textWidth("pkHouse", fLogo) + 16;
+
+    drawRect(x, cy - 14, 1, 28, T().divider);
+    x += 17;
+
+    // Game, then whose save it is (or which bank mode we are in).
+    TTF_Font* fGame = uiFont(18, true);
+    const std::string game = gameDisplayNameOf(selectedGame_);
+    drawText(game, x, baselineTop(fGame, baseline), T().text, fGame);
+    x += textWidth(game, fGame) + 10;
+
+    std::string who;
+    if (allBanksMode_) {
+        who = trimLabel(i18n::get(StrKey::LabelAllBanks));
+    } else if (isDualBankMode()) {
+        who = trimLabel(i18n::get(StrKey::LabelDualBank));
+    } else {
+        TrainerInfo ti = save_.getTrainerInfo();
+        if (ti.valid) {
+            const uint32_t tid = isFRLG(selectedGame_) ? (ti.id32 & 0xFFFF) : (ti.id32 % 1000000);
+            who = utf16ToUtf8(ti.otName) + " \xc2\xb7 " + std::to_string(tid);
+        } else if (selectedProfile_ >= 0 && selectedProfile_ < account_.profileCount()) {
+            who = account_.profiles()[selectedProfile_].nickname;
+        }
+    }
+    TTF_Font* fWho = uiFont(15);
+    if (!who.empty())
+        drawText(who, x, baselineTop(fWho, baseline), T().textDim, fWho);
+
+    // Save state, right-aligned.
+    const std::string status = unsavedChanges_ ? i18n::get(StrKey::StatusUnsaved)
+                             : isDualBankMode() ? i18n::get(StrKey::StatusBanksClean)
+                             : i18n::get(StrKey::StatusSaveClean);
+    const int sw = textWidth(status, fWho);
+    const int sx = SCREEN_W - 32 - sw;
+    drawText(status, sx, baselineTop(fWho, baseline), T().text, fWho);
+    fillDisc(sx - 14, cy, 4, unsavedChanges_ ? T().statusWarn : T().statusOk);
+}
+
+void UI::drawInfoStrip() {
+    fillRounded(INFO_X, INFO_Y, INFO_W, INFO_H, 12, T().panelBg);
+    strokeRounded(INFO_X, INFO_Y, INFO_W, INFO_H, 12, 1, T().panelBorder);
+
+    // While holding, the strip describes what is in hand - the slot under the
+    // cursor is where it is about to go, not what you are looking at.
+    Pokemon pkm;
+    if (holding_)
+        pkm = heldMulti_.empty() ? heldPkm_ : heldMulti_[0];
+    else
+        pkm = getPokemonAt(cursor_.box, cursor_.slot(gridCols()), cursor_.panel);
+
+    const int midY = INFO_Y + INFO_H / 2;
+    if (pkm.isEmpty()) {
+        TTF_Font* f = uiFont(15);
+        drawText(i18n::get(StrKey::InfoEmptySlot), INFO_X + 24,
+                 midY - TTF_FontHeight(f) / 2, T().textMuted, f);
+        return;
+    }
+
+    // Portrait
+    constexpr int PORTRAIT = 56;
+    const int portX = INFO_X + 20, portY = midY - PORTRAIT / 2;
+    fillRounded(portX, portY, PORTRAIT, PORTRAIT, 10, T().slotFull);
+    drawSpriteFit(spriteFor(pkm.species(), pkm.form(), pkm.isShiny(), pkm.isEgg()),
+                  portX + PORTRAIT / 2, portY + PORTRAIT / 2, 48);
+
+    // Identity: marks, name, gender, level; then nature, ability, ball.
+    const int idX = portX + PORTRAIT + 20;
+    const int idRight = 400;
+    {
+        TTF_Font* fName = uiFont(20, true);
+        TTF_Font* fLv   = uiFont(15);
+        const int baseline = INFO_Y + 38;
+        int x = idX;
+        constexpr int ICON = 16;
+        if (pkm.isShiny() && iconShiny_) {
+            SDL_SetTextureColorMod(iconShiny_, T().accent.r, T().accent.g, T().accent.b);
+            SDL_Rect dst = {x, baseline - ICON, ICON, ICON};
+            SDL_RenderCopy(renderer_, iconShiny_, nullptr, &dst);
+            SDL_SetTextureColorMod(iconShiny_, 255, 255, 255);
+            x += ICON + 6;
+        }
+        if (pkm.isAlpha() && iconAlpha_) {
+            SDL_Rect dst = {x, baseline - ICON, ICON, ICON};
+            SDL_RenderCopy(renderer_, iconAlpha_, nullptr, &dst);
+            x += ICON + 6;
+        }
+
+        std::string lv, gender;
+        SDL_Color gColor = T().text;
+        if (!pkm.isEgg()) {
+            lv = i18n::get(StrKey::LvPrefix) + std::to_string(pkm.level());
+            const uint8_t g = pkm.gender();
+            if (g == 0) { gender = "\xe2\x99\x82"; gColor = T().genderMale; }
+            if (g == 1) { gender = "\xe2\x99\x80"; gColor = T().genderFemale; }
+        }
+        const int tailW = (gender.empty() ? 0 : textWidth(gender, fName) + 8)
+                        + (lv.empty() ? 0 : textWidth(lv, fLv) + 8);
+        const std::string name = fitText(pkm.displayName(), fName, idRight - 16 - x - tailW);
+        drawText(name, x, baselineTop(fName, baseline), T().text, fName);
+        x += textWidth(name, fName) + 8;
+        if (!gender.empty()) {
+            drawText(gender, x, baselineTop(fName, baseline), gColor, fName);
+            x += textWidth(gender, fName) + 8;
+        }
+        if (!lv.empty())
+            drawText(lv, x, baselineTop(fLv, baseline), T().textDim, fLv);
+
+        // Nature · Ability · [ball icon] Ball. The ball name is what gets
+        // cut when the line is too long; nature and ability always show.
+        TTF_Font* fSub = uiFont(14);
+        const int subTop = baselineTop(fSub, INFO_Y + 62);
+        const int subRight = idRight - 16;
+        std::string sub = NatureName::get(pkm.nature()) + " \xc2\xb7 " + AbilityName::get(pkm.ability());
+        const char* ball = BallName::get(pkm.ball());
+        if (ball[0] != '\0')
+            sub += " \xc2\xb7 ";
+        sub = fitText(sub, fSub, subRight - idX);
+        drawText(sub, idX, subTop, T().textDim, fSub);
+        int bx = idX + textWidth(sub, fSub);
+        if (ball[0] != '\0' && bx < subRight) {
+            constexpr int BALL = 16;
+            const int subCy = subTop + TTF_FontHeight(fSub) / 2;
+            if (SDL_Texture* ballTex = getBallSprite(pkm.ball())) {
+                SDL_Rect dst = {bx, subCy - BALL / 2, BALL, BALL};
+                SDL_RenderCopy(renderer_, ballTex, nullptr, &dst);
+                bx += BALL + 4;
+            }
+            if (bx < subRight)
+                drawText(fitText(ball, fSub, subRight - bx), bx, subTop, T().textDim, fSub);
+        }
+    }
+
+    drawRect(idRight, INFO_Y + 14, 1, INFO_H - 28, T().divider);
+
+    // Moves, 2 x 2, with the type icons the card export uses.
+    {
+        constexpr int PILL_W = 194, PILL_H = 26, ICON_R = 9;
+        const int x0 = idRight + 20, y0 = INFO_Y + 12;
+        TTF_Font* fMove = uiFont(14);
+        const uint16_t moves[4] = {pkm.move1(), pkm.move2(), pkm.move3(), pkm.move4()};
+        for (int i = 0; i < 4; i++) {
+            const int mx = x0 + (i % 2) * (PILL_W + 12);
+            const int my = y0 + (i / 2) * (PILL_H + 8);
+            const int mcy = my + PILL_H / 2;
+            fillRounded(mx, my, PILL_W, PILL_H, 6, T().buttonBg);
+            const int nameX = mx + 8 + ICON_R * 2 + 8;
+            const int nameY = mcy - TTF_FontHeight(fMove) / 2;
+            if (moves[i] == 0) {
+                drawText("---", nameX, nameY, T().textMuted, fMove);
+                continue;
+            }
+            const uint8_t type = getMoveType(moves[i], pkm.gameType_);
+            if (type < 18)
+                if (SDL_Texture* typeTex = getTypeSprite(type))
+                    blitCircular(renderer_, typeTex, mx + 8 + ICON_R, mcy, ICON_R, T().buttonBg);
+            drawText(fitText(MoveName::get(moves[i]), fMove, mx + PILL_W - 8 - nameX),
+                     nameX, nameY, T().text, fMove);
+        }
+    }
+
+    const int statsX = idRight + 20 + 2 * 194 + 12 + 20;
+    drawRect(statsX, INFO_Y + 14, 1, INFO_H - 28, T().divider);
+
+    // Perfect IVs and EV total.
+    {
+        const int ivs[6] = {pkm.ivHp(), pkm.ivAtk(), pkm.ivDef(),
+                            pkm.ivSpA(), pkm.ivSpD(), pkm.ivSpe()};
+        int perfect = 0;
+        for (int v : ivs) if (v == 31) perfect++;
+        const int evs = pkm.evHp() + pkm.evAtk() + pkm.evDef()
+                      + pkm.evSpA() + pkm.evSpD() + pkm.evSpe();
+
+        TTF_Font* fBadge = uiFont(12, true);
+        const std::string badge = i18n::fmt(StrKey::InfoPerfectIvs, std::to_string(perfect));
+        const int bw = measureTextTracked(badge, fBadge, 1) + 20;
+        const int bx = statsX + 20, by = INFO_Y + 20;
+        fillRounded(bx, by, bw, 22, 11, T().badgeBg);
+        drawTextTracked(badge, bx + 10, by + 11 - TTF_FontHeight(fBadge) / 2,
+                        T().accent, fBadge, 1);
+
+        TTF_Font* fEv = uiFont(14);
+        drawText(i18n::fmt(StrKey::InfoEvTotal, std::to_string(evs)), bx,
+                 baselineTop(fEv, INFO_Y + 62), T().textDim, fEv);
+    }
+
+    // Trainer and origin, right-aligned.
+    {
+        const int right = INFO_X + INFO_W - 20;
+        const int maxW = right - (statsX + 150);
+        TTF_Font* fOt = uiFont(16, true);
+        const std::string ot = fitText(i18n::fmt(StrKey::InfoOt, pkm.otName(),
+                                                 std::to_string(pkm.displayTid())), fOt, maxW);
+        drawText(ot, right - textWidth(ot, fOt), baselineTop(fOt, INFO_Y + 36), T().text, fOt);
+
+        std::string origin = VersionName::get(pkm.originVersion());
+        const std::string& loc = LocationName::get(selectedGame_, pkm.metLocation());
+        if (!loc.empty())
+            origin += origin.empty() ? loc : " \xc2\xb7 " + loc;
+        TTF_Font* fOrig = uiFont(13);
+        origin = fitText(origin, fOrig, maxW);
+        drawText(origin, right - textWidth(origin, fOrig), baselineTop(fOrig, INFO_Y + 60),
+                 T().textDim, fOrig);
+    }
+}
+
+// --- Footer ----------------------------------------------------------------------
+
+int UI::drawFooterKey(int x, int cy, const char* button, bool measureOnly) {
+    constexpr int CAP = 24;   // circle diameter
+    constexpr int PILL_H = 20;
+    TTF_Font* f = uiFont(13, true);
+
+    // "ZL ZR" is two caps side by side.
+    const std::string all = button;
+    int w = 0;
+    size_t start = 0;
+    while (start <= all.size()) {
+        size_t sp = all.find(' ', start);
+        if (sp == std::string::npos) sp = all.size();
+        const std::string cap = all.substr(start, sp - start);
+        start = sp + 1;
+        if (cap.empty()) continue;
+        if (w) w += 6;
+
+        const int kx = x + w;
+        if (cap == HINT_DPAD) {
+            if (!measureOnly) {
+                fillDisc(kx + CAP / 2, cy, CAP / 2, T().keyCap);
+                constexpr int ARM = 13, THICK = 3;
+                drawRect(kx + CAP / 2 - THICK / 2, cy - ARM / 2, THICK, ARM, T().keyCapText);
+                drawRect(kx + CAP / 2 - ARM / 2, cy - THICK / 2, ARM, THICK, T().keyCapText);
+            }
+            w += CAP;
+        } else if (cap.size() == 1) {
+            if (!measureOnly) {
+                fillDisc(kx + CAP / 2, cy, CAP / 2, T().keyCap);
+                drawTextCentered(cap, kx + CAP / 2, cy, T().keyCapText, f);
+            }
+            w += CAP;
+        } else {
+            const int pw = textWidth(cap, f) + 12;
+            if (!measureOnly) {
+                fillRounded(kx, cy - PILL_H / 2, pw, PILL_H, 5, T().keyCap);
+                drawTextCentered(cap, kx + pw / 2, cy, T().keyCapText, f);
+            }
+            w += pw;
+        }
+    }
+    return w;
+}
+
+void UI::drawFooterBar(const ButtonHint* hints, int count, const std::string& message) {
+    drawRect(0, FOOTER_Y, SCREEN_W, FOOTER_H, T().bg);
+    drawRect(0, FOOTER_Y, SCREEN_W, 1, T().panelBorder);
+    const int cy = FOOTER_Y + FOOTER_H / 2;
+
+    // Version, right-aligned; measured first so the hints stop short of it.
+    TTF_Font* fVerName = uiFont(13, true);
+    TTF_Font* fVer     = uiFont(13);
+    const std::string ver = " v" APP_VERSION;
+    const int verW = measureTextTracked("PKHOUSE", fVerName, 2) + textWidth(ver, fVer);
+    {
+        int vx = SCREEN_W - 32 - verW;
+        const int vy = cy - TTF_FontHeight(fVer) / 2;
+        vx += drawTextTracked("PKHOUSE", vx, vy, T().textMuted, fVerName, 2);
+        drawText(ver, vx, vy, T().textMuted, fVer);
+    }
+
+    TTF_Font* fLabel = uiFont(15, true);
+    int x = 32;
+    const int limit = SCREEN_W - 32 - verW - 24;
+    if (!message.empty()) {
+        TTF_Font* fMsg = uiFont(15);
+        const std::string m = fitText(message, fMsg, limit - x);
+        drawText(m, x, cy - TTF_FontHeight(fMsg) / 2, T().statusText, fMsg);
+        x += textWidth(m, fMsg) + 24;
+    }
+
+    // Labels are translated, so what fits is measured, not assumed; hints that
+    // would run into the version are dropped from the end.
+    for (int i = 0; i < count; i++) {
+        const std::string label = i18n::get(hints[i].labelKey);
+        const int w = drawFooterKey(x, cy, hints[i].button, true) + 8 + textWidth(label, fLabel);
+        if (x + w > limit) break;
+        x += drawFooterKey(x, cy, hints[i].button, false) + 8;
+        drawText(label, x, cy - TTF_FontHeight(fLabel) / 2, T().text, fLabel);
+        x += textWidth(label, fLabel) + 22;
+    }
+}
+
 void UI::drawFrame() {
-    // Clear screen
     SDL_SetRenderDrawColor(renderer_, T().bg.r, T().bg.g, T().bg.b, 255);
     SDL_RenderClear(renderer_);
 
@@ -558,56 +968,23 @@ void UI::drawFrame() {
     else
         bankBox_ = cursor_.box;
 
-    auto truncName = [](const std::string& s, size_t max) -> std::string {
-        if (s.size() <= max) return s;
-        return s.substr(0, max - 3) + "(..)";
+    drawTopBar();
+    drawBoxPanel(Panel::Game, cursor_.panel == Panel::Game);
+    drawBoxPanel(Panel::Bank, cursor_.panel == Panel::Bank);
+    drawInfoStrip();
 
-    };
-
-    if (isDualBankMode()) {
-        // Dual-bank mode: two bank panels side by side
-        bool leftActive = (cursor_.panel == Panel::Game);
-        bool rightActive = (cursor_.panel == Panel::Bank);
-
-        // Left panel: left bank
-        std::string leftBoxName;
-        if (!leftBankName_.empty())
-            leftBoxName = truncName(leftBankName_, 16) + " - " + bankLeft_.getBoxName(gameBox_);
-        else
-            leftBoxName = i18n::get(StrKey::NoBankLoaded);
-        drawPanel(PANEL_X_L, leftBoxName, gameBox_,
-                  leftBankName_.empty() ? 1 : bankLeft_.boxCount(),
-                  leftActive, nullptr,
-                  leftBankName_.empty() ? nullptr : &bankLeft_,
-                  gameBox_, Panel::Game);
-
-        // Right panel: right bank
-        std::string rightBoxName = truncName(activeBankName_, 16) + " - " + bank_.getBoxName(bankBox_);
-        drawPanel(PANEL_X_R, rightBoxName, bankBox_, bank_.boxCount(),
-                  rightActive, nullptr, &bank_, bankBox_, Panel::Bank);
-    } else {
-        // Normal mode: save + bank
-        bool leftActive = (cursor_.panel == Panel::Game);
-        std::string gameBoxName = save_.getBoxName(gameBox_);
-        drawPanel(PANEL_X_L, gameBoxName, gameBox_, save_.boxCount(),
-                  leftActive, &save_, nullptr, gameBox_, Panel::Game);
-
-        bool rightActive = (cursor_.panel == Panel::Bank);
-        std::string bankBoxName = truncName(activeBankName_, 16) + " - " + bank_.getBoxName(bankBox_);
-        drawPanel(PANEL_X_R, bankBoxName, bankBox_, bank_.boxCount(),
-                  rightActive, nullptr, &bank_, bankBox_, Panel::Bank);
-    }
-
-    // Status bar.
+    // Footer.
     //
-    // This one is not a fixed row: what the bar says depends on what is in hand.
-    // Holding something, mid drag-select or with matches highlighted, the useful
+    // Not a fixed row: what it says depends on what is in hand. Holding
+    // something, mid drag-select or with matches highlighted, the useful
     // buttons are different ones and a line of text leads them.
     {
         std::string message;
         ButtonHint hints[7];
         int n = 0;
 
+        // Same keys and labels as before the 2.0 redesign, so nobody has to
+        // relearn the controls; only the way they are drawn changed.
         if (searchHighlightActive_ && !holding_ && selectedSlots_.empty() && !yHeld_) {
             message = i18n::fmt(StrKey::MsgSearch, std::to_string(searchResults_.size()));
             hints[n++] = {"B", StrKey::HintClear};
@@ -645,22 +1022,7 @@ void UI::drawFrame() {
             hints[n++] = {"X", StrKey::HintDetail};
         }
 
-        // Profile | Game name, bottom right in gold. Measured before the keys
-        // are laid out so they stop short of it rather than run underneath.
-        std::string label;
-        if (allBanksMode_)
-            label = i18n::get(StrKey::LabelAllBanks);
-        else if (isDualBankMode())
-            label = i18n::get(StrKey::LabelDualBank);
-        else if (selectedProfile_ >= 0 && selectedProfile_ < account_.profileCount())
-            label = account_.profiles()[selectedProfile_].nickname + " | ";
-        label += gameDisplayNameOf(selectedGame_);
-        const auto& entry = getTextEntry(label, fontSmall_, T().goldLabel);
-
-        drawHintBar(hints, n, message, entry.w);
-
-        if (entry.tex)
-            drawText(label, SCREEN_W - entry.w - 15, SCREEN_H - 26, T().goldLabel, fontSmall_);
+        drawFooterBar(hints, n, message);
     }
 
     // Held Pokemon overlay (draw on top of panels, under popups)
@@ -2073,72 +2435,24 @@ void UI::drawHeldOverlay() {
     if (!holding_)
         return;
 
-    // Determine which Pokemon sprite to show
     const Pokemon& pkm = heldMulti_.empty() ? heldPkm_ : heldMulti_[0];
-    uint16_t species = pkm.species();
-    if (species == 0)
+    if (pkm.species() == 0)
         return;
-
-    uint8_t heldForm = pkm.form();
-    SDL_Texture* sprite = nullptr;
-    if (pkm.isEgg()) {
-        sprite = getSprite(0);
-    } else if (pkm.isShiny()) {
-        sprite = getShinySprite(species, heldForm);
-        if (!sprite) sprite = getSprite(species, heldForm);
-    } else {
-        sprite = getSprite(species, heldForm);
-    }
+    SDL_Texture* sprite = spriteFor(pkm.species(), pkm.form(), pkm.isShiny(), pkm.isEgg());
     if (!sprite)
         return;
 
-    // Compute cursor cell screen position (same formula as drawPanel)
-    int panelX = (cursor_.panel == Panel::Game) ? PANEL_X_L : PANEL_X_R;
-    int cols = gridCols();
-    int gridStartX = panelX + (PANEL_W - (cols * (CELL_W + CELL_PAD) - CELL_PAD)) / 2;
-    int gridStartY = GRID_Y;
-    int cellX = gridStartX + cursor_.col * (CELL_W + CELL_PAD);
-    int cellY = gridStartY + cursor_.row * (CELL_H + CELL_PAD);
-
-    // Offset to create "dragging" effect
+    // Lifted off the cursor cell, a little down and right, semi-transparent.
+    const SDL_Rect cell = slotRect(cursor_.panel, cursor_.col, cursor_.row);
     constexpr int DRAG_OFS = 8;
-    int baseX = cellX + DRAG_OFS;
-    int baseY = cellY + DRAG_OFS;
+    drawSpriteFit(sprite, cell.x + CELL_W / 2 + DRAG_OFS, cell.y + CELL_H / 2 + DRAG_OFS,
+                  SPRITE_SIZE, 180);
 
-    // Scale sprite to fit SPRITE_SIZE
-    int texW, texH;
-    SDL_QueryTexture(sprite, nullptr, nullptr, &texW, &texH);
-    int dstW = SPRITE_SIZE, dstH = SPRITE_SIZE;
-    if (texW > 0 && texH > 0) {
-        float scale = std::min(static_cast<float>(SPRITE_SIZE) / texW,
-                               static_cast<float>(SPRITE_SIZE) / texH);
-        dstW = static_cast<int>(texW * scale);
-        dstH = static_cast<int>(texH * scale);
-    }
-
-    int sprX = baseX + (CELL_W - dstW) / 2;
-    int sprY = baseY + 4 + (SPRITE_SIZE - dstH) / 2;
-
-    // Draw semi-transparent
-    SDL_SetTextureAlphaMod(sprite, 180);
-    SDL_Rect dst = {sprX, sprY, dstW, dstH};
-    SDL_RenderCopy(renderer_, sprite, nullptr, &dst);
-    SDL_SetTextureAlphaMod(sprite, 255);
-
-    // Multi-hold: draw count badge
-    if (!heldMulti_.empty() && heldMulti_.size() > 1) {
-        std::string num = std::to_string(heldMulti_.size());
-        auto& numE = getTextEntry(num, font_, T().textOnBadge);
-        int tw = numE.w, th = numE.h;
-        int badgeR = std::max(tw, th) / 2 + 6;
-        int cx = cellX + CELL_W / 2;
-        int cy = cellY + CELL_H / 2;
-
-        SDL_SetRenderDrawColor(renderer_, T().selected.r, T().selected.g, T().selected.b, 220);
-        for (int dy = -badgeR; dy <= badgeR; dy++) {
-            int dx = static_cast<int>(std::sqrt(badgeR * badgeR - dy * dy));
-            SDL_RenderDrawLine(renderer_, cx - dx, cy + dy, cx + dx, cy + dy);
-        }
-        drawTextCentered(num, cx, cy, T().textOnBadge, font_);
+    // Multi-hold: how many are in hand.
+    if (heldMulti_.size() > 1) {
+        const int cx = cell.x + CELL_W - 4, cy = cell.y + CELL_H - 4;
+        fillDisc(cx, cy, 12, T().selected);
+        drawTextCentered(std::to_string(heldMulti_.size()), cx, cy, T().textOnBadge,
+                         uiFont(14, true));
     }
 }

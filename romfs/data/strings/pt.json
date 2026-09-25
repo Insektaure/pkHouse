@@ -333,5 +333,14 @@
     "msg_holding_single": "Segurando: {0} Nv.{1}",
     "msg_holding_multi": "Segurando {0} Pokemon{1}",
     "msg_search": "Busca: {0} resultados",
-    "msg_selected": "{0} selecionado(s){1}"
+    "msg_selected": "{0} selecionado(s){1}",
+    "tag_save": "JOGO SALVO",
+    "tag_bank": "BANCO",
+    "status_save_clean": "Jogo salvo carregado · sem alterações",
+    "status_banks_clean": "Bancos carregados · sem alterações",
+    "status_unsaved": "Alterações não salvas",
+    "info_empty_slot": "Espaço vazio",
+    "info_ev_total": "EV {0} / 510",
+    "info_perfect_ivs": "{0} × 31",
+    "info_ot": "TO {0} {1}"
 }

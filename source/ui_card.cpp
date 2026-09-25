@@ -97,18 +97,6 @@ constexpr const char* TYPE_NAMES[18] = {
     "ELECTRIC", "PSYCHIC", "ICE", "DRAGON", "DARK", "FAIRY",
 };
 
-// PKHeX Ball enum (PKHeX.Core/Game/Enums/Ball.cs)
-constexpr const char* BALL_NAMES[38] = {
-    "", "Master Ball", "Ultra Ball", "Great Ball", "Poke Ball", "Safari Ball",
-    "Net Ball", "Dive Ball", "Nest Ball", "Repeat Ball", "Timer Ball",
-    "Luxury Ball", "Premier Ball", "Dusk Ball", "Heal Ball", "Quick Ball",
-    "Cherish Ball", "Fast Ball", "Level Ball", "Lure Ball", "Heavy Ball",
-    "Love Ball", "Friend Ball", "Moon Ball", "Sport Ball", "Dream Ball",
-    "Beast Ball", "Strange Ball", "Poke Ball", "Great Ball", "Ultra Ball",
-    "Feather Ball", "Wing Ball", "Jet Ball", "Heavy Ball", "Leaden Ball",
-    "Gigaton Ball", "Origin Ball",
-};
-
 // Nature stat order: index 0-4 maps to these stats.
 constexpr const char* NATURE_STATS[5] = {"Atk", "Def", "Spe", "SpA", "SpD"};
 
@@ -288,44 +276,6 @@ void drawTracked(SDL_Renderer* r, TTF_Font* f, const std::string& s,
     }
 }
 
-// Blits a square icon as a disc. SDL has no circular clip, so the square is
-// masked by painting everything outside the circle back in the known background
-// colour, which works because every place this is used sits on a flat opaque
-// fill. The type icons are full-bleed squares whose glyphs all stay inside 88%
-// of the radius, so nothing meaningful is cropped.
-//
-// Pixels straddling the boundary are painted with partial alpha in proportion
-// to how much of them falls outside, which gives a smooth edge instead of a
-// stepped one. Coverage is measured from the distance to the centre rather than
-// per scanline, so the top and bottom of the disc are as clean as the sides.
-// The per-pixel loop is fine here: this runs once per card, not per frame.
-void blitCircular(SDL_Renderer* r, SDL_Texture* tex, int cx, int cy, int rad, SDL_Color bg) {
-    if (!tex || rad <= 0) return;
-
-    SDL_Rect dst = {cx - rad, cy - rad, rad * 2, rad * 2};
-    SDL_RenderCopy(r, tex, nullptr, &dst);
-
-    SDL_SetRenderDrawBlendMode(r, SDL_BLENDMODE_BLEND);
-    for (int py = cy - rad; py < cy + rad; py++) {
-        const double dy = py + 0.5 - cy;
-        for (int px = cx - rad; px < cx + rad; px++) {
-            const double dx = px + 0.5 - cx;
-            const double dist = std::sqrt(dx * dx + dy * dy);
-
-            // 1 = wholly inside the disc, 0 = wholly outside, between = the
-            // fraction of the pixel the disc covers.
-            const double covered = rad + 0.5 - dist;
-            if (covered >= 1.0) continue;
-
-            const int alpha = (covered <= 0.0)
-                ? 255
-                : static_cast<int>((1.0 - covered) * 255.0 + 0.5);
-            SDL_SetRenderDrawColor(r, bg.r, bg.g, bg.b, static_cast<Uint8>(alpha));
-            SDL_RenderDrawPoint(r, px, py);
-        }
-    }
-}
-
 // Scales a texture to fit inside a box, preserving aspect ratio.
 void blitFit(SDL_Renderer* r, SDL_Texture* tex, int bx, int by, int bw, int bh) {
     if (!tex) return;
@@ -464,9 +414,9 @@ void UI::drawCardHeader(const Pokemon& pkm, const CardFonts& f) {
     rx -= 20;
 
     uint8_t ballId = pkm.ball();
-    if (ballId > 0 && ballId < 38) {
-        drawTx(r, f.body, BALL_NAMES[ballId], rx, 70, C_TEXT, AlignR);
-        rx -= textW(f.body, BALL_NAMES[ballId]) + 8;
+    if (const char* ballName = BallName::get(ballId); ballName[0] != '\0') {
+        drawTx(r, f.body, ballName, rx, 70, C_TEXT, AlignR);
+        rx -= textW(f.body, ballName) + 8;
         if (SDL_Texture* ballTex = getBallSprite(ballId)) {
             SDL_Rect dst = {rx - 26, 67, 26, 26};
             SDL_RenderCopy(r, ballTex, nullptr, &dst);

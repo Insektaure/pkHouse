@@ -333,5 +333,14 @@
     "msg_holding_single": "Holding: {0} Lv.{1}",
     "msg_holding_multi": "Holding {0} Pokemon{1}",
     "msg_search": "Search: {0} matches",
-    "msg_selected": "{0} selected{1}"
+    "msg_selected": "{0} selected{1}",
+    "tag_save": "SAVE",
+    "tag_bank": "BANK",
+    "status_save_clean": "Save loaded · no changes",
+    "status_banks_clean": "Banks loaded · no changes",
+    "status_unsaved": "Unsaved changes",
+    "info_empty_slot": "Empty slot",
+    "info_ev_total": "EV {0} / 510",
+    "info_perfect_ivs": "{0} × 31",
+    "info_ot": "OT {0} {1}"
 }

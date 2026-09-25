@@ -333,5 +333,14 @@
     "msg_holding_single": "持っている：{0} Lv.{1}",
     "msg_holding_multi": "{0}匹のポケモンを持っています{1}",
     "msg_search": "検索：{0}件一致",
-    "msg_selected": "{0}件選択中{1}"
+    "msg_selected": "{0}件選択中{1}",
+    "tag_save": "セーブ",
+    "tag_bank": "バンク",
+    "status_save_clean": "セーブ読込済み · 変更なし",
+    "status_banks_clean": "バンク読込済み · 変更なし",
+    "status_unsaved": "未保存の変更",
+    "info_empty_slot": "空き",
+    "info_ev_total": "努力値 {0} / 510",
+    "info_perfect_ivs": "{0} × 31",
+    "info_ot": "おや {0} {1}"
 }

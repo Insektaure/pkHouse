@@ -5,7 +5,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
-bool BankManager::init(const std::string& basePath, GameType game) {
+bool BankManager::init(const std::string& basePath, GameType game, const Progress& progress) {
     basePath_ = basePath;
     game_ = game;
     allMode_ = false;
@@ -23,17 +23,33 @@ bool BankManager::init(const std::string& basePath, GameType game) {
     if (game == GameType::ZA)
         migrateLegacy();
 
-    refresh();
+    refresh(progress);
     return true;
 }
 
-bool BankManager::initAll(const std::string& basePath) {
+// Everything the list shows about one bank file.
+static BankInfo describeBank(const std::string& fullPath, const std::string& stem, GameType game) {
+    BankInfo info;
+    info.name = stem;
+    info.fullPath = fullPath;
+    info.valid = Bank::isValidFile(fullPath);
+    info.occupiedSlots = info.valid ? BankManager::countOccupied(fullPath) : 0;
+    info.game = game;
+    struct stat st;
+    if (stat(fullPath.c_str(), &st) == 0) info.modified = st.st_mtime;
+    return info;
+}
+
+bool BankManager::initAll(const std::string& basePath, const Progress& progress) {
     basePath_ = basePath;
     allMode_ = true;
     bankList_.clear();
 
     std::string banksParent = basePath + "banks/";
 
+    // List every family's files first, so progress can say "n of total".
+    struct Found { std::string path, stem; GameType game; };
+    std::vector<Found> found;
     for (GameType g : FAMILY_GAMES) {
         std::string dir = banksParent + bankFolderNameOf(g) + "/";
         DIR* d = opendir(dir.c_str());
@@ -44,20 +60,15 @@ bool BankManager::initAll(const std::string& basePath) {
             std::string name = entry->d_name;
             if (name.size() < 5 || name.substr(name.size() - 4) != ".bin")
                 continue;
-
-            std::string fullPath = dir + name;
-
-            BankInfo info;
-            info.name = name.substr(0, name.size() - 4);
-            info.fullPath = fullPath;
-            info.valid = Bank::isValidFile(fullPath);
-            info.occupiedSlots = info.valid ? countOccupied(fullPath) : 0;
-            struct stat st;
-            if (stat(fullPath.c_str(), &st) == 0) info.modified = st.st_mtime;
-            info.game = g;
-            bankList_.push_back(info);
+            found.push_back({dir + name, name.substr(0, name.size() - 4), g});
         }
         closedir(d);
+    }
+
+    const int total = static_cast<int>(found.size());
+    for (int i = 0; i < total; i++) {
+        bankList_.push_back(describeBank(found[i].path, found[i].stem, found[i].game));
+        if (progress) progress(i + 1, total);
     }
 
     // Sort by game card order then alphabetically by name
@@ -100,36 +111,31 @@ bool BankManager::migrateLegacy() {
     return std::rename(legacyPath.c_str(), newPath.c_str()) == 0;
 }
 
-void BankManager::refresh() {
+void BankManager::refresh(const Progress& progress) {
     bankList_.clear();
 
     DIR* dir = opendir(banksDir_.c_str());
     if (!dir)
         return;
 
+    // Names first, then the files, so progress can say "n of total".
+    std::vector<std::string> names;
     struct dirent* entry;
     while ((entry = readdir(dir)) != nullptr) {
         std::string name = entry->d_name;
         // Only .bin files
-        if (name.size() < 5)
+        if (name.size() < 5 || name.substr(name.size() - 4) != ".bin")
             continue;
-        if (name.substr(name.size() - 4) != ".bin")
-            continue;
-
-        std::string stem = name.substr(0, name.size() - 4);
-        std::string fullPath = banksDir_ + name;
-
-        BankInfo info;
-        info.name = stem;
-        info.fullPath = fullPath;
-        info.valid = Bank::isValidFile(fullPath);
-        info.occupiedSlots = info.valid ? countOccupied(fullPath) : 0;
-        info.game = game_;
-        struct stat st;
-        if (stat(fullPath.c_str(), &st) == 0) info.modified = st.st_mtime;
-        bankList_.push_back(info);
+        names.push_back(name);
     }
     closedir(dir);
+
+    const int total = static_cast<int>(names.size());
+    for (int i = 0; i < total; i++) {
+        const std::string& name = names[i];
+        bankList_.push_back(describeBank(banksDir_ + name, name.substr(0, name.size() - 4), game_));
+        if (progress) progress(i + 1, total);
+    }
 
     // Sort alphabetically (case-insensitive)
     std::sort(bankList_.begin(), bankList_.end(), [](const BankInfo& a, const BankInfo& b) {
@@ -145,18 +151,8 @@ const std::vector<BankInfo>& BankManager::list() const {
 }
 
 int BankManager::countOccupied(const std::string& filePath) {
-    Bank temp;
-    if (!temp.load(filePath))
-        return 0;
-
-    int count = 0;
-    for (int box = 0; box < temp.boxCount(); box++) {
-        for (int slot = 0; slot < temp.slotsPerBox(); slot++) {
-            if (!temp.getSlot(box, slot).isEmpty())
-                count++;
-        }
-    }
-    return count;
+    // Read straight from the file: same count, without building a Bank.
+    return Bank::countOccupiedInFile(filePath);
 }
 
 int BankManager::countBanks(const std::string& basePath, GameType game) {

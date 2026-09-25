@@ -443,5 +443,6 @@
     "dlg_release_save_sub": "다음에 저장할 때 세이브에서 사라집니다.",
     "dlg_release_bank_sub": "다음에 저장할 때 뱅크에서 사라집니다.",
     "dlg_backup_note": "백업으로만 되돌릴 수 있습니다.",
-    "dlg_edited": "수정 {0}"
+    "dlg_edited": "수정 {0}",
+    "loading_banks": "뱅크를 불러오는 중…"
 }

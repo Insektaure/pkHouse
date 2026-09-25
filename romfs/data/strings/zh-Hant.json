@@ -443,5 +443,6 @@
     "dlg_release_save_sub": "下次儲存時會從存檔中移除。",
     "dlg_release_bank_sub": "下次儲存時會從倉庫中移除。",
     "dlg_backup_note": "只有備份能把牠找回來。",
-    "dlg_edited": "修改於{0}"
+    "dlg_edited": "修改於{0}",
+    "loading_banks": "正在讀取倉庫…"
 }

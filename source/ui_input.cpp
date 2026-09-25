@@ -245,14 +245,14 @@ void UI::handleMenuInput(const SDL_Event& event, bool& running) {
                     if (!showConfirmDialog(i18n::get(StrKey::NoBanksAvailable),
                             i18n::get(StrKey::CreateNewBank), st)) return;
                     if (!saveBankFiles()) return;
-                    bankManager_.refresh();
+                    bankManager_.refresh(bankListProgress());
                     bankSelTarget_ = Panel::Game;
                     screen_ = AppScreen::BankSelector;
                     beginTextInput(TextInputPurpose::CreateBank);
                     return;
                 }
                 if (!saveBankFiles()) { showMenu_ = false; return; }
-                bankManager_.refresh();
+                bankManager_.refresh(bankListProgress());
                 bankSelTarget_ = Panel::Game;
                 screen_ = AppScreen::BankSelector;
                 showMenu_ = false;
@@ -268,14 +268,14 @@ void UI::handleMenuInput(const SDL_Event& event, bool& running) {
                     if (!showConfirmDialog(i18n::get(StrKey::NoBanksAvailable),
                             i18n::get(StrKey::CreateNewBank), st)) return;
                     if (!saveBankFiles()) return;
-                    bankManager_.refresh();
+                    bankManager_.refresh(bankListProgress());
                     bankSelTarget_ = Panel::Bank;
                     screen_ = AppScreen::BankSelector;
                     beginTextInput(TextInputPurpose::CreateBank);
                     return;
                 }
                 if (!saveBankFiles()) { showMenu_ = false; return; }
-                bankManager_.refresh();
+                bankManager_.refresh(bankListProgress());
                 bankSelTarget_ = Panel::Bank;
                 screen_ = AppScreen::BankSelector;
                 showMenu_ = false;
@@ -307,7 +307,7 @@ void UI::handleMenuInput(const SDL_Event& event, bool& running) {
                     save_.save(savePath_);
                 account_.commitSave();
                 ledOff();
-                bankManager_.refresh();
+                bankManager_.refresh(bankListProgress());
                 screen_ = AppScreen::BankSelector;
                 showMenu_ = false;
             } else if (sel == 1) {

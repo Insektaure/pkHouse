@@ -443,5 +443,6 @@
     "dlg_release_save_sub": "Het verdwijnt uit je opslag bij de volgende keer opslaan.",
     "dlg_release_bank_sub": "Het verdwijnt uit de bank bij de volgende keer opslaan.",
     "dlg_backup_note": "Alleen een back-up kan het terugbrengen.",
-    "dlg_edited": "bewerkt {0}"
+    "dlg_edited": "bewerkt {0}",
+    "loading_banks": "Banken laden…"
 }

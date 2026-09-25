@@ -443,5 +443,6 @@
     "dlg_release_save_sub": "Viene rimosso dal salvataggio al prossimo salvataggio.",
     "dlg_release_bank_sub": "Viene rimosso dalla banca al prossimo salvataggio.",
     "dlg_backup_note": "Solo un backup può riportarlo indietro.",
-    "dlg_edited": "modificata {0}"
+    "dlg_edited": "modificata {0}",
+    "loading_banks": "Caricamento banche…"
 }

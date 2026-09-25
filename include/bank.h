@@ -24,6 +24,15 @@ public:
     // Save bank to file.
     bool save(const std::string& path);
 
+    // How many slots of a bank file hold a Pokemon, read straight from the
+    // file: one read, no Bank built, no slot copied. Gives the same count as
+    // loading the file and asking each slot isEmpty(), which is what the bank
+    // list did before. 0 for a missing or unreadable file.
+    static int countOccupiedInFile(const std::string& path);
+
+    // True when the slot holds nothing, without copying it out.
+    bool isSlotEmpty(int box, int slot) const;
+
     Pokemon getSlot(int box, int slot) const;
     void setSlot(int box, int slot, const Pokemon& pkm);
     void clearSlot(int box, int slot);
@@ -54,6 +63,9 @@ private:
     static constexpr uint32_t VERSION_FRLG  = 5;
 
     GameType gameType_ = GameType::ZA;
+
+    // A file version's layout: box count, bytes per slot, slots per box.
+    static bool layoutFor(uint32_t version, int& boxes, int& slotSize, int& perBox);
     int boxCount_ = 32;
     int slotsPerBox_ = 30;
     int slotSize_ = PokeCrypto::SIZE_9PARTY;

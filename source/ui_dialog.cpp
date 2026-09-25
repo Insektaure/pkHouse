@@ -38,6 +38,21 @@ std::vector<std::string> splitLines(const std::string& s) {
 } // anonymous namespace
 
 void UI::drawDialogBackdrop() {
+    // Reused while no frame has been presented since and the screen is the
+    // same one: a blocking operation, or a dialog redrawing for its hold.
+    if (backdrop_ && backdropGen_ == frameGen_ && backdropScreen_ == screen_) {
+        SDL_RenderCopy(renderer_, backdrop_, nullptr, nullptr);
+        return;
+    }
+
+    if (!backdrop_) {
+        backdrop_ = SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_ARGB8888,
+                                      SDL_TEXTUREACCESS_TARGET, SCREEN_W, SCREEN_H);
+    }
+    const bool cached = backdrop_ && SDL_SetRenderTarget(renderer_, backdrop_) == 0;
+
+    // What was on screen, dimmed. Before anything has been shown (loading
+    // profiles at start) there is nothing to dim: just the ground and logo.
     if (screenDrawn_) {
         drawCurrentScreen();
     } else {
@@ -47,6 +62,15 @@ void UI::drawDialogBackdrop() {
         drawLogo(32, 40);
     }
     drawRect(0, 0, SCREEN_W, SCREEN_H, SDL_Color{T().bg.r, T().bg.g, T().bg.b, 190});
+
+    // Without a render target (it should not happen) it was drawn straight to
+    // the screen, and simply is not reused.
+    if (cached) {
+        SDL_SetRenderTarget(renderer_, nullptr);
+        SDL_RenderCopy(renderer_, backdrop_, nullptr, nullptr);
+        backdropGen_ = frameGen_;
+        backdropScreen_ = screen_;
+    }
 }
 
 void UI::drawDialog(DialogIcon icon, const std::string& title, const std::string& body,

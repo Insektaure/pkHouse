@@ -443,5 +443,6 @@
     "dlg_release_save_sub": "It is removed from your save when you next save.",
     "dlg_release_bank_sub": "It is removed from the bank when you next save.",
     "dlg_backup_note": "Only a backup can bring it back.",
-    "dlg_edited": "edited {0}"
+    "dlg_edited": "edited {0}",
+    "loading_banks": "Loading banks…"
 }

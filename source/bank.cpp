@@ -1,4 +1,7 @@
 #include "bank.h"
+#include <vector>
+#include <algorithm>
+#include <cstdio>
 #include <fstream>
 #include <cstring>
 
@@ -45,6 +48,64 @@ bool Bank::isValidFile(const std::string& path) {
     }
 }
 
+bool Bank::layoutFor(uint32_t version, int& boxes, int& slotSize, int& perBox) {
+    switch (version) {
+        case VERSION_FRLG:  boxes = 14; slotSize = PokeCrypto::SIZE_3STORED; perBox = 30; return true;
+        case VERSION_LGPE:  boxes = 40; slotSize = PokeCrypto::SIZE_6PARTY;  perBox = 25; return true;
+        case VERSION_LA:    boxes = 32; slotSize = PokeCrypto::SIZE_8APARTY; perBox = 30; return true;
+        case VERSION_40BOX: boxes = 40; slotSize = PokeCrypto::SIZE_9PARTY;  perBox = 30; return true;
+        case VERSION_32BOX: boxes = 32; slotSize = PokeCrypto::SIZE_9PARTY;  perBox = 30; return true;
+    }
+    return false;
+}
+
+int Bank::countOccupiedInFile(const std::string& path) {
+    FILE* f = std::fopen(path.c_str(), "rb");
+    if (!f) return 0;
+
+    char magic[8];
+    uint32_t version = 0;
+    int boxes = 0, slotSize = 0, perBox = 0;
+    if (std::fread(magic, 1, 8, f) != 8 || std::memcmp(magic, MAGIC, 8) != 0 ||
+        std::fread(&version, 1, 4, f) != 4 || !layoutFor(version, boxes, slotSize, perBox) ||
+        std::fseek(f, HEADER_SIZE, SEEK_SET) != 0) {
+        std::fclose(f);
+        return 0;
+    }
+
+    // All the slots in one read. A short file counts its missing slots as
+    // empty, as load() leaves them.
+    const size_t total = static_cast<size_t>(boxes) * perBox;
+    std::vector<uint8_t> buf(total * slotSize, 0);
+    const size_t got = std::fread(buf.data(), 1, buf.size(), f);
+    std::fclose(f);
+
+    // The same test as before: each slot in a Pokemon with the Bank's default
+    // game type (the list never set one), asked isEmpty().
+    int count = 0;
+    Pokemon pkm;
+    pkm.gameType_ = GameType::ZA;
+    for (size_t i = 0; i < total; i++) {
+        const size_t off = i * slotSize;
+        if (off >= got) break;
+        pkm.data.fill(0);
+        std::memcpy(pkm.data.data(), buf.data() + off, std::min<size_t>(slotSize, got - off));
+        if (!pkm.isEmpty()) count++;
+    }
+    return count;
+}
+
+bool Bank::isSlotEmpty(int box, int slot) const {
+    const int idx = slotIndex(box, slot);
+    if (idx < 0 || idx >= totalSlots()) return true;
+    // getSlot() sets the game type on its copy; do the same test in place.
+    const Pokemon& p = slots_[idx];
+    if (p.gameType_ == gameType_) return p.isEmpty();
+    Pokemon copy = p;
+    copy.gameType_ = gameType_;
+    return copy.isEmpty();
+}
+
 bool Bank::load(const std::string& path) {
     std::ifstream file(path, std::ios::binary);
     if (!file.is_open()) {
@@ -65,29 +126,8 @@ bool Bank::load(const std::string& path) {
     int fileBoxCount;
     int fileSlotSize;
     int fileSlotsPerBox;
-    if (version == VERSION_FRLG) {
-        fileBoxCount = 14;
-        fileSlotSize = PokeCrypto::SIZE_3STORED;
-        fileSlotsPerBox = 30;
-    } else if (version == VERSION_LGPE) {
-        fileBoxCount = 40;
-        fileSlotSize = PokeCrypto::SIZE_6PARTY;
-        fileSlotsPerBox = 25;
-    } else if (version == VERSION_LA) {
-        fileBoxCount = 32;
-        fileSlotSize = PokeCrypto::SIZE_8APARTY;
-        fileSlotsPerBox = 30;
-    } else if (version == VERSION_40BOX) {
-        fileBoxCount = 40;
-        fileSlotSize = PokeCrypto::SIZE_9PARTY;
-        fileSlotsPerBox = 30;
-    } else if (version == VERSION_32BOX) {
-        fileBoxCount = 32;
-        fileSlotSize = PokeCrypto::SIZE_9PARTY;
-        fileSlotsPerBox = 30;
-    } else {
+    if (!layoutFor(version, fileBoxCount, fileSlotSize, fileSlotsPerBox))
         return false; // Unsupported version
-    }
 
     // Use the file's parameters
     boxCount_ = fileBoxCount;

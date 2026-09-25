@@ -443,5 +443,6 @@
     "dlg_release_save_sub": "次に保存したときにセーブから取り除かれます。",
     "dlg_release_bank_sub": "次に保存したときにバンクから取り除かれます。",
     "dlg_backup_note": "元に戻せるのはバックアップだけです。",
-    "dlg_edited": "更新 {0}"
+    "dlg_edited": "更新 {0}",
+    "loading_banks": "バンクを読み込んでいます…"
 }

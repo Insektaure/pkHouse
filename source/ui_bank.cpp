@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <ctime>
 #include <iterator>
+#include <memory>
 #include <sys/statvfs.h>
 
 #include <switch.h>
@@ -66,6 +67,18 @@ Panel UI::bankSelPreviewSource() const {
 }
 
 bool UI::bankSelCanCreate() const { return !bankManager_.isAllMode(); }
+
+BankManager::Progress UI::bankListProgress() {
+    const uint32_t start = SDL_GetTicks();
+    auto lastDraw = std::make_shared<uint32_t>(start);
+    return [this, lastDraw](int done, int total) {
+        const uint32_t now = SDL_GetTicks();
+        if (now - *lastDraw < 30) return;
+        *lastDraw = now;
+        showWorking(i18n::get(StrKey::LoadingBanks), false,
+                    total ? static_cast<float>(done) / total : 1.0f);
+    };
+}
 
 int UI::bankSelRowCount() const {
     return static_cast<int>(bankManager_.list().size()) + (bankSelCanCreate() ? 1 : 0);
@@ -408,16 +421,26 @@ void UI::drawBankStats(Panel src, int x) {
 
     const int boxes = src == Panel::Preview ? (previewBankPath_.empty() ? 0 : previewBank_.boxCount())
                                             : panelBoxCount(src);
+    // Counted straight from the bank in memory; the save goes through the
+    // (cached) slot displays, since reading its slots means decrypting them.
+    const bool isSave = src == Panel::Game && !isDualBankMode();
+    const Bank* bank = src == Panel::Preview ? &previewBank_
+                     : src == Panel::Bank ? &bank_ : (isSave ? nullptr : &bankLeft_);
     int filled = 0, used = 0, total = 0;
     for (int b = 0; b < boxes; b++) {
-        const auto& disp = getSlotDisplays(src, b);
-        total += static_cast<int>(disp.size());
         int n = 0;
-        for (const auto& sd : disp) if (!sd.empty) n++;
+        if (bank) {
+            const int per = bank->slotsPerBox();
+            total += per;
+            for (int s = 0; s < per; s++) if (!bank->isSlotEmpty(b, s)) n++;
+        } else {
+            const auto& disp = getSlotDisplays(src, b);
+            total += static_cast<int>(disp.size());
+            for (const auto& sd : disp) if (!sd.empty) n++;
+        }
         filled += n;
         if (n) used++;
     }
-    const bool isSave = src == Panel::Game && !isDualBankMode();
     tiles[0].label = i18n::get(isSave ? StrKey::StInSave : StrKey::StPokemon);
     tiles[1].label = i18n::get(StrKey::StBoxesUsed);
     tiles[2].label = i18n::get(isSave ? StrKey::StBackup : StrKey::StLastEdited);
@@ -719,7 +742,7 @@ void UI::openSelectedBank() {
     if (isDualBankMode() && bankSelTarget_ == Panel::Bank && leftBankName_.empty()) {
         // In all-banks mode, switch to game-specific bank list for second bank
         if (allBanksMode_)
-            bankManager_.init(basePath_, selectedGame_);
+            bankManager_.init(basePath_, selectedGame_, bankListProgress());
 
         if ((int)bankManager_.list().size() > 1) {
             bankSelTarget_ = Panel::Game;
@@ -819,9 +842,13 @@ void UI::handleDeleteConfirmEvent(const SDL_Event& event) {
                 break;
         }
     }
-    // Letting go early cancels the hold, not the dialog.
-    if (event.type == SDL_CONTROLLERBUTTONUP && event.cbutton.button == SDL_CONTROLLER_BUTTON_B)
+    // Letting go early cancels the hold, not the dialog. Redrawn here: the
+    // picker only redraws on presses, and the fill has to go back to empty.
+    if (event.type == SDL_CONTROLLERBUTTONUP && event.cbutton.button == SDL_CONTROLLER_BUTTON_B
+        && deleteHoldStart_) {
         deleteHoldStart_ = 0;
+        markDirty();
+    }
 }
 
 // Called every loop while the delete dialog is up: finishes a hold that has

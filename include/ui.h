@@ -120,6 +120,14 @@ public:
     // adds a bar, for work that knows how far along it is.
     void showWorking(const std::string& msg, bool writing = false, float progress = -1.0f);
     bool screenDrawn_ = false;   // a screen has been shown: something to dim
+
+    // The dimmed screen behind dialogs, drawn once and reused while nothing
+    // else has been drawn: a blocking operation updating its bar, or a hold
+    // filling, would otherwise redraw the whole screen every time.
+    SDL_Texture* backdrop_ = nullptr;
+    uint32_t     frameGen_ = 0;          // bumped by every presented frame
+    uint32_t     backdropGen_ = ~0u;
+    AppScreen    backdropScreen_ = AppScreen::GameSelector;
     void setAppletMode(bool mode) { appletMode_ = mode; }
     bool isDualBankMode() const { return appletMode_ || allBanksMode_; }
     void run(const std::string& basePath, const std::string& savePath);
@@ -738,6 +746,9 @@ private:
     bool  bankSelCanCreate() const;    // the "New bank" row exists
     int   bankSelRowCount() const;     // banks, plus "New bank" when it exists
     void  drawBankPickerTopBar();
+    // Progress for building a bank list: nothing for the first 30 ms, so a
+    // short list never flashes a dialog, then the bar at most every 30 ms.
+    BankManager::Progress bankListProgress();
     void  drawBankList(int x, int w);
     void  drawBankStats(Panel src, int x);
     void  moveBankCursor(int dir);

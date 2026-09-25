@@ -117,6 +117,7 @@ void UI::shutdown() {
     account_.freeTextures();
     freeSprites();
     freeShapeCache();
+    if (backdrop_) { SDL_DestroyTexture(backdrop_); backdrop_ = nullptr; }
     freeCardPreview();
     closeUiFonts();
     if (fontLarge_) TTF_CloseFont(fontLarge_);
@@ -203,17 +204,8 @@ void UI::showWorking(const std::string& msg, bool writing, float progress) {
     if (!renderer_) return;
     markDirty(); // Force redraw after the operation returns
 
-    // What was on screen, dimmed. Before anything has been shown (loading
-    // profiles at start) there is nothing to dim: just the ground and logo.
-    if (screenDrawn_) {
-        drawCurrentScreen();
-    } else {
-        SDL_SetRenderDrawColor(renderer_, T().bg.r, T().bg.g, T().bg.b, 255);
-        SDL_RenderClear(renderer_);
-        drawRect(0, 0, SCREEN_W, ACCENT_RULE_H, T().accent);
-        drawLogo(32, 40);
-    }
-    drawRect(0, 0, SCREEN_W, SCREEN_H, SDL_Color{T().bg.r, T().bg.g, T().bg.b, 190});
+    // What was on screen, dimmed (cached across the updates of one operation).
+    drawDialogBackdrop();
 
     // The dialog: a spinner badge and the message, then the bar and the
     // warning when they apply.
@@ -540,6 +532,7 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
             SDL_RenderPresent(renderer_);
             dirty_ = false;
             screenDrawn_ = true;
+            frameGen_++;   // what dialogs dim has changed
         }
         SDL_Delay(16);
     }
@@ -652,7 +645,7 @@ void UI::selectGame(GameType game) {
         }
     }
 
-    bankManager_.init(basePath_, game);
+    bankManager_.init(basePath_, game, bankListProgress());
 
     // cards/ is read from as well as written to, so it is created up front like
     // banks/ rather than on first export: someone handed a card needs a folder

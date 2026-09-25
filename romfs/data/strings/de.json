@@ -443,5 +443,6 @@
     "dlg_release_save_sub": "Es wird beim nächsten Speichern aus deinem Spielstand entfernt.",
     "dlg_release_bank_sub": "Es wird beim nächsten Speichern aus der Bank entfernt.",
     "dlg_backup_note": "Nur eine Sicherung kann es zurückholen.",
-    "dlg_edited": "bearbeitet {0}"
+    "dlg_edited": "bearbeitet {0}",
+    "loading_banks": "Banken werden geladen…"
 }

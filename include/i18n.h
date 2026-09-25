@@ -471,6 +471,7 @@ namespace StrKey {
     constexpr const char* ChipAllBanks             = "chip_all_banks";
     constexpr const char* ChipDual                 = "chip_dual";
     constexpr const char* WorkNoClose              = "work_no_close";
+    constexpr const char* LoadingBanks             = "loading_banks";
 
     // dialogs (UI 2.0)
     constexpr const char* DlgOk                    = "dlg_ok";

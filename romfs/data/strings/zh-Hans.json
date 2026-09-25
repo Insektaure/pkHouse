@@ -443,5 +443,6 @@
     "dlg_release_save_sub": "下次保存时会从存档中移除。",
     "dlg_release_bank_sub": "下次保存时会从仓库中移除。",
     "dlg_backup_note": "只有备份能把它找回来。",
-    "dlg_edited": "修改于{0}"
+    "dlg_edited": "修改于{0}",
+    "loading_banks": "正在读取仓库…"
 }

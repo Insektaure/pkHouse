@@ -1336,7 +1336,7 @@ void UI::handleGameSelectorInput(bool& running) {
 
 void UI::enterAllBanksMode() {
     allBanksMode_ = true;
-    bankManager_.initAll(basePath_);
+    bankManager_.initAll(basePath_, bankListProgress());
 
     if (bankManager_.list().empty()) {
         allBanksMode_ = false;

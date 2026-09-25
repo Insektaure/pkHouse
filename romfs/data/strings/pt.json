@@ -443,5 +443,6 @@
     "dlg_release_save_sub": "Ele sai do seu jogo salvo na próxima vez que você salvar.",
     "dlg_release_bank_sub": "Ele sai do banco na próxima vez que você salvar.",
     "dlg_backup_note": "Só um backup pode trazê-lo de volta.",
-    "dlg_edited": "editado {0}"
+    "dlg_edited": "editado {0}",
+    "loading_banks": "Carregando bancos…"
 }

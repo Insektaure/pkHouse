@@ -443,5 +443,6 @@
     "dlg_release_save_sub": "Se quita de tu partida la próxima vez que guardes.",
     "dlg_release_bank_sub": "Se quita del banco la próxima vez que guardes.",
     "dlg_backup_note": "Solo una copia puede recuperarlo.",
-    "dlg_edited": "editado {0}"
+    "dlg_edited": "editado {0}",
+    "loading_banks": "Cargando bancos…"
 }

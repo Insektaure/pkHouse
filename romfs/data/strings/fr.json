@@ -443,5 +443,6 @@
     "dlg_release_save_sub": "Il est retiré de votre sauvegarde à la prochaine sauvegarde.",
     "dlg_release_bank_sub": "Il est retiré de la banque à la prochaine sauvegarde.",
     "dlg_backup_note": "Seule une copie de sécurité peut le récupérer.",
-    "dlg_edited": "modifiée {0}"
+    "dlg_edited": "modifiée {0}",
+    "loading_banks": "Chargement des banques…"
 }

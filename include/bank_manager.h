@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <ctime>
+#include <functional>
 
 struct BankInfo {
     std::string name;       // filename without .bin
@@ -16,8 +17,12 @@ struct BankInfo {
 
 class BankManager {
 public:
-    bool init(const std::string& basePath, GameType game);
-    void refresh();
+    // Reading a bank's fill means loading the whole file, which adds up over
+    // many banks: `progress`, when given, is told (done, total) after each.
+    using Progress = std::function<void(int done, int total)>;
+
+    bool init(const std::string& basePath, GameType game, const Progress& progress = nullptr);
+    void refresh(const Progress& progress = nullptr);
     const std::vector<BankInfo>& list() const;
 
     bool createBank(const std::string& name);
@@ -41,7 +46,7 @@ public:
     };
 
     // Scan all game folders and build a combined bank list
-    bool initAll(const std::string& basePath);
+    bool initAll(const std::string& basePath, const Progress& progress = nullptr);
     bool isAllMode() const { return allMode_; }
 
     // Visual row helpers for grouped display (headers + bank entries)

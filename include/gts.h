@@ -54,6 +54,11 @@ struct Entry {
     std::string otName;
     std::string note;
     std::string legality;            // pending, legal, illegal, error
+
+    // Why it was rejected. Sent only for the verdicts
+    // where there is something to say - a legal Pokemon's report says "Legal!"
+    // and sixty of those would be most of a page of JSON saying nothing.
+    std::string legalityReport;
     int         downloads = 0;
     uint32_t    created   = 0;
 };

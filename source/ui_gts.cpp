@@ -713,37 +713,83 @@ void UI::drawGtsBrowseFrame() {
         drawText(verdict, gridX, infoY, verdictColor, fontSmall_);
         const int factsX = gridX + getTextEntry(verdict, fontSmall_, verdictColor).w + 18;
 
-        std::string facts;
-        auto add = [&facts](const std::string& part) {
-            if (part.empty()) return;
-            if (!facts.empty()) facts += "  -  ";
-            facts += part;
-        };
-
-        // Which game it can ever be imported into: the hard gate, since a card
-        // only goes back into the family it came from.
-        if (e.gameKnown) add(bankGroupNameOf(e.game));
-
-        if (!e.egg) {
-            add(NatureName::get(e.nature));
-            if (e.ability != 0) add(AbilityName::get(e.ability));
-        }
-        if (e.ivTotal > 0) add(i18n::get(StrKey::IVs) + " " + std::to_string(e.ivTotal) + "/186");
-        if (e.evTotal > 0) add(i18n::get(StrKey::EVs) + " " + std::to_string(e.evTotal) + "/510");
-        if (e.heldItem != 0) add("@ " + ItemName::get(e.heldItem));
-
-        drawText(facts, factsX, infoY, T().textDim, fontSmall_);
-
-        // The depositor's own words when there are any, and how many people
-        // have kept it when there are not. Neither is decisive, and they never
-        // both need to be on screen at once.
+        // What sits on the right, measured now so the middle knows how much
+        // room it actually has rather than reserving a guess.
         const bool hasNote = !e.note.empty();
         const std::string right = hasNote
             ? e.note
             : i18n::fmt(StrKey::GtsDownloads, std::to_string(e.downloads));
         const SDL_Color rightColor = hasNote ? T().text : T().textDim;
-        const auto& te = getTextEntry(right, fontSmall_, rightColor);
-        drawText(right, gridX + gridW - te.w, infoY, rightColor, fontSmall_);
+        const int rightW = getTextEntry(right, fontSmall_, rightColor).w;
+        const int room = gridX + gridW - rightW - 20 - factsX;
+
+        std::string facts;
+        SDL_Color factsColor = T().textDim;
+
+        if (!e.legalityReport.empty()) {
+            // A rejected Pokemon's spread is beside the point; why it was
+            // rejected is the whole of what you need. Writes over
+            // several lines, so it is flattened onto the one line there is.
+            facts.reserve(e.legalityReport.size());
+            for (char ch : e.legalityReport) {
+                if (ch == '\n' || ch == '\r' || ch == '\t') ch = ' ';
+                if (ch == ' ' && (facts.empty() || facts.back() == ' ')) continue;
+                facts.push_back(ch);
+            }
+            while (!facts.empty() && facts.back() == ' ') facts.pop_back();
+            factsColor = T().red;
+
+            // Cut to fit, measured rather than counted: the font is
+            // proportional, so a character count is wrong in every language.
+            //
+            // TTF_SizeUTF8 and not getTextEntry, because getTextEntry caches a
+            // texture per string it is asked about and trimming a long report a
+            // character at a time would leave hundreds of them behind.
+            int w = 0, h = 0;
+            if (TTF_SizeUTF8(fontSmall_, facts.c_str(), &w, &h) == 0 && w > room && room > 0) {
+                // Proportional first guess, so the walk back is a few steps and
+                // not a few hundred.
+                size_t guess = facts.size() * static_cast<size_t>(room)
+                                            / static_cast<size_t>(w);
+                if (guess < facts.size()) facts.resize(guess);
+
+                for (;;) {
+                    // Never leave half a UTF-8 character behind.
+                    while (!facts.empty() && (facts.back() & 0xC0) == 0x80)
+                        facts.pop_back();
+                    if (facts.empty()) break;
+                    if (TTF_SizeUTF8(fontSmall_, (facts + "...").c_str(), &w, &h) != 0) break;
+                    if (w <= room) break;
+                    facts.pop_back();
+                }
+                facts += "...";
+            }
+        } else {
+            auto add = [&facts](const std::string& part) {
+                if (part.empty()) return;
+                if (!facts.empty()) facts += "  -  ";
+                facts += part;
+            };
+
+            // Which game it can ever be imported into: the hard gate, since a
+            // card only goes back into the family it came from.
+            if (e.gameKnown) add(bankGroupNameOf(e.game));
+
+            if (!e.egg) {
+                add(NatureName::get(e.nature));
+                if (e.ability != 0) add(AbilityName::get(e.ability));
+            }
+            if (e.ivTotal > 0) add(i18n::get(StrKey::IVs) + " " + std::to_string(e.ivTotal) + "/186");
+            if (e.evTotal > 0) add(i18n::get(StrKey::EVs) + " " + std::to_string(e.evTotal) + "/510");
+            if (e.heldItem != 0) add("@ " + ItemName::get(e.heldItem));
+        }
+
+        drawText(facts, factsX, infoY, factsColor, fontSmall_);
+
+        // The depositor's own words when there are any, how many people have
+        // kept it when there are not. Neither is decisive, and they never both
+        // need to be on screen at once.
+        drawText(right, gridX + gridW - rightW, infoY, rightColor, fontSmall_);
     }
 
     if (gtsDetail_) {

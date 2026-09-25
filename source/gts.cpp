@@ -378,6 +378,7 @@ Gts::Entry parseEntry(const json& j) {
     e.note     = jsonStr(j, "note");
     e.legality = jsonStr(j, "legality");
     if (e.legality.empty()) e.legality = "pending";
+    e.legalityReport = jsonStr(j, "legality_report");
 
     int game = jsonInt(j, "game", -1);
     if (game >= 0 && game < GAME_TYPE_COUNT) {

@@ -342,5 +342,17 @@
     "info_empty_slot": "빈 칸",
     "info_ev_total": "노력치 {0} / 510",
     "info_perfect_ivs": "{0} × 31",
-    "info_ot": "어버이 {0} {1}"
+    "info_ot": "어버이 {0} {1}",
+    "tab_save": "세이브",
+    "tab_bank": "뱅크",
+    "ov_pokemon": "마리",
+    "ov_shiny": "이로치",
+    "ov_free_slots": "빈 칸",
+    "legend_pokemon": "포켓몬",
+    "legend_shiny": "이로치",
+    "legend_alpha": "우두머리",
+    "hint_go_to_box": "박스로 이동",
+    "hint_navigate": "탐색",
+    "hint_save_bank": "세이브 / 뱅크",
+    "hint_left_right": "왼쪽 / 오른쪽"
 }

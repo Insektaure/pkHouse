@@ -43,6 +43,24 @@ void UI::handleBoxViewInput(const SDL_Event& event) {
             int16_t ly = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTY);
             updateStick(lx, ly);
         }
+        // ZL / ZR flip between the two tabs. Edge-triggered, so the trigger
+        // that opened the overview does nothing until it is pressed again.
+        if (event.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERLEFT) {
+            bool pressed = event.caxis.value > TRIGGER_DEADZONE;
+            if (pressed && !zlPressed_) {
+                switchBoxViewPanel(Panel::Game);
+                markDirty();
+            }
+            zlPressed_ = pressed;
+        }
+        if (event.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERRIGHT) {
+            bool pressed = event.caxis.value > TRIGGER_DEADZONE;
+            if (pressed && !zrPressed_) {
+                switchBoxViewPanel(Panel::Bank);
+                markDirty();
+            }
+            zrPressed_ = pressed;
+        }
     }
     // Can rename if viewing a bank panel (always in applet, only Bank panel in normal)
     auto canRenameBox = [&]() -> Bank* {
@@ -1731,6 +1749,16 @@ void UI::openBoxView(Panel panel) {
     if (showDetail_ || showMenu_ || holding_ || yHeld_)
         return;
     showBoxView_ = true;
+    boxViewPanel_ = panel;
+    boxViewCursor_ = (panel == Panel::Game) ? gameBox_ : bankBox_;
+}
+
+void UI::switchBoxViewPanel(Panel panel) {
+    if (panel == boxViewPanel_)
+        return;
+    // Same rule as opening it with ZL: no left bank, nothing to show.
+    if (panel == Panel::Game && isDualBankMode() && leftBankName_.empty())
+        return;
     boxViewPanel_ = panel;
     boxViewCursor_ = (panel == Panel::Game) ? gameBox_ : bankBox_;
 }

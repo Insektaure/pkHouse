@@ -342,5 +342,17 @@
     "info_empty_slot": "Emplacement vide",
     "info_ev_total": "EV {0} / 510",
     "info_perfect_ivs": "{0} × 31",
-    "info_ot": "DO {0} {1}"
+    "info_ot": "DO {0} {1}",
+    "tab_save": "Sauvegarde",
+    "tab_bank": "Banque",
+    "ov_pokemon": "Pokémon",
+    "ov_shiny": "chromatiques",
+    "ov_free_slots": "places libres",
+    "legend_pokemon": "Pokémon",
+    "legend_shiny": "Chromatique",
+    "legend_alpha": "Baron",
+    "hint_go_to_box": "Aller a la boite",
+    "hint_navigate": "Naviguer",
+    "hint_save_bank": "Sauvegarde / Banque",
+    "hint_left_right": "Gauche / Droite"
 }

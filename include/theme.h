@@ -92,6 +92,11 @@ struct Theme {
     SDL_Color statusWarn;      // "unsaved changes"
     SDL_Color alphaMark;
     SDL_Color badgeBg;         // "3 x 31" perfect-IV pill
+
+    // Box overview mini grid, one dot per slot
+    SDL_Color miniDotEmpty;
+    SDL_Color miniDotFull;
+    SDL_Color eggMark;
 };
 
 // One theme for now. The table and the selector stay so that more can be

@@ -378,6 +378,20 @@ namespace StrKey {
     constexpr const char* InfoPerfectIvs           = "info_perfect_ivs";
     constexpr const char* InfoOt                   = "info_ot";
 
+    // ui_render.cpp - box overview (UI 2.0)
+    constexpr const char* TabSave                  = "tab_save";
+    constexpr const char* TabBank                  = "tab_bank";
+    constexpr const char* OvPokemon                = "ov_pokemon";
+    constexpr const char* OvShiny                  = "ov_shiny";
+    constexpr const char* OvFreeSlots              = "ov_free_slots";
+    constexpr const char* LegendPokemon            = "legend_pokemon";
+    constexpr const char* LegendShiny              = "legend_shiny";
+    constexpr const char* LegendAlpha              = "legend_alpha";
+    constexpr const char* HintGoToBox              = "hint_go_to_box";
+    constexpr const char* HintNavigate             = "hint_navigate";
+    constexpr const char* HintSaveBank             = "hint_save_bank";
+    constexpr const char* HintLeftRight            = "hint_left_right";
+
     // ui_gts.cpp - the online GTS
     constexpr const char* GtsTitle             = "gts_title";
     constexpr const char* GtsSubtitle          = "gts_subtitle";

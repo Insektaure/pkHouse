@@ -342,5 +342,17 @@
     "info_empty_slot": "Leerer Platz",
     "info_ev_total": "FP {0} / 510",
     "info_perfect_ivs": "{0} × 31",
-    "info_ot": "OT {0} {1}"
+    "info_ot": "OT {0} {1}",
+    "tab_save": "Spielstand",
+    "tab_bank": "Bank",
+    "ov_pokemon": "Pokémon",
+    "ov_shiny": "schillernd",
+    "ov_free_slots": "freie Plätze",
+    "legend_pokemon": "Pokémon",
+    "legend_shiny": "Schillernd",
+    "legend_alpha": "Alpha",
+    "hint_go_to_box": "Zur Box",
+    "hint_navigate": "Navigieren",
+    "hint_save_bank": "Spielstand / Bank",
+    "hint_left_right": "Links / Rechts"
 }

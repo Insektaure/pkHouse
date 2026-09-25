@@ -247,16 +247,22 @@ private:
     // Legacy status bar height, still used by the screens not yet redone.
     static constexpr int STATUS_BAR_H = 40;
 
-    // Box view overlay layout
-    static constexpr int BV_COLS         = 8;
-    static constexpr int BV_CELL_W       = 140;
-    static constexpr int BV_CELL_H       = 32;
-    static constexpr int BV_CELL_PAD     = 4;
+    // Box overview (ZL/ZR), UI 2.0. Eight cards a row; with more than four
+    // rows (40-box games) the cards get shorter so every box stays on screen.
+    static constexpr int BV_COLS       = 8;
+    static constexpr int BV_TOP        = 76;
+    static constexpr int BV_BOTTOM     = 640;
+    static constexpr int BV_CARD_W     = 141;
+    static constexpr int BV_CARD_H     = 131;
+    static constexpr int BV_ROW_GAP    = 13;
+    static constexpr int BV_DOT_PITCH  = 14;   // 10px dot + 4px gap, at full height
+
+    // Preview of the highlighted box, with sprites
     static constexpr int BV_MINI_SPRITE  = 32;
     static constexpr int BV_MINI_CELL    = 36;
-    static constexpr int BV_MINI_PAD     = 2;
-    static constexpr int BV_PREVIEW_PAD  = 8;
-    static constexpr int BV_PREVIEW_HDR  = 22;
+    static constexpr int BV_MINI_PAD     = 3;
+    static constexpr int BV_PREVIEW_PAD  = 10;
+    static constexpr int BV_PREVIEW_HDR  = 30;
 
     // Theme
     int themeIndex_ = 0;
@@ -635,7 +641,14 @@ private:
     void drawCardListPopup();
     void drawHeldOverlay();
     void drawBoxViewOverlay();
-    void drawBoxPreview(int boxIdx, int anchorX, int anchorY);
+    void drawBoxViewTabs();
+    void drawBoxViewStats();
+    int  drawBoxViewLegend(bool measureOnly);
+    SDL_Rect boxCardRect(int idx, int totalBoxes) const;
+    void drawBoxCard(int idx, const SDL_Rect& r, bool isCursor);
+    void drawBoxPreview(int boxIdx, const SDL_Rect& card);
+    int  panelBoxCount(Panel panel) const;
+    std::string panelBoxName(Panel panel, int box) const;
     void drawRadarChart(int cx, int cy, int radius, const int values[6], int maxVal);
     // --- Box view (UI 2.0) ---
     void drawTopBar();
@@ -685,8 +698,10 @@ private:
 
     // The 2.0 footer: a rule, hints as key caps, version on the right. The old
     // drawHintBar stays for the screens that have not been redone.
+    // `rightReserve` < 0 draws the version on the right; otherwise that much
+    // room is left free there for the caller to fill.
     void drawFooterBar(const ButtonHint* hints, int count,
-                       const std::string& message = std::string());
+                       const std::string& message = std::string(), int rightReserve = -1);
     int  drawFooterKey(int x, int cy, const char* button, bool measureOnly);
 
     // Input handling
@@ -769,6 +784,7 @@ private:
     void moveBoxViewCursor(int dx, int dy);
     void openBoxView(Panel panel);
     void closeBoxView(bool navigate);
+    void switchBoxViewPanel(Panel panel);
 
     // Dynamic grid: LGPE has 5 columns (5x5), others have 6 (6x5)
     int gridCols() const { return isLGPE(selectedGame_) ? 5 : 6; }

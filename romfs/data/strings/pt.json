@@ -342,5 +342,17 @@
     "info_empty_slot": "Espaço vazio",
     "info_ev_total": "EV {0} / 510",
     "info_perfect_ivs": "{0} × 31",
-    "info_ot": "TO {0} {1}"
+    "info_ot": "TO {0} {1}",
+    "tab_save": "Jogo salvo",
+    "tab_bank": "Banco",
+    "ov_pokemon": "Pokémon",
+    "ov_shiny": "brilhantes",
+    "ov_free_slots": "espaços livres",
+    "legend_pokemon": "Pokémon",
+    "legend_shiny": "Brilhante",
+    "legend_alpha": "Alfa",
+    "hint_go_to_box": "Ir para box",
+    "hint_navigate": "Navegar",
+    "hint_save_bank": "Jogo salvo / Banco",
+    "hint_left_right": "Esquerda / Direita"
 }

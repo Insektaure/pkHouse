@@ -342,5 +342,17 @@
     "info_empty_slot": "空位",
     "info_ev_total": "努力值 {0} / 510",
     "info_perfect_ivs": "{0} × 31",
-    "info_ot": "初訓家 {0} {1}"
+    "info_ot": "初訓家 {0} {1}",
+    "tab_save": "存檔",
+    "tab_bank": "倉庫",
+    "ov_pokemon": "隻",
+    "ov_shiny": "異色",
+    "ov_free_slots": "空位",
+    "legend_pokemon": "寶可夢",
+    "legend_shiny": "異色",
+    "legend_alpha": "頭目",
+    "hint_go_to_box": "前往盒子",
+    "hint_navigate": "導覽",
+    "hint_save_bank": "存檔 / 倉庫",
+    "hint_left_right": "左 / 右"
 }

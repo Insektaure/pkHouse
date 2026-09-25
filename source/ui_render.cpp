@@ -424,7 +424,9 @@ const std::vector<UI::SlotDisplay>& UI::getSlotDisplays(Panel panel, int box) {
         return it->second;
 
     // Cap cache size
-    if (slotDisplayCache_.size() >= 8)
+    // Big enough for every box of both panels, so the overview - which reads
+    // them all - does not evict the boxes the main view is showing.
+    if (slotDisplayCache_.size() >= 128)
         slotDisplayCache_.clear();
 
     int slots = maxSlots();
@@ -919,17 +921,20 @@ int UI::drawFooterKey(int x, int cy, const char* button, bool measureOnly) {
     return w;
 }
 
-void UI::drawFooterBar(const ButtonHint* hints, int count, const std::string& message) {
+void UI::drawFooterBar(const ButtonHint* hints, int count, const std::string& message,
+                       int rightReserve) {
     drawRect(0, FOOTER_Y, SCREEN_W, FOOTER_H, T().bg);
     drawRect(0, FOOTER_Y, SCREEN_W, 1, T().panelBorder);
     const int cy = FOOTER_Y + FOOTER_H / 2;
 
-    // Version, right-aligned; measured first so the hints stop short of it.
-    TTF_Font* fVerName = uiFont(13, true);
-    TTF_Font* fVer     = uiFont(13);
-    const std::string ver = " v" APP_VERSION;
-    const int verW = measureTextTracked("PKHOUSE", fVerName, 2) + textWidth(ver, fVer);
-    {
+    // Version, right-aligned, unless the caller has its own use for that end
+    // of the bar. Measured first either way so the hints stop short of it.
+    int verW = rightReserve;
+    if (rightReserve < 0) {
+        TTF_Font* fVerName = uiFont(13, true);
+        TTF_Font* fVer     = uiFont(13);
+        const std::string ver = " v" APP_VERSION;
+        verW = measureTextTracked("PKHOUSE", fVerName, 2) + textWidth(ver, fVer);
         int vx = SCREEN_W - 32 - verW;
         const int vy = cy - TTF_FontHeight(fVer) / 2;
         vx += drawTextTracked("PKHOUSE", vx, vy, T().textMuted, fVerName, 2);
@@ -967,6 +972,13 @@ void UI::drawFrame() {
         gameBox_ = cursor_.box;
     else
         bankBox_ = cursor_.box;
+
+    // The overview covers the whole screen, and no other popup can be opened
+    // on top of it, so the box view underneath would only be painted over.
+    if (showBoxView_) {
+        drawBoxViewOverlay();
+        return;
+    }
 
     drawTopBar();
     drawBoxPanel(Panel::Game, cursor_.panel == Panel::Game);
@@ -1042,11 +1054,6 @@ void UI::drawFrame() {
     // Menu popup overlay
     if (showMenu_) {
         drawMenuPopup();
-    }
-
-    // Box view overlay
-    if (showBoxView_) {
-        drawBoxViewOverlay();
     }
 
     // Search popups
@@ -2212,221 +2219,283 @@ void UI::drawAboutPopup() {
     drawTextCentered(i18n::get(StrKey::PressMinusBClose), cx, py + POP_H - 22, T().textDim, fontSmall_);
 }
 
-void UI::drawBoxViewOverlay() {
-    // Full-screen dark overlay
-    drawRect(0, 0, SCREEN_W, SCREEN_H, T().overlay);
+// --- Box overview (ZL/ZR), UI 2.0 -------------------------------------------------
+//
+// Laid out after external/UI_2.0 "Box overview (ZL ZR)": the save and the bank
+// as two tabs, every box of the one on show as a card with a dot per slot, and
+// the sprite preview of the highlighted box on top.
 
-    int totalBoxes;
-    if (boxViewPanel_ == Panel::Game)
-        totalBoxes = (isDualBankMode()) ? bankLeft_.boxCount() : save_.boxCount();
-    else
-        totalBoxes = bank_.boxCount();
-    int usedRows = (totalBoxes + BV_COLS - 1) / BV_COLS;
-
-    // Popup dimensions
-    int gridW = BV_COLS * BV_CELL_W + (BV_COLS - 1) * BV_CELL_PAD;
-    int gridH = usedRows * BV_CELL_H + (usedRows - 1) * BV_CELL_PAD;
-    int popW = gridW + 40;
-    int popH = gridH + 100;
-
-    int popX = (SCREEN_W - popW) / 2;
-    int popY = (SCREEN_H - popH) / 2;
-
-    // Popup background
-    drawRect(popX, popY, popW, popH, T().panelBg);
-    drawRectOutline(popX, popY, popW, popH, T().cursor, 2);
-
-    // Title
-    const std::string& title2 = (boxViewPanel_ == Panel::Game)
-        ? (isDualBankMode() ? i18n::get(StrKey::BoxViewLeft) : i18n::get(StrKey::BoxViewSave))
-        : i18n::get(StrKey::BoxViewBank);
-    const char* title = title2.c_str();
-    drawTextCentered(title, popX + popW / 2, popY + 15, T().text, font_);
-
-    // Subtitle: bank file name or profile | game
-    std::string subtitle;
-    if (boxViewPanel_ == Panel::Game) {
-        if (isDualBankMode())
-            subtitle = leftBankName_;
-        else if (selectedProfile_ >= 0 && selectedProfile_ < account_.profileCount())
-            subtitle = account_.profiles()[selectedProfile_].nickname + " | " + gameDisplayNameOf(selectedGame_);
-        else
-            subtitle = gameDisplayNameOf(selectedGame_);
-    } else {
-        subtitle = activeBankName_;
-    }
-    if (!subtitle.empty())
-        drawTextCentered(subtitle, popX + popW / 2, popY + 38, T().textDim, fontSmall_);
-
-    // Grid of box cells
-    int gridStartX = popX + 20;
-    int gridStartY = popY + 55;
-    int activeBox = (boxViewPanel_ == Panel::Game) ? gameBox_ : bankBox_;
-
-    int cursorCellX = 0, cursorCellY = 0;
-
-    for (int i = 0; i < totalBoxes; i++) {
-        int col = i % BV_COLS;
-        int row = i / BV_COLS;
-        int cellX = gridStartX + col * (BV_CELL_W + BV_CELL_PAD);
-        int cellY = gridStartY + row * (BV_CELL_H + BV_CELL_PAD);
-
-        // Cell background — highlight the currently-active box
-        SDL_Color bg = (i == activeBox) ? T().slotFull : T().slotEmpty;
-        drawRect(cellX, cellY, BV_CELL_W, BV_CELL_H, bg);
-
-        // Search highlight: outline boxes that contain matches
-        if (searchHighlightActive_) {
-            bool hasMatch = false;
-            int slots = maxSlots();
-            for (int s = 0; s < slots && !hasMatch; s++)
-                hasMatch = isSearchMatch(boxViewPanel_, i, s);
-            if (hasMatch)
-                drawRectOutline(cellX + 1, cellY + 1, BV_CELL_W - 2, BV_CELL_H - 2, T().searchMatch, 2);
-        }
-
-        // Cursor outline
-        if (i == boxViewCursor_) {
-            drawRectOutline(cellX, cellY, BV_CELL_W, BV_CELL_H, T().cursor, 2);
-            cursorCellX = cellX;
-            cursorCellY = cellY;
-        }
-
-        // Box label
-        std::string boxName;
-        if (boxViewPanel_ == Panel::Game)
-            boxName = (isDualBankMode()) ? bankLeft_.getBoxName(i) : save_.getBoxName(i);
-        else
-            boxName = bank_.getBoxName(i);
-
-        std::string label = boxName;
-        if (label.length() > 16)
-            label = label.substr(0, 15) + ".";
-
-        // Box-state icon on the left of the label
-        const auto& disp = getSlotDisplays(boxViewPanel_, i);
-        int filled = 0;
-        for (const auto& sd : disp) if (!sd.empty) ++filled;
-        int slots = maxSlots();
-        SDL_Texture* stateIcon = iconBoxEmpty_;
-        if (filled >= slots && slots > 0) stateIcon = iconBoxFull_;
-        else if (filled > 0)              stateIcon = iconBoxNonEmpty_;
-
-        const int iconSize = 22;
-        const int iconPadX = 6;
-        int iconX = cellX + iconPadX;
-        int iconY = cellY + (BV_CELL_H - iconSize) / 2;
-        if (stateIcon) {
-            SDL_Rect dst{ iconX, iconY, iconSize, iconSize };
-            SDL_RenderCopy(renderer_, stateIcon, nullptr, &dst);
-        }
-
-        int textLeft = iconX + iconSize + 4;
-        int textRight = cellX + BV_CELL_W - 4;
-        drawTextCentered(label, (textLeft + textRight) / 2, cellY + BV_CELL_H / 2,
-                         T().text, fontSmall_);
-    }
-
-    // Footer hint
-    bool canRename = isDualBankMode() || (boxViewPanel_ == Panel::Bank);
-    const std::string& footerStr = canRename
-        ? i18n::get(StrKey::BoxViewFooterRename)
-        : i18n::get(StrKey::BoxViewFooter);
-    const char* footer = footerStr.c_str();
-    drawTextCentered(footer, popX + popW / 2, popY + popH - 15, T().textDim, fontSmall_);
-
-    // Box preview for cursor box (drawn last so it appears on top)
-    drawBoxPreview(boxViewCursor_, cursorCellX, cursorCellY);
+int UI::panelBoxCount(Panel panel) const {
+    if (panel == Panel::Bank) return bank_.boxCount();
+    return isDualBankMode() ? bankLeft_.boxCount() : save_.boxCount();
 }
 
-void UI::drawBoxPreview(int boxIdx, int anchorX, int anchorY) {
-    int cols = gridCols();
-    int rows = 5;
+std::string UI::panelBoxName(Panel panel, int box) const {
+    if (panel == Panel::Bank) return bank_.getBoxName(box);
+    return isDualBankMode() ? bankLeft_.getBoxName(box) : save_.getBoxName(box);
+}
 
-    // Preview panel dimensions
-    int previewInnerW = cols * BV_MINI_CELL + (cols - 1) * BV_MINI_PAD;
-    int previewInnerH = rows * BV_MINI_CELL + (rows - 1) * BV_MINI_PAD;
-    int previewW = previewInnerW + 2 * BV_PREVIEW_PAD;
-    int previewH = previewInnerH + 2 * BV_PREVIEW_PAD + BV_PREVIEW_HDR;
+SDL_Rect UI::boxCardRect(int idx, int totalBoxes) const {
+    const int rows = std::max(1, (totalBoxes + BV_COLS - 1) / BV_COLS);
+    const int cardH = std::min(BV_CARD_H, (BV_BOTTOM - BV_TOP - (rows - 1) * BV_ROW_GAP) / rows);
+    const int col = idx % BV_COLS, row = idx / BV_COLS;
+    // Columns spread edge to edge over the same width as the info strip.
+    const int x = INFO_X + col * (INFO_W - BV_CARD_W) / (BV_COLS - 1);
+    const int y = BV_TOP + row * (cardH + BV_ROW_GAP);
+    return {x, y, BV_CARD_W, cardH};
+}
 
-    // Position: prefer below the cell
-    int prevX = anchorX;
-    int prevY = anchorY + BV_CELL_H + 6;
+void UI::drawBoxViewTabs() {
+    constexpr int X = 32, Y = 11, H = 50, PAD = 5, TAB_H = H - 2 * PAD;
+    constexpr int CHIP_W = 28, CHIP_H = 20;
+    TTF_Font* fTab  = uiFont(15, true);
+    TTF_Font* fChip = uiFont(12, true);
 
-    // Clamp to screen bounds
-    if (prevX + previewW > SCREEN_W - 4)
-        prevX = SCREEN_W - 4 - previewW;
-    if (prevX < 4)
-        prevX = 4;
-    if (prevY + previewH > SCREEN_H - 4)
-        prevY = anchorY - previewH - 6; // flip above
-    if (prevY < 4)
-        prevY = 4;
+    const std::string dot = " \xc2\xb7 ";
+    std::string labels[2];
+    if (isDualBankMode()) {
+        labels[0] = i18n::get(StrKey::TabBank) + dot
+                  + (leftBankName_.empty() ? i18n::get(StrKey::NoBankLoaded) : leftBankName_);
+    } else {
+        labels[0] = i18n::get(StrKey::TabSave) + dot + gameDisplayNameOf(selectedGame_);
+    }
+    labels[1] = i18n::get(StrKey::TabBank) + dot + activeBankName_;
+    for (auto& l : labels) l = fitText(l, fTab, 260);
 
-    // Background
-    drawRect(prevX, prevY, previewW, previewH, T().boxPreviewBg);
-    drawRectOutline(prevX, prevY, previewW, previewH, T().textDim, 1);
+    // Tab widths: 12 | chip | 10 | label | 16, mirrored for the right-hand tab.
+    int tabW[2];
+    for (int i = 0; i < 2; i++)
+        tabW[i] = 12 + CHIP_W + 10 + textWidth(labels[i], fTab) + 16;
+    const int W = PAD + tabW[0] + PAD + tabW[1] + PAD;
 
-    // Box name header
-    std::string boxName;
-    if (boxViewPanel_ == Panel::Game)
-        boxName = (isDualBankMode()) ? bankLeft_.getBoxName(boxIdx) : save_.getBoxName(boxIdx);
-    else
-        boxName = bank_.getBoxName(boxIdx);
-    drawTextCentered(boxName, prevX + previewW / 2,
-                     prevY + BV_PREVIEW_HDR / 2 + 2, T().boxName, fontSmall_);
+    fillRounded(X, Y, W, H, 12, T().panelBg);
+    strokeRounded(X, Y, W, H, 12, 1, T().panelBorder);
 
-    // Mini sprite grid
-    int gridX = prevX + BV_PREVIEW_PAD;
-    int gridY = prevY + BV_PREVIEW_HDR;
+    int tx = X + PAD;
+    for (int i = 0; i < 2; i++) {
+        const bool active = (i == 0) == (boxViewPanel_ == Panel::Game);
+        const int ty = Y + PAD, tcy = ty + TAB_H / 2;
+        if (active)
+            fillRounded(tx, ty, tabW[i], TAB_H, 9, T().accent);
 
-    const auto& prevDisplays = getSlotDisplays(boxViewPanel_, boxIdx);
+        const SDL_Color labelColor = active ? T().keyCapText : T().textDim;
+        const SDL_Color chipBg     = active ? T().bg : T().keyCap;
+        const SDL_Color chipText   = active ? T().text : T().keyCapText;
+        const char* chip = i == 0 ? "ZL" : "ZR";
 
-    for (int r = 0; r < rows; r++) {
-        for (int c = 0; c < cols; c++) {
-            int slot = r * cols + c;
-            int sx = gridX + c * (BV_MINI_CELL + BV_MINI_PAD);
-            int sy = gridY + r * (BV_MINI_CELL + BV_MINI_PAD);
+        // The chip sits on the outer side of each tab, like the triggers.
+        const int chipX = i == 0 ? tx + 12 : tx + tabW[i] - 12 - CHIP_W;
+        const int labelX = i == 0 ? chipX + CHIP_W + 10 : tx + 16;
+        fillRounded(chipX, tcy - CHIP_H / 2, CHIP_W, CHIP_H, 5, chipBg);
+        drawTextCentered(chip, chipX + CHIP_W / 2, tcy, chipText, fChip);
+        drawText(labels[i], labelX, tcy - TTF_FontHeight(fTab) / 2, labelColor, fTab);
+        tx += tabW[i] + PAD;
+    }
+}
 
-            const auto& psd = prevDisplays[slot];
+void UI::drawBoxViewStats() {
+    int total = 0, shiny = 0, free = 0;
+    const int boxes = panelBoxCount(boxViewPanel_);
+    for (int b = 0; b < boxes; b++) {
+        for (const auto& sd : getSlotDisplays(boxViewPanel_, b)) {
+            if (sd.empty) { free++; continue; }
+            total++;
+            if (sd.shiny && !sd.egg) shiny++;
+        }
+    }
 
-            if (psd.empty) {
-                drawRect(sx, sy, BV_MINI_CELL, BV_MINI_CELL, T().miniCellEmpty);
-            } else {
-                drawRect(sx, sy, BV_MINI_CELL, BV_MINI_CELL, T().miniCellFull);
+    // Right to left: "792 free slots", "* 8 shiny", "168 Pokemon".
+    TTF_Font* fNum  = uiFont(15, true);
+    TTF_Font* fWord = uiFont(15);
+    const int baseline = 42;
+    int x = SCREEN_W - 32;
+    auto segment = [&](int value, const std::string& word, bool star) {
+        const std::string num = std::to_string(value);
+        const std::string w = " " + word;
+        x -= textWidth(w, fWord);
+        drawText(w, x, baseline - TTF_FontAscent(fWord), T().textDim, fWord);
+        x -= textWidth(num, fNum);
+        drawText(num, x, baseline - TTF_FontAscent(fNum), T().text, fNum);
+        if (star && iconShiny_) {
+            constexpr int ICON = 13;
+            x -= ICON + 6;
+            SDL_SetTextureColorMod(iconShiny_, T().accent.r, T().accent.g, T().accent.b);
+            SDL_Rect dst = {x, baseline - ICON, ICON, ICON};
+            SDL_RenderCopy(renderer_, iconShiny_, nullptr, &dst);
+            SDL_SetTextureColorMod(iconShiny_, 255, 255, 255);
+        }
+        x -= 22;
+    };
+    segment(free,  i18n::get(StrKey::OvFreeSlots), false);
+    segment(shiny, i18n::get(StrKey::OvShiny),     true);
+    segment(total, i18n::get(StrKey::OvPokemon),   false);
+}
 
-                SDL_Texture* sprite = nullptr;
-                if (psd.egg) {
-                    sprite = getSprite(0);
-                } else if (psd.shiny) {
-                    sprite = getShinySprite(psd.species, psd.form);
-                    if (!sprite) sprite = getSprite(psd.species, psd.form);
-                } else {
-                    sprite = getSprite(psd.species, psd.form);
-                }
-                if (sprite) {
-                    int texW, texH;
-                    SDL_QueryTexture(sprite, nullptr, nullptr, &texW, &texH);
-                    float scale = std::min(float(BV_MINI_SPRITE) / texW,
-                                           float(BV_MINI_SPRITE) / texH);
-                    int dstW = static_cast<int>(texW * scale);
-                    int dstH = static_cast<int>(texH * scale);
-                    SDL_Rect dst = {
-                        sx + (BV_MINI_CELL - dstW) / 2,
-                        sy + (BV_MINI_CELL - dstH) / 2,
-                        dstW, dstH
-                    };
-                    SDL_RenderCopy(renderer_, sprite, nullptr, &dst);
-                }
+int UI::drawBoxViewLegend(bool measureOnly) {
+    struct Item { SDL_Color color; const char* key; };
+    const Item items[] = {
+        {T().miniDotFull, StrKey::LegendPokemon},
+        {T().accent,      StrKey::LegendShiny},
+        {T().alphaMark,   StrKey::LegendAlpha},
+        {T().eggMark,     StrKey::Egg},
+    };
+    TTF_Font* f = uiFont(13);
+    constexpr int DOT = 9;
+    const int cy = FOOTER_Y + FOOTER_H / 2;
 
-                // Search highlight on mini slots
-                if (searchHighlightActive_) {
-                    if (isSearchMatch(boxViewPanel_, boxIdx, slot))
-                        drawRectOutline(sx, sy, BV_MINI_CELL, BV_MINI_CELL, T().searchMatch, 1);
-                    else
-                        drawRect(sx, sy, BV_MINI_CELL, BV_MINI_CELL, T().searchDim);
-                }
-            }
+    int w = 0;
+    for (const auto& it : items)
+        w += (w ? 16 : 0) + DOT + 6 + textWidth(i18n::get(it.key), f);
+    if (measureOnly) return w;
+
+    int x = SCREEN_W - 32 - w;
+    for (const auto& it : items) {
+        const std::string& label = i18n::get(it.key);
+        fillRounded(x, cy - DOT / 2, DOT, DOT, 2, it.color);
+        x += DOT + 6;
+        drawText(label, x, cy - TTF_FontHeight(f) / 2, T().textDim, f);
+        x += textWidth(label, f) + 16;
+    }
+    return w;
+}
+
+void UI::drawBoxCard(int idx, const SDL_Rect& r, bool isCursor) {
+    const auto& disp = getSlotDisplays(boxViewPanel_, idx);
+    const int activeBox = (boxViewPanel_ == Panel::Game) ? gameBox_ : bankBox_;
+
+    bool hasMatch = false;
+    int filled = 0;
+    for (int s = 0; s < (int)disp.size(); s++) {
+        if (!disp[s].empty) filled++;
+        if (searchHighlightActive_ && !hasMatch)
+            hasMatch = isSearchMatch(boxViewPanel_, idx, s);
+    }
+
+    if (isCursor)
+        strokeRounded(r.x - 6, r.y - 6, r.w + 12, r.h + 12, 17, 3, T().accent);
+    fillRounded(r.x, r.y, r.w, r.h, 12, isCursor ? T().slotFull : T().panelBg);
+    strokeRounded(r.x, r.y, r.w, r.h, 12, 1, hasMatch ? T().searchMatch : T().panelBorder);
+    if (hasMatch)
+        strokeRounded(r.x, r.y, r.w, r.h, 12, 2, T().searchMatch);
+
+    // Name and fill. The box the panel is showing right now keeps its name in
+    // the accent colour, so it is easy to find your way back to it.
+    TTF_Font* fName  = uiFont(15, true);
+    TTF_Font* fCount = uiFont(13);
+    const std::string count = std::to_string(filled) + "/" + std::to_string((int)disp.size());
+    const int countW = textWidth(count, fCount);
+    const int baseline = r.y + 27;
+    drawText(count, r.x + r.w - 13 - countW, baselineTop(fCount, baseline), T().textMuted, fCount);
+    const std::string name = fitText(panelBoxName(boxViewPanel_, idx), fName, r.w - 26 - countW - 6);
+    drawText(name, r.x + 13, baselineTop(fName, baseline),
+             idx == activeBox ? T().accent : T().text, fName);
+
+    // One dot per slot. The pitch shrinks with the card on 40-box games.
+    const int cols = gridCols(), rows = 5;
+    const int gridTop = r.y + 42;
+    const int pitch = std::max(5, std::min(BV_DOT_PITCH, (r.y + r.h - 12 - gridTop) / rows));
+    const int dot = pitch - 4;
+    const int gridW = cols * pitch - (pitch - dot);
+    const int gx = r.x + (r.w - gridW) / 2;
+    for (int s = 0; s < rows * cols && s < (int)disp.size(); s++) {
+        const auto& sd = disp[s];
+        SDL_Color c = T().miniDotEmpty;
+        if (!sd.empty) {
+            if (sd.egg)        c = T().eggMark;
+            else if (sd.shiny) c = T().accent;
+            else if (sd.alpha) c = T().alphaMark;
+            else               c = T().miniDotFull;
+            if (searchHighlightActive_ && isSearchMatch(boxViewPanel_, idx, s))
+                c = T().searchMatch;
+        }
+        fillRounded(gx + (s % cols) * pitch, gridTop + (s / cols) * pitch, dot, dot, 2, c);
+    }
+}
+
+void UI::drawBoxViewOverlay() {
+    // Full screen: nothing of the box view shows through.
+    SDL_SetRenderDrawColor(renderer_, T().bg.r, T().bg.g, T().bg.b, 255);
+    SDL_RenderClear(renderer_);
+    drawRect(0, 0, SCREEN_W, ACCENT_RULE_H, T().accent);
+
+    drawBoxViewTabs();
+    drawBoxViewStats();
+
+    const int totalBoxes = panelBoxCount(boxViewPanel_);
+    SDL_Rect cursorCard{0, 0, 0, 0};
+    for (int i = 0; i < totalBoxes; i++) {
+        const SDL_Rect r = boxCardRect(i, totalBoxes);
+        const bool isCursor = (i == boxViewCursor_);
+        if (isCursor) cursorCard = r;
+        drawBoxCard(i, r, isCursor);
+    }
+
+    // Same keys as before the redesign, plus ZL/ZR to flip between the tabs.
+    const bool canRename = isDualBankMode() || (boxViewPanel_ == Panel::Bank);
+    ButtonHint hints[5];
+    int n = 0;
+    hints[n++] = {"A", StrKey::HintGoToBox};
+    if (canRename)
+        hints[n++] = {"Y", StrKey::HintRename};
+    hints[n++] = {"B", StrKey::HintCancel};
+    hints[n++] = {HINT_DPAD, StrKey::HintNavigate};
+    hints[n++] = {"ZL ZR", isDualBankMode() ? StrKey::HintLeftRight : StrKey::HintSaveBank};
+    drawFooterBar(hints, n, std::string(), drawBoxViewLegend(true));
+    drawBoxViewLegend(false);
+
+    // Sprite preview of the highlighted box, last so it sits on top.
+    if (totalBoxes > 0)
+        drawBoxPreview(boxViewCursor_, cursorCard);
+}
+
+void UI::drawBoxPreview(int boxIdx, const SDL_Rect& card) {
+    const int cols = gridCols();
+    const int rows = 5;
+
+    const int innerW = cols * BV_MINI_CELL + (cols - 1) * BV_MINI_PAD;
+    const int innerH = rows * BV_MINI_CELL + (rows - 1) * BV_MINI_PAD;
+    const int w = innerW + 2 * BV_PREVIEW_PAD;
+    const int h = innerH + 2 * BV_PREVIEW_PAD + BV_PREVIEW_HDR;
+
+    // Below the card, or above it when that would run into the footer; kept
+    // inside the card area horizontally.
+    int x = card.x + card.w / 2 - w / 2;
+    int y = card.y + card.h + 10;
+    if (y + h > FOOTER_Y - 4)
+        y = card.y - h - 10;
+    if (y < ACCENT_RULE_H + 4)
+        y = ACCENT_RULE_H + 4;
+    x = std::max(INFO_X, std::min(x, INFO_X + INFO_W - w));
+
+    // Shadow, then the panel.
+    fillRounded(x + 3, y + 5, w, h, 12, SDL_Color{0, 0, 0, 90});
+    fillRounded(x, y, w, h, 12, T().buttonBg);
+    strokeRounded(x, y, w, h, 12, 1, T().cellBorder);
+
+    TTF_Font* fName = uiFont(15, true);
+    drawTextCentered(fitText(panelBoxName(boxViewPanel_, boxIdx), fName, w - 20),
+                     x + w / 2, y + BV_PREVIEW_PAD + BV_PREVIEW_HDR / 2 - 4, T().text, fName);
+
+    const int gx = x + BV_PREVIEW_PAD;
+    const int gy = y + BV_PREVIEW_PAD + BV_PREVIEW_HDR;
+    const auto& disp = getSlotDisplays(boxViewPanel_, boxIdx);
+    for (int s = 0; s < rows * cols && s < (int)disp.size(); s++) {
+        const auto& sd = disp[s];
+        const int sx = gx + (s % cols) * (BV_MINI_CELL + BV_MINI_PAD);
+        const int sy = gy + (s / cols) * (BV_MINI_CELL + BV_MINI_PAD);
+        if (sd.empty) {
+            fillRounded(sx, sy, BV_MINI_CELL, BV_MINI_CELL, 6, T().slotEmpty);
+            continue;
+        }
+        fillRounded(sx, sy, BV_MINI_CELL, BV_MINI_CELL, 6, T().slotFull);
+        drawSpriteFit(spriteFor(sd.species, sd.form, sd.shiny, sd.egg),
+                      sx + BV_MINI_CELL / 2, sy + BV_MINI_CELL / 2, BV_MINI_SPRITE);
+
+        if (searchHighlightActive_) {
+            if (isSearchMatch(boxViewPanel_, boxIdx, s))
+                strokeRounded(sx, sy, BV_MINI_CELL, BV_MINI_CELL, 6, 2, T().searchMatch);
+            else
+                fillRounded(sx, sy, BV_MINI_CELL, BV_MINI_CELL, 6, T().searchDim);
         }
     }
 }

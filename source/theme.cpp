@@ -57,6 +57,9 @@ static const Theme themes[THEME_COUNT] = {
         .statusWarn      = {240, 170, 50, 255},
         .alphaMark       = {232, 90, 90, 255},
         .badgeBg         = {74, 68, 36, 255},
+        .miniDotEmpty    = {46, 48, 66, 255},
+        .miniDotFull     = {111, 115, 144, 255},
+        .eggMark         = {239, 230, 207, 255},
     },
 };
 

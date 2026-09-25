@@ -342,5 +342,17 @@
     "info_empty_slot": "空き",
     "info_ev_total": "努力値 {0} / 510",
     "info_perfect_ivs": "{0} × 31",
-    "info_ot": "おや {0} {1}"
+    "info_ot": "おや {0} {1}",
+    "tab_save": "セーブ",
+    "tab_bank": "バンク",
+    "ov_pokemon": "匹",
+    "ov_shiny": "色違い",
+    "ov_free_slots": "空き",
+    "legend_pokemon": "ポケモン",
+    "legend_shiny": "色違い",
+    "legend_alpha": "オヤブン",
+    "hint_go_to_box": "ボックスへ移動",
+    "hint_navigate": "操作",
+    "hint_save_bank": "セーブ / バンク",
+    "hint_left_right": "左 / 右"
 }

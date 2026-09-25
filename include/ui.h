@@ -827,6 +827,9 @@ private:
     void drawBoxPanel(Panel panelId, bool isActive, int x = -1, int box = -1,
                       const std::string& tag = std::string());
     void drawInfoStrip();
+    // The name to show for a Pokemon: its display name, except that an egg
+    // says what will hatch - "Eevee - Egg" rather than just "Egg".
+    static std::string nameWithEgg(const Pokemon& pkm);
     SDL_Rect slotRect(Panel panelId, int col, int row) const;
     SDL_Rect slotRectAt(int panelX, int col, int row) const;
     SDL_Texture* spriteFor(uint16_t species, uint8_t form, bool shiny, bool egg);

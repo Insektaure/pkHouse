@@ -379,6 +379,11 @@ int baselineTop(TTF_Font* f, int baseline) {
 
 } // anonymous namespace
 
+std::string UI::nameWithEgg(const Pokemon& pkm) {
+    if (!pkm.isEgg()) return pkm.displayName();
+    return SpeciesName::get(pkm.species()) + " - " + SpeciesName::get(0);
+}
+
 SDL_Rect UI::slotRect(Panel panelId, int col, int row) const {
     return slotRectAt((panelId == Panel::Game) ? PANEL_X_L : PANEL_X_R, col, row);
 }
@@ -783,7 +788,7 @@ void UI::drawInfoStrip() {
         }
         const int tailW = (gender.empty() ? 0 : textWidth(gender, fName) + 8)
                         + (lv.empty() ? 0 : textWidth(lv, fLv) + 8);
-        const std::string name = fitText(pkm.displayName(), fName, idRight - 16 - x - tailW);
+        const std::string name = fitText(nameWithEgg(pkm), fName, idRight - 16 - x - tailW);
         drawText(name, x, baselineTop(fName, baseline), T().text, fName);
         x += textWidth(name, fName) + 8;
         if (!gender.empty()) {
@@ -1048,7 +1053,7 @@ void UI::drawFrame() {
             hints[n++] = {"B", StrKey::HintReturn};
             hints[n++] = {"X", StrKey::HintDelete};
         } else if (holding_) {
-            const std::string heldName = heldPkm_.displayName();
+            const std::string heldName = nameWithEgg(heldPkm_);
             if (!heldName.empty())
                 message = i18n::fmt(StrKey::MsgHoldingSingle, heldName,
                                     std::to_string(heldPkm_.level()));

@@ -289,7 +289,7 @@ void UI::drawPokemonObjectRow(const Pokemon& pkm, const std::string& where, int 
         if (pkm.gender() == 1) { gender = "\xe2\x99\x80"; gc = T().genderFemale; }
     }
     const int tail = (gender.empty() ? 0 : textWidth(gender, fName) + 6) + (lv.empty() ? 0 : textWidth(lv, fLv) + 6);
-    const std::string name = fitText(pkm.displayName(), fName, right - nx - tail);
+    const std::string name = fitText(nameWithEgg(pkm), fName, right - nx - tail);
     drawText(name, nx, y + 10, T().text, fName);
     int ex = nx + textWidth(name, fName) + 6;
     if (!gender.empty()) { drawText(gender, ex, y + 10, gc, fName); ex += textWidth(gender, fName) + 6; }

@@ -203,20 +203,10 @@
     "b_close": "B：關閉",
     "wc_footer": "A：注入  L/R：跳過10個  B：取消",
 
-    "about_title": "pkHouse - 本地銀行系統",
-    "about_desc1": "Nintendo Switch寶可夢盒子管理工具",
-    "about_desc2": "在存檔和銀行之間移動寶可夢。",
     "supported_games": "支援的遊戲",
-    "supported_lgpe": "Let's Go 皮卡丘/伊布 (1.0.2)  -  劍/盾 (1.3.2)",
-    "supported_swsh": "晶燦鑽石/明亮珍珠 (1.3.0)  -  傳說 阿爾宙斯 (1.1.1)",
-    "supported_sv_za": "朱/紫 (4.0.0)  -  傳說 Z-A (2.0.2)",
-    "supported_frlg": "火紅/葉綠 (1.0.0)",
     "credit_pkhex": "基於kwsch的PKHeX和PokeCrypto研究。",
     "credit_jksv": "存檔備份和寫入邏輯基於J-D-K的JKSV。",
     "controls": "操作",
-    "controls_line1": "A：拿取/放下    B：取消    X：詳情    Y：多選",
-    "controls_line2": "L/R：切換盒子    ZL/ZR：盒子總覽    +：選單    -：關於",
-    "press_minus_b_close": "按-或B關閉",
 
 
     "status_main": "十字鍵：移動  L/R：盒子  A：拿取/放下  Y：選擇  YY：全選  B：取消  X：詳情",
@@ -444,5 +434,17 @@
     "dlg_release_bank_sub": "下次儲存時會從倉庫中移除。",
     "dlg_backup_note": "只有備份能把牠找回來。",
     "dlg_edited": "修改於{0}",
-    "loading_banks": "正在讀取倉庫…"
+    "loading_banks": "正在讀取倉庫…",
+    "about_tagline": "本地倉庫系統",
+    "about_desc": "Nintendo Switch寶可夢盒子管理工具。在存檔和銀行之間移動寶可夢。",
+    "about_game_version": "遊戲版本",
+    "about_built_on": "基於",
+    "ctl_pick_place": "拿取/放下",
+    "ctl_cancel": "取消",
+    "ctl_details": "詳情",
+    "ctl_multi": "多選",
+    "ctl_switch_box": "切換盒子",
+    "ctl_box_view": "盒子總覽",
+    "ctl_menu": "選單",
+    "ctl_about": "關於"
 }

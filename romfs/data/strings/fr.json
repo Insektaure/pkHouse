@@ -203,20 +203,10 @@
     "b_close": "B : Fermer",
     "wc_footer": "A : Injecter  L/R : Sauter 10  B : Annuler",
 
-    "about_title": "pkHouse - Systeme de banque locale",
-    "about_desc1": "Gestionnaire de boites Pokemon pour Nintendo Switch",
-    "about_desc2": "Deplacez vos Pokemon entre sauvegardes et banques.",
     "supported_games": "Jeux compatibles",
-    "supported_lgpe": "Let's Go Pikachu/Evoli (1.0.2)  -  Epee/Bouclier (1.3.2)",
-    "supported_swsh": "Diamant Etincelant/Perle Scintillante (1.3.0)  -  Legendes : Arceus (1.1.1)",
-    "supported_sv_za": "Ecarlate/Violet (4.0.0)  -  Legendes : Z-A (2.0.2)",
-    "supported_frlg": "Rouge Feu/Vert Feuille (1.0.0)",
     "credit_pkhex": "Base sur PKHeX par kwsch et les recherches PokeCrypto.",
     "credit_jksv": "Logique de sauvegarde basee sur JKSV par J-D-K.",
     "controls": "Controles",
-    "controls_line1": "A : Prendre/Poser    B : Annuler    X : Details    Y : Multi-selection",
-    "controls_line2": "L/R : Changer de boite    ZL/ZR : Vue des boites    + : Menu    - : A propos",
-    "press_minus_b_close": "Appuyez sur - ou B pour fermer",
 
 
     "status_main": "D-Pad : Deplacer  L/R : Boite  A : Prendre/Poser  Y : Selectionner  YY : Tout  B : Annuler  X : Detail",
@@ -444,5 +434,17 @@
     "dlg_release_bank_sub": "Il est retiré de la banque à la prochaine sauvegarde.",
     "dlg_backup_note": "Seule une copie de sécurité peut le récupérer.",
     "dlg_edited": "modifiée {0}",
-    "loading_banks": "Chargement des banques…"
+    "loading_banks": "Chargement des banques…",
+    "about_tagline": "Système de banque local",
+    "about_desc": "Gestionnaire de boites Pokemon pour Nintendo Switch. Deplacez vos Pokemon entre sauvegardes et banques.",
+    "about_game_version": "Version du jeu",
+    "about_built_on": "Construit avec",
+    "ctl_pick_place": "Prendre/Poser",
+    "ctl_cancel": "Annuler",
+    "ctl_details": "Details",
+    "ctl_multi": "Multi-selection",
+    "ctl_switch_box": "Changer de boite",
+    "ctl_box_view": "Vue des boites",
+    "ctl_menu": "Menu",
+    "ctl_about": "A propos"
 }

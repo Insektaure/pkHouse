@@ -203,20 +203,10 @@
     "b_close": "B: 닫기",
     "wc_footer": "A: 주입  L/R: 10건 건너뛰기  B: 취소",
 
-    "about_title": "pkHouse - 로컬 뱅크 시스템",
-    "about_desc1": "Nintendo Switch용 포켓몬 박스 관리 도구",
-    "about_desc2": "세이브 파일과 뱅크 간에 포켓몬을 이동할 수 있습니다.",
     "supported_games": "지원 게임",
-    "supported_lgpe": "Let's Go! 피카츄/이브이 (1.0.2)  -  소드/실드 (1.3.2)",
-    "supported_swsh": "브릴리언트 다이아몬드/샤이닝 펄 (1.3.0)  -  레전드 아르세우스 (1.1.1)",
-    "supported_sv_za": "스칼렛/바이올렛 (4.0.0)  -  레전드 Z-A (2.0.2)",
-    "supported_frlg": "파이어레드/리프그린 (1.0.0)",
     "credit_pkhex": "PKHeX (kwsch) 및 PokeCrypto 연구를 기반으로 합니다.",
     "credit_jksv": "세이브 백업 및 쓰기 로직은 JKSV (J-D-K)를 기반으로 합니다.",
     "controls": "조작 방법",
-    "controls_line1": "A: 잡기/놓기    B: 취소    X: 상세정보    Y: 다중 선택",
-    "controls_line2": "L/R: 박스 변경    ZL/ZR: 박스 목록    +: 메뉴    -: 정보",
-    "press_minus_b_close": "- 또는 B 버튼으로 닫기",
 
 
     "status_main": "십자키: 이동  L/R: 박스  A: 잡기/놓기  Y: 선택  YY: 전체  B: 취소  X: 상세",
@@ -444,5 +434,17 @@
     "dlg_release_bank_sub": "다음에 저장할 때 뱅크에서 사라집니다.",
     "dlg_backup_note": "백업으로만 되돌릴 수 있습니다.",
     "dlg_edited": "수정 {0}",
-    "loading_banks": "뱅크를 불러오는 중…"
+    "loading_banks": "뱅크를 불러오는 중…",
+    "about_tagline": "로컬 뱅크 시스템",
+    "about_desc": "Nintendo Switch용 포켓몬 박스 관리 도구. 세이브 파일과 뱅크 간에 포켓몬을 이동할 수 있습니다.",
+    "about_game_version": "게임 버전",
+    "about_built_on": "기반",
+    "ctl_pick_place": "잡기/놓기",
+    "ctl_cancel": "취소",
+    "ctl_details": "상세정보",
+    "ctl_multi": "다중 선택",
+    "ctl_switch_box": "박스 변경",
+    "ctl_box_view": "박스 목록",
+    "ctl_menu": "메뉴",
+    "ctl_about": "정보"
 }

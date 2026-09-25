@@ -278,21 +278,11 @@ namespace StrKey {
     constexpr const char* WCFooter             = "wc_footer";
 
     // ui_render.cpp - about popup
-    constexpr const char* AboutTitle           = "about_title";
-    constexpr const char* AboutDesc1           = "about_desc1";
-    constexpr const char* AboutDesc2           = "about_desc2";
     constexpr const char* SupportedGames       = "supported_games";
-    constexpr const char* SupportedLGPE        = "supported_lgpe";
-    constexpr const char* SupportedSwSh        = "supported_swsh";
     constexpr const char* SupportedBDSPLA      = "supported_bdsp_la";
-    constexpr const char* SupportedSVZA        = "supported_sv_za";
-    constexpr const char* SupportedFRLG        = "supported_frlg";
     constexpr const char* CreditPKHeX          = "credit_pkhex";
     constexpr const char* CreditJKSV           = "credit_jksv";
     constexpr const char* Controls             = "controls";
-    constexpr const char* ControlsLine1        = "controls_line1";
-    constexpr const char* ControlsLine2        = "controls_line2";
-    constexpr const char* PressMinusBClose     = "press_minus_b_close";
 
     // ui_render.cpp - box view overlay
 
@@ -472,6 +462,20 @@ namespace StrKey {
     constexpr const char* ChipDual                 = "chip_dual";
     constexpr const char* WorkNoClose              = "work_no_close";
     constexpr const char* LoadingBanks             = "loading_banks";
+
+    // About (UI 2.0)
+    constexpr const char* AboutTagline             = "about_tagline";
+    constexpr const char* AboutDesc                = "about_desc";
+    constexpr const char* AboutGameVersion         = "about_game_version";
+    constexpr const char* AboutBuiltOn             = "about_built_on";
+    constexpr const char* CtlPickPlace             = "ctl_pick_place";
+    constexpr const char* CtlCancel                = "ctl_cancel";
+    constexpr const char* CtlDetails               = "ctl_details";
+    constexpr const char* CtlMulti                 = "ctl_multi";
+    constexpr const char* CtlSwitchBox             = "ctl_switch_box";
+    constexpr const char* CtlBoxView               = "ctl_box_view";
+    constexpr const char* CtlMenu                  = "ctl_menu";
+    constexpr const char* CtlAbout                 = "ctl_about";
 
     // dialogs (UI 2.0)
     constexpr const char* DlgOk                    = "dlg_ok";

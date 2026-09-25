@@ -203,20 +203,10 @@
     "b_close": "B: Sluiten",
     "wc_footer": "A: Injecteren  L/R: 10 overslaan  B: Annuleren",
 
-    "about_title": "pkHouse - Lokaal banksysteem",
-    "about_desc1": "Pokemon Box-beheerder voor Nintendo Switch",
-    "about_desc2": "Verplaats Pokemon tussen opslagbestanden en banken.",
     "supported_games": "Ondersteunde spellen",
-    "supported_lgpe": "Let's Go, Pikachu/Eevee (1.0.2)  -  Sword/Shield (1.3.2)",
-    "supported_swsh": "Brilliant Diamond/Shining Pearl (1.3.0)  -  Legends: Arceus (1.1.1)",
-    "supported_sv_za": "Scarlet/Violet (4.0.0)  -  Legends: Z-A (2.0.2)",
-    "supported_frlg": "FireRed/LeafGreen (1.0.0)",
     "credit_pkhex": "Gebaseerd op PKHeX van kwsch en PokeCrypto-onderzoek.",
     "credit_jksv": "Opslagback-up en schrijflogica gebaseerd op JKSV van J-D-K.",
     "controls": "Besturing",
-    "controls_line1": "A: Pakken/Plaatsen    B: Annuleren    X: Details    Y: Meervoudige selectie",
-    "controls_line2": "L/R: Box wisselen    ZL/ZR: Boxoverzicht    +: Menu    -: Over",
-    "press_minus_b_close": "Druk op - of B om te sluiten",
 
 
     "status_main": "D-Pad: Bewegen  L/R: Box  A: Pakken/Plaatsen  Y: Selecteren  YY: Alles  B: Annuleren  X: Detail",
@@ -444,5 +434,17 @@
     "dlg_release_bank_sub": "Het verdwijnt uit de bank bij de volgende keer opslaan.",
     "dlg_backup_note": "Alleen een back-up kan het terugbrengen.",
     "dlg_edited": "bewerkt {0}",
-    "loading_banks": "Banken laden…"
+    "loading_banks": "Banken laden…",
+    "about_tagline": "Lokaal banksysteem",
+    "about_desc": "Pokemon Box-beheerder voor Nintendo Switch. Verplaats Pokemon tussen opslagbestanden en banken.",
+    "about_game_version": "Spelversie",
+    "about_built_on": "Gebouwd op",
+    "ctl_pick_place": "Pakken/Plaatsen",
+    "ctl_cancel": "Annuleren",
+    "ctl_details": "Details",
+    "ctl_multi": "Meervoudige selectie",
+    "ctl_switch_box": "Box wisselen",
+    "ctl_box_view": "Boxoverzicht",
+    "ctl_menu": "Menu",
+    "ctl_about": "Over"
 }

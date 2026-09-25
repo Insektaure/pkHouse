@@ -1786,71 +1786,162 @@ void UI::drawWondercardListPopup() {
     drawTextCentered(footer, popX + POP_W / 2, popY + POP_H - 18, T().textDim, fontSmall_);
 }
 
+// About (UI 2.0): what pkHouse is, the
+// games and versions it was tested with, the controls, and what it builds on.
 void UI::drawAboutPopup() {
-    drawRect(0, 0, SCREEN_W, SCREEN_H, T().overlayDark);
+    drawDialogBackdrop();
 
-    constexpr int POP_W = 700;
-    constexpr int POP_H = 510;
-    int px = (SCREEN_W - POP_W) / 2;
-    int py = (SCREEN_H - POP_H) / 2;
+    constexpr int W = 900, H = 568, PAD = 29;
+    const int x = (SCREEN_W - W) / 2, y = (SCREEN_H - H) / 2;
+    fillRounded(x + 3, y + 6, W, H, 22, SDL_Color{0, 0, 0, 90});
+    fillRounded(x, y, W, H, 22, T().panelBg);
+    // Accent along the top edge, inside the rounded corners.
+    drawRect(x + 22, y, W - 44, 4, T().accent);
+    strokeRounded(x, y, W, H, 22, 1, T().panelBorder);
 
-    drawRect(px, py, POP_W, POP_H, T().panelBg);
-    drawRectOutline(px, py, POP_W, POP_H, T().popupBorder, 2);
+    TTF_Font* fTag = uiFont(11, true);
 
-    int cx = px + POP_W / 2;
-    int y = py + 25;
+    // --- Header ---------------------------------------------------------------
+    {
+        const int ix = x + PAD, iy = y + 35;
+        fillRounded(ix, iy, 64, 64, 16, T().badgeBg);
+        if (iconHouse_) {
+            SDL_SetTextureColorMod(iconHouse_, T().accent.r, T().accent.g, T().accent.b);
+            SDL_Rect dst = {ix + 16, iy + 16, 32, 32};
+            SDL_RenderCopy(renderer_, iconHouse_, nullptr, &dst);
+        }
+        const int tx = ix + 64 + 18;
+        TTF_Font* fName = uiFont(30, true);
+        TTF_Font* fTagline = uiFont(17, true);
+        drawText("pkHouse", tx, iy - 4, T().text, fName);
+        const int nw = textWidth("pkHouse", fName);
+        drawText(i18n::get(StrKey::AboutTagline), tx + nw + 12, iy + 10, T().textDim, fTagline);
 
-    // Title
-    drawTextCentered(i18n::get(StrKey::AboutTitle), cx, y, T().shiny, fontLarge_);
-    y += 38;
+        // Version and author, right.
+        TTF_Font* fVer = uiFont(16, true);
+        const std::string ver = "v" APP_VERSION;
+        const int vw = textWidth(ver, fVer) + 24;
+        const int vx = x + W - PAD - vw;
+        fillRounded(vx, iy, vw, 30, 8, T().bg);
+        strokeRounded(vx, iy, vw, 30, 8, 1, T().panelBorder);
+        drawTextCentered(ver, vx + vw / 2, iy + 15, T().text, fVer);
 
-    // Version / author
-    drawTextCentered("v" APP_VERSION " - Developed by " APP_AUTHOR, cx, y, T().textDim, fontSmall_);
-    y += 22;
-    drawTextCentered("github.com/Insektaure", cx, y, T().textDim, fontSmall_);
-    y += 30;
+        TTF_Font* fBy = uiFont(13);
+        TTF_Font* fByB = uiFont(13, true);
+        const std::string link = "github.com/" APP_AUTHOR;
+        const std::string by = "by ";
+        const std::string author = APP_AUTHOR;
+        const std::string dotSep = " \xc2\xb7 ";
+        const int lw = textWidth(link, fByB);
+        int bx = x + W - PAD - lw;
+        drawText(link, bx, iy + 44, T().accent, fByB);
+        drawRect(bx, iy + 44 + TTF_FontAscent(fByB) + 2, lw, 1, T().accent);
+        bx -= textWidth(dotSep, fBy);
+        drawText(dotSep, bx, iy + 44, T().textDim, fBy);
+        bx -= textWidth(author, fByB);
+        drawText(author, bx, iy + 44, T().text, fByB);
+        bx -= textWidth(by, fBy);
+        drawText(by, bx, iy + 44, T().textDim, fBy);
 
-    // Divider
-    SDL_SetRenderDrawColor(renderer_, T().popupBorder.r, T().popupBorder.g, T().popupBorder.b, T().popupBorder.a);
-    SDL_RenderDrawLine(renderer_, px + 30, y, px + POP_W - 30, y);
-    y += 20;
+        // Description, under the name, clear of the right-hand block.
+        TTF_Font* fDesc = uiFont(15);
+        const auto lines = wrapText(i18n::get(StrKey::AboutDesc), fDesc, bx - 20 - tx, 2);
+        for (size_t i = 0; i < lines.size(); i++)
+            drawText(lines[i], tx, iy + 36 + static_cast<int>(i) * 20, T().textDim, fDesc);
+    }
+    drawRect(x, y + 126, W, 1, T().panelBorder);
 
-    // Description
-    drawTextCentered(i18n::get(StrKey::AboutDesc1), cx, y, T().text, font_);
-    y += 28;
-    drawTextCentered(i18n::get(StrKey::AboutDesc2), cx, y, T().text, font_);
-    y += 28;
-    drawTextCentered(i18n::get(StrKey::SupportedGames), cx, y, T().selected, font_);
-    y += 24;
-    drawTextCentered(i18n::get(StrKey::SupportedLGPE), cx, y, T().textDim, fontSmall_);
-    y += 20;
-    drawTextCentered(i18n::get(StrKey::SupportedSwSh), cx, y, T().textDim, fontSmall_);
-    y += 20;
-    drawTextCentered(i18n::get(StrKey::SupportedSVZA), cx, y, T().textDim, fontSmall_);
-    y += 20;
-    drawTextCentered(i18n::get(StrKey::SupportedFRLG), cx, y, T().textDim, fontSmall_);
-    y += 30;
+    // --- Supported games, left ---------------------------------------------------
+    {
+        struct Game { GameType tint; const char* name; const char* version; };
+        // Tested versions, as in the README. Titles are the games' own names.
+        static const Game games[] = {
+            {GameType::GP, "Let's Go Pikachu / Eevee",          "v1.0.2"},
+            {GameType::Sw, "Sword / Shield",                    "v1.3.2"},
+            {GameType::BD, "Brilliant Diamond / Shining Pearl", "v1.3.0"},
+            {GameType::LA, "Legends: Arceus",                   "v1.1.1"},
+            {GameType::S,  "Scarlet / Violet",                  "v4.0.0"},
+            {GameType::ZA, "Legends: Z-A",                      "v2.0.2"},
+            {GameType::FR, "FireRed / LeafGreen",               "v1.0.0"},
+        };
+        const int lx = x + PAD, lw = 458, ty = y + 150;
+        drawTextTracked(toUpperUtf8(i18n::get(StrKey::SupportedGames)), lx, ty, T().accentBank, fTag, 2);
+        TTF_Font* fNote = uiFont(12);
+        const std::string gv = i18n::get(StrKey::AboutGameVersion);
+        drawText(gv, lx + lw - textWidth(gv, fNote), ty - 1, T().textDim, fNote);
 
-    // Divider
-    SDL_SetRenderDrawColor(renderer_, T().popupBorder.r, T().popupBorder.g, T().popupBorder.b, T().popupBorder.a);
-    SDL_RenderDrawLine(renderer_, px + 30, y, px + POP_W - 30, y);
-    y += 20;
+        TTF_Font* fGame = uiFont(15, true);
+        TTF_Font* fVer = uiFont(14, true);
+        int ry = ty + 22;
+        for (const auto& g : games) {
+            fillRounded(lx, ry, lw, 40, 8, T().buttonBg);
+            fillDisc(lx + 17, ry + 20, 5, gameTint(g.tint));
+            const int vw = textWidth(g.version, fVer);
+            drawText(g.version, lx + lw - 12 - vw, ry + 20 - TTF_FontHeight(fVer) / 2, T().textDim, fVer);
+            drawText(fitText(g.name, fGame, lw - 34 - vw - 24), lx + 34, ry + 20 - TTF_FontHeight(fGame) / 2,
+                     T().text, fGame);
+            ry += 46;
+        }
+    }
 
-    // Credits
-    drawTextCentered(i18n::get(StrKey::CreditPKHeX), cx, y, T().creditsText, fontSmall_);
-    y += 20;
-    drawTextCentered(i18n::get(StrKey::CreditJKSV), cx, y, T().creditsText, fontSmall_);
-    y += 35;
+    // --- Controls and credits, right -----------------------------------------------
+    {
+        const int cx = x + 511, cw = W - PAD - 511;
+        int cy = y + 150;
+        drawTextTracked(toUpperUtf8(i18n::get(StrKey::Controls)), cx, cy, T().accentBank, fTag, 2);
+        cy += 22;
 
-    // Controls
-    drawTextCentered(i18n::get(StrKey::Controls), cx, y, T().selected, font_);
-    y += 28;
-    drawText(i18n::get(StrKey::ControlsLine1), px + 50, y, T().textDim, fontSmall_);
-    y += 20;
-    drawText(i18n::get(StrKey::ControlsLine2), px + 50, y, T().textDim, fontSmall_);
+        struct Ctl { const char* keys; const char* label; };
+        const Ctl ctls[] = {
+            {"A", StrKey::CtlPickPlace}, {"B", StrKey::CtlCancel},
+            {"X", StrKey::CtlDetails},   {"Y", StrKey::CtlMulti},
+            {"L R", StrKey::CtlSwitchBox}, {"ZL ZR", StrKey::CtlBoxView},
+            {"+", StrKey::CtlMenu},      {"-", StrKey::CtlAbout},
+        };
+        TTF_Font* fLabel = uiFont(14);
+        const int colW = cw / 2;
+        for (int i = 0; i < 8; i++) {
+            const int kx = cx + (i % 2) * colW, kcy = cy + (i / 2) * 34 + 14;
+            const int kw = drawFooterKey(kx, kcy, ctls[i].keys, false);
+            drawText(fitText(i18n::get(ctls[i].label), fLabel, colW - kw - 18), kx + kw + 9,
+                     kcy - TTF_FontHeight(fLabel) / 2, T().text, fLabel);
+        }
+        cy += 4 * 34 + 12;
 
-    // Footer
-    drawTextCentered(i18n::get(StrKey::PressMinusBClose), cx, py + POP_H - 22, T().textDim, fontSmall_);
+        drawTextTracked(toUpperUtf8(i18n::get(StrKey::AboutBuiltOn)), cx, cy, T().accentBank, fTag, 2);
+        cy += 20;
+        // The projects by name, and the original credit line under each.
+        struct Credit { const char* project; const char* author; const char* line; };
+        const Credit credits[] = {
+            {"PKHeX", "kwsch", StrKey::CreditPKHeX},
+            {"JKSV",  "J-D-K", StrKey::CreditJKSV},
+        };
+        TTF_Font* fProj = uiFont(15, true);
+        TTF_Font* fBy   = uiFont(13);
+        TTF_Font* fLine = uiFont(12);
+        for (const auto& c : credits) {
+            fillRounded(cx, cy, cw, 56, 10, T().bg);
+            drawText(c.project, cx + 12, cy + 8, T().text, fProj);
+            const int pw = textWidth(c.project, fProj);
+            drawText(std::string("by ") + c.author, cx + 12 + pw + 6, cy + 10, T().textDim, fBy);
+            drawText(fitText(i18n::get(c.line), fLine, cw - 24), cx + 12, cy + 32, T().textDim, fLine);
+            cy += 63;
+        }
+    }
+
+    // --- Close -----------------------------------------------------------------
+    drawRect(x, y + H - 57, W, 1, T().panelBorder);
+    {
+        TTF_Font* f = uiFont(15, true);
+        const std::string label = i18n::get(StrKey::HintClose);
+        const int keysW = drawFooterKey(0, -100, "B -", true);
+        const int bw = 12 + keysW + 10 + textWidth(label, f) + 16, bh = 38;
+        const int bx = x + W - PAD - bw, by = y + H - 47;
+        fillRounded(bx, by, bw, bh, 10, T().buttonBg);
+        strokeRounded(bx, by, bw, bh, 10, 1, T().buttonBorder);
+        drawFooterKey(bx + 12, by + bh / 2, "B -", false);
+        drawText(label, bx + 12 + keysW + 10, by + bh / 2 - TTF_FontHeight(f) / 2, T().text, f);
+    }
 }
 
 // --- Box overview (ZL/ZR), UI 2.0 -------------------------------------------------

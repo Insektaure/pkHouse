@@ -203,20 +203,10 @@
     "b_close": "B: Close",
     "wc_footer": "A: Inject  L/R: Skip 10  B: Cancel",
 
-    "about_title": "pkHouse - Local Bank System",
-    "about_desc1": "Pokemon Box Manager for Nintendo Switch",
-    "about_desc2": "Move Pokemon between save files and banks.",
     "supported_games": "Supported Games",
-    "supported_lgpe": "Let's Go Pikachu/Eevee (1.0.2)  -  Sword/Shield (1.3.2)",
-    "supported_swsh": "Brilliant Diamond/Shining Pearl (1.3.0)  -  Legends: Arceus (1.1.1)",
-    "supported_sv_za": "Scarlet/Violet (4.0.0)  -  Legends: Z-A (2.0.2)",
-    "supported_frlg": "FireRed/LeafGreen (1.0.0)",
     "credit_pkhex": "Based on PKHeX by kwsch & PokeCrypto research.",
     "credit_jksv": "Save backup & write logic based on JKSV by J-D-K.",
     "controls": "Controls",
-    "controls_line1": "A: Pick/Place    B: Cancel    X: Details    Y: Multi-select",
-    "controls_line2": "L/R: Switch Box    ZL/ZR: Box View    +: Menu    -: About",
-    "press_minus_b_close": "Press - or B to close",
 
 
     "status_main": "D-Pad: Move  L/R: Box  A: Pick/Place  Y: Select  YY: All  B: Cancel  X: Detail",
@@ -444,5 +434,17 @@
     "dlg_release_bank_sub": "It is removed from the bank when you next save.",
     "dlg_backup_note": "Only a backup can bring it back.",
     "dlg_edited": "edited {0}",
-    "loading_banks": "Loading banks…"
+    "loading_banks": "Loading banks…",
+    "about_tagline": "Local Bank System",
+    "about_desc": "Pokemon Box Manager for Nintendo Switch. Move Pokemon between save files and banks.",
+    "about_game_version": "Game version",
+    "about_built_on": "Built on",
+    "ctl_pick_place": "Pick/Place",
+    "ctl_cancel": "Cancel",
+    "ctl_details": "Details",
+    "ctl_multi": "Multi-select",
+    "ctl_switch_box": "Switch Box",
+    "ctl_box_view": "Box View",
+    "ctl_menu": "Menu",
+    "ctl_about": "About"
 }

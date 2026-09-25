@@ -203,20 +203,10 @@
     "b_close": "B: Закрыть",
     "wc_footer": "A: Внедрить  L/R: Пропустить 10  B: Отмена",
 
-    "about_title": "pkHouse - Локальная банковская система",
-    "about_desc1": "Менеджер боксов Pokemon для Nintendo Switch",
-    "about_desc2": "Перемещайте покемонов между сохранениями и банками.",
     "supported_games": "Поддерживаемые игры",
-    "supported_lgpe": "Let's Go, Pikachu/Eevee (1.0.2)  -  Sword/Shield (1.3.2)",
-    "supported_swsh": "Brilliant Diamond/Shining Pearl (1.3.0)  -  Legends: Arceus (1.1.1)",
-    "supported_sv_za": "Scarlet/Violet (4.0.0)  -  Legends: Z-A (2.0.2)",
-    "supported_frlg": "FireRed/LeafGreen (1.0.0)",
     "credit_pkhex": "На основе PKHeX от kwsch и исследований PokeCrypto.",
     "credit_jksv": "Логика резервного копирования и записи на основе JKSV от J-D-K.",
     "controls": "Управление",
-    "controls_line1": "A: Взять/Положить    B: Отмена    X: Подробности    Y: Множ. выбор",
-    "controls_line2": "L/R: Сменить бокс    ZL/ZR: Обзор боксов    +: Меню    -: О программе",
-    "press_minus_b_close": "Нажмите - или B, чтобы закрыть",
 
 
     "status_main": "D-Pad: Движение  L/R: Бокс  A: Взять/Положить  Y: Выбор  YY: Все  B: Отмена  X: Детали",
@@ -444,5 +434,17 @@
     "dlg_release_bank_sub": "Он исчезнет из банка при следующем сохранении.",
     "dlg_backup_note": "Вернуть его можно только из копии.",
     "dlg_edited": "изменён {0}",
-    "loading_banks": "Загрузка банков…"
+    "loading_banks": "Загрузка банков…",
+    "about_tagline": "Локальная система банков",
+    "about_desc": "Менеджер боксов Pokemon для Nintendo Switch. Перемещайте покемонов между сохранениями и банками.",
+    "about_game_version": "Версия игры",
+    "about_built_on": "Основано на",
+    "ctl_pick_place": "Взять/Положить",
+    "ctl_cancel": "Отмена",
+    "ctl_details": "Подробности",
+    "ctl_multi": "Множ. выбор",
+    "ctl_switch_box": "Сменить бокс",
+    "ctl_box_view": "Обзор боксов",
+    "ctl_menu": "Меню",
+    "ctl_about": "О программе"
 }

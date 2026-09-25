@@ -203,20 +203,10 @@
     "b_close": "B: Cerrar",
     "wc_footer": "A: Inyectar  L/R: Saltar 10  B: Cancelar",
 
-    "about_title": "pkHouse - Sistema de banco local",
-    "about_desc1": "Gestor de cajas Pokemon para Nintendo Switch",
-    "about_desc2": "Mueve Pokemon entre archivos de guardado y bancos.",
     "supported_games": "Juegos compatibles",
-    "supported_lgpe": "Let's Go, Pikachu/Eevee (1.0.2)  -  Espada/Escudo (1.3.2)",
-    "supported_swsh": "Diamante Brillante/Perla Reluciente (1.3.0)  -  Leyendas: Arceus (1.1.1)",
-    "supported_sv_za": "Escarlata/Purpura (4.0.0)  -  Leyendas: Z-A (2.0.2)",
-    "supported_frlg": "Rojo Fuego/Verde Hoja (1.0.0)",
     "credit_pkhex": "Basado en PKHeX de kwsch e investigacion de PokeCrypto.",
     "credit_jksv": "Logica de respaldo y escritura basada en JKSV de J-D-K.",
     "controls": "Controles",
-    "controls_line1": "A: Coger/Soltar    B: Cancelar    X: Detalles    Y: Seleccion multiple",
-    "controls_line2": "L/R: Cambiar caja    ZL/ZR: Vista de cajas    +: Menu    -: Acerca de",
-    "press_minus_b_close": "Pulsa - o B para cerrar",
 
 
     "status_main": "D-Pad: Mover  L/R: Caja  A: Coger/Soltar  Y: Seleccionar  YY: Todo  B: Cancelar  X: Detalle",
@@ -444,5 +434,17 @@
     "dlg_release_bank_sub": "Se quita del banco la próxima vez que guardes.",
     "dlg_backup_note": "Solo una copia puede recuperarlo.",
     "dlg_edited": "editado {0}",
-    "loading_banks": "Cargando bancos…"
+    "loading_banks": "Cargando bancos…",
+    "about_tagline": "Sistema de banco local",
+    "about_desc": "Gestor de cajas Pokemon para Nintendo Switch. Mueve Pokemon entre archivos de guardado y bancos.",
+    "about_game_version": "Versión del juego",
+    "about_built_on": "Basado en",
+    "ctl_pick_place": "Coger/Soltar",
+    "ctl_cancel": "Cancelar",
+    "ctl_details": "Detalles",
+    "ctl_multi": "Seleccion multiple",
+    "ctl_switch_box": "Cambiar caja",
+    "ctl_box_view": "Vista de cajas",
+    "ctl_menu": "Menu",
+    "ctl_about": "Acerca de"
 }

@@ -203,20 +203,10 @@
     "b_close": "B: Chiudi",
     "wc_footer": "A: Inietta  L/R: Salta 10  B: Annulla",
 
-    "about_title": "pkHouse - Sistema di banca locale",
-    "about_desc1": "Gestore box Pokemon per Nintendo Switch",
-    "about_desc2": "Sposta Pokemon tra file di salvataggio e banche.",
     "supported_games": "Giochi supportati",
-    "supported_lgpe": "Let's Go, Pikachu/Eevee (1.0.2)  -  Spada/Scudo (1.3.2)",
-    "supported_swsh": "Diamante Lucente/Perla Splendente (1.3.0)  -  Leggende: Arceus (1.1.1)",
-    "supported_sv_za": "Scarlatto/Violetto (4.0.0)  -  Leggende: Z-A (2.0.2)",
-    "supported_frlg": "Rosso Fuoco/Verde Foglia (1.0.0)",
     "credit_pkhex": "Basato su PKHeX di kwsch e ricerca PokeCrypto.",
     "credit_jksv": "Logica di backup e scrittura basata su JKSV di J-D-K.",
     "controls": "Comandi",
-    "controls_line1": "A: Prendi/Posa    B: Annulla    X: Dettagli    Y: Selezione multipla",
-    "controls_line2": "L/R: Cambia box    ZL/ZR: Vista box    +: Menu    -: Info",
-    "press_minus_b_close": "Premi - o B per chiudere",
 
 
     "status_main": "D-Pad: Muovi  L/R: Box  A: Prendi/Posa  Y: Seleziona  YY: Tutti  B: Annulla  X: Dettaglio",
@@ -444,5 +434,17 @@
     "dlg_release_bank_sub": "Viene rimosso dalla banca al prossimo salvataggio.",
     "dlg_backup_note": "Solo un backup può riportarlo indietro.",
     "dlg_edited": "modificata {0}",
-    "loading_banks": "Caricamento banche…"
+    "loading_banks": "Caricamento banche…",
+    "about_tagline": "Sistema di banca locale",
+    "about_desc": "Gestore box Pokemon per Nintendo Switch. Sposta Pokemon tra file di salvataggio e banche.",
+    "about_game_version": "Versione del gioco",
+    "about_built_on": "Basato su",
+    "ctl_pick_place": "Prendi/Posa",
+    "ctl_cancel": "Annulla",
+    "ctl_details": "Dettagli",
+    "ctl_multi": "Selezione multipla",
+    "ctl_switch_box": "Cambia box",
+    "ctl_box_view": "Vista box",
+    "ctl_menu": "Menu",
+    "ctl_about": "Info"
 }

@@ -203,20 +203,10 @@
     "b_close": "B: Fechar",
     "wc_footer": "A: Injetar  L/R: Pular 10  B: Cancelar",
 
-    "about_title": "pkHouse - Sistema de banco local",
-    "about_desc1": "Gerenciador de boxes Pokemon para Nintendo Switch",
-    "about_desc2": "Mova Pokemon entre arquivos de save e bancos.",
     "supported_games": "Jogos compativeis",
-    "supported_lgpe": "Let's Go, Pikachu/Eevee (1.0.2)  -  Sword/Shield (1.3.2)",
-    "supported_swsh": "Brilliant Diamond/Shining Pearl (1.3.0)  -  Legends: Arceus (1.1.1)",
-    "supported_sv_za": "Scarlet/Violet (4.0.0)  -  Legends: Z-A (2.0.2)",
-    "supported_frlg": "FireRed/LeafGreen (1.0.0)",
     "credit_pkhex": "Baseado no PKHeX de kwsch e pesquisa PokeCrypto.",
     "credit_jksv": "Logica de backup e gravacao baseada no JKSV de J-D-K.",
     "controls": "Controles",
-    "controls_line1": "A: Pegar/Colocar    B: Cancelar    X: Detalhes    Y: Selecao multipla",
-    "controls_line2": "L/R: Trocar box    ZL/ZR: Visao das boxes    +: Menu    -: Sobre",
-    "press_minus_b_close": "Pressione - ou B para fechar",
 
 
     "status_main": "D-Pad: Mover  L/R: Box  A: Pegar/Colocar  Y: Selecionar  YY: Todos  B: Cancelar  X: Detalhe",
@@ -444,5 +434,17 @@
     "dlg_release_bank_sub": "Ele sai do banco na próxima vez que você salvar.",
     "dlg_backup_note": "Só um backup pode trazê-lo de volta.",
     "dlg_edited": "editado {0}",
-    "loading_banks": "Carregando bancos…"
+    "loading_banks": "Carregando bancos…",
+    "about_tagline": "Sistema de banco local",
+    "about_desc": "Gerenciador de boxes Pokemon para Nintendo Switch. Mova Pokemon entre arquivos de save e bancos.",
+    "about_game_version": "Versão do jogo",
+    "about_built_on": "Baseado em",
+    "ctl_pick_place": "Pegar/Colocar",
+    "ctl_cancel": "Cancelar",
+    "ctl_details": "Detalhes",
+    "ctl_multi": "Selecao multipla",
+    "ctl_switch_box": "Trocar box",
+    "ctl_box_view": "Visao das boxes",
+    "ctl_menu": "Menu",
+    "ctl_about": "Sobre"
 }

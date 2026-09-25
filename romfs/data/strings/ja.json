@@ -203,20 +203,10 @@
     "b_close": "B：閉じる",
     "wc_footer": "A：注入  L/R：10件スキップ  B：キャンセル",
 
-    "about_title": "pkHouse - ローカルバンクシステム",
-    "about_desc1": "Nintendo Switch用ポケモンボックス管理ツール",
-    "about_desc2": "セーブデータとバンク間でポケモンを移動できます。",
     "supported_games": "対応ゲーム",
-    "supported_lgpe": "Let's Go! ピカチュウ/イーブイ (1.0.2)  -  ソード/シールド (1.3.2)",
-    "supported_swsh": "ブリリアントダイヤモンド/シャイニングパール (1.3.0)  -  LEGENDS アルセウス (1.1.1)",
-    "supported_sv_za": "スカーレット/バイオレット (4.0.0)  -  LEGENDS Z-A (2.0.2)",
-    "supported_frlg": "ファイアレッド/リーフグリーン (1.0.0)",
     "credit_pkhex": "PKHeX (kwsch) およびPokeCryptoの研究に基づいています。",
     "credit_jksv": "セーブのバックアップと書き込みロジックはJKSV (J-D-K) に基づいています。",
     "controls": "操作方法",
-    "controls_line1": "A：取る/置く    B：キャンセル    X：詳細    Y：複数選択",
-    "controls_line2": "L/R：ボックス切替    ZL/ZR：ボックス一覧    +：メニュー    -：情報",
-    "press_minus_b_close": "-またはBボタンで閉じる",
 
 
     "status_main": "十字キー：移動  L/R：ボックス  A：取る/置く  Y：選択  YY：全選択  B：キャンセル  X：詳細",
@@ -444,5 +434,17 @@
     "dlg_release_bank_sub": "次に保存したときにバンクから取り除かれます。",
     "dlg_backup_note": "元に戻せるのはバックアップだけです。",
     "dlg_edited": "更新 {0}",
-    "loading_banks": "バンクを読み込んでいます…"
+    "loading_banks": "バンクを読み込んでいます…",
+    "about_tagline": "ローカルバンクシステム",
+    "about_desc": "Nintendo Switch用ポケモンボックス管理ツール。セーブデータとバンク間でポケモンを移動できます。",
+    "about_game_version": "ゲームのバージョン",
+    "about_built_on": "使用技術",
+    "ctl_pick_place": "取る/置く",
+    "ctl_cancel": "キャンセル",
+    "ctl_details": "詳細",
+    "ctl_multi": "複数選択",
+    "ctl_switch_box": "ボックス切替",
+    "ctl_box_view": "ボックス一覧",
+    "ctl_menu": "メニュー",
+    "ctl_about": "情報"
 }

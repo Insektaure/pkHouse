@@ -1,4 +1,5 @@
 #include "ui.h"
+#include "i18n.h"
 #include <algorithm>
 #include <cmath>
 #include <vector>
@@ -6,6 +7,15 @@
 // --- Fonts ---------------------------------------------------------------------
 
 TTF_Font* UI::uiFont(int size, bool bold) {
+    // Synthetic bold thickens every stroke by the same amount, and below 14px
+    // that closes up dense kanji (鼻, 顔, 識 become solid shapes). So in the
+    // languages written with them, small bold text is drawn regular - which is
+    // what the console's own Japanese interface does at those sizes.
+    if (bold && size < 14) {
+        const std::string& lang = i18n::currentLang();
+        if (lang == "ja" || lang == "ko" || lang == "zh-Hans" || lang == "zh-Hant")
+            bold = false;
+    }
     const int key = size * 2 + (bold ? 1 : 0);
     auto it = uiFonts_.find(key);
     if (it != uiFonts_.end())

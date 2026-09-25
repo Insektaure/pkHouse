@@ -1,4 +1,5 @@
 #include "ui.h"
+#include "ui_util.h"
 #include "i18n.h"
 #include <algorithm>
 #include <cstdio>
@@ -163,13 +164,11 @@ void UI::drawProfileSelectorFrame() {
                 fillRounded(ix, iy, icon, icon, 22, bg);
                 const std::string& nick = profiles[i].nickname;
                 if (!nick.empty()) {
-                    std::string initial(1, nick[0]);
-                    if (initial[0] >= 'a' && initial[0] <= 'z') initial[0] -= 'a' - 'A';
-                    // Keep a multi-byte first letter whole.
+                    // The whole first letter, however many bytes it takes.
                     const unsigned char lead = static_cast<unsigned char>(nick[0]);
                     const size_t len = lead < 0x80 ? 1 : (lead & 0xE0) == 0xC0 ? 2
                                      : (lead & 0xF0) == 0xE0 ? 3 : 4;
-                    if (len > 1) initial = nick.substr(0, len);
+                    const std::string initial = toUpperUtf8(nick.substr(0, len));
                     drawTextCentered(initial, ix + icon / 2, iy + icon / 2, t,
                                      uiFont(std::max(24, icon * 2 / 5), true));
                 }
@@ -542,52 +541,100 @@ void UI::drawGameIcon(GameType g, int x, int y, int size, int radius, SDL_Color 
 
 // --- Top bar -------------------------------------------------------------------------
 
-void UI::drawGameSelTopBar() {
+SDL_Color UI::gameTint(GameType g) { return placeholderOf(g).tint; }
+
+void UI::drawCheckDisc(int cx, int cy, int radius, SDL_Color disc, SDL_Color tick) {
+    fillDisc(cx, cy, radius, disc);
+    if (!iconCheck_) return;
+    SDL_SetTextureColorMod(iconCheck_, tick.r, tick.g, tick.b);
+    const int s = radius * 3 / 2;
+    SDL_Rect dst = {cx - s / 2, cy - s / 2, s, s};
+    SDL_RenderCopy(renderer_, iconCheck_, nullptr, &dst);
+    SDL_SetTextureColorMod(iconCheck_, 255, 255, 255);
+}
+
+std::vector<std::string> UI::wrapChars(const std::string& text, TTF_Font* f, int maxW,
+                                       int maxLines) {
+    std::vector<std::string> lines;
+    std::string line;
+    for (size_t i = 0; i < text.size(); ) {
+        const unsigned char lead = static_cast<unsigned char>(text[i]);
+        const size_t len = lead < 0x80 ? 1 : (lead & 0xE0) == 0xC0 ? 2 : (lead & 0xF0) == 0xE0 ? 3 : 4;
+        const std::string cp = text.substr(i, len);
+        if (!line.empty() && textWidth(line + cp, f) > maxW) {
+            if ((int)lines.size() == maxLines - 1) {
+                lines.push_back(fitText(line + text.substr(i), f, maxW));
+                return lines;
+            }
+            lines.push_back(line);
+            line.clear();
+        }
+        line += cp;
+        i += len;
+    }
+    if (!line.empty()) lines.push_back(line);
+    return lines;
+}
+
+void UI::drawFlowTopBar(const std::string& title, const std::vector<std::string>& steps,
+                        int current) {
     drawRect(0, 0, SCREEN_W, ACCENT_RULE_H, T().accent);
     const int cy = 40;
     int x = drawLogo(32, cy) + 16;
     drawRect(x, cy - 14, 1, 28, T().divider);
     x += 17;
     TTF_Font* fTitle = uiFont(20, true);
-    drawText(i18n::get(StrKey::GsTitle), x, baselineTopGs(fTitle, cy + 8), T().text, fTitle);
+    drawText(title, x, baselineTopGs(fTitle, cy + 8), T().text, fTitle);
+    if (steps.empty()) return;
 
-    // Steps: game, backup, bank. Without a save there is no backup step.
-    {
-        const bool withSave = selectedProfile_ >= 0 && !appletMode_;
-        std::vector<std::string> steps{i18n::get(StrKey::StepGame)};
-        if (withSave) steps.push_back(i18n::get(StrKey::StepBackup));
-        steps.push_back(i18n::get(StrKey::StepBank));
-
-        TTF_Font* fStep = uiFont(15, true);
-        TTF_Font* fNum  = uiFont(13, true);
-        constexpr int H = 36, NUM_R = 12, CHEV = 22;
-        std::vector<int> widths;
-        int total = 0;
-        for (const auto& st : steps) {
-            widths.push_back(6 + NUM_R * 2 + 8 + textWidth(st, fStep) + 14);
-            total += widths.back();
+    TTF_Font* fStep = uiFont(15, true);
+    TTF_Font* fNum  = uiFont(13, true);
+    constexpr int H = 36, NUM_R = 12, CHEV = 22;
+    std::vector<int> widths;
+    int total = 0;
+    for (const auto& st : steps) {
+        widths.push_back(6 + NUM_R * 2 + 8 + textWidth(st, fStep) + 14);
+        total += widths.back();
+    }
+    total += CHEV * (static_cast<int>(steps.size()) - 1);
+    int sx = 634 - total / 2;
+    for (size_t i = 0; i < steps.size(); i++) {
+        const bool cur = (static_cast<int>(i) == current);
+        const bool done = (static_cast<int>(i) < current);
+        if (cur) {
+            fillRounded(sx, cy - H / 2, widths[i], H, H / 2, T().buttonBg);
+            strokeRounded(sx, cy - H / 2, widths[i], H, H / 2, 1, T().buttonBorder);
         }
-        total += CHEV * (static_cast<int>(steps.size()) - 1);
-        int sx = 634 - total / 2;
-        for (size_t i = 0; i < steps.size(); i++) {
-            const bool cur = (i == 0);
-            if (cur) {
-                fillRounded(sx, cy - H / 2, widths[i], H, H / 2, T().buttonBg);
-                strokeRounded(sx, cy - H / 2, widths[i], H, H / 2, 1, T().buttonBorder);
-            }
-            const int ncx = sx + 6 + NUM_R;
+        const int ncx = sx + 6 + NUM_R;
+        const SDL_Color ok = T().statusOk;
+        if (done) {
+            drawCheckDisc(ncx, cy, NUM_R, SDL_Color{ok.r, ok.g, ok.b, 50}, ok);
+        } else {
             fillDisc(ncx, cy, NUM_R, cur ? T().accent : T().buttonBg);
             drawTextCentered(std::to_string(i + 1), ncx, cy, cur ? T().keyCapText : T().textDim, fNum);
-            drawText(steps[i], ncx + NUM_R + 8, cy - TTF_FontHeight(fStep) / 2,
-                     cur ? T().text : T().textMuted, fStep);
-            sx += widths[i];
-            if (i + 1 < steps.size()) {
-                fillArrow(sx + CHEV / 2.0f, cy, 5, ArrowDir::Right, T().textMuted);
-                sx += CHEV;
-            }
+        }
+        drawText(steps[i], ncx + NUM_R + 8, cy - TTF_FontHeight(fStep) / 2,
+                 done ? ok : cur ? T().text : T().textMuted, fStep);
+        sx += widths[i];
+        if (i + 1 < steps.size()) {
+            fillArrow(sx + CHEV / 2.0f, cy, 5, ArrowDir::Right, T().textMuted);
+            sx += CHEV;
         }
     }
+}
 
+void UI::drawGameSelTopBar() {
+    // Steps: game, backup, bank. Without a save there is no backup step.
+    const bool withSave = selectedProfile_ >= 0 && !appletMode_;
+    std::vector<std::string> steps{i18n::get(StrKey::StepGame)};
+    if (withSave) steps.push_back(i18n::get(StrKey::StepBackup));
+    steps.push_back(i18n::get(StrKey::StepBank));
+    drawFlowTopBar(i18n::get(StrKey::GsTitle), steps, 0);
+    drawGameSelTopRight();
+}
+
+void UI::drawGameSelTopRight() {
+    const int cy = 40;
     // Right: launch mode, then the profile.
     int rx = SCREEN_W - 32;
     if (selectedProfile_ >= 0 && selectedProfile_ < account_.profileCount()) {
@@ -952,8 +999,7 @@ void UI::drawGameDetailPanel() {
     int by = fy + boxH + 20;
     {
         const std::string tag = i18n::fmt(StrKey::DsBanks, std::to_string(info.banks.size()));
-        std::string upper = tag;
-        for (char& c : upper) if (c >= 'a' && c <= 'z') c -= 'a' - 'A';
+        const std::string upper = toUpperUtf8(tag);
         drawTextTracked(upper, inX, by, T().accentBank, fTag, 2);
         const GameType pair = pairedGame(g);
         std::string note = pair == g ? i18n::get(StrKey::DsSingleFamily)
@@ -1043,6 +1089,119 @@ void UI::drawGameSelectorFrame() {
     if (selectedProfile_ >= 0)
         hints[n++] = {"+", StrKey::HintQuit};
     drawFooterBar(hints, n);
+}
+
+// --- Backup screen (UI 2.0) ----------------------------------------------------------
+//
+// external/UI_2.0 "1b · Backing up": the game list stays behind, dimmed, and
+// the detail panel follows the backup step by step. Drawn and presented from
+// inside selectGame, which is blocking: nothing can be pressed meanwhile.
+
+void UI::drawBackupProgress(GameType game, const std::string& dir, int step, float fraction) {
+    if (!renderer_) return;
+
+    drawGameSelectorFrame();
+
+    // Top bar over again, now on the backup step.
+    drawRect(0, 0, SCREEN_W, 76, T().bg);
+    drawFlowTopBar(i18n::get(StrKey::BkTitle),
+                   {i18n::get(StrKey::StepGame), i18n::get(StrKey::StepBackup),
+                    i18n::get(StrKey::StepBank)}, 1);
+    drawGameSelTopRight();
+
+    // Everything else waits.
+    drawRect(0, 76, GS_PANEL_X - 12, FOOTER_Y - 76, SDL_Color{T().bg.r, T().bg.g, T().bg.b, 160});
+
+    const int X = GS_PANEL_X, Y = GS_PANEL_Y, W = GS_PANEL_W, H = GS_PANEL_H;
+    fillRounded(X, Y, W, H, 16, T().panelBg);
+    strokeRounded(X, Y, W, H, 16, 1, T().panelBorder);
+    const int inX = X + 19, inW = W - 38;
+
+    // Which game
+    {
+        constexpr int ICON = 56;
+        drawGameIcon(game, inX, Y + 19, ICON, 12, T().panelBg);
+        TTF_Font* fName = uiFont(20, true);
+        TTF_Font* fSub  = uiFont(13);
+        const int tx = inX + ICON + 14, tw = inW - ICON - 14;
+        drawText(fitText(gameDisplayNameOf(game), fName, tw), tx, Y + 24, T().text, fName);
+        drawText(fitText(bankGroupNameOf(game), fSub, tw), tx, Y + 51, T().textDim, fSub);
+    }
+
+    // Step title and overall progress: the write is most of it.
+    TTF_Font* fTag = uiFont(11, true);
+    drawTextTracked(i18n::get(StrKey::BkStep), inX, Y + 92, T().accent, fTag, 2);
+    drawText(i18n::get(StrKey::BkHeading), inX, Y + 110, T().text, uiFont(22, true));
+    {
+        static constexpr float BASE[4] = {0.03f, 0.08f, 0.12f, 0.97f};
+        float overall = BASE[std::clamp(step, 0, 3)];
+        if (step == 2) overall = 0.12f + 0.85f * std::clamp(fraction, 0.0f, 1.0f);
+        const int pct = static_cast<int>(overall * 100.0f + 0.5f);
+        TTF_Font* f = uiFont(14, true);
+        const std::string p = std::to_string(pct) + "%";
+        const int barW = inW - 56;
+        fillRounded(inX, Y + 157, barW, 10, 5, T().bg);
+        fillRounded(inX, Y + 157, std::max(10, static_cast<int>(barW * overall)), 10, 5, T().accent);
+        drawText(p, inX + inW - textWidth(p, f), Y + 162 - TTF_FontHeight(f) / 2, T().text, f);
+    }
+
+    // The steps themselves.
+    {
+        const char* labels[4] = {StrKey::BkOpened, StrKey::BkSpace, StrKey::BkWriting, StrKey::BkLoading};
+        const int boxY = Y + 183, rowH = 30;
+        fillRounded(inX, boxY, inW, 4 * rowH + 14, 10, T().bg);
+        TTF_Font* f = uiFont(14, true);
+        for (int i = 0; i < 4; i++) {
+            const int cy = boxY + 7 + i * rowH + rowH / 2;
+            const int cx = inX + 24;
+            const SDL_Color ok = T().statusOk;
+            if (i < step) {
+                drawCheckDisc(cx, cy, 10, SDL_Color{ok.r, ok.g, ok.b, 50}, ok);
+            } else if (i == step) {
+                fillDisc(cx, cy, 10, T().accent);
+                fillDisc(cx, cy, 3, T().keyCapText);
+            } else {
+                strokeRounded(cx - 10, cy - 10, 20, 20, 10, 2, T().buttonBorder);
+            }
+            drawText(fitText(i18n::get(labels[i]), f, inW - 60), cx + 20,
+                     cy - TTF_FontHeight(f) / 2, i <= step ? T().text : T().textMuted, f);
+        }
+    }
+
+    // Where it goes.
+    {
+        const int dy = Y + 330;
+        drawTextTracked(i18n::get(StrKey::BkDestination), inX, dy, T().textDim, fTag, 2);
+        TTF_Font* f = uiFont(14, true);
+        const auto lines = wrapChars(dir, f, inW, 3);
+        for (size_t i = 0; i < lines.size(); i++)
+            drawText(lines[i], inX, dy + 20 + static_cast<int>(i) * 19, T().text, f);
+    }
+
+    // The LED note, bottom of the panel.
+    {
+        TTF_Font* f = uiFont(13, true);
+        const auto lines = wrapText(i18n::get(StrKey::BkLed), f, inW - 44, 2);
+        const int h = 18 + static_cast<int>(lines.size()) * 18;
+        const int ny = Y + H - 19 - h;
+        const SDL_Color w = T().statusWarn;
+        fillRounded(inX, ny, inW, h, 10, SDL_Color{w.r, w.g, w.b, 40});
+        fillDisc(inX + 16, ny + h / 2, 4, T().accent);
+        for (size_t i = 0; i < lines.size(); i++)
+            drawText(lines[i], inX + 30, ny + 9 + static_cast<int>(i) * 18, T().accent, f);
+    }
+
+    // Footer: no keys, only what is happening.
+    drawFooterBar(nullptr, 0, std::string());
+    {
+        TTF_Font* f = uiFont(15);
+        const int cy = FOOTER_Y + FOOTER_H / 2;
+        fillDisc(38, cy, 5, T().accent);
+        drawText(i18n::get(StrKey::BkFooter), 52, cy - TTF_FontHeight(f) / 2, T().text, f);
+    }
+
+    SDL_RenderPresent(renderer_);
+    markDirty();
 }
 
 void UI::handleGameSelectorInput(bool& running) {

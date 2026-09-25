@@ -76,10 +76,6 @@ namespace StrKey {
 
     // ui_bank.cpp - bank selector
     constexpr const char* AllBanks             = "all_banks";
-    constexpr const char* SelectSideBank       = "select_side_bank";
-    constexpr const char* SelectBank           = "select_bank";
-    constexpr const char* NoBanksFound         = "no_banks_found";
-    constexpr const char* PressXCreate         = "press_x_create";
     constexpr const char* StatusBankAll        = "status_bank_all";
     constexpr const char* StatusBankNormal     = "status_bank_normal";
     constexpr const char* DeleteBankConfirm    = "delete_bank_confirm";
@@ -316,8 +312,6 @@ namespace StrKey {
     constexpr const char* KeepPositions        = "keep_positions";
     constexpr const char* LabelAllBanks        = "label_all_banks";
     constexpr const char* LabelDualBank        = "label_dual_bank";
-    constexpr const char* Left                 = "left";
-    constexpr const char* Right                = "right";
     // ui_render.cpp - hint bar: one label per button, one message per state
     constexpr const char* HintMove                 = "hint_move";
     constexpr const char* HintBox                  = "hint_box";
@@ -442,6 +436,46 @@ namespace StrKey {
     constexpr const char* AllBanksSub              = "all_banks_sub";
     constexpr const char* HintFilter               = "hint_filter";
     constexpr const char* ModeApplet               = "mode_applet";
+
+    // backup screen and bank picker (UI 2.0)
+    constexpr const char* BkTitle                  = "bk_title";
+    constexpr const char* BkStep                   = "bk_step";
+    constexpr const char* BkHeading                = "bk_heading";
+    constexpr const char* BkOpened                 = "bk_opened";
+    constexpr const char* BkSpace                  = "bk_space";
+    constexpr const char* BkWriting                = "bk_writing";
+    constexpr const char* BkLoading                = "bk_loading";
+    constexpr const char* BkDestination            = "bk_destination";
+    constexpr const char* BkLed                    = "bk_led";
+    constexpr const char* BkFooter                 = "bk_footer";
+    constexpr const char* BsTitle                  = "bs_title";
+    constexpr const char* BsDualTitle              = "bs_dual_title";
+    constexpr const char* StepLeft                 = "step_left";
+    constexpr const char* StepRight                = "step_right";
+    constexpr const char* BsForGame                = "bs_for_game";
+    constexpr const char* BsSharedBy               = "bs_shared_by";
+    constexpr const char* BsCountOne               = "bs_count_one";
+    constexpr const char* BsCountMany              = "bs_count_many";
+    constexpr const char* BsEdited                 = "bs_edited";
+    constexpr const char* BsNewBank                = "bs_new_bank";
+    constexpr const char* BsFull                   = "bs_full";
+    constexpr const char* BsTagLeft                = "bs_tag_left";
+    constexpr const char* BsTagRight               = "bs_tag_right";
+    constexpr const char* BsStepN                  = "bs_step_n";
+    constexpr const char* BsOpensLeft              = "bs_opens_left";
+    constexpr const char* BsOpensRight             = "bs_opens_right";
+    constexpr const char* HintJumpGame             = "hint_jump_game";
+    constexpr const char* BsBackupSaved            = "bs_backup_saved";
+    constexpr const char* BsBackupSkipped          = "bs_backup_skipped";
+    constexpr const char* BsBackupFailed           = "bs_backup_failed";
+    constexpr const char* StInSave                 = "st_in_save";
+    constexpr const char* StBoxesUsed              = "st_boxes_used";
+    constexpr const char* StBackup                 = "st_backup";
+    constexpr const char* StPokemon                = "st_pokemon";
+    constexpr const char* StLastEdited             = "st_last_edited";
+    constexpr const char* StFull                   = "st_full";
+    constexpr const char* ChipAllBanks             = "chip_all_banks";
+    constexpr const char* ChipDual                 = "chip_dual";
 
     // ui_gts.cpp - the online GTS
     constexpr const char* GtsTitle             = "gts_title";

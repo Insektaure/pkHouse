@@ -1,4 +1,5 @@
 #include "ui.h"
+#include "ui_util.h"
 #include "i18n.h"
 #include "species_converter.h"
 #include "move_types.h"
@@ -96,6 +97,7 @@ void UI::freeSprites() {
     if (iconHouse_)      { SDL_DestroyTexture(iconHouse_);      iconHouse_ = nullptr; }
     if (iconGlobe_)      { SDL_DestroyTexture(iconGlobe_);      iconGlobe_ = nullptr; }
     if (iconBank_)       { SDL_DestroyTexture(iconBank_);       iconBank_ = nullptr; }
+    if (iconCheck_)      { SDL_DestroyTexture(iconCheck_);      iconCheck_ = nullptr; }
 }
 
 SDL_Texture* UI::getRibbonSprite(const std::string& filename) {
@@ -359,14 +361,6 @@ std::string utf16ToUtf8(const std::u16string& s) {
     return out;
 }
 
-// ASCII upper case, for the small caps panel tags. Anything outside ASCII is
-// left alone rather than guessed at.
-std::string upperAscii(std::string s) {
-    for (char& c : s)
-        if (c >= 'a' && c <= 'z') c = static_cast<char>(c - 'a' + 'A');
-    return s;
-}
-
 // Labels like "Dual Bank | " were written to sit before the game name in the
 // old status bar; the top bar has its own separators.
 std::string trimLabel(std::string s) {
@@ -384,7 +378,10 @@ int baselineTop(TTF_Font* f, int baseline) {
 } // anonymous namespace
 
 SDL_Rect UI::slotRect(Panel panelId, int col, int row) const {
-    const int panelX = (panelId == Panel::Game) ? PANEL_X_L : PANEL_X_R;
+    return slotRectAt((panelId == Panel::Game) ? PANEL_X_L : PANEL_X_R, col, row);
+}
+
+SDL_Rect UI::slotRectAt(int panelX, int col, int row) const {
     const int cols = gridCols();
     const int gridW = cols * CELL_W + (cols - 1) * CELL_GAP;
     const int x0 = panelX + (PANEL_W - gridW) / 2;
@@ -515,17 +512,29 @@ void UI::drawSlot(int x, int y, const SlotDisplay& sd, bool isCursor, int select
         fillRounded(x, y, CELL_W, CELL_H, CELL_RADIUS, T().searchDim);
 }
 
-void UI::drawBoxPanel(Panel panelId, bool isActive) {
+void UI::drawBoxPanel(Panel panelId, bool isActive, int xOverride, int boxOverride,
+                      const std::string& tagOverride) {
+    const bool preview = (panelId == Panel::Preview);
     const bool left = (panelId == Panel::Game);
-    const int px = left ? PANEL_X_L : PANEL_X_R;
-    const int box = left ? gameBox_ : bankBox_;
-    const SDL_Color accent = left ? T().accentSave : T().accentBank;
+    const int px = xOverride >= 0 ? xOverride : (left ? PANEL_X_L : PANEL_X_R);
+    const int box = boxOverride >= 0 ? boxOverride
+                  : preview ? previewBox_ : (left ? gameBox_ : bankBox_);
+    const SDL_Color accent = left && !isDualBankMode() ? T().accentSave : T().accentBank;
 
-    // What this panel shows: the save, or one of the two banks.
+    // What this panel shows: the save, one of the two banks, or a preview.
     std::string tag, title;
     int boxCount = 1;
     bool loaded = true;
-    if (left && !isDualBankMode()) {
+    if (preview) {
+        tag = i18n::get(StrKey::TagBank) + std::string(" \xc2\xb7 ") + previewBankName_;
+        if (previewBankPath_.empty()) {
+            title = "...";
+            loaded = false;
+        } else {
+            title = previewBank_.getBoxName(box);
+            boxCount = previewBank_.boxCount();
+        }
+    } else if (left && !isDualBankMode()) {
         tag = i18n::get(StrKey::TagSave) + std::string(" \xc2\xb7 ") + gameDisplayNameOf(selectedGame_);
         title = save_.getBoxName(box);
         boxCount = save_.boxCount();
@@ -540,6 +549,7 @@ void UI::drawBoxPanel(Panel panelId, bool isActive) {
         title = b.getBoxName(box);
         boxCount = b.boxCount();
     }
+    if (!tagOverride.empty()) tag = tagOverride;
 
     // Panel
     fillRounded(px, PANEL_Y, PANEL_W, PANEL_H, PANEL_RADIUS, T().panelBg);
@@ -574,7 +584,7 @@ void UI::drawBoxPanel(Panel panelId, bool isActive) {
         constexpr int TRACK = 2;
         // fitText measures without tracking, so shrink its budget until the
         // tracked result fits, always cutting from the full tag.
-        const std::string full = upperAscii(tag);
+        const std::string full = toUpperUtf8(tag);
         std::string t = full;
         for (int budget = textWidth(full, f); budget > 0 && measureTextTracked(t, f, TRACK) > maxW; ) {
             budget -= 8;
@@ -612,9 +622,12 @@ void UI::drawBoxPanel(Panel panelId, bool isActive) {
             const int slot = row * cols + col;
             if (slot >= (int)displays.size()) continue;
             const auto& sd = displays[slot];
-            const SDL_Rect r = slotRect(panelId, col, row);
+            const SDL_Rect r = slotRectAt(px, col, row);
 
-            bool isCursor = isActive && cursor_.col == col && cursor_.row == row;
+            // The cursor lives in the box view; elsewhere (the bank picker) an
+            // active panel only lights its L/R keys.
+            bool isCursor = isActive && screen_ == AppScreen::MainView
+                            && cursor_.col == col && cursor_.row == row;
             int selOrder = 0;
             if (!selectedSlots_.empty()
                 && panelId == selectedPanel_ && box == selectedBox_) {
@@ -626,7 +639,7 @@ void UI::drawBoxPanel(Panel panelId, bool isActive) {
                 }
             }
             int hlState = 0;
-            if (searchHighlightActive_ && !sd.empty)
+            if (searchHighlightActive_ && !sd.empty && !preview)
                 hlState = isSearchMatch(panelId, box, slot) ? 1 : -1;
             bool partySlot = left && !isDualBankMode() && save_.isLGPEPartySlot(box, slot);
             drawSlot(r.x, r.y, sd, isCursor, selOrder, hlState, partySlot);

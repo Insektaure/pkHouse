@@ -52,6 +52,8 @@ bool BankManager::initAll(const std::string& basePath) {
             info.fullPath = fullPath;
             info.valid = Bank::isValidFile(fullPath);
             info.occupiedSlots = info.valid ? countOccupied(fullPath) : 0;
+            struct stat st;
+            if (stat(fullPath.c_str(), &st) == 0) info.modified = st.st_mtime;
             info.game = g;
             bankList_.push_back(info);
         }
@@ -123,6 +125,8 @@ void BankManager::refresh() {
         info.valid = Bank::isValidFile(fullPath);
         info.occupiedSlots = info.valid ? countOccupied(fullPath) : 0;
         info.game = game_;
+        struct stat st;
+        if (stat(fullPath.c_str(), &st) == 0) info.modified = st.st_mtime;
         bankList_.push_back(info);
     }
     closedir(dir);

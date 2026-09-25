@@ -2,6 +2,7 @@
 #include "ui_util.h"
 #include "led.h"
 #include "i18n.h"
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -91,6 +92,7 @@ bool UI::init() {
         iconHouse_       = loadIcon("house.png");
         iconGlobe_       = loadIcon("globe.png");
         iconBank_        = loadIcon("bank.png");
+        iconCheck_       = loadIcon("check.png");
     }
 
     // Open game controller
@@ -557,7 +559,14 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
             }
         }
         // Screen transition always triggers redraw
-        if (screen_ != screenBefore)
+        if (screen_ != screenBefore) {
+            markDirty();
+            // A fresh visit to the bank picker starts without a stale preview.
+            if (screen_ == AppScreen::BankSelector)
+                clearBankPreview();
+        }
+        // The bank picker previews the highlighted bank once the cursor rests.
+        if (screen_ == AppScreen::BankSelector && updateBankPreview())
             markDirty();
         // The card browser reads the highlighted card once the cursor settles.
         // This has to tick from the loop: markDirty() called from inside a draw
@@ -607,10 +616,18 @@ void UI::selectGame(GameType game) {
         bankSelTarget_ = Panel::Bank;
     }
 
-    if (!isDualBankMode()) {
-        showWorking(i18n::get(StrKey::LoadingSaveData));
+    lastBackup_ = BackupOutcome::None;
+    lastBackupDir_.clear();
 
-        if (selectedProfile_ >= 0) {
+    if (!isDualBankMode()) {
+        const bool withSave = selectedProfile_ >= 0;
+        const std::string backupDir = withSave ? buildBackupDir(game) : std::string();
+        if (withSave)
+            drawBackupProgress(game, backupDir, 0, 0.0f);
+        else
+            showWorking(i18n::get(StrKey::LoadingSaveData));
+
+        if (withSave) {
             std::string mountPath = account_.mountSave(selectedProfile_, game);
             if (mountPath.empty()) {
                 showMessageAndWait(i18n::get(StrKey::MountError), i18n::get(StrKey::FailedMountSave));
@@ -619,6 +636,7 @@ void UI::selectGame(GameType game) {
             savePath_ = mountPath + saveFileNameOf(game);
 
             // Check space and backup save files
+            drawBackupProgress(game, backupDir, 1, 0.0f);
             size_t saveSize = AccountManager::calculateDirSize(mountPath);
             bool doBackup = true;
 
@@ -632,14 +650,31 @@ void UI::selectGame(GameType game) {
                         return;
                     }
                     doBackup = false;
+                    lastBackup_ = BackupOutcome::Skipped;
                 }
             }
 
             if (doBackup) {
-                std::string backupDir = buildBackupDir(game);
+                // Redrawn at most every 50 ms: the copy is quick, and drawing
+                // after every 64 KB would cost more than the copy itself.
+                size_t written = 0;
+                uint32_t lastDraw = 0;
+                drawBackupProgress(game, backupDir, 2, 0.0f);
                 ledBlink();
-                bool ok = AccountManager::backupSaveDir(mountPath, backupDir);
+                bool ok = AccountManager::backupSaveDir(mountPath, backupDir,
+                    [&](size_t n) {
+                        written += n;
+                        const uint32_t now = SDL_GetTicks();
+                        if (now - lastDraw >= 50) {
+                            lastDraw = now;
+                            drawBackupProgress(game, backupDir, 2, saveSize ?
+                                std::min(1.0f, static_cast<float>(written) / saveSize) : 1.0f);
+                        }
+                    });
                 ledOff();
+                lastBackup_ = ok ? BackupOutcome::Saved : BackupOutcome::Failed;
+                lastBackupDir_ = backupDir;
+                lastBackupWhen_ = time(nullptr);
                 if (!ok) {
                     if (!showConfirmDialog(i18n::get(StrKey::BackupFailed),
                             i18n::get(StrKey::BackupFailedBody))) {
@@ -652,6 +687,8 @@ void UI::selectGame(GameType game) {
             savePath_ = basePath_ + "main";
         }
 
+        if (withSave)
+            drawBackupProgress(game, backupDir, 3, 1.0f);
         save_.load(savePath_);
 
         // Debug: verify encryption round-trip (encrypt(decrypt(file)) == file)
@@ -707,11 +744,13 @@ std::string UI::buildBackupDir(GameType game) const {
 bool UI::saveBankFiles() {
     showWorking(i18n::get(StrKey::Saving));
     ledBlink();
+    // Written now: the "Last edited" dates follow without asking the SD card.
+    const time_t now = time(nullptr);
     if (isDualBankMode()) {
-        if (!leftBankPath_.empty()) bankLeft_.save(leftBankPath_);
-        if (!activeBankPath_.empty()) bank_.save(activeBankPath_);
+        if (!leftBankPath_.empty()) { bankLeft_.save(leftBankPath_); leftBankModified_ = now; }
+        if (!activeBankPath_.empty()) { bank_.save(activeBankPath_); activeBankModified_ = now; }
     } else {
-        if (!activeBankPath_.empty()) bank_.save(activeBankPath_);
+        if (!activeBankPath_.empty()) { bank_.save(activeBankPath_); activeBankModified_ = now; }
     }
     ledOff();
     // Every caller outside dual-bank mode writes the save right after this.

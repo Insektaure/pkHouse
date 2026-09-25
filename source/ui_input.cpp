@@ -854,6 +854,8 @@ void UI::switchBox(int direction) {
 }
 
 Pokemon UI::getPokemonAt(int box, int slot, Panel panel) const {
+    if (panel == Panel::Preview)
+        return previewBankPath_.empty() ? Pokemon{} : previewBank_.getSlot(box, slot);
     if (panel == Panel::Game) {
         if (isDualBankMode()) {
             if (leftBankName_.empty()) return Pokemon{};

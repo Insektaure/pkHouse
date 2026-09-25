@@ -12,6 +12,7 @@
 // badges, origin, met date, location and language.
 
 #include "ui.h"
+#include "ui_util.h"
 #include "i18n.h"
 #include "species_converter.h"
 #include "species_types.h"
@@ -71,12 +72,6 @@ constexpr int TECH_Y = 634;
 
 int baselineTop(TTF_Font* f, int baseline) {
     return baseline - TTF_FontAscent(f);
-}
-
-std::string upperAscii(std::string s) {
-    for (char& c : s)
-        if (c >= 'a' && c <= 'z') c = static_cast<char>(c - 'a' + 'A');
-    return s;
 }
 
 // "Nature: " -> "Nature". The old popup's prefixes double as the labels, so
@@ -360,7 +355,7 @@ void UI::drawSummaryRibbons(const Pokemon& pkm, int x, int y, int w, int h) {
     if (title.empty())
         title = i18n::fmt(StrKey::RibbonsMarks, "0");
     TTF_Font* fLabel = uiFont(11, true);
-    title = upperAscii(title);
+    title = toUpperUtf8(title);
     drawTextTracked(fitText(title, fLabel, w - 32), x + 16, y + 16, T().textDim, fLabel, 2);
 
     TTF_Font* fName = uiFont(14);
@@ -414,7 +409,7 @@ void UI::drawSummaryAttributes(const Pokemon& pkm) {
     TTF_Font* fLabel = uiFont(11, true);
     auto column = [&](int i, const std::string& label) {
         const int x = COL_X + i * colW;
-        drawTextTracked(upperAscii(label), x, 82, T().textDim, fLabel, 2);
+        drawTextTracked(toUpperUtf8(label), x, 82, T().textDim, fLabel, 2);
         return x;
     };
     // A value that does not fit at 20 drops to 16 before it is cut.
@@ -495,7 +490,7 @@ void UI::drawSummaryMoves(const Pokemon& pkm) {
 
 void UI::drawSummaryIVs(const Pokemon& pkm) {
     TTF_Font* fLabel = uiFont(11, true);
-    drawTextTracked(upperAscii(i18n::get(StrKey::IVs)), COL_X, STATS_LABEL_Y, T().textDim, fLabel, 2);
+    drawTextTracked(toUpperUtf8(i18n::get(StrKey::IVs)), COL_X, STATS_LABEL_Y, T().textDim, fLabel, 2);
 
     // Clockwise from the top, as the old popup had them.
     const int values[6] = {pkm.ivHp(), pkm.ivAtk(), pkm.ivDef(),
@@ -563,7 +558,7 @@ void UI::drawSummaryIVs(const Pokemon& pkm) {
     TTF_Font* f = uiFont(12, true);
     const int lh = TTF_FontHeight(f);
     for (int i = 0; i < 6; i++) {
-        const std::string name = upperAscii(i18n::get(keys[i]));
+        const std::string name = toUpperUtf8(i18n::get(keys[i]));
         const std::string val = std::to_string(values[i]);
         const int lx = IV_CX + static_cast<int>((IV_RAD + 14) * COS[i]);
         const int ly = IV_CY + static_cast<int>((IV_RAD + 14) * SIN[i]);
@@ -604,7 +599,7 @@ void UI::drawSummaryEVs(const Pokemon& pkm) {
     for (int v : evs) total += v;
 
     TTF_Font* fLabel = uiFont(11, true);
-    drawTextTracked(upperAscii(i18n::get(StrKey::EVs)), EV_X, STATS_LABEL_Y, T().textDim, fLabel, 2);
+    drawTextTracked(toUpperUtf8(i18n::get(StrKey::EVs)), EV_X, STATS_LABEL_Y, T().textDim, fLabel, 2);
     TTF_Font* fTotal = uiFont(13);
     const std::string totalStr = std::to_string(total) + " / 510";
     drawText(totalStr, MARGIN_R - textWidth(totalStr, fTotal), STATS_LABEL_Y - 2,
@@ -614,14 +609,14 @@ void UI::drawSummaryEVs(const Pokemon& pkm) {
     TTF_Font* fVal  = uiFont(13, true);
     int labelW = 0;
     for (const char* k : keys)
-        labelW = std::max(labelW, textWidth(upperAscii(i18n::get(k)), fStat));
+        labelW = std::max(labelW, textWidth(toUpperUtf8(i18n::get(k)), fStat));
     const int barX = EV_X + labelW + 14;
     const int barW = MARGIN_R - 42 - barX;
 
     for (int i = 0; i < 6; i++) {
         const int y = EV_ROW_Y + i * EV_ROW_STEP;
         const int cy = y + 8;
-        drawText(upperAscii(i18n::get(keys[i])), EV_X, cy - TTF_FontHeight(fStat) / 2, T().text, fStat);
+        drawText(toUpperUtf8(i18n::get(keys[i])), EV_X, cy - TTF_FontHeight(fStat) / 2, T().text, fStat);
         fillRounded(barX, cy - 4, barW, 8, 4, T().buttonBg);
         const int filled = evs[i] > 0 ? std::max(8, barW * std::min(evs[i], 252) / 252) : 0;
         if (filled > 0)
@@ -646,7 +641,7 @@ void UI::drawSummaryProvenance(const Pokemon& pkm) {
     auto field = [&](const std::string& label, const std::string& value,
                      const std::string& trailing = std::string()) {
         if (value.empty() || fx >= MARGIN_R - 40) return;
-        const std::string lab = upperAscii(label);
+        const std::string lab = toUpperUtf8(label);
         drawTextTracked(lab, fx, PROV_LABEL_Y, T().textDim, fLabel, 2);
         const std::string v = fitText(value, fValue, MARGIN_R - fx);
         drawText(v, fx, baselineTop(fValue, PROV_VALUE_Y + 16), T().text, fValue);

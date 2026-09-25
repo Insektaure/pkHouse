@@ -23,8 +23,9 @@
 // keeps its own copy (ui_card.cpp) so its output never depends on this one.
 void blitDisc(SDL_Renderer* r, SDL_Texture* tex, int cx, int cy, int rad, SDL_Color bg);
 
-// Which panel the cursor is on
-enum class Panel { Game, Bank };
+// Which panel the cursor is on. Preview is never under the cursor: it is the
+// bank picker's look at a bank that has not been opened (UI::previewBank_).
+enum class Panel { Game, Bank, Preview };
 
 // App-level screen state
 enum class AppScreen {
@@ -199,6 +200,7 @@ private:
     SDL_Texture* iconHouse_      = nullptr;
     SDL_Texture* iconGlobe_      = nullptr;
     SDL_Texture* iconBank_       = nullptr;
+    SDL_Texture* iconCheck_      = nullptr;
 
 
     // Screen dimensions (Switch: 1280x720)
@@ -486,6 +488,16 @@ private:
     std::vector<std::pair<GameType, int>> allBanksByFamily_;  // families with banks
 
     void drawGameSelTopBar();
+    // Logo, a page title and the step row shared by the game selector, the
+    // backup screen and the bank picker. Steps before `current` are ticked.
+    void drawFlowTopBar(const std::string& title, const std::vector<std::string>& steps,
+                        int current);
+    void drawGameSelTopRight();
+    void drawCheckDisc(int cx, int cy, int radius, SDL_Color disc, SDL_Color tick);
+    static SDL_Color gameTint(GameType g);
+    // Like wrapText, but breaks anywhere: for paths, which have no spaces.
+    std::vector<std::string> wrapChars(const std::string& text, TTF_Font* f, int maxW,
+                                       int maxLines);
     void drawGameSelTiles();
     void drawGameSelFilters();
     void drawGameCard(int listIdx, const SDL_Rect& r, bool isCursor);
@@ -507,6 +519,36 @@ private:
     std::string leftBankName_;
     std::string leftBankPath_;
     Panel bankSelTarget_ = Panel::Bank;
+
+    // A bank the picker is showing but has not opened: loaded for display only,
+    // once the cursor has settled on it, into its own object so nothing that
+    // is open is touched.
+    Bank        previewBank_;
+    std::string previewBankPath_;
+    std::string previewBankName_;
+    time_t      previewBankModified_ = 0;
+
+    // When the open banks were last written, for the picker's "Last edited"
+    // tile. Taken from the bank list when a bank is opened and set again when
+    // pkHouse saves it, so the tile never has to ask the SD card.
+    time_t      activeBankModified_ = 0;
+    time_t      leftBankModified_ = 0;
+    int         previewBox_ = 0;
+    uint32_t    bankPreviewSince_ = 0;
+    static constexpr uint32_t BANK_PREVIEW_DELAY_MS = 200;
+    bool updateBankPreview();          // true when it loaded something new
+    void clearBankPreview();
+
+    // What happened to the backup when the save was opened, for the bank
+    // picker's banner.
+    enum class BackupOutcome { None, Saved, Skipped, Failed };
+    BackupOutcome lastBackup_ = BackupOutcome::None;
+    std::string   lastBackupDir_;
+    time_t        lastBackupWhen_ = 0;
+
+    // The backup screen (1b), redrawn as the steps go by. `step` is the one in
+    // progress (0 open, 1 space, 2 write, 3 load); `fraction` is the write's.
+    void drawBackupProgress(GameType game, const std::string& dir, int step, float fraction);
 
     // Bank selector state
     int  bankSelCursor_ = 0;
@@ -631,6 +673,21 @@ private:
     void handleBankSelectorInput(bool& running);
     void openSelectedBank();
     void drawDeleteConfirmPopup();
+
+    // --- Bank picker (UI 2.0) ---
+    //
+    // A list of banks beside a box panel. The list is on the side the chosen
+    // bank will open on; the panel previews the highlighted bank, or shows the
+    // save when picking the bank a save opens beside.
+    bool  bankSelListOnLeft() const;
+    Panel bankSelPreviewSource() const;
+    bool  bankSelCanCreate() const;    // the "New bank" row exists
+    int   bankSelRowCount() const;     // banks, plus "New bank" when it exists
+    void  drawBankPickerTopBar();
+    void  drawBankList(int x, int w);
+    void  drawBankStats(Panel src, int x);
+    void  moveBankCursor(int dir);
+    void  jumpBankGroup(int dir);
     void handleDeleteConfirmEvent(const SDL_Event& event);
     void beginTextInput(TextInputPurpose purpose);
     void commitTextInput(const std::string& text);
@@ -699,9 +756,14 @@ private:
     // One box panel. Everything it shows - which box, its name, the tag above
     // it - comes from the current state, so the bank selector can draw the
     // same panel beside its list.
-    void drawBoxPanel(Panel panelId, bool isActive);
+    // `x` and `box` override where the panel goes and which box it shows (the
+    // bank picker draws it beside its list); `tag` replaces the small caps
+    // line above the box name.
+    void drawBoxPanel(Panel panelId, bool isActive, int x = -1, int box = -1,
+                      const std::string& tag = std::string());
     void drawInfoStrip();
     SDL_Rect slotRect(Panel panelId, int col, int row) const;
+    SDL_Rect slotRectAt(int panelX, int col, int row) const;
     SDL_Texture* spriteFor(uint16_t species, uint8_t form, bool shiny, bool egg);
     void drawSpriteFit(SDL_Texture* tex, int cx, int cy, int size, Uint8 alpha = 255);
 

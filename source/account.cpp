@@ -145,7 +145,8 @@ void AccountManager::commitSave() {
         fsdevCommitDevice("save");
 }
 
-bool AccountManager::backupSaveDir(const std::string& srcDir, const std::string& dstDir) {
+bool AccountManager::backupSaveDir(const std::string& srcDir, const std::string& dstDir,
+                                   const std::function<void(size_t)>& onBytes) {
     // Create backup directory recursively
     std::string path;
     for (size_t i = 0; i < dstDir.size(); i++) {
@@ -173,7 +174,7 @@ bool AccountManager::backupSaveDir(const std::string& srcDir, const std::string&
         if (stat(srcPath.c_str(), &st) != 0)
             continue;
         if (S_ISDIR(st.st_mode)) {
-            backupSaveDir(srcPath + "/", dstPath + "/");
+            backupSaveDir(srcPath + "/", dstPath + "/", onBytes);
             continue;
         }
 
@@ -185,8 +186,10 @@ bool AccountManager::backupSaveDir(const std::string& srcDir, const std::string&
 
         constexpr size_t BUF_SIZE = 65536;
         char buf[BUF_SIZE];
-        while (src.read(buf, BUF_SIZE) || src.gcount() > 0)
+        while (src.read(buf, BUF_SIZE) || src.gcount() > 0) {
             dst.write(buf, src.gcount());
+            if (onBytes) onBytes(static_cast<size_t>(src.gcount()));
+        }
 
         if (!dst.good()) ok = false;
     }

@@ -3,6 +3,7 @@
 #include "save_file.h"  // for GameType
 #include <string>
 #include <vector>
+#include <ctime>
 
 struct BankInfo {
     std::string name;       // filename without .bin
@@ -10,6 +11,7 @@ struct BankInfo {
     int occupiedSlots;      // 0..960
     GameType game = GameType::ZA;  // which game this bank belongs to
     bool valid = true;      // false = stray .bin that isn't a real bank file
+    time_t modified = 0;    // file's last write, for "Edited 3 days ago"
 };
 
 class BankManager {

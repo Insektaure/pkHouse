@@ -4,6 +4,7 @@
 #include <switch.h>
 #include <string>
 #include <vector>
+#include <functional>
 #include <cstdint>
 
 struct UserProfile {
@@ -31,8 +32,10 @@ public:
     // Commit writes to mounted save (required after save_.save() on Switch).
     void commitSave();
 
-    // Copy all files from a save directory to a backup directory.
-    static bool backupSaveDir(const std::string& srcDir, const std::string& dstDir);
+    // Copy all files from a save directory to a backup directory. `onBytes`,
+    // when given, is told how many bytes each write added, for a progress bar.
+    static bool backupSaveDir(const std::string& srcDir, const std::string& dstDir,
+                              const std::function<void(size_t)>& onBytes = nullptr);
 
     // Recursively calculate total size of all files in a directory.
     static size_t calculateDirSize(const std::string& dir);

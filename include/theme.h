@@ -9,15 +9,13 @@ struct Theme {
     // Core UI
     SDL_Color bg;
     SDL_Color panelBg;
-    SDL_Color statusBarBg;
 
     // Slots
     SDL_Color slotEmpty;
     SDL_Color slotFull;
     SDL_Color slotEgg;
 
-    // Cursor & Selection
-    SDL_Color cursor;
+    // Selection
     SDL_Color selected;
     SDL_Color selectedPos;
 
@@ -26,39 +24,14 @@ struct Theme {
     SDL_Color textDim;
     SDL_Color textOnBadge;
 
-    // Box & Navigation
-    SDL_Color boxName;
-    SDL_Color arrow;
-
     // Status & Accent
     SDL_Color statusText;
     SDL_Color red;
-    SDL_Color shiny;
-    SDL_Color goldLabel;
+    SDL_Color goldLabel;       // the GTS motif's dotted routes
 
     // Gender
     SDL_Color genderMale;
     SDL_Color genderFemale;
-
-    // Overlays
-    SDL_Color overlay;
-    SDL_Color overlayDark;
-
-    // Menu / Selectors
-    SDL_Color menuHighlight;
-    SDL_Color iconPlaceholder;
-
-    // Popups
-    SDL_Color popupBorder;
-    SDL_Color creditsText;
-
-    // Box View
-    SDL_Color boxPreviewBg;
-    SDL_Color miniCellEmpty;
-    SDL_Color miniCellFull;
-
-    // Text Input
-    SDL_Color textFieldBg;
 
     // Search Highlight
     SDL_Color searchMatch;
@@ -67,9 +40,7 @@ struct Theme {
     // LGPE party marker
     SDL_Color partyMark;
 
-    // --- UI 2.0 ---------------------------------------------------------------
-    // Roles introduced by the 2.0 mockups. Screens that have not been redone
-    // yet still draw with the roles above.
+    // --- UI 2.0 roles ----------------------------------------------------------
 
     SDL_Color accent;          // top rule, logo, cursor ring, active page dot
     SDL_Color accentSave;      // the save panel's tag and page dot

@@ -5,9 +5,7 @@
 #include "move_types.h"
 #include "met_info.h"
 #include <algorithm>
-#include <cmath>
 #include <cstdio>
-#include <cstring>
 
 // --- Sprites ---
 
@@ -208,138 +206,6 @@ void UI::drawTextCentered(const std::string& text, int cx, int cy, SDL_Color col
     SDL_RenderCopy(renderer_, entry.tex, nullptr, &dst);
 }
 
-
-// --- hint bar ------------------------------------------------------------------
-//
-// A row of "button does thing" pairs along the bottom, each button drawn as the
-// key it sits on rather than spelled out in the sentence.
-
-namespace {
-
-// A disc with a feathered rim: the interior is one rect per row, and only the
-// pixels the circle partly covers are drawn individually, faded by how much of
-// them it covers.
-void hintCircle(SDL_Renderer* r, int cx, int cy, int radius, SDL_Color c) {
-    if (radius <= 0) return;
-    for (int py = cy - radius - 1; py <= cy + radius + 1; py++) {
-        const double dy = py + 0.5 - cy;
-        const double inner = (radius - 0.5) * (radius - 0.5) - dy * dy;
-        // floor(halfWidth - 0.5), because the pixel at offset n sits at n + 0.5
-        // from the centre. Truncating instead takes one pixel too many, and it
-        // is exactly the one that should have been feathered.
-        const int solid = inner > 0.0
-            ? static_cast<int>(std::floor(std::sqrt(inner) - 0.5)) : -1;
-        if (solid >= 0) {
-            SDL_SetRenderDrawColor(r, c.r, c.g, c.b, c.a);
-            SDL_Rect span = {cx - solid, py, solid * 2 + 1, 1};
-            SDL_RenderFillRect(r, &span);
-        }
-        for (int px = cx - radius - 1; px <= cx + radius + 1; px++) {
-            if (solid >= 0 && px >= cx - solid && px <= cx + solid) continue;
-            const double dx = px + 0.5 - cx;
-            const double covered = radius + 0.5 - std::sqrt(dx * dx + dy * dy);
-            if (covered <= 0.0) continue;
-            SDL_SetRenderDrawColor(r, c.r, c.g, c.b,
-                static_cast<Uint8>(c.a * (covered >= 1.0 ? 1.0 : covered) + 0.5));
-            SDL_RenderDrawPoint(r, px, py);
-        }
-    }
-}
-
-// A pill, for a button whose name is more than one character. Shrinking the text
-// to fit a circle is the other way round, but the fonts here are opened at fixed
-// sizes, and widening the key is what a real controller does anyway.
-void hintPill(SDL_Renderer* r, int x, int y, int w, int h, SDL_Color c) {
-    const int radius = h / 2;
-    hintCircle(r, x + radius, y + radius, radius, c);
-    hintCircle(r, x + w - radius - 1, y + radius, radius, c);
-    SDL_SetRenderDrawColor(r, c.r, c.g, c.b, c.a);
-    SDL_Rect middle = {x + radius, y, w - radius * 2, h};
-    SDL_RenderFillRect(r, &middle);
-}
-
-constexpr int HINT_H   = 26;   // key height
-constexpr int HINT_GAP = 7;    // key to its label
-constexpr int HINT_SEP = 20;   // hint to hint
-
-} // anonymous namespace
-
-// How wide a key is: a circle for one character, a pill for more.
-int UI::measureButtonHint(const char* button, const std::string& label) {
-    int keyW = HINT_H;
-    if (std::strcmp(button, HINT_DPAD) != 0) {
-        const int textW = getTextEntry(button, fontSmall_, T().text).w;
-        if (textW + 14 > keyW) keyW = textW + 14;
-    }
-    return keyW + HINT_GAP + getTextEntry(label, fontSmall_, T().statusText).w;
-}
-
-int UI::drawButtonHint(int x, int y, const char* button, const std::string& label) {
-    const bool dpad = std::strcmp(button, HINT_DPAD) == 0;
-
-    int keyW = HINT_H;
-    if (!dpad) {
-        const int textW = getTextEntry(button, fontSmall_, T().text).w;
-        if (textW + 14 > keyW) keyW = textW + 14;
-    }
-
-    const int cy = y + HINT_H / 2;
-    if (keyW == HINT_H)
-        hintCircle(renderer_, x + HINT_H / 2, cy, HINT_H / 2, T().panelBg);
-    else
-        hintPill(renderer_, x, y, keyW, HINT_H, T().panelBg);
-
-    if (dpad) {
-        // A cross, not the words "D-Pad" - which is "Steuerkreuz" in German
-        // and would not fit in a key at any size.
-        const int cx = x + HINT_H / 2;
-        constexpr int ARM = 9, THICK = 3;
-        drawRect(cx - THICK / 2, cy - ARM / 2 - 2, THICK, ARM + 4, T().text);
-        drawRect(cx - ARM / 2 - 2, cy - THICK / 2, ARM + 4, THICK, T().text);
-    } else {
-        drawTextCentered(button, x + keyW / 2, cy, T().text, fontSmall_);
-    }
-
-    drawText(label, x + keyW + HINT_GAP, cy - 8, T().statusText, fontSmall_);
-    return measureButtonHint(button, label);
-}
-
-void UI::drawHintBar(const ButtonHint* hints, int count,
-                     const std::string& message, int rightReserve) {
-    drawRect(0, SCREEN_H - 35, SCREEN_W, 35, T().statusBarBg);
-
-    const int y = SCREEN_H - 35 + (35 - HINT_H) / 2;
-    int x = 15;
-
-    if (!message.empty()) {
-        drawText(message, x, SCREEN_H - 26, T().statusText, fontSmall_);
-        x += getTextEntry(message, fontSmall_, T().statusText).w + HINT_SEP;
-    }
-
-    // How many keys actually fit. Measured rather than assumed: the labels are
-    // translated, and the widest language is not the one this was laid out in.
-    // Anything that would run under whatever the caller draws on the right is
-    // dropped, which loses a hint but never overlaps.
-    const int limit = SCREEN_W - 15 - (rightReserve > 0 ? rightReserve + HINT_SEP : 0);
-    int shown = 0, width = x;
-    for (int i = 0; i < count; i++) {
-        const int w = measureButtonHint(hints[i].button, i18n::get(hints[i].labelKey))
-                    + (i ? HINT_SEP : 0);
-        if (width + w > limit) break;
-        width += w;
-        shown++;
-    }
-
-    for (int i = 0; i < shown; i++) {
-        if (i) x += HINT_SEP;
-        x += drawButtonHint(x, y, hints[i].button, i18n::get(hints[i].labelKey));
-    }
-}
-
-void UI::drawStatusBar(const std::string& msg) {
-    drawRect(0, SCREEN_H - 35, SCREEN_W, 35, T().statusBarBg);
-    drawText(msg, 15, SCREEN_H - 26, T().statusText, fontSmall_);
-}
 
 // --- Box view (UI 2.0) ------------------------------------------------------------
 //

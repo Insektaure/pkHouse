@@ -74,8 +74,6 @@ namespace StrKey {
 
     // ui_bank.cpp - bank selector
     constexpr const char* AllBanks             = "all_banks";
-    constexpr const char* StatusBankAll        = "status_bank_all";
-    constexpr const char* StatusBankNormal     = "status_bank_normal";
     constexpr const char* CannotDelete         = "cannot_delete";
     constexpr const char* BankCurrentlyLoaded  = "bank_currently_loaded";
     constexpr const char* DeletingBank         = "deleting_bank";
@@ -100,14 +98,9 @@ namespace StrKey {
     constexpr const char* BankNameExistsBody   = "bank_name_exists_body";
 
     // ui_selectors.cpp
-    constexpr const char* StatusProfile        = "status_profile";
     constexpr const char* NoSaveData           = "no_save_data";
     constexpr const char* NoSaveDataBody       = "no_save_data_body";
     constexpr const char* DualBankHint         = "dual_bank_hint";
-    constexpr const char* StatusGameBackPage   = "status_game_back_page";
-    constexpr const char* StatusGameBack       = "status_game_back";
-    constexpr const char* StatusGameQuitPage   = "status_game_quit_page";
-    constexpr const char* StatusGameQuit       = "status_game_quit";
     constexpr const char* NoBanksTitle         = "no_banks_title";
     constexpr const char* NoBanksAnyGame       = "no_banks_any_game";
 
@@ -173,18 +166,13 @@ namespace StrKey {
     constexpr const char* StatSpe              = "stat_spe";
     constexpr const char* StatSpD              = "stat_spd";
     constexpr const char* StatSpA              = "stat_spa";
-    constexpr const char* NationalDexPrefix    = "national_dex_prefix";
     constexpr const char* OTPrefix             = "ot_prefix";
     constexpr const char* HTPrefix             = "ht_prefix";
-    constexpr const char* TIDPrefix            = "tid_prefix";
-    constexpr const char* SIDPrefix            = "sid_prefix";
     constexpr const char* NaturePrefix         = "nature_prefix";
     constexpr const char* AbilityPrefix        = "ability_prefix";
     constexpr const char* HeldItemPrefix       = "held_item_prefix";
     constexpr const char* NoneItem             = "none_item";
-    constexpr const char* Moves                = "moves";
     constexpr const char* RibbonsMarks         = "ribbons_marks";
-    constexpr const char* MoreRibbons          = "more_ribbons";
     constexpr const char* IVs                  = "ivs";
     constexpr const char* EVs                  = "evs";
 
@@ -199,11 +187,8 @@ namespace StrKey {
     constexpr const char* MenuChangeGame       = "menu_change_game";
     constexpr const char* MenuSaveQuit         = "menu_save_quit";
     constexpr const char* MenuQuitNoSave       = "menu_quit_no_save";
-    constexpr const char* MenuSwitchLeft       = "menu_switch_left";
-    constexpr const char* MenuSwitchRight      = "menu_switch_right";
     constexpr const char* MenuSaveBanks        = "menu_save_banks";
     constexpr const char* MenuQuit             = "menu_quit";
-    constexpr const char* AConfirmBCancelMenu  = "a_confirm_b_cancel_menu";
 
     // ui_render.cpp - theme selector
 
@@ -224,21 +209,15 @@ namespace StrKey {
     constexpr const char* FilterPerfectIVs     = "filter_perfect_ivs";
     constexpr const char* FilterRibbons        = "filter_ribbons";
     constexpr const char* RibbonHasAny         = "ribbon_has_any";
-    constexpr const char* ModeListOn           = "mode_list_on";
-    constexpr const char* ModeListOff          = "mode_list_off";
 
     // ui_render.cpp - search results
-    constexpr const char* NoPokemonFound       = "no_pokemon_found";
     constexpr const char* Egg                  = "egg";
     constexpr const char* LocLeft              = "loc_left";
     constexpr const char* LocRight             = "loc_right";
     constexpr const char* LocSave              = "loc_save";
     constexpr const char* LocBank              = "loc_bank";
-    constexpr const char* BoxLabel             = "box_label";
 
     // ui_render.cpp - species picker
-    constexpr const char* SelectLetter         = "select_letter";
-    constexpr const char* ASelectBBack         = "a_select_b_back";
     constexpr const char* NoSpeciesFound       = "no_species_found";
 
     // ui_render.cpp - wondercard list
@@ -247,7 +226,6 @@ namespace StrKey {
 
     // ui_render.cpp - about popup
     constexpr const char* SupportedGames       = "supported_games";
-    constexpr const char* SupportedBDSPLA      = "supported_bdsp_la";
     constexpr const char* CreditPKHeX          = "credit_pkhex";
     constexpr const char* CreditJKSV           = "credit_jksv";
     constexpr const char* Controls             = "controls";
@@ -255,12 +233,7 @@ namespace StrKey {
     // ui_render.cpp - box view overlay
 
     // ui_render.cpp - main status bar
-    constexpr const char* StatusMain           = "status_main";
-    constexpr const char* StatusSearch         = "status_search";
-    constexpr const char* StatusHoldingMulti   = "status_holding_multi";
-    constexpr const char* StatusHoldingSingle  = "status_holding_single";
     constexpr const char* StatusDrag           = "status_drag";
-    constexpr const char* StatusSelected       = "status_selected";
     constexpr const char* KeepPositions        = "keep_positions";
     constexpr const char* LabelAllBanks        = "label_all_banks";
     constexpr const char* LabelDualBank        = "label_dual_bank";
@@ -349,8 +322,6 @@ namespace StrKey {
     constexpr const char* ProfSavesOne             = "prof_saves_one";
     constexpr const char* ProfSavesMany            = "prof_saves_many";
     constexpr const char* ProfNoSaves              = "prof_no_saves";
-    constexpr const char* ProfLastBackup           = "prof_last_backup";
-    constexpr const char* ProfNoBackups            = "prof_no_backups";
     constexpr const char* RelToday                 = "rel_today";
     constexpr const char* RelYesterday             = "rel_yesterday";
     constexpr const char* RelDays                  = "rel_days";
@@ -606,9 +577,6 @@ namespace StrKey {
     constexpr const char* GtsFilterNo          = "gts_filter_no";
     constexpr const char* GtsSortRecent        = "gts_sort_recent";
     constexpr const char* GtsSortPopular       = "gts_sort_popular";
-    constexpr const char* StatusGtsHub         = "status_gts_hub";
-    constexpr const char* StatusGtsBrowse      = "status_gts_browse";
-    constexpr const char* StatusGtsDeposit     = "status_gts_deposit";
     constexpr const char* GtsVerdictLegal          = "gts_verdict_legal";
     constexpr const char* GtsVerdictPending        = "gts_verdict_pending";
     constexpr const char* GtsVerdictIllegal        = "gts_verdict_illegal";

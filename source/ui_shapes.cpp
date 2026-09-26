@@ -28,10 +28,12 @@ TTF_Font* UI::uiFont(int size, bool bold) {
     if (f && bold)
         TTF_SetFontStyle(f, TTF_STYLE_BOLD);
 
-    // A size that will not open falls back to the regular small font rather
-    // than leaving every caller to check for null.
-    if (!f)
-        return fontSmall_;
+    // A size that will not open falls back to the 14px regular that init()
+    // opened first, rather than leaving every caller to check for null.
+    if (!f) {
+        auto fb = uiFonts_.find(14 * 2);
+        return fb != uiFonts_.end() ? fb->second : nullptr;
+    }
     uiFonts_[key] = f;
     return f;
 }

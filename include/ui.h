@@ -141,9 +141,6 @@ private:
     SDL_Window*          window_    = nullptr;
     SDL_Renderer*        renderer_  = nullptr;
     SDL_GameController*  pad_       = nullptr;
-    TTF_Font*            font_      = nullptr;
-    TTF_Font*            fontSmall_ = nullptr;
-    TTF_Font*            fontLarge_ = nullptr;
 
     // Shared system font bytes, kept so the card renderer can open its own
     // sizes on demand without re-querying the pl service.
@@ -288,9 +285,6 @@ private:
 
     // Footer
     static constexpr int FOOTER_H = SCREEN_H - FOOTER_Y;
-
-    // Legacy status bar height, still used by the screens not yet redone.
-    static constexpr int STATUS_BAR_H = 40;
 
     // Box overview (ZL/ZR), UI 2.0. Eight cards a row; with more than four
     // rows (40-box games) the cards get shorter so every box stays on screen.
@@ -900,7 +894,6 @@ private:
     void drawTextCentered(const std::string& text, int cx, int cy, SDL_Color color, TTF_Font* f);
     void drawRect(int x, int y, int w, int h, SDL_Color color);
     void drawRectOutline(int x, int y, int w, int h, SDL_Color color, int thickness);
-    void drawStatusBar(const std::string& msg);
 
     // --- hint bar ------------------------------------------------------------
 
@@ -914,23 +907,9 @@ private:
     };
     static constexpr const char* HINT_DPAD = "\x01";
 
-    // Draws one hint at (x, y) and returns how wide it was, so a row can be
-    // laid out without measuring twice.
-    int  drawButtonHint(int x, int y, const char* button, const std::string& label);
-    int  measureButtonHint(const char* button, const std::string& label);
-
-    // A row of them along the status bar.
-    //
+    // The footer: a rule, hints as key caps, version on the right.
     // `message` is the contextual text some screens lead with - what is being
-    // held, how many are selected - drawn before the keys. `rightReserve` is
-    // how much of the bar the caller intends to use on the right, so a language
-    // with long labels drops hints from the end instead of running underneath
-    // the profile and game name.
-    void drawHintBar(const ButtonHint* hints, int count,
-                     const std::string& message = std::string(), int rightReserve = 0);
-
-    // The 2.0 footer: a rule, hints as key caps, version on the right. The old
-    // drawHintBar stays for the screens that have not been redone.
+    // held, how many are selected - drawn before the keys.
     // `rightReserve` < 0 draws the version on the right; otherwise that much
     // room is left free there for the caller to fill.
     void drawFooterBar(const ButtonHint* hints, int count,

@@ -69,11 +69,10 @@ bool UI::init() {
         fontData.address && fontData.size) {
         fontData_     = fontData.address;
         fontDataSize_ = fontData.size;
-        font_      = TTF_OpenFontRW(SDL_RWFromMem(fontData.address, fontData.size), 1, 18);
-        fontSmall_ = TTF_OpenFontRW(SDL_RWFromMem(fontData.address, fontData.size), 1, 14);
-        fontLarge_ = TTF_OpenFontRW(SDL_RWFromMem(fontData.address, fontData.size), 1, 28);
     }
-    if (!font_ || !fontSmall_ || !fontLarge_) {
+    // Opening one size proves the font is usable; it also becomes the
+    // fallback uiFont() hands out for a size that will not open.
+    if (!fontData_ || !uiFont(14)) {
         initError_ = "The console's system font could not be loaded.";
         shutdown();
         return false;
@@ -125,9 +124,6 @@ void UI::shutdown() {
     if (backdrop_) { SDL_DestroyTexture(backdrop_); backdrop_ = nullptr; }
     freeCardPreview();
     closeUiFonts();
-    if (fontLarge_) TTF_CloseFont(fontLarge_);
-    if (fontSmall_) TTF_CloseFont(fontSmall_);
-    if (font_) TTF_CloseFont(font_);
     if (pad_) SDL_GameControllerClose(pad_);
     if (renderer_) SDL_DestroyRenderer(renderer_);
     if (window_) SDL_DestroyWindow(window_);

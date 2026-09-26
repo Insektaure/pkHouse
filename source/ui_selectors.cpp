@@ -1017,7 +1017,7 @@ void UI::drawGameDetailPanel() {
     // Facts: save file, last backup, backups on SD, box format.
     int fy = Y + 103;
     const int rows = withSave ? 4 : 2;
-    const int boxH = 16 + rows * 26 + (withSave && info.lastBackup ? 16 : 0) + 8;
+    const int boxH = 16 + rows * 26 + 8;
     fillRounded(inX, fy, inW, boxH, 10, T().bg);
     const int lx = inX + 14, vx = inX + 134;
     int ry = fy + 12;
@@ -1030,13 +1030,10 @@ void UI::drawGameDetailPanel() {
         const std::string who = selectedProfile_ < account_.profileCount()
             ? account_.profiles()[selectedProfile_].nickname : std::string();
         row(i18n::get(StrKey::DsSaveFile), i18n::fmt(StrKey::DsFound, who), T().statusOk);
-        if (info.lastBackup) {
+        if (info.lastBackup)
             row(i18n::get(StrKey::DsLastBackup), dateOf(info.lastBackup), T().text);
-            drawText(relativeDay(info.lastBackup), vx, ry - 7, T().textDim, fRel);
-            ry += 16;
-        } else {
+        else
             row(i18n::get(StrKey::DsLastBackup), i18n::get(StrKey::NoBackupYet), T().textMuted);
-        }
         row(i18n::get(StrKey::DsBackupsSd), std::to_string(info.backups), T().text);
     } else {
         row(i18n::get(StrKey::DsSaveFile), i18n::get(StrKey::DsBankOnly), T().textMuted);

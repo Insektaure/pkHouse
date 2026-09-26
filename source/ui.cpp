@@ -228,7 +228,6 @@ void UI::showWorking(const std::string& msg, bool writing, float progress) {
     if (noteH) h += noteH + 16;
 
     const int x = (SCREEN_W - W) / 2, y = (SCREEN_H - h) / 2;
-    fillRounded(x + 3, y + 6, W, h, 18, SDL_Color{0, 0, 0, 90});
     fillRounded(x, y, W, h, 18, T().panelBg);
     strokeRounded(x, y, W, h, 18, 1, T().panelBorder);
 
@@ -405,72 +404,6 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
             continue;
         }
 
-        // Language selector intercepts input from any screen
-        if (showLanguageSelector_) {
-            SDL_Event event;
-            while (SDL_PollEvent(&event)) {
-                if (event.type == SDL_QUIT) { running = false; break; }
-                if (event.type == SDL_CONTROLLERAXISMOTION) {
-                    if (event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX ||
-                        event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY) {
-                        int16_t lx = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTX);
-                        int16_t ly = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTY);
-                        updateStick(lx, ly);
-                    }
-                }
-                if (event.type == SDL_CONTROLLERBUTTONDOWN) {
-                    markDirty();
-                    int langCount = (int)langList_.size();
-                    switch (event.cbutton.button) {
-                        case SDL_CONTROLLER_BUTTON_DPAD_UP:
-                            langSelCursor_ = (langSelCursor_ + langCount - 1) % langCount;
-                            break;
-                        case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
-                            langSelCursor_ = (langSelCursor_ + 1) % langCount;
-                            break;
-                        case SDL_CONTROLLER_BUTTON_B: { // Switch A = confirm
-                            std::string newLang = langList_[langSelCursor_];
-                            i18n::init(newLang);
-                            clearTextCache();
-                            // Persist choice
-                            std::string path = basePath_ + "language.txt";
-                            FILE* f = std::fopen(path.c_str(), "w");
-                            if (f) { std::fputs(newLang.c_str(), f); std::fclose(f); }
-                            showLanguageSelector_ = false;
-                            showMenu_ = false;
-                            break;
-                        }
-                        case SDL_CONTROLLER_BUTTON_A: // Switch B = cancel
-                        case SDL_CONTROLLER_BUTTON_X: // Switch Y = cancel
-                            showLanguageSelector_ = false;
-                            break;
-                    }
-                }
-            }
-            // Joystick repeat
-            if (stickDirY_ != 0 && !langList_.empty()) {
-                uint32_t now = SDL_GetTicks();
-                uint32_t delay = stickMoved_ ? STICK_REPEAT_DELAY : STICK_INITIAL_DELAY;
-                if (now - stickMoveTime_ >= delay) {
-                    int langCount = (int)langList_.size();
-                    langSelCursor_ = (langSelCursor_ + (stickDirY_ > 0 ? 1 : langCount - 1)) % langCount;
-                    stickMoveTime_ = now;
-                    stickMoved_ = true;
-                    markDirty();
-                }
-            }
-            if (!showLanguageSelector_) continue;
-            if (dirty_) {
-                if (theme_ != lastTheme_) { clearTextCache(); lastTheme_ = theme_; }
-                drawCurrentScreen();
-                drawLanguageSelectorPopup();
-                SDL_RenderPresent(renderer_);
-                dirty_ = false;
-            }
-            SDL_Delay(16);
-            continue;
-        }
-
         AppScreen screenBefore = screen_;
         if (screen_ == AppScreen::ProfileSelector) {
             handleProfileSelectorInput(running);
@@ -528,7 +461,7 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
         }
         // If a popup just activated, skip drawing here — the popup branch
         // will handle it next iteration with dirty_ still set.
-        if (dirty_ && !showAbout_ && !showThemeSelector_ && !showLanguageSelector_) {
+        if (dirty_ && !showAbout_ && !showThemeSelector_) {
             if (theme_ != lastTheme_) {
                 clearTextCache();
                 lastTheme_ = theme_;

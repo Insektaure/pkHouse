@@ -142,7 +142,6 @@
     "select_theme": "Select Theme",
     "a_select_b_cancel": "A: Select  B: Cancel",
 
-    "select_language": "Select Language",
 
     "search_filter": "Search / Filter",
     "filter_species": "Species:",
@@ -446,5 +445,23 @@
     "ctl_switch_box": "Switch Box",
     "ctl_box_view": "Box View",
     "ctl_menu": "Menu",
-    "ctl_about": "About"
+    "ctl_about": "About",
+    "menu_tools": "Tools",
+    "menu_goto": "Go to",
+    "menu_settings": "Settings",
+    "menu_leave": "Leave",
+    "menu_desc_search": "Species, OT, shiny, IVs, marks…",
+    "menu_desc_wondercard": "Inject an event Pokémon",
+    "menu_desc_import": "Add a Pokémon from a card image",
+    "menu_desc_export_pk": ".pk files, one per Pokémon",
+    "menu_desc_export_cards": "PNG cards, one per Pokémon",
+    "menu_note_save": "Writes your changes to the save and the bank.",
+    "menu_note_dual_clean": "Nothing to save. Your game save is never touched.",
+    "menu_note_dual_dirty": "Quit does not save the banks. Your game save is never touched.",
+    "hint_change": "Change",
+    "menu_change_game_no_save": "Change game without saving",
+    "dlg_discard_title": "Discard your changes?",
+    "dlg_discard_body_save": "Your save and bank stay as they were last saved. Pokémon you moved go back where they were.",
+    "dlg_discard_body_banks": "Your banks stay as they were last saved. Pokémon you moved go back where they were.",
+    "dlg_discard": "Discard"
 }

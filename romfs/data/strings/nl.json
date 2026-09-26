@@ -142,7 +142,6 @@
     "select_theme": "Thema selecteren",
     "a_select_b_cancel": "A: Selecteren  B: Annuleren",
 
-    "select_language": "Taal selecteren",
 
     "search_filter": "Zoeken / Filter",
     "filter_species": "Pokemon:",
@@ -446,5 +445,23 @@
     "ctl_switch_box": "Box wisselen",
     "ctl_box_view": "Boxoverzicht",
     "ctl_menu": "Menu",
-    "ctl_about": "Over"
+    "ctl_about": "Over",
+    "menu_tools": "Hulpmiddelen",
+    "menu_goto": "Ga naar",
+    "menu_settings": "Instellingen",
+    "menu_leave": "Afsluiten",
+    "menu_desc_search": "Soort, OT, shiny, IV’s, emblemen…",
+    "menu_desc_wondercard": "Een event-Pokémon toevoegen",
+    "menu_desc_import": "Een Pokémon toevoegen vanaf een kaart",
+    "menu_desc_export_pk": ".pk-bestanden, één per Pokémon",
+    "menu_desc_export_cards": "PNG-kaarten, één per Pokémon",
+    "menu_note_save": "Schrijft je wijzigingen naar de opslag en de bank.",
+    "menu_note_dual_clean": "Niets op te slaan. Je spelopslag wordt nooit aangeraakt.",
+    "menu_note_dual_dirty": "Afsluiten slaat de banken niet op. Je spelopslag wordt nooit aangeraakt.",
+    "hint_change": "Wijzigen",
+    "menu_change_game_no_save": "Ander spel zonder opslaan",
+    "dlg_discard_title": "Wijzigingen verwerpen?",
+    "dlg_discard_body_save": "Je opslag en bank blijven zoals bij de laatste keer opslaan. Verplaatste Pokémon gaan terug naar hun plek.",
+    "dlg_discard_body_banks": "Je banken blijven zoals bij de laatste keer opslaan. Verplaatste Pokémon gaan terug naar hun plek.",
+    "dlg_discard": "Verwerpen"
 }

@@ -142,7 +142,6 @@
     "select_theme": "选择主题",
     "a_select_b_cancel": "A：选择  B：取消",
 
-    "select_language": "选择语言",
 
     "search_filter": "搜索 / 筛选",
     "filter_species": "宝可梦：",
@@ -446,5 +445,23 @@
     "ctl_switch_box": "切换盒子",
     "ctl_box_view": "盒子总览",
     "ctl_menu": "菜单",
-    "ctl_about": "关于"
+    "ctl_about": "关于",
+    "menu_tools": "工具",
+    "menu_goto": "前往",
+    "menu_settings": "设置",
+    "menu_leave": "离开",
+    "menu_desc_search": "宝可梦、初训家、异色、个体值、证章…",
+    "menu_desc_wondercard": "添加活动宝可梦",
+    "menu_desc_import": "从卡片添加宝可梦",
+    "menu_desc_export_pk": ".pk 文件，每只一个",
+    "menu_desc_export_cards": "PNG 卡片，每只一张",
+    "menu_note_save": "将更改写入存档和仓库。",
+    "menu_note_dual_clean": "没有需要保存的内容。游戏存档不会被改动。",
+    "menu_note_dual_dirty": "退出不会保存仓库。游戏存档不会被改动。",
+    "hint_change": "更改",
+    "menu_change_game_no_save": "不保存并更换游戏",
+    "dlg_discard_title": "放弃更改？",
+    "dlg_discard_body_save": "存档和仓库保持上次保存时的状态。移动过的宝可梦会回到原处。",
+    "dlg_discard_body_banks": "仓库保持上次保存时的状态。移动过的宝可梦会回到原处。",
+    "dlg_discard": "放弃"
 }

@@ -142,7 +142,6 @@
     "select_theme": "Seleccionar tema",
     "a_select_b_cancel": "A: Seleccionar  B: Cancelar",
 
-    "select_language": "Seleccionar idioma",
 
     "search_filter": "Busqueda / Filtro",
     "filter_species": "Especie:",
@@ -446,5 +445,23 @@
     "ctl_switch_box": "Cambiar caja",
     "ctl_box_view": "Vista de cajas",
     "ctl_menu": "Menu",
-    "ctl_about": "Acerca de"
+    "ctl_about": "Acerca de",
+    "menu_tools": "Herramientas",
+    "menu_goto": "Ir a",
+    "menu_settings": "Ajustes",
+    "menu_leave": "Salir",
+    "menu_desc_search": "Especie, EO, variocolor, IV, emblemas…",
+    "menu_desc_wondercard": "Inyectar un Pokémon de evento",
+    "menu_desc_import": "Añadir un Pokémon desde una carta",
+    "menu_desc_export_pk": "Archivos .pk, uno por Pokémon",
+    "menu_desc_export_cards": "Cartas PNG, una por Pokémon",
+    "menu_note_save": "Guarda tus cambios en la partida y en el banco.",
+    "menu_note_dual_clean": "Nada que guardar. Tu partida nunca se modifica.",
+    "menu_note_dual_dirty": "Salir no guarda los bancos. Tu partida nunca se modifica.",
+    "hint_change": "Cambiar",
+    "menu_change_game_no_save": "Cambiar de juego sin guardar",
+    "dlg_discard_title": "¿Descartar los cambios?",
+    "dlg_discard_body_save": "Tu partida y tu banco se quedan como en el último guardado. Los Pokémon movidos vuelven a su sitio.",
+    "dlg_discard_body_banks": "Tus bancos se quedan como en el último guardado. Los Pokémon movidos vuelven a su sitio.",
+    "dlg_discard": "Descartar"
 }

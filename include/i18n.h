@@ -212,7 +212,6 @@ namespace StrKey {
     constexpr const char* ASelectBCancel       = "a_select_b_cancel";
 
     // ui_render.cpp - language selector
-    constexpr const char* SelectLanguage       = "select_language";
 
     // ui_render.cpp - search/filter
     constexpr const char* SearchFilter         = "search_filter";
@@ -476,6 +475,26 @@ namespace StrKey {
     constexpr const char* CtlBoxView               = "ctl_box_view";
     constexpr const char* CtlMenu                  = "ctl_menu";
     constexpr const char* CtlAbout                 = "ctl_about";
+
+    // Menu (UI 2.0)
+    constexpr const char* MenuTools                = "menu_tools";
+    constexpr const char* MenuGoTo                 = "menu_goto";
+    constexpr const char* MenuSettings             = "menu_settings";
+    constexpr const char* MenuLeave                = "menu_leave";
+    constexpr const char* MenuDescSearch           = "menu_desc_search";
+    constexpr const char* MenuDescWondercard       = "menu_desc_wondercard";
+    constexpr const char* MenuDescImport           = "menu_desc_import";
+    constexpr const char* MenuDescExportPk         = "menu_desc_export_pk";
+    constexpr const char* MenuDescExportCards      = "menu_desc_export_cards";
+    constexpr const char* MenuNoteSave             = "menu_note_save";
+    constexpr const char* MenuNoteDualClean        = "menu_note_dual_clean";
+    constexpr const char* MenuNoteDualDirty        = "menu_note_dual_dirty";
+    constexpr const char* HintChange               = "hint_change";
+    constexpr const char* MenuChangeGameNoSave     = "menu_change_game_no_save";
+    constexpr const char* DlgDiscardTitle          = "dlg_discard_title";
+    constexpr const char* DlgDiscardBodySave       = "dlg_discard_body_save";
+    constexpr const char* DlgDiscardBodyBanks      = "dlg_discard_body_banks";
+    constexpr const char* DlgDiscard               = "dlg_discard";
 
     // dialogs (UI 2.0)
     constexpr const char* DlgOk                    = "dlg_ok";

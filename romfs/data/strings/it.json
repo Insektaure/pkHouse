@@ -142,7 +142,6 @@
     "select_theme": "Seleziona tema",
     "a_select_b_cancel": "A: Seleziona  B: Annulla",
 
-    "select_language": "Seleziona lingua",
 
     "search_filter": "Ricerca / Filtro",
     "filter_species": "Specie:",
@@ -446,5 +445,23 @@
     "ctl_switch_box": "Cambia box",
     "ctl_box_view": "Vista box",
     "ctl_menu": "Menu",
-    "ctl_about": "Info"
+    "ctl_about": "Info",
+    "menu_tools": "Strumenti",
+    "menu_goto": "Vai a",
+    "menu_settings": "Impostazioni",
+    "menu_leave": "Esci",
+    "menu_desc_search": "Specie, AO, cromatico, IV, emblemi…",
+    "menu_desc_wondercard": "Inserisci un Pokémon evento",
+    "menu_desc_import": "Aggiungi un Pokémon da una scheda",
+    "menu_desc_export_pk": "File .pk, uno per Pokémon",
+    "menu_desc_export_cards": "Schede PNG, una per Pokémon",
+    "menu_note_save": "Scrive le modifiche nel salvataggio e nella banca.",
+    "menu_note_dual_clean": "Niente da salvare. Il tuo salvataggio non viene mai toccato.",
+    "menu_note_dual_dirty": "Uscire non salva le banche. Il tuo salvataggio non viene mai toccato.",
+    "hint_change": "Cambia",
+    "menu_change_game_no_save": "Cambia gioco senza salvare",
+    "dlg_discard_title": "Annullare le modifiche?",
+    "dlg_discard_body_save": "Salvataggio e banca restano come all’ultimo salvataggio. I Pokémon spostati tornano al loro posto.",
+    "dlg_discard_body_banks": "Le banche restano come all’ultimo salvataggio. I Pokémon spostati tornano al loro posto.",
+    "dlg_discard": "Annulla modifiche"
 }

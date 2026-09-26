@@ -113,7 +113,6 @@ void UI::drawDialog(DialogIcon icon, const std::string& title, const std::string
     h += DLG_PAD;
 
     const int x = (SCREEN_W - DLG_W) / 2, y = (SCREEN_H - h) / 2;
-    fillRounded(x + 3, y + 6, DLG_W, h, 20, SDL_Color{0, 0, 0, 90});
     fillRounded(x, y, DLG_W, h, 20, T().panelBg);
     strokeRounded(x, y, DLG_W, h, 20, 1, T().panelBorder);
 

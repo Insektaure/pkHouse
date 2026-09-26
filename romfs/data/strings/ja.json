@@ -142,7 +142,6 @@
     "select_theme": "テーマを選択",
     "a_select_b_cancel": "A：選択  B：キャンセル",
 
-    "select_language": "言語を選択",
 
     "search_filter": "検索 / フィルター",
     "filter_species": "ポケモン：",
@@ -446,5 +445,23 @@
     "ctl_switch_box": "ボックス切替",
     "ctl_box_view": "ボックス一覧",
     "ctl_menu": "メニュー",
-    "ctl_about": "情報"
+    "ctl_about": "情報",
+    "menu_tools": "ツール",
+    "menu_goto": "移動",
+    "menu_settings": "設定",
+    "menu_leave": "終了",
+    "menu_desc_search": "ポケモン、おや、色違い、個体値、あかし…",
+    "menu_desc_wondercard": "イベントのポケモンを追加",
+    "menu_desc_import": "カードからポケモンを追加",
+    "menu_desc_export_pk": ".pkファイル（1匹ずつ）",
+    "menu_desc_export_cards": "PNGカード（1匹ずつ）",
+    "menu_note_save": "変更をセーブデータとバンクに書き込みます。",
+    "menu_note_dual_clean": "保存するものはありません。セーブデータは変更されません。",
+    "menu_note_dual_dirty": "終了してもバンクは保存されません。セーブデータは変更されません。",
+    "hint_change": "変更",
+    "menu_change_game_no_save": "保存せずにゲームを変更",
+    "dlg_discard_title": "変更を破棄しますか？",
+    "dlg_discard_body_save": "セーブデータとバンクは最後に保存した状態のままです。移動したポケモンは元の場所に戻ります。",
+    "dlg_discard_body_banks": "バンクは最後に保存した状態のままです。移動したポケモンは元の場所に戻ります。",
+    "dlg_discard": "破棄"
 }

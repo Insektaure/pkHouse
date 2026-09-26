@@ -142,7 +142,6 @@
     "select_theme": "테마 선택",
     "a_select_b_cancel": "A: 선택  B: 취소",
 
-    "select_language": "언어 선택",
 
     "search_filter": "검색 / 필터",
     "filter_species": "포켓몬:",
@@ -446,5 +445,23 @@
     "ctl_switch_box": "박스 변경",
     "ctl_box_view": "박스 목록",
     "ctl_menu": "메뉴",
-    "ctl_about": "정보"
+    "ctl_about": "정보",
+    "menu_tools": "도구",
+    "menu_goto": "이동",
+    "menu_settings": "설정",
+    "menu_leave": "나가기",
+    "menu_desc_search": "포켓몬, 어버이, 이로치, 개체값, 증표…",
+    "menu_desc_wondercard": "이벤트 포켓몬 추가",
+    "menu_desc_import": "카드에서 포켓몬 추가",
+    "menu_desc_export_pk": ".pk 파일, 포켓몬마다 하나",
+    "menu_desc_export_cards": "PNG 카드, 포켓몬마다 하나",
+    "menu_note_save": "변경 사항을 세이브와 뱅크에 씁니다.",
+    "menu_note_dual_clean": "저장할 것이 없습니다. 게임 세이브는 바뀌지 않습니다.",
+    "menu_note_dual_dirty": "나가면 뱅크가 저장되지 않습니다. 게임 세이브는 바뀌지 않습니다.",
+    "hint_change": "변경",
+    "menu_change_game_no_save": "저장하지 않고 게임 변경",
+    "dlg_discard_title": "변경 사항을 버릴까요?",
+    "dlg_discard_body_save": "세이브와 뱅크는 마지막으로 저장한 상태로 남습니다. 옮긴 포켓몬은 원래 자리로 돌아갑니다.",
+    "dlg_discard_body_banks": "뱅크는 마지막으로 저장한 상태로 남습니다. 옮긴 포켓몬은 원래 자리로 돌아갑니다.",
+    "dlg_discard": "버리기"
 }

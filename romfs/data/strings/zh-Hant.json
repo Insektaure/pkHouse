@@ -142,7 +142,6 @@
     "select_theme": "選擇主題",
     "a_select_b_cancel": "A：選擇  B：取消",
 
-    "select_language": "選擇語言",
 
     "search_filter": "搜尋 / 篩選",
     "filter_species": "寶可夢：",
@@ -446,5 +445,23 @@
     "ctl_switch_box": "切換盒子",
     "ctl_box_view": "盒子總覽",
     "ctl_menu": "選單",
-    "ctl_about": "關於"
+    "ctl_about": "關於",
+    "menu_tools": "工具",
+    "menu_goto": "前往",
+    "menu_settings": "設定",
+    "menu_leave": "離開",
+    "menu_desc_search": "寶可夢、初訓家、異色、個體值、證章…",
+    "menu_desc_wondercard": "加入活動寶可夢",
+    "menu_desc_import": "從卡片加入寶可夢",
+    "menu_desc_export_pk": ".pk 檔案，每隻一個",
+    "menu_desc_export_cards": "PNG 卡片，每隻一張",
+    "menu_note_save": "將變更寫入存檔和倉庫。",
+    "menu_note_dual_clean": "沒有需要儲存的內容。遊戲存檔不會被改動。",
+    "menu_note_dual_dirty": "離開不會儲存倉庫。遊戲存檔不會被改動。",
+    "hint_change": "變更",
+    "menu_change_game_no_save": "不儲存並更換遊戲",
+    "dlg_discard_title": "放棄變更？",
+    "dlg_discard_body_save": "存檔和倉庫保持上次儲存時的狀態。移動過的寶可夢會回到原處。",
+    "dlg_discard_body_banks": "倉庫保持上次儲存時的狀態。移動過的寶可夢會回到原處。",
+    "dlg_discard": "放棄"
 }

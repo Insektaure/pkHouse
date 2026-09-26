@@ -142,7 +142,6 @@
     "select_theme": "Design waehlen",
     "a_select_b_cancel": "A: Waehlen  B: Abbrechen",
 
-    "select_language": "Sprache waehlen",
 
     "search_filter": "Suche / Filter",
     "filter_species": "Pokemon:",
@@ -446,5 +445,23 @@
     "ctl_switch_box": "Box wechseln",
     "ctl_box_view": "Box-Uebersicht",
     "ctl_menu": "Menue",
-    "ctl_about": "Info"
+    "ctl_about": "Info",
+    "menu_tools": "Werkzeuge",
+    "menu_goto": "Gehe zu",
+    "menu_settings": "Einstellungen",
+    "menu_leave": "Beenden",
+    "menu_desc_search": "Art, OT, schillernd, DVs, Zeichen…",
+    "menu_desc_wondercard": "Event-Pokémon einfügen",
+    "menu_desc_import": "Pokémon aus einer Karte hinzufügen",
+    "menu_desc_export_pk": ".pk-Dateien, eine pro Pokémon",
+    "menu_desc_export_cards": "PNG-Karten, eine pro Pokémon",
+    "menu_note_save": "Schreibt deine Änderungen in Spielstand und Bank.",
+    "menu_note_dual_clean": "Nichts zu speichern. Dein Spielstand wird nie verändert.",
+    "menu_note_dual_dirty": "Beenden speichert die Banken nicht. Dein Spielstand wird nie verändert.",
+    "hint_change": "Ändern",
+    "menu_change_game_no_save": "Spiel wechseln ohne Speichern",
+    "dlg_discard_title": "Änderungen verwerfen?",
+    "dlg_discard_body_save": "Spielstand und Bank bleiben wie beim letzten Speichern. Verschobene Pokémon kehren an ihren Platz zurück.",
+    "dlg_discard_body_banks": "Deine Banken bleiben wie beim letzten Speichern. Verschobene Pokémon kehren an ihren Platz zurück.",
+    "dlg_discard": "Verwerfen"
 }

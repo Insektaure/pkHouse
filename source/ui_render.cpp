@@ -98,6 +98,9 @@ void UI::freeSprites() {
     if (iconGlobe_)      { SDL_DestroyTexture(iconGlobe_);      iconGlobe_ = nullptr; }
     if (iconBank_)       { SDL_DestroyTexture(iconBank_);       iconBank_ = nullptr; }
     if (iconCheck_)      { SDL_DestroyTexture(iconCheck_);      iconCheck_ = nullptr; }
+    for (auto& [name, tex] : uiIcons_)
+        if (tex) SDL_DestroyTexture(tex);
+    uiIcons_.clear();
     if (iconTrash_)      { SDL_DestroyTexture(iconTrash_);      iconTrash_ = nullptr; }
     if (iconWarn_)       { SDL_DestroyTexture(iconWarn_);       iconWarn_ = nullptr; }
 }
@@ -1118,91 +1121,6 @@ void UI::drawFrame() {
     }
 }
 
-void UI::drawMenuPopup() {
-    // Semi-transparent dark overlay
-    drawRect(0, 0, SCREEN_W, SCREEN_H, T().overlay);
-
-    // Menu items differ by mode and game
-    // SV/SwSh games get a "Wondercard" item after Search
-    bool hasWC = gameInfo(selectedGame_).hasWondercards;
-    bool hasExport = !selectedSlots_.empty();
-    int menuCount;
-    if (isDualBankMode())
-        menuCount = hasWC ? 10 : 9;
-    else
-        menuCount = hasWC ? 9 : 8;
-    if (hasExport) menuCount += 2;  // Export Selected + Export Cards
-
-    constexpr int POP_W = 380;
-    int POP_H = 50 + menuCount * 36 + 30;
-    int popX = (SCREEN_W - POP_W) / 2;
-    int popY = (SCREEN_H - POP_H) / 2;
-
-    drawRect(popX, popY, POP_W, POP_H, T().panelBg);
-    drawRectOutline(popX, popY, POP_W, POP_H, T().cursor, 2);
-
-    drawTextCentered(i18n::get(StrKey::MenuTitle), popX + POP_W / 2, popY + 22, T().text, font_);
-
-    static char exportBuf[64];
-    static char cardsBuf[64];
-    if (hasExport) {
-        std::snprintf(exportBuf, sizeof(exportBuf), "%s", i18n::fmt(StrKey::MenuExportSelected, std::to_string((int)selectedSlots_.size())).c_str());
-        std::snprintf(cardsBuf, sizeof(cardsBuf), "%s", i18n::fmt(StrKey::MenuExportCards, std::to_string((int)selectedSlots_.size())).c_str());
-    }
-
-    const std::string labelsNormal[] = {
-        i18n::get(StrKey::MenuTheme),
-        i18n::get(StrKey::MenuLanguage),
-        i18n::get(StrKey::MenuSearch),
-        i18n::get(StrKey::MenuWondercard),
-        exportBuf,
-        cardsBuf,
-        i18n::get(StrKey::MenuImportCard),
-        i18n::get(StrKey::MenuSwitchBank),
-        i18n::get(StrKey::MenuChangeGame),
-        i18n::get(StrKey::MenuSaveQuit),
-        i18n::get(StrKey::MenuQuitNoSave)
-    };
-    const std::string labelsApplet[] = {
-        i18n::get(StrKey::MenuTheme),
-        i18n::get(StrKey::MenuLanguage),
-        i18n::get(StrKey::MenuSearch),
-        i18n::get(StrKey::MenuWondercard),
-        exportBuf,
-        cardsBuf,
-        i18n::get(StrKey::MenuImportCard),
-        i18n::get(StrKey::MenuSwitchLeft),
-        i18n::get(StrKey::MenuSwitchRight),
-        i18n::get(StrKey::MenuChangeGame),
-        i18n::get(StrKey::MenuSaveBanks),
-        i18n::get(StrKey::MenuQuit)
-    };
-    // Build label list, skipping conditional items
-    std::string visibleLabels[14];
-    const std::string* allLabels = isDualBankMode() ? labelsApplet : labelsNormal;
-    int allCount = isDualBankMode() ? 12 : 11;
-    int vi = 0;
-    for (int i = 0; i < allCount; i++) {
-        if (!hasWC && i == 3) continue;     // skip Wondercard
-        if (!hasExport && i == 4) continue; // skip Export Selected
-        if (!hasExport && i == 5) continue; // skip Export Cards
-        visibleLabels[vi++] = allLabels[i];
-    }
-
-    int rowH = 36;
-    int startY = popY + 50;
-
-    for (int i = 0; i < menuCount; i++) {
-        int rowY = startY + i * rowH;
-        if (i == menuSelection_) {
-            drawRect(popX + 20, rowY, POP_W - 40, rowH - 4, T().menuHighlight);
-            drawRectOutline(popX + 20, rowY, POP_W - 40, rowH - 4, T().cursor, 2);
-        }
-        drawTextCentered(visibleLabels[i], popX + POP_W / 2, rowY + (rowH - 4) / 2, T().text, font_);
-    }
-
-    drawTextCentered(i18n::get(StrKey::AConfirmBCancelMenu), popX + POP_W / 2, popY + POP_H - 18, T().textDim, fontSmall_);
-}
 
 void UI::drawThemeSelectorPopup() {
     drawRect(0, 0, SCREEN_W, SCREEN_H, T().overlay);
@@ -1234,36 +1152,6 @@ void UI::drawThemeSelectorPopup() {
     drawTextCentered(i18n::get(StrKey::ASelectBCancel), popX + POP_W / 2, popY + POP_H - 18, T().textDim, fontSmall_);
 }
 
-void UI::drawLanguageSelectorPopup() {
-    drawRect(0, 0, SCREEN_W, SCREEN_H, T().overlay);
-
-    int langCount = (int)langList_.size();
-    constexpr int POP_W = 380;
-    int POP_H = 50 + langCount * 36 + 30;
-    int popX = (SCREEN_W - POP_W) / 2;
-    int popY = (SCREEN_H - POP_H) / 2;
-
-    drawRect(popX, popY, POP_W, POP_H, T().panelBg);
-    drawRectOutline(popX, popY, POP_W, POP_H, T().cursor, 2);
-
-    drawTextCentered(i18n::get(StrKey::SelectLanguage), popX + POP_W / 2, popY + 22, T().text, font_);
-
-    int rowH = 36;
-    int startY = popY + 50;
-
-    for (int i = 0; i < langCount; i++) {
-        int rowY = startY + i * rowH;
-        if (i == langSelCursor_) {
-            drawRect(popX + 20, rowY, POP_W - 40, rowH - 4, T().menuHighlight);
-            drawRectOutline(popX + 20, rowY, POP_W - 40, rowH - 4, T().cursor, 2);
-        }
-        std::string label = langDisplayName(langList_[i]);
-        if (langList_[i] == i18n::currentLang()) label = "* " + label + " *";
-        drawTextCentered(label, popX + POP_W / 2, rowY + (rowH - 4) / 2, T().text, font_);
-    }
-
-    drawTextCentered(i18n::get(StrKey::ASelectBCancel), popX + POP_W / 2, popY + POP_H - 18, T().textDim, fontSmall_);
-}
 
 void UI::drawSearchFilterPopup() {
     drawRect(0, 0, SCREEN_W, SCREEN_H, T().overlay);
@@ -1793,7 +1681,6 @@ void UI::drawAboutPopup() {
 
     constexpr int W = 900, H = 568, PAD = 29;
     const int x = (SCREEN_W - W) / 2, y = (SCREEN_H - H) / 2;
-    fillRounded(x + 3, y + 6, W, H, 22, SDL_Color{0, 0, 0, 90});
     fillRounded(x, y, W, H, 22, T().panelBg);
     // Accent along the top edge, inside the rounded corners.
     drawRect(x + 22, y, W - 44, 4, T().accent);
@@ -2205,8 +2092,6 @@ void UI::drawBoxPreview(int boxIdx, const SDL_Rect& card) {
         y = ACCENT_RULE_H + 4;
     x = std::max(INFO_X, std::min(x, INFO_X + INFO_W - w));
 
-    // Shadow, then the panel.
-    fillRounded(x + 3, y + 5, w, h, 12, SDL_Color{0, 0, 0, 90});
     fillRounded(x, y, w, h, 12, T().buttonBg);
     strokeRounded(x, y, w, h, 12, 1, T().cellBorder);
 

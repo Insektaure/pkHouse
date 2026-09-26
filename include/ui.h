@@ -319,11 +319,6 @@ private:
     int  themeSelCursor_    = 0;
     int  themeSelOriginal_  = 0;
 
-    // Language selector state
-    bool showLanguageSelector_ = false;
-    int  langSelCursor_        = 0;
-    std::vector<std::string> langList_;
-
     // Wondercard list state
     bool showWondercardList_ = false;
     int  wcListCursor_  = 0;
@@ -798,9 +793,31 @@ private:
     void drawCurrentScreen();
     void drawFrame();
     void drawMenuPopup();
+
+    // --- Menu (+), UI 2.0 (source/ui_menu.cpp) ---
+    //
+    // Built from the same conditions as before: Wondercard only for games that
+    // have them, the two exports only with a selection, and the "go to" and
+    // "leave" items of save + bank or of dual bank. Left column tools and
+    // destinations, right column settings and leaving.
+    enum class MenuId {
+        Search, Wondercard, ExportPk, ExportCards, ImportCard,
+        SwitchBank, SwitchLeft, SwitchRight, ChangeGame,
+        Theme, Language, SaveQuit, QuitNoSave, SaveBanks, Quit, ChangeGameNoSave,
+    };
+    struct MenuItem { MenuId id; int column; };
+    std::vector<MenuItem> menuItems() const;
+    void menuActivate(MenuId id, bool& running);
+    void moveMenuCursor(int dx, int dy);
+    void openMenu();
+    bool confirmDiscard();
+    // Language and theme have no pending state: left/right switch them at once.
+
+    // Small white icons from romfs:/icons, loaded on first use.
+    std::unordered_map<std::string, SDL_Texture*> uiIcons_;
+    SDL_Texture* uiIcon(const std::string& name);
     void drawAboutPopup();
     void drawThemeSelectorPopup();
-    void drawLanguageSelectorPopup();
     void drawSearchFilterPopup();
     void drawSearchResultsPopup();
     void drawSpeciesLetterPicker();

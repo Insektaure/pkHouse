@@ -503,5 +503,7 @@
     "hint_scroll": "Scorri",
     "gts_filter_legality": "Legalità",
     "gts_legality_checked": "Controllati",
-    "gts_legality_all": "Tutto"
+    "gts_legality_all": "Tutto",
+    "gts_not_downloadable_pending": "Questo Pokémon non è ancora stato controllato. Potrà essere scaricato quando supererà il controllo di legalità.",
+    "gts_not_downloadable_unchecked": "Non è stato possibile controllare questo Pokémon, quindi non può essere scaricato."
 }

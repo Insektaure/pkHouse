@@ -503,5 +503,7 @@
     "hint_scroll": "Défiler",
     "gts_filter_legality": "Légalité",
     "gts_legality_checked": "Vérifiés",
-    "gts_legality_all": "Tout"
+    "gts_legality_all": "Tout",
+    "gts_not_downloadable_pending": "Ce Pokémon n'a pas encore été vérifié. Il pourra être téléchargé une fois la vérification de légalité réussie.",
+    "gts_not_downloadable_unchecked": "Ce Pokémon n'a pas pu être vérifié, il ne peut donc pas être téléchargé."
 }

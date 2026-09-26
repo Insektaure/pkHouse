@@ -503,5 +503,7 @@
     "hint_scroll": "滚动",
     "gts_filter_legality": "合法性",
     "gts_legality_checked": "已检查",
-    "gts_legality_all": "全部"
+    "gts_legality_all": "全部",
+    "gts_not_downloadable_pending": "这只宝可梦尚未检查。通过合法性检查后即可下载。",
+    "gts_not_downloadable_unchecked": "这只宝可梦无法检查，因此无法下载。"
 }

@@ -644,11 +644,11 @@ void UI::showGtsReport(const Gts::Entry& e) {
     }
 }
 
-// Whether A on this listing shows its report rather than fetching it: an
-// illegal one with a report. Without a report A still tries the fetch, and the
-// board's own message says why it cannot.
+// Whether A on this listing shows its report rather than fetching it: any
+// listing that has not passed, when the board sent a report for it. The board
+// refuses to hand those over, so the report is what there is to see.
 bool UI::gtsOpensReport(const Gts::Entry& e) const {
-    return e.legality == "illegal" && !e.legalityReport.empty();
+    return e.legality != "legal" && !e.legalityReport.empty();
 }
 
 // One colour per verdict, shared by the pill in the info strip and the frame
@@ -1023,11 +1023,22 @@ void UI::handleGtsBrowseInput(bool& running) {
                 // The board refuses to hand over an illegal Pokemon, so
                 // opening one would only ever end in that error. Its report
                 // is what there is to see.
-                if (gtsCursor_ < static_cast<int>(gtsPage_.entries.size())
-                    && gtsOpensReport(gtsPage_.entries[gtsCursor_]))
-                    showGtsReport(gtsPage_.entries[gtsCursor_]);
-                else
-                    gtsOpenDetail();
+                // The board only hands over a Pokemon that passed its check.
+                // Anything else would end in its refusal, so A shows what
+                // there is instead: the report when there is one, otherwise
+                // why it cannot be opened.
+                if (gtsCursor_ < static_cast<int>(gtsPage_.entries.size())) {
+                    const Gts::Entry& e = gtsPage_.entries[gtsCursor_];
+                    if (gtsOpensReport(e))
+                        showGtsReport(e);
+                    else if (e.legality != "legal")
+                        showMessageAndWait(gtsEntryLabel(e),
+                            i18n::get(e.legality == "pending" ? StrKey::GtsNotDownloadablePending
+                                                              : StrKey::GtsNotDownloadableUnchecked),
+                            DialogKind::Info);
+                    else
+                        gtsOpenDetail();
+                }
                 break;
 
             case SDL_CONTROLLER_BUTTON_Y: // Switch X = the full legality report

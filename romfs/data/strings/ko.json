@@ -503,5 +503,7 @@
     "hint_scroll": "스크롤",
     "gts_filter_legality": "정규 판정",
     "gts_legality_checked": "판정 완료",
-    "gts_legality_all": "전체"
+    "gts_legality_all": "전체",
+    "gts_not_downloadable_pending": "이 포켓몬은 아직 판정되지 않았습니다. 정규 판정을 통과하면 다운로드할 수 있습니다.",
+    "gts_not_downloadable_unchecked": "이 포켓몬은 판정할 수 없어 다운로드할 수 없습니다."
 }

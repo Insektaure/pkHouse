@@ -503,5 +503,7 @@
     "hint_scroll": "Scroll",
     "gts_filter_legality": "Legality",
     "gts_legality_checked": "Checked",
-    "gts_legality_all": "Everything"
+    "gts_legality_all": "Everything",
+    "gts_not_downloadable_pending": "This Pokémon hasn't been checked yet. It can be downloaded once it passes the legality check.",
+    "gts_not_downloadable_unchecked": "This Pokémon couldn't be checked, so it can't be downloaded."
 }

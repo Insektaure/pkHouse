@@ -503,5 +503,7 @@
     "hint_scroll": "Rolar",
     "gts_filter_legality": "Legalidade",
     "gts_legality_checked": "Verificados",
-    "gts_legality_all": "Tudo"
+    "gts_legality_all": "Tudo",
+    "gts_not_downloadable_pending": "Este Pokémon ainda não foi verificado. Ele poderá ser baixado quando passar na verificação de legalidade.",
+    "gts_not_downloadable_unchecked": "Não foi possível verificar este Pokémon, então ele não pode ser baixado."
 }

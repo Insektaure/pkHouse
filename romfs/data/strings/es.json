@@ -503,5 +503,7 @@
     "hint_scroll": "Desplazar",
     "gts_filter_legality": "Legalidad",
     "gts_legality_checked": "Revisados",
-    "gts_legality_all": "Todo"
+    "gts_legality_all": "Todo",
+    "gts_not_downloadable_pending": "Este Pokémon aún no se ha revisado. Podrá descargarse cuando supere la revisión de legalidad.",
+    "gts_not_downloadable_unchecked": "Este Pokémon no se ha podido revisar, así que no se puede descargar."
 }

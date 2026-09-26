@@ -503,5 +503,7 @@
     "hint_scroll": "Прокрутка",
     "gts_filter_legality": "Легальность",
     "gts_legality_checked": "Проверенные",
-    "gts_legality_all": "Все"
+    "gts_legality_all": "Все",
+    "gts_not_downloadable_pending": "Этот покемон ещё не проверен. Его можно будет скачать, когда он пройдёт проверку легальности.",
+    "gts_not_downloadable_unchecked": "Этого покемона не удалось проверить, поэтому его нельзя скачать."
 }

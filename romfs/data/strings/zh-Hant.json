@@ -503,5 +503,7 @@
     "hint_scroll": "捲動",
     "gts_filter_legality": "合法性",
     "gts_legality_checked": "已檢查",
-    "gts_legality_all": "全部"
+    "gts_legality_all": "全部",
+    "gts_not_downloadable_pending": "這隻寶可夢尚未檢查。通過合法性檢查後即可下載。",
+    "gts_not_downloadable_unchecked": "這隻寶可夢無法檢查，因此無法下載。"
 }

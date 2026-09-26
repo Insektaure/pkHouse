@@ -503,5 +503,7 @@
     "hint_scroll": "Scrollen",
     "gts_filter_legality": "Legaliteit",
     "gts_legality_checked": "Gecontroleerd",
-    "gts_legality_all": "Alles"
+    "gts_legality_all": "Alles",
+    "gts_not_downloadable_pending": "Deze Pokémon is nog niet gecontroleerd. Hij kan worden gedownload zodra hij de legaliteitscontrole doorstaat.",
+    "gts_not_downloadable_unchecked": "Deze Pokémon kon niet worden gecontroleerd en kan dus niet worden gedownload."
 }

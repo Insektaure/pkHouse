@@ -546,6 +546,8 @@ namespace StrKey {
     constexpr const char* GtsFilterLegality        = "gts_filter_legality";
     constexpr const char* GtsLegalityChecked       = "gts_legality_checked";
     constexpr const char* GtsLegalityAll           = "gts_legality_all";
+    constexpr const char* GtsNotDownloadablePending   = "gts_not_downloadable_pending";
+    constexpr const char* GtsNotDownloadableUnchecked = "gts_not_downloadable_unchecked";
 
     // dialogs (UI 2.0)
     constexpr const char* DlgOk                    = "dlg_ok";

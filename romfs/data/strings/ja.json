@@ -503,5 +503,7 @@
     "hint_scroll": "スクロール",
     "gts_filter_legality": "正規判定",
     "gts_legality_checked": "判定済み",
-    "gts_legality_all": "すべて"
+    "gts_legality_all": "すべて",
+    "gts_not_downloadable_pending": "このポケモンはまだ判定されていません。正規判定に合格するとダウンロードできます。",
+    "gts_not_downloadable_unchecked": "このポケモンは判定できなかったため、ダウンロードできません。"
 }

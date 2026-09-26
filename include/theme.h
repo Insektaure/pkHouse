@@ -70,9 +70,9 @@ struct Theme {
     SDL_Color eggMark;
 };
 
-// One theme for now. The table and the selector stay so that more can be
-// added later without touching the screens.
-inline constexpr int THEME_COUNT = 1;
+// The table and the selector are what let a theme be added without touching
+// the screens: 0 is the pkHouse dark design, 1 the light pkHome.
+inline constexpr int THEME_COUNT = 2;
 
 const Theme& getTheme(int index);
 const char*  getThemeName(int index);

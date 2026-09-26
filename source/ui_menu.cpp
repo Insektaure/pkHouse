@@ -90,6 +90,20 @@ bool UI::confirmQuit(bool saving) {
                              i18n::get(saving ? StrKey::DlgQuitSaveBody : StrKey::DlgQuitBody), st);
 }
 
+// The next or previous theme, straight away and saved. Shared by the menu's
+// Theme row and L / R in About.
+void UI::stepTheme(int dir) {
+    const int next = (themeIndex_ + dir + THEME_COUNT) % THEME_COUNT;
+    if (next == themeIndex_) return;   // one theme: nothing to change or save
+    themeIndex_ = next;
+    theme_ = &getTheme(themeIndex_);   // the text cache follows (see run())
+    saveThemeIndex(basePath_, themeIndex_);
+    // A dialog's dimmed backdrop is cached per frame; the one behind About
+    // has to be painted again, in the new colours.
+    frameGen_++;
+    markDirty();
+}
+
 void UI::openMenu() {
     showMenu_ = true;
     menuSelection_ = 0;
@@ -119,12 +133,7 @@ void UI::moveMenuCursor(int dx, int dy) {
         return;
     }
     if (dx != 0 && cur.id == MenuId::Theme) {
-        // With one theme this lands on the same one: nothing to change or save.
-        const int next = (themeIndex_ + dx + THEME_COUNT) % THEME_COUNT;
-        if (next == themeIndex_) return;
-        themeIndex_ = next;
-        theme_ = &getTheme(themeIndex_);   // the text cache follows (see run())
-        saveThemeIndex(basePath_, themeIndex_);
+        stepTheme(dx);
         return;
     }
 

@@ -461,6 +461,7 @@ private:
     Update::State aboutUpdateState_ = Update::State::Idle;   // what the About pill last showed
     bool autoUpdate_ = true;   // the autoUPD_on / _off setting, read once at launch
     void toggleAutoUpdate();   // Y in the About popup
+    void stepTheme(int dir);   // L / R in About, Left / Right on the menu's Theme row
     void checkUpdatesNow();    // X in the About popup
     void offerUpdate(bool& running);   // source/ui_update.cpp
     std::string basePath_;

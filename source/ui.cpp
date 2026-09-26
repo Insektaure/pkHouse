@@ -331,6 +331,10 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
                         { toggleAutoUpdate(); markDirty(); }
                     else if (event.cbutton.button == SDL_CONTROLLER_BUTTON_Y)   // Switch X
                         { checkUpdatesNow(); markDirty(); }
+                    else if (event.cbutton.button == SDL_CONTROLLER_BUTTON_LEFTSHOULDER)
+                        stepTheme(-1);
+                    else if (event.cbutton.button == SDL_CONTROLLER_BUTTON_RIGHTSHOULDER)
+                        stepTheme(+1);
                 }
             }
             // The launch check can finish while it is open; its pill follows.

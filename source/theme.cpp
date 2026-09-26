@@ -46,6 +46,55 @@ static const Theme themes[THEME_COUNT] = {
         .miniDotFull     = {111, 115, 144, 255},
         .eggMark         = {239, 230, 207, 255},
     },
+
+    // ===== 1: pkHome (light, after Pokemon HOME) =====
+    // Mint ground, white panels framed in teal, pale mint slots, teal for the
+    // bank side and the labels, and HOME's orange for the accent and the
+    // cursor. Dark text throughout, so the key caps flip: dark caps with
+    // white glyphs, and white ink on orange.
+    {
+        .name            = "pkHome",
+        .bg              = {196, 236, 208, 255},
+        .panelBg         = {250, 253, 251, 255},
+        .slotEmpty       = {234, 247, 239, 255},
+        .slotFull        = {226, 244, 234, 255},
+        .slotEgg         = {244, 238, 222, 255},
+        .selected        = {38, 166, 154, 255},
+        .selectedPos     = {46, 160, 90, 255},
+        .text            = {48, 52, 56, 255},
+        .textDim         = {92, 108, 104, 255},
+        .textOnBadge     = {255, 255, 255, 255},
+        .statusText      = {48, 52, 56, 255},
+        .red             = {214, 64, 64, 255},
+        .goldLabel       = {244, 140, 30, 255},
+        .genderMale      = {40, 110, 230, 255},
+        .genderFemale    = {228, 70, 118, 255},
+        .searchMatch     = {226, 96, 30, 255},
+        .searchDim       = {246, 251, 248, 170},
+        .partyMark       = {38, 166, 154, 255},
+
+        .accent          = {244, 140, 30, 255},
+        .accentSave      = {232, 122, 20, 255},
+        .accentBank      = {38, 166, 154, 255},
+        .panelBorder     = {64, 182, 166, 255},
+        .divider         = {168, 216, 202, 255},
+        .textMuted       = {136, 152, 148, 255},
+        .cellBorder      = {196, 230, 214, 255},
+        .cellCursor      = {255, 236, 212, 255},
+        .cellEmptyBorder = {200, 230, 215, 255},
+        .dot             = {178, 220, 206, 255},
+        .buttonBg        = {255, 255, 255, 255},
+        .buttonBorder    = {120, 200, 186, 255},
+        .keyCap          = {56, 60, 64, 255},
+        .keyCapText      = {255, 255, 255, 255},
+        .statusOk        = {40, 150, 84, 255},
+        .statusWarn      = {222, 116, 18, 255},
+        .alphaMark       = {214, 64, 64, 255},
+        .badgeBg         = {255, 229, 196, 255},
+        .miniDotEmpty    = {206, 230, 218, 255},
+        .miniDotFull     = {104, 134, 126, 255},
+        .eggMark         = {196, 168, 110, 255},
+    },
 };
 
 const Theme& getTheme(int index) {

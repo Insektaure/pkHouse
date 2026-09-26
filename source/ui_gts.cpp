@@ -418,9 +418,9 @@ void UI::drawGtsHubFrame() {
 
     {
         const ButtonHint hints[] = {
-            {"A", StrKey::HintSelect3}, {"B", StrKey::HintBack2},
+            {"A", StrKey::HintSelect3}, {"B", StrKey::HintBack2}, {"-", StrKey::HintAbout},
         };
-        drawFooterBar(hints, 2);
+        drawFooterBar(hints, 3);
     }
 
     if (showGtsFilter_)  drawGtsFilterPopup();
@@ -488,6 +488,10 @@ void UI::handleGtsHubInput(bool& running) {
 
             case SDL_CONTROLLER_BUTTON_A: // Switch B = back
                 screen_ = AppScreen::GameSelector;
+                break;
+
+            case SDL_CONTROLLER_BUTTON_BACK: // - = about (no popup is open here)
+                showAbout_ = true;
                 break;
 
             case SDL_CONTROLLER_BUTTON_START:
@@ -973,6 +977,7 @@ void UI::drawGtsBrowseFrame() {
         if (report && !aIsReport) hints.push_back({"X", StrKey::HintReason});
         hints.push_back({"L R", StrKey::HintPage2});
         hints.push_back({"B", StrKey::HintBack2});
+        hints.push_back({"-", StrKey::HintAbout});
         drawFooterBar(hints.data(), static_cast<int>(hints.size()));
     }
 }
@@ -1064,6 +1069,10 @@ void UI::handleGtsBrowseInput(bool& running) {
             case SDL_CONTROLLER_BUTTON_Y: // Switch X = the full legality report
                 if (gtsCursor_ < static_cast<int>(gtsPage_.entries.size()))
                     showGtsReport(gtsPage_.entries[gtsCursor_]);
+                break;
+
+            case SDL_CONTROLLER_BUTTON_BACK: // - = about (no listing is open here)
+                showAbout_ = true;
                 break;
 
             case SDL_CONTROLLER_BUTTON_A: // Switch B = back to the hub

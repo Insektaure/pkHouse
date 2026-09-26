@@ -184,10 +184,18 @@ The backup is only created once when initially selecting a game - switching bank
 
 Before backing up, the app checks available SD card space. If there isn't enough free space (2x the save size), a warning is shown with the option to continue without a backup or cancel. If the backup itself fails, you'll see a similar prompt before proceeding.
 
-### Theme
+### Themes
 
-pkHouse 2.0 has a single design. The 1.x colour themes were retired with the redesign; the **Theme** row in
-the menu stays, so new themes can be added later without changing the screens.
+pkHouse 2.0 comes with two themes, both drawn on the same layout:
+
+| Theme | Style |
+|-------|-------|
+| pkHouse | The dark design, with a yellow accent |
+| pkHome | Light, in the colours of Pokemon HOME: mint, white and teal, with HOME's orange |
+
+Switch themes with **L / R** in the **About** screen (**−**), which opens from nearly every screen, or with
+**Left / Right** on the Theme row of the menu. The screen redraws in the new theme straight away, and the
+choice is saved to `theme.cfg`. The 1.x themes were retired with the redesign.
 
 ### Language
 
@@ -636,15 +644,20 @@ When switching banks, the selector appears on the side being switched while the 
 | Y | Save the open listing as a card |
 | ZL / ZR | Jump to the previous / next game (Deposit) |
 | B | Back |
+| - | About (hub and board) |
 | + | Quit (asks first, hub and board) |
 
 ### About
 
 | Button | Action |
 |--------|--------|
+| L / R | Previous / next theme |
 | X | Check for updates now |
 | Y | Turn the update check at launch on / off |
 | B / - | Close |
+
+The About screen opens with **−** from the profile and game selectors, the bank selector, the boxes, the box
+overview, the Pokemon summary, and the GTS hub and board.
 
 ### Menu (Title Override Mode)
 

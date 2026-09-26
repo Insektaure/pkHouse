@@ -87,6 +87,9 @@ void UI::handleBoxViewInput(const SDL_Event& event) {
                 }
                 break;
             }
+            case SDL_CONTROLLER_BUTTON_BACK:   // - = about; the overview only looks
+                showAbout_ = true;
+                break;
             case SDL_CONTROLLER_BUTTON_DPAD_UP:    moveBoxViewCursor(0, -1); break;
             case SDL_CONTROLLER_BUTTON_DPAD_DOWN:   moveBoxViewCursor(0, +1); break;
             case SDL_CONTROLLER_BUTTON_DPAD_LEFT:   moveBoxViewCursor(-1, 0); break;
@@ -221,6 +224,9 @@ void UI::handleDetailInput(const SDL_Event& event) {
             }
             case SDL_CONTROLLER_BUTTON_B: // Switch A
                 tryRelease();
+                break;
+            case SDL_CONTROLLER_BUTTON_BACK:   // - = about; the summary only looks
+                showAbout_ = true;
                 break;
             case SDL_CONTROLLER_BUTTON_DPAD_UP:
             case SDL_CONTROLLER_BUTTON_DPAD_DOWN:

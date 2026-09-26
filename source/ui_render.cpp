@@ -888,8 +888,9 @@ void UI::drawFrame() {
                 {"X",   StrKey::HintExportPk},
                 {"Y",   StrKey::HintExportCard},
                 {"B",   StrKey::HintClose},
+                {"-",   StrKey::HintAbout},
             };
-            drawDetailPopup(pkm, hints, 5, detailWhere());
+            drawDetailPopup(pkm, hints, 6, detailWhere());
             return;
         }
         showDetail_ = false;
@@ -907,11 +908,12 @@ void UI::drawFrame() {
     // buttons are different ones and a line of text leads them.
     {
         std::string message;
-        ButtonHint hints[7];
+        ButtonHint hints[8];
         int n = 0;
 
         // Same keys and labels as before the 2.0 redesign, so nobody has to
-        // relearn the controls; only the way they are drawn changed.
+        // relearn the controls; only the way they are drawn changed. The one
+        // addition is + Menu, which the old line never said.
         if (searchHighlightActive_ && !holding_ && selectedSlots_.empty() && !yHeld_) {
             message = i18n::fmt(StrKey::MsgSearch, std::to_string(searchResults_.size()));
             hints[n++] = {"B", StrKey::HintClear};
@@ -947,6 +949,7 @@ void UI::drawFrame() {
             hints[n++] = {"YY", StrKey::HintAll};
             hints[n++] = {"B", StrKey::HintCancel};
             hints[n++] = {"X", StrKey::HintDetail};
+            hints[n++] = {"+", StrKey::HintMenu};
         }
 
         drawFooterBar(hints, n, message);
@@ -991,7 +994,8 @@ void UI::drawFrame() {
 void UI::drawAboutPopup() {
     drawDialogBackdrop();
 
-    constexpr int W = 900, H = 568, PAD = 29;
+    // 56 taller than the content needs: the settings row above the buttons.
+    constexpr int W = 900, H = 624, PAD = 29;
     const int x = (SCREEN_W - W) / 2, y = (SCREEN_H - H) / 2;
     fillRounded(x, y, W, H, 22, T().panelBg);
     // Accent along the top edge, inside the rounded corners.
@@ -1170,10 +1174,57 @@ void UI::drawAboutPopup() {
         }
     }
 
-    // --- Close -----------------------------------------------------------------
+    // --- Settings: the theme and the update check, above the buttons ------------
+    // About opens from nearly every screen, which makes it the one place the
+    // theme can be switched from anywhere. The screen behind redraws in it.
+    TTF_Font* f = uiFont(15, true);
+    {
+        drawRect(x, y + H - 113, W, 1, T().panelBorder);
+        const int cy = y + H - 85;
+
+        // L R  Theme  < name >
+        int ax = x + PAD;
+        ax += drawFooterKey(ax, cy, "L R", false) + 10;
+        const std::string tl = i18n::get(StrKey::MenuTheme);
+        drawText(tl, ax, cy - TTF_FontHeight(f) / 2, T().text, f);
+        ax += textWidth(tl, f) + 14;
+        TTF_Font* fName = uiFont(14, true);
+        const int bw = 28, bh = 26, nameW = 120;
+        for (int side = 0; side < 2; side++) {
+            const int bx = side ? ax + bw + nameW : ax;
+            fillRounded(bx, cy - bh / 2, bw, bh, 7, T().buttonBg);
+            strokeRounded(bx, cy - bh / 2, bw, bh, 7, 1, T().buttonBorder);
+            fillArrow(bx + bw / 2.0f, cy, 6, side ? ArrowDir::Right : ArrowDir::Left, T().text);
+        }
+        drawTextCentered(fitText(getThemeName(themeIndex_), fName, nameW - 8), ax + bw + nameW / 2, cy,
+                         T().text, fName);
+        const int themeRight = ax + bw * 2 + nameW;
+
+        // Y: whether to look for a new release at launch, as a switch. It
+        // renames sdmc:/config/pkHouse/autoUPD_on.cfg / autoUPD_off.cfg.
+        const std::string state = i18n::get(autoUpdate_ ? StrKey::FilterYes : StrKey::GtsFilterNo);
+        TTF_Font* fState = uiFont(14);
+        const int tw = 44, th = 24;
+        const int stateW = textWidth(state, fState);
+        const int keyW = drawFooterKey(0, -100, "Y", true);
+        // Right-aligned, so the two settings sit at the row's two ends.
+        const std::string al = i18n::get(StrKey::UpdAutoLabel);
+        const int room = (x + W - PAD) - (themeRight + 32) - keyW - 10 - 10 - tw - 10 - stateW;
+        const std::string alFit = fitText(al, f, room);
+        int sx = x + W - PAD - (keyW + 10 + textWidth(alFit, f) + 10 + tw + 10 + stateW);
+        sx += drawFooterKey(sx, cy, "Y", false) + 10;
+        drawText(alFit, sx, cy - TTF_FontHeight(f) / 2, T().text, f);
+        sx += textWidth(alFit, f) + 10;
+        fillRounded(sx, cy - th / 2, tw, th, th / 2, autoUpdate_ ? T().accent : T().bg);
+        strokeRounded(sx, cy - th / 2, tw, th, th / 2, 1, autoUpdate_ ? T().accent : T().buttonBorder);
+        fillDisc(autoUpdate_ ? sx + tw - 12 : sx + 12, cy, 8, autoUpdate_ ? T().keyCapText : T().textDim);
+        sx += tw + 10;
+        drawText(state, sx, cy - TTF_FontHeight(fState) / 2, autoUpdate_ ? T().text : T().textDim, fState);
+    }
+
+    // --- Check now and Close -------------------------------------------------------
     drawRect(x, y + H - 57, W, 1, T().panelBorder);
     {
-        TTF_Font* f = uiFont(15, true);
         const std::string label = i18n::get(StrKey::HintClose);
         const int keysW = drawFooterKey(0, -100, "B -", true);
         const int bw = 12 + keysW + 10 + textWidth(label, f) + 16, bh = 38;
@@ -1195,25 +1246,6 @@ void UI::drawAboutPopup() {
         drawFooterKey(cbx + 12, by + bh / 2, "X", false);
         drawText(cl, cbx + 12 + ckW + 10, by + bh / 2 - TTF_FontHeight(f) / 2,
                  checking ? T().textMuted : T().text, f);
-
-        // Y: whether to look for a new release at launch, as a switch. It
-        // renames sdmc:/config/pkHouse/autoUPD_on.cfg / autoUPD_off.cfg.
-        const int cy = by + bh / 2;
-        int ax = x + PAD;
-        ax += drawFooterKey(ax, cy, "Y", false) + 10;
-        const std::string al = i18n::get(StrKey::UpdAutoLabel);
-        const int tw = 44, th = 24;
-        const std::string state = i18n::get(autoUpdate_ ? StrKey::FilterYes : StrKey::GtsFilterNo);
-        TTF_Font* fState = uiFont(14);
-        const int room = cbx - 24 - ax - tw - 10 - textWidth(state, fState) - 10;
-        const std::string alFit = fitText(al, f, room);
-        drawText(alFit, ax, cy - TTF_FontHeight(f) / 2, T().text, f);
-        ax += textWidth(alFit, f) + 10;
-        fillRounded(ax, cy - th / 2, tw, th, th / 2, autoUpdate_ ? T().accent : T().bg);
-        strokeRounded(ax, cy - th / 2, tw, th, th / 2, 1, autoUpdate_ ? T().accent : T().buttonBorder);
-        fillDisc(autoUpdate_ ? ax + tw - 12 : ax + 12, cy, 8, autoUpdate_ ? T().keyCapText : T().textDim);
-        ax += tw + 10;
-        drawText(state, ax, cy - TTF_FontHeight(fState) / 2, autoUpdate_ ? T().text : T().textDim, fState);
     }
 }
 
@@ -1430,7 +1462,7 @@ void UI::drawBoxViewOverlay() {
 
     // Same keys as before the redesign, plus ZL/ZR to flip between the tabs.
     const bool canRename = isDualBankMode() || (boxViewPanel_ == Panel::Bank);
-    ButtonHint hints[5];
+    ButtonHint hints[6];
     int n = 0;
     hints[n++] = {"A", StrKey::HintGoToBox};
     if (canRename)
@@ -1438,6 +1470,7 @@ void UI::drawBoxViewOverlay() {
     hints[n++] = {"B", StrKey::HintCancel};
     hints[n++] = {HINT_DPAD, StrKey::HintNavigate};
     hints[n++] = {"ZL ZR", isDualBankMode() ? StrKey::HintLeftRight : StrKey::HintSaveBank};
+    hints[n++] = {"-", StrKey::HintAbout};
     drawFooterBar(hints, n, std::string(), drawBoxViewLegend(true));
     drawBoxViewLegend(false);
 

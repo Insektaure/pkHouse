@@ -176,6 +176,7 @@ void UI::menuActivate(MenuId id, bool& running) {
         showMenu_ = false;
         showSearchFilter_ = true;
         searchFilterCursor_ = 0;
+        searchFilterCol_ = 0;
         searchFilter_ = SearchFilter{};
         clearSearchHighlight();
         return;

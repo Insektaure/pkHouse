@@ -58,7 +58,6 @@ enum class TextInputPurpose {
 
 // Search filter enums
 enum class GenderFilter { Any, Male, Female, Genderless };
-enum class PerfectIVFilter { Off, AtLeastOne, All6 };
 enum class RibbonFilter { Off, HasRibbon, HasMark, HasAny };
 enum class SearchMode { List, Highlight };
 
@@ -71,7 +70,7 @@ struct SearchFilter {
     bool filterEgg    = false;
     bool filterAlpha  = false;
     GenderFilter gender = GenderFilter::Any;
-    PerfectIVFilter perfectIVs = PerfectIVFilter::Off;
+    int minPerfectIVs = 0;        // 0 = off, 1..6 = at least that many 31s
     RibbonFilter ribbonFilter = RibbonFilter::Off;
     int levelMin = 0;
     int levelMax = 0;
@@ -83,6 +82,8 @@ struct SearchResult {
     Panel panel;
     int box;
     int slot;
+    uint16_t species = 0;         // for the sprite
+    uint8_t  form = 0;
     std::string speciesName;
     uint8_t level;
     bool isShiny;
@@ -421,6 +422,7 @@ private:
     std::vector<SearchResult> searchResults_;
     int  searchFilterCursor_ = 0;
     int  searchLevelFocus_   = 0;   // 0=min, 1=max
+    int  searchFilterCol_    = 0;   // column the cursor last sat in (0=left)
     int  searchResultCursor_ = 0;
     int  searchResultScroll_ = 0;
     bool searchHighlightActive_ = false;
@@ -428,7 +430,6 @@ private:
 
     // Species picker state (letter → species list)
     bool showSpeciesLetterPicker_ = false;
-    bool showSpeciesListPicker_   = false;
     int  speciesLetterCursor_ = 0;   // 0="-", 1-26=A-Z
     int  speciesLetterScroll_ = 0;
     int  speciesListCursor_   = 0;
@@ -819,9 +820,38 @@ private:
     void drawAboutPopup();
     void drawThemeSelectorPopup();
     void drawSearchFilterPopup();
+
+    // --- Search (source/ui_search.cpp), UI 2.0 ---
+    //
+    // The filter popup's rows, in cursor order: left column, right column,
+    // then how to show results. Alpha is only offered where alphas exist.
+    enum SearchRow { SR_SPECIES, SR_OT, SR_GENDER, SR_LEVEL,
+                     SR_SHINY, SR_EGG, SR_ALPHA, SR_IVS, SR_RIBBONS, SR_MODE };
+    std::vector<int> searchRows() const;
+    void searchFilterColumns(std::vector<int>& left, std::vector<int>& right) const;
+    void setSearchFilterRow(int row);
+    void moveSearchFilterCursor(int dir);     // up / down
+    void switchSearchFilterColumn(int dir);   // left / right
+    void adjustSearchRow(int dir);        // A (+1), ZL / ZR on the level row
+    void activateSearchRow();             // A on the current row
+    std::vector<std::string> searchChips() const;   // the active filters, as chips
+    void drawSearchChips(const std::vector<std::string>& chips, int x, int cy, int maxW);
+
+    // Species picker: letters and species on one screen. Shared with the
+    // GTS search, which opens it the same way (speciesPickerForGts_ says whose
+    // filter a pick belongs to).
+    static constexpr int SPECIES_COLS = 4;
+    static constexpr int SPECIES_VISIBLE_ROWS = 6;
+    int  speciesPickerLetter_ = -1;       // letter the list was built for
+    void ensureSpeciesPickerLetter();
+    void stepSpeciesLetter(int dir);
+    void moveSpeciesPicker(int dx, int dy);
+    void pickSpecies(uint16_t id);        // 0 = any species
+
+    static constexpr int SEARCH_VISIBLE_ROWS = 6;
+    void moveSearchResult(int delta);
     void drawSearchResultsPopup();
     void drawSpeciesLetterPicker();
-    void drawSpeciesListPicker();
     void drawWondercardListPopup();
     void drawCardListPopup();
     void drawHeldOverlay();
@@ -946,7 +976,6 @@ private:
     void handleSearchFilterInput(const SDL_Event& event);
     void handleSearchResultsInput(const SDL_Event& event);
     void handleSpeciesLetterPickerInput(const SDL_Event& event);
-    void handleSpeciesListPickerInput(const SDL_Event& event);
     void buildAvailableSpeciesList();
     void buildSpeciesListForLetter(int letterIndex);
     bool letterHasSpecies(int letterIndex) const;

@@ -404,7 +404,6 @@ void UI::drawGtsHubFrame() {
     if (showGtsFilter_)  drawGtsFilterPopup();
     if (showGtsDeposit_) drawGtsDepositPopup();
     if (showSpeciesLetterPicker_) drawSpeciesLetterPicker();
-    if (showSpeciesListPicker_)   drawSpeciesListPicker();
 }
 
 void UI::handleGtsHubInput(bool& running) {
@@ -414,7 +413,6 @@ void UI::handleGtsHubInput(bool& running) {
         if (event.type == SDL_CONTROLLERBUTTONDOWN) markDirty();
 
         // Popups get the event instead, innermost first.
-        if (showSpeciesListPicker_)   { handleSpeciesListPickerInput(event);   continue; }
         if (showSpeciesLetterPicker_) { handleSpeciesLetterPickerInput(event); continue; }
         if (showGtsFilter_)           { handleGtsFilterInput(event);           continue; }
         if (showGtsDeposit_)          { handleGtsDepositInput(event);          continue; }

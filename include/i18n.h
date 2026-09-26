@@ -214,7 +214,6 @@ namespace StrKey {
     // ui_render.cpp - language selector
 
     // ui_render.cpp - search/filter
-    constexpr const char* SearchFilter         = "search_filter";
     constexpr const char* FilterSpecies        = "filter_species";
     constexpr const char* FilterAny            = "filter_any";
     constexpr const char* FilterOT             = "filter_ot";
@@ -225,47 +224,31 @@ namespace StrKey {
     constexpr const char* FilterAlpha          = "filter_alpha";
     constexpr const char* FilterGender         = "filter_gender";
     constexpr const char* GenderAny            = "gender_any";
-    constexpr const char* GenderMale           = "gender_male";
-    constexpr const char* GenderFemale         = "gender_female";
     constexpr const char* GenderGenderless     = "gender_genderless";
     constexpr const char* FilterLevel          = "filter_level";
     constexpr const char* FilterPerfectIVs     = "filter_perfect_ivs";
-    constexpr const char* IVOnePlus            = "iv_one_plus";
-    constexpr const char* IVSix                = "iv_six";
     constexpr const char* FilterRibbons        = "filter_ribbons";
-    constexpr const char* RibbonHasRibbon      = "ribbon_has_ribbon";
-    constexpr const char* RibbonHasMark        = "ribbon_has_mark";
     constexpr const char* RibbonHasAny         = "ribbon_has_any";
-    constexpr const char* FilterMode           = "filter_mode";
     constexpr const char* ModeListOn           = "mode_list_on";
     constexpr const char* ModeListOff          = "mode_list_off";
-    constexpr const char* ModeHighlightOn      = "mode_highlight_on";
-    constexpr const char* ModeHighlightOff     = "mode_highlight_off";
     constexpr const char* FilterReset          = "filter_reset";
     constexpr const char* FilterSearch         = "filter_search_btn";
     constexpr const char* FilterFooter         = "filter_footer";
 
     // ui_render.cpp - search results
-    constexpr const char* SearchResultsTitle   = "search_results_title";
     constexpr const char* NoPokemonFound       = "no_pokemon_found";
     constexpr const char* BadgeShiny           = "badge_shiny";
-    constexpr const char* BadgeAlpha           = "badge_alpha";
-    constexpr const char* BadgeEgg             = "badge_egg";
     constexpr const char* Egg                  = "egg";
     constexpr const char* LocLeft              = "loc_left";
     constexpr const char* LocRight             = "loc_right";
     constexpr const char* LocSave              = "loc_save";
     constexpr const char* LocBank              = "loc_bank";
     constexpr const char* BoxLabel             = "box_label";
-    constexpr const char* SlotLabel            = "slot_label";
-    constexpr const char* ResultsFooterEmpty   = "results_footer_empty";
-    constexpr const char* ResultsFooter        = "results_footer";
 
     // ui_render.cpp - species picker
     constexpr const char* SelectLetter         = "select_letter";
     constexpr const char* ASelectBBack         = "a_select_b_back";
     constexpr const char* NoSpeciesFound       = "no_species_found";
-    constexpr const char* SpeciesDashLetter    = "species_dash_letter";
 
     // ui_render.cpp - wondercard list
     constexpr const char* WondercardsTitle     = "wondercards_title";
@@ -495,6 +478,48 @@ namespace StrKey {
     constexpr const char* DlgDiscardBodySave       = "dlg_discard_body_save";
     constexpr const char* DlgDiscardBodyBanks      = "dlg_discard_body_banks";
     constexpr const char* DlgDiscard               = "dlg_discard";
+
+    // Search (UI 2.0)
+    constexpr const char* SfScopeSave              = "sf_scope_save";
+    constexpr const char* SfScopeDual              = "sf_scope_dual";
+    constexpr const char* SfAnyTrainer             = "sf_any_trainer";
+    constexpr const char* SfAnySpecies             = "sf_any_species";
+    constexpr const char* SfTo                     = "sf_to";
+    constexpr const char* SfShowResults            = "sf_show_results";
+    constexpr const char* SfList                   = "sf_list";
+    constexpr const char* SfListSub                = "sf_list_sub";
+    constexpr const char* SfHighlight              = "sf_highlight";
+    constexpr const char* SfHighlightSub           = "sf_highlight_sub";
+    constexpr const char* SfFilters                = "sf_filters";
+    constexpr const char* SfNoFilters              = "sf_no_filters";
+    constexpr const char* SfRibbon                 = "sf_ribbon";
+    constexpr const char* SfMark                   = "sf_mark";
+    constexpr const char* SfEither                 = "sf_either";
+    constexpr const char* HintReset                = "hint_reset";
+    constexpr const char* HintSearch               = "hint_search";
+    constexpr const char* HintChooseSpecies        = "hint_choose_species";
+    constexpr const char* HintType                 = "hint_type";
+    constexpr const char* HintMinMax               = "hint_min_max";
+    constexpr const char* SpTitle                  = "sp_title";
+    constexpr const char* SpCount                  = "sp_count";
+    constexpr const char* HintLetter               = "hint_letter";
+    constexpr const char* HintAnySpecies           = "hint_any_species";
+    constexpr const char* HintBackSearch           = "hint_back_search";
+    constexpr const char* SrTitle                  = "sr_title";
+    constexpr const char* SrFound                  = "sr_found";
+    constexpr const char* SrNoneFound              = "sr_none_found";
+    constexpr const char* SrOneNote                = "sr_one_note";
+    constexpr const char* SrNoneTitle              = "sr_none_title";
+    constexpr const char* SrNoneBodySave           = "sr_none_body_save";
+    constexpr const char* SrNoneBodyDual           = "sr_none_body_dual";
+    constexpr const char* HintGoToSlot             = "hint_go_to_slot";
+    constexpr const char* HintJump10               = "hint_jump10";
+    constexpr const char* HintEditFilters          = "hint_edit_filters";
+    constexpr const char* SrSlot                   = "sr_slot";
+    constexpr const char* SrGoTo                   = "sr_go_to";
+    constexpr const char* ChipIvs                  = "chip_ivs";
+    constexpr const char* ChipLv                   = "chip_lv";
+    constexpr const char* ChipOt                   = "chip_ot";
 
     // dialogs (UI 2.0)
     constexpr const char* DlgOk                    = "dlg_ok";

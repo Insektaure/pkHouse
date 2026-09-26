@@ -109,7 +109,6 @@ void UI::handleInput(bool& running) {
             markDirty();
 
         if (showMenu_)               { handleMenuInput(event, running); continue; }
-        if (showSpeciesListPicker_)  { handleSpeciesListPickerInput(event); continue; }
         if (showSpeciesLetterPicker_){ handleSpeciesLetterPickerInput(event); continue; }
         if (showSearchFilter_)       { handleSearchFilterInput(event); continue; }
         if (showSearchResults_)      { handleSearchResultsInput(event); continue; }
@@ -394,45 +393,9 @@ void UI::handleStickRepeat() {
 
     markDirty();
     if (showSpeciesLetterPicker_) {
-        constexpr int COLS = 2;
-        constexpr int TOTAL_ITEMS = 27;
-        int dx = stickDirX_ > 0 ? 1 : (stickDirX_ < 0 ? -1 : 0);
-        int dy = stickDirY_ > 0 ? 1 : (stickDirY_ < 0 ? -1 : 0);
-        int col = speciesLetterCursor_ % COLS;
-        int row = speciesLetterCursor_ / COLS;
-        int totalRows = (TOTAL_ITEMS + COLS - 1) / COLS;
-        for (int attempt = 0; attempt < TOTAL_ITEMS; attempt++) {
-            col += dx; row += dy;
-            if (row < 0) row = totalRows - 1;
-            if (row >= totalRows) row = 0;
-            if (col < 0) col = COLS - 1;
-            if (col >= COLS) col = 0;
-            int idx = row * COLS + col;
-            if (idx >= TOTAL_ITEMS) { col = 0; idx = row * COLS; }
-            if (letterHasSpecies(idx)) {
-                speciesLetterCursor_ = idx;
-                break;
-            }
-        }
-    } else if (showSpeciesListPicker_) {
-        constexpr int COLS = 3;
-        int total = static_cast<int>(speciesPickerList_.size());
-        if (total > 0) {
-            int col = speciesListCursor_ % COLS;
-            int row = speciesListCursor_ / COLS;
-            int totalRows = (total + COLS - 1) / COLS;
-            if (stickDirY_ != 0) {
-                row += stickDirY_ > 0 ? 1 : -1;
-                row = (row + totalRows) % totalRows;
-            }
-            if (stickDirX_ != 0) {
-                col += stickDirX_ > 0 ? 1 : -1;
-                col = (col + COLS) % COLS;
-            }
-            int idx = row * COLS + col;
-            if (idx >= total) idx = total - 1;
-            speciesListCursor_ = idx;
-        }
+        const int dx = stickDirX_ > 0 ? 1 : (stickDirX_ < 0 ? -1 : 0);
+        const int dy = stickDirY_ > 0 ? 1 : (stickDirY_ < 0 ? -1 : 0);
+        moveSpeciesPicker(dx, dy);
     } else if (screen_ == AppScreen::GtsHub) {
         if (showGtsFilter_) {
             if (stickDirY_ != 0) {
@@ -459,29 +422,10 @@ void UI::handleStickRepeat() {
             if (stickDirY_ != 0) moveGtsCursor(0, stickDirY_);
         }
     } else if (showSearchFilter_) {
-        bool alpha = (selectedGame_ == GameType::LA || selectedGame_ == GameType::ZA);
-        if (stickDirY_ != 0) {
-            int dir = stickDirY_ > 0 ? 1 : -1;
-            searchFilterCursor_ = (searchFilterCursor_ + dir + 12) % 12;
-            if (!alpha && searchFilterCursor_ == 4)
-                searchFilterCursor_ = (searchFilterCursor_ + dir + 12) % 12;
-        }
-        if (stickDirX_ != 0 && searchFilterCursor_ == 6)
-            searchLevelFocus_ = stickDirX_ > 0 ? 1 : 0;
-        if (stickDirX_ != 0 && searchFilterCursor_ == 9)
-            searchFilter_.mode = stickDirX_ > 0 ? SearchMode::Highlight : SearchMode::List;
+        if (stickDirY_ != 0)      moveSearchFilterCursor(stickDirY_ > 0 ? 1 : -1);
+        else if (stickDirX_ != 0) switchSearchFilterColumn(stickDirX_ > 0 ? 1 : -1);
     } else if (showSearchResults_) {
-        if (stickDirY_ != 0 && !searchResults_.empty()) {
-            searchResultCursor_ += stickDirY_ > 0 ? 1 : -1;
-            if (searchResultCursor_ < 0) searchResultCursor_ = 0;
-            if (searchResultCursor_ >= (int)searchResults_.size())
-                searchResultCursor_ = (int)searchResults_.size() - 1;
-            int visibleRows = 12;
-            if (searchResultCursor_ < searchResultScroll_)
-                searchResultScroll_ = searchResultCursor_;
-            if (searchResultCursor_ >= searchResultScroll_ + visibleRows)
-                searchResultScroll_ = searchResultCursor_ - visibleRows + 1;
-        }
+        if (stickDirY_ != 0) moveSearchResult(stickDirY_ > 0 ? 1 : -1);
     } else if (showCardList_) {
         if (stickDirY_ != 0 && !cardList_.empty()) {
             int count = static_cast<int>(cardList_.size());
@@ -533,16 +477,7 @@ void UI::handleBumperRepeat() {
     markDirty();
     if (showSearchResults_ && !searchResults_.empty()) {
         // Page through search results
-        int dir = lHeld_ ? -10 : 10;
-        searchResultCursor_ += dir;
-        if (searchResultCursor_ < 0) searchResultCursor_ = 0;
-        if (searchResultCursor_ >= (int)searchResults_.size())
-            searchResultCursor_ = (int)searchResults_.size() - 1;
-        int visibleRows = 12;
-        if (searchResultCursor_ < searchResultScroll_)
-            searchResultScroll_ = searchResultCursor_;
-        if (searchResultCursor_ >= searchResultScroll_ + visibleRows)
-            searchResultScroll_ = searchResultCursor_ - visibleRows + 1;
+        moveSearchResult(lHeld_ ? -10 : 10);
     } else if (showDetail_) {
         // Navigate to prev/next non-empty slot
         int dir = lHeld_ ? -1 : 1;
@@ -1105,309 +1040,11 @@ bool UI::letterHasSpecies(int letterIndex) const {
     return false;
 }
 
-void UI::handleSpeciesLetterPickerInput(const SDL_Event& event) {
-    if (event.type == SDL_CONTROLLERAXISMOTION) {
-        if (event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX ||
-            event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY) {
-            int16_t lx = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTX);
-            int16_t ly = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTY);
-            updateStick(lx, ly);
-        }
-        return;
-    }
 
-    constexpr int TOTAL_ITEMS = 27; // "-" + A-Z
-    constexpr int COLS = 2;
-    int col = speciesLetterCursor_ % COLS;
-    int row = speciesLetterCursor_ / COLS;
-
-    auto move = [&](int dx, int dy) {
-        int totalRows = (TOTAL_ITEMS + COLS - 1) / COLS;
-        // Try up to TOTAL_ITEMS times to find a non-empty letter
-        for (int attempt = 0; attempt < TOTAL_ITEMS; attempt++) {
-            col += dx;
-            row += dy;
-            if (row < 0) row = totalRows - 1;
-            if (row >= totalRows) row = 0;
-            if (col < 0) col = COLS - 1;
-            if (col >= COLS) col = 0;
-            int idx = row * COLS + col;
-            if (idx >= TOTAL_ITEMS) {
-                col = 0;
-                idx = row * COLS + col;
-            }
-            if (letterHasSpecies(idx)) {
-                speciesLetterCursor_ = idx;
-                return;
-            }
-            // Continue in the same direction
-            if (dx == 0 && dy == 0) break;
-        }
-    };
-
-    auto confirm = [&]() {
-        if (!letterHasSpecies(speciesLetterCursor_)) return;
-        if (speciesLetterCursor_ == 0) {
-            // "-" = clear species filter
-            searchFilter_.speciesId = 0;
-            searchFilter_.speciesName.clear();
-            showSpeciesLetterPicker_ = false;
-        } else {
-            buildSpeciesListForLetter(speciesLetterCursor_);
-            speciesListCursor_ = 0;
-            speciesListScroll_ = 0;
-            showSpeciesLetterPicker_ = false;
-            showSpeciesListPicker_ = true;
-        }
-    };
-
-    if (event.type == SDL_CONTROLLERBUTTONDOWN) {
-        switch (event.cbutton.button) {
-            case SDL_CONTROLLER_BUTTON_DPAD_UP:    move(0, -1); break;
-            case SDL_CONTROLLER_BUTTON_DPAD_DOWN:   move(0, +1); break;
-            case SDL_CONTROLLER_BUTTON_DPAD_LEFT:   move(-1, 0); break;
-            case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:  move(+1, 0); break;
-            case SDL_CONTROLLER_BUTTON_B: confirm(); break; // Switch A
-            case SDL_CONTROLLER_BUTTON_A: // Switch B = back
-                showSpeciesLetterPicker_ = false;
-                break;
-        }
-    }
-}
-
-void UI::handleSpeciesListPickerInput(const SDL_Event& event) {
-    if (event.type == SDL_CONTROLLERAXISMOTION) {
-        if (event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX ||
-            event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY) {
-            int16_t lx = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTX);
-            int16_t ly = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTY);
-            updateStick(lx, ly);
-        }
-        return;
-    }
-
-    if (speciesPickerList_.empty()) return;
-
-    constexpr int COLS = 3;
-    int col = speciesListCursor_ % COLS;
-    int row = speciesListCursor_ / COLS;
-    int total = static_cast<int>(speciesPickerList_.size());
-
-    auto move = [&](int dx, int dy) {
-        col += dx;
-        row += dy;
-        int totalRows = (total + COLS - 1) / COLS;
-        if (row < 0) row = totalRows - 1;
-        if (row >= totalRows) row = 0;
-        if (col < 0) col = COLS - 1;
-        if (col >= COLS) col = 0;
-        int idx = row * COLS + col;
-        if (idx >= total) {
-            // Wrap to last item in row or first col
-            if (dx > 0) col = 0;
-            else if (dx < 0) col = (total - 1) % COLS;
-            else if (dy > 0) { row = 0; }
-            else { row = totalRows - 1; col = std::min(col, (total - 1) % COLS); }
-            idx = row * COLS + col;
-            if (idx >= total) idx = total - 1;
-        }
-        speciesListCursor_ = idx;
-    };
-
-    auto confirm = [&]() {
-        uint16_t id = speciesPickerList_[speciesListCursor_];
-        if (speciesPickerForGts_) {
-            gtsFilter_.species = id;
-            gtsFilter_.speciesName = SpeciesName::get(id);
-        } else {
-            searchFilter_.speciesId = id;
-            searchFilter_.speciesName = SpeciesName::get(id);
-        }
-        showSpeciesListPicker_ = false;
-    };
-
-    if (event.type == SDL_CONTROLLERBUTTONDOWN) {
-        switch (event.cbutton.button) {
-            case SDL_CONTROLLER_BUTTON_DPAD_UP:    move(0, -1); break;
-            case SDL_CONTROLLER_BUTTON_DPAD_DOWN:   move(0, +1); break;
-            case SDL_CONTROLLER_BUTTON_DPAD_LEFT:   move(-1, 0); break;
-            case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:  move(+1, 0); break;
-            case SDL_CONTROLLER_BUTTON_B: confirm(); break; // Switch A
-            case SDL_CONTROLLER_BUTTON_A: // Switch B = back to letter picker
-                showSpeciesListPicker_ = false;
-                showSpeciesLetterPicker_ = true;
-                break;
-        }
-    }
-}
 
 // --- Search/Filter ---
 
-void UI::handleSearchFilterInput(const SDL_Event& event) {
 
-    if (event.type == SDL_CONTROLLERAXISMOTION) {
-        if (event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX ||
-            event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY) {
-            int16_t lx = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTX);
-            int16_t ly = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTY);
-            updateStick(lx, ly);
-        }
-        return;
-    }
-
-    bool hasAlpha = gameInfo(selectedGame_).hasAlphaForms;
-
-    auto moveFilterCursor = [&](int dir) {
-        searchFilterCursor_ = (searchFilterCursor_ + dir + 12) % 12;
-        if (!hasAlpha && searchFilterCursor_ == 4)
-            searchFilterCursor_ = (searchFilterCursor_ + dir + 12) % 12;
-    };
-
-    auto confirmAction = [&]() {
-        switch (searchFilterCursor_) {
-            case 0:
-                if (speciesPickerForGts_) {
-                    // The list is built per target, so a stale one from the
-                    // GTS would offer species this game has never seen.
-                    speciesPickerForGts_ = false;
-                    availableSpecies_.clear();
-                }
-                if (availableSpecies_.empty())
-                    buildAvailableSpeciesList();
-                speciesLetterCursor_ = 0;
-                speciesLetterScroll_ = 0;
-                showSpeciesLetterPicker_ = true;
-                break;
-            case 1: beginTextInput(TextInputPurpose::SearchOT); break;
-            case 2: searchFilter_.filterShiny = !searchFilter_.filterShiny; break;
-            case 3: searchFilter_.filterEgg = !searchFilter_.filterEgg; break;
-            case 4: searchFilter_.filterAlpha = !searchFilter_.filterAlpha; break;
-            case 5:
-                searchFilter_.gender = static_cast<GenderFilter>(
-                    (static_cast<int>(searchFilter_.gender) + 1) % 4);
-                break;
-            case 6:
-                if (searchLevelFocus_ == 0)
-                    beginTextInput(TextInputPurpose::SearchLevelMin);
-                else
-                    beginTextInput(TextInputPurpose::SearchLevelMax);
-                break;
-            case 7:
-                searchFilter_.perfectIVs = static_cast<PerfectIVFilter>(
-                    (static_cast<int>(searchFilter_.perfectIVs) + 1) % 3);
-                break;
-            case 8:
-                searchFilter_.ribbonFilter = static_cast<RibbonFilter>(
-                    (static_cast<int>(searchFilter_.ribbonFilter) + 1) % 4);
-                break;
-            case 9:
-                searchFilter_.mode = (searchFilter_.mode == SearchMode::List)
-                    ? SearchMode::Highlight : SearchMode::List;
-                break;
-            case 10: searchFilter_ = SearchFilter{}; break;
-            case 11: executeSearch(); break;
-        }
-    };
-
-    if (event.type == SDL_CONTROLLERBUTTONDOWN) {
-        switch (event.cbutton.button) {
-            case SDL_CONTROLLER_BUTTON_DPAD_UP:
-                moveFilterCursor(-1);
-                break;
-            case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
-                moveFilterCursor(1);
-                break;
-            case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
-                if (searchFilterCursor_ == 6) searchLevelFocus_ = 0;
-                else if (searchFilterCursor_ == 9) searchFilter_.mode = SearchMode::List;
-                break;
-            case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
-                if (searchFilterCursor_ == 6) searchLevelFocus_ = 1;
-                else if (searchFilterCursor_ == 9) searchFilter_.mode = SearchMode::Highlight;
-                break;
-            case SDL_CONTROLLER_BUTTON_B: // Switch A = confirm
-                confirmAction();
-                break;
-            case SDL_CONTROLLER_BUTTON_A: // Switch B = cancel
-                showSearchFilter_ = false;
-                break;
-        }
-    }
-}
-
-void UI::handleSearchResultsInput(const SDL_Event& event) {
-    if (event.type == SDL_CONTROLLERAXISMOTION) {
-        if (event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX ||
-            event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY) {
-            int16_t lx = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTX);
-            int16_t ly = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTY);
-            updateStick(lx, ly);
-        }
-        return;
-    }
-
-    auto navigate = [&](int dir) {
-        if (searchResults_.empty()) return;
-        searchResultCursor_ += dir;
-        if (searchResultCursor_ < 0) searchResultCursor_ = 0;
-        if (searchResultCursor_ >= (int)searchResults_.size())
-            searchResultCursor_ = (int)searchResults_.size() - 1;
-        int visibleRows = 12;
-        if (searchResultCursor_ < searchResultScroll_)
-            searchResultScroll_ = searchResultCursor_;
-        if (searchResultCursor_ >= searchResultScroll_ + visibleRows)
-            searchResultScroll_ = searchResultCursor_ - visibleRows + 1;
-    };
-
-    auto jumpToResult = [&]() {
-        if (searchResults_.empty()) return;
-        const auto& r = searchResults_[searchResultCursor_];
-        cursor_.panel = r.panel;
-        cursor_.box = r.box;
-        cursor_.col = r.slot % gridCols();
-        cursor_.row = r.slot / gridCols();
-        if (r.panel == Panel::Game)
-            gameBox_ = r.box;
-        else
-            bankBox_ = r.box;
-        showSearchResults_ = false;
-    };
-
-    if (event.type == SDL_CONTROLLERBUTTONDOWN) {
-        switch (event.cbutton.button) {
-            case SDL_CONTROLLER_BUTTON_DPAD_UP:   navigate(-1); break;
-            case SDL_CONTROLLER_BUTTON_DPAD_DOWN:  navigate(1);  break;
-            case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
-                navigate(-10);
-                lHeld_ = true;
-                bumperRepeatTime_ = SDL_GetTicks();
-                bumperMoved_ = false;
-                break;
-            case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:
-                navigate(10);
-                rHeld_ = true;
-                bumperRepeatTime_ = SDL_GetTicks();
-                bumperMoved_ = false;
-                break;
-            case SDL_CONTROLLER_BUTTON_B: // Switch A = jump
-                jumpToResult();
-                break;
-            case SDL_CONTROLLER_BUTTON_A: // Switch B = close
-                showSearchResults_ = false;
-                break;
-            case SDL_CONTROLLER_BUTTON_Y: // Switch X = back to filter
-                showSearchResults_ = false;
-                showSearchFilter_ = true;
-                break;
-        }
-    }
-    if (event.type == SDL_CONTROLLERBUTTONUP) {
-        switch (event.cbutton.button) {
-            case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:  lHeld_ = false; break;
-            case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: rHeld_ = false; break;
-        }
-    }
-}
 
 bool UI::matchesSearchFilter(const Pokemon& pkm,
                              const std::string& filterSpecies,
@@ -1453,7 +1090,8 @@ bool UI::matchesSearchFilter(const Pokemon& pkm,
         if (searchFilter_.levelMax > 0 && lv > searchFilter_.levelMax) return false;
     }
 
-    if (searchFilter_.perfectIVs != PerfectIVFilter::Off) {
+    // At least N perfect IVs. 1 and 6 are the old "1+" and "6IV".
+    if (searchFilter_.minPerfectIVs > 0) {
         int perfect = 0;
         if (pkm.ivHp()  == 31) perfect++;
         if (pkm.ivAtk() == 31) perfect++;
@@ -1461,8 +1099,7 @@ bool UI::matchesSearchFilter(const Pokemon& pkm,
         if (pkm.ivSpe() == 31) perfect++;
         if (pkm.ivSpA() == 31) perfect++;
         if (pkm.ivSpD() == 31) perfect++;
-        if (searchFilter_.perfectIVs == PerfectIVFilter::AtLeastOne && perfect == 0) return false;
-        if (searchFilter_.perfectIVs == PerfectIVFilter::All6 && perfect < 6) return false;
+        if (perfect < searchFilter_.minPerfectIVs) return false;
     }
 
     if (searchFilter_.ribbonFilter != RibbonFilter::Off) {
@@ -1518,6 +1155,8 @@ void UI::executeSearch() {
                     r.panel = panel;
                     r.box = b;
                     r.slot = s;
+                    r.species = pkm.species();
+                    r.form = pkm.form();
                     r.speciesName = SpeciesName::get(pkm.species());
                     r.level = pkm.level();
                     r.isShiny = pkm.isShiny();
@@ -1665,7 +1304,8 @@ void UI::refreshHighlightSet() {
                                  | (static_cast<uint64_t>(b) << 16)
                                  | static_cast<uint64_t>(s);
                     searchMatchSet_.insert(key);
-                    searchResults_.push_back({panel, b, s, SpeciesName::get(pkm.species()),
+                    searchResults_.push_back({panel, b, s, pkm.species(), pkm.form(),
+                        SpeciesName::get(pkm.species()),
                         pkm.level(), pkm.isShiny(), pkm.isEgg(), pkm.isAlpha(),
                         pkm.gender(), pkm.otName()});
                 }

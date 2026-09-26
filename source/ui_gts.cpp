@@ -306,7 +306,7 @@ void UI::drawGtsHubFrame() {
     // --- Top bar: the logo, then the GTS mark with its title and subtitle. ---
     {
         drawRect(0, 0, SCREEN_W, ACCENT_RULE_H, T().accent);
-        const int cy = 42;
+        const int cy = 40;   // as the game selector's top bar
         int x = drawLogo(32, cy) + 16;
         drawRect(x, cy - 14, 1, 28, T().divider);
         x += 17;
@@ -691,7 +691,7 @@ void UI::drawGtsBrowseFrame() {
     // --- Top bar: logo, the GTS mark, "Online GTS > Board", the profile. ---
     {
         drawRect(0, 0, SCREEN_W, ACCENT_RULE_H, T().accent);
-        const int cy = 38;
+        const int cy = 40;   // as the game selector's top bar
         int x = drawLogo(32, cy) + 16;
         drawRect(x, cy - 14, 1, 28, T().divider);
         x += 17;

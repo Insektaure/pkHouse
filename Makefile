@@ -37,11 +37,12 @@ ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
 # curl before mbedtls before -lz: curl needs symbols from both, and the linker
-# only looks forward. Install them with:
-#     dkp-pacman -S switch-curl switch-mbedtls
+# only looks forward. minizip (the updater opens the release zip) needs zlib,
+# so it sits before -lz too. Install them with:
+#     dkp-pacman -S switch-curl switch-mbedtls switch-zlib
 LIBS	:=	-lcurl -lmbedtls -lmbedx509 -lmbedcrypto \
 			-lSDL2_image -lSDL2_ttf -lSDL2 \
-			-lfreetype -lharfbuzz -lpng16 -ljpeg -lwebp -lz -lbz2 \
+			-lfreetype -lharfbuzz -lpng16 -ljpeg -lwebp -lminizip -lz -lbz2 \
 			-lEGL -lGLESv2 -lglapi -ldrm_nouveau \
 			-lm -lnx
 

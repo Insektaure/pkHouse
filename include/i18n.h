@@ -435,6 +435,27 @@ namespace StrKey {
     constexpr const char* DlgQuitTitle             = "dlg_quit_title";
     constexpr const char* DlgQuitBody              = "dlg_quit_body";
     constexpr const char* DlgQuitSaveBody          = "dlg_quit_save_body";
+
+    // Self-update
+    constexpr const char* UpdAvailableTitle        = "upd_available_title";
+    constexpr const char* UpdAvailableBody         = "upd_available_body";
+    constexpr const char* UpdInstall               = "upd_install";
+    constexpr const char* UpdDownloading           = "upd_downloading";
+    constexpr const char* UpdUnpacking             = "upd_unpacking";
+    constexpr const char* UpdInstalling            = "upd_installing";
+    constexpr const char* UpdFailedTitle           = "upd_failed_title";
+    constexpr const char* UpdFailedBody            = "upd_failed_body";
+    constexpr const char* UpdDoneTitle             = "upd_done_title";
+    constexpr const char* UpdDoneBody              = "upd_done_body";
+    constexpr const char* UpdStatusChecking        = "upd_status_checking";
+    constexpr const char* UpdStatusCurrent         = "upd_status_current";
+    constexpr const char* UpdStatusAvailable       = "upd_status_available";
+    constexpr const char* UpdStatusFailed          = "upd_status_failed";
+    constexpr const char* UpdStatusOff             = "upd_status_off";
+    constexpr const char* UpdAutoLabel             = "upd_auto_label";
+    constexpr const char* UpdToggleFailedTitle     = "upd_toggle_failed_title";
+    constexpr const char* UpdToggleFailedBody      = "upd_toggle_failed_body";
+    constexpr const char* UpdCheckNow              = "upd_check_now";
     constexpr const char* DlgDiscardBodySave       = "dlg_discard_body_save";
     constexpr const char* DlgDiscardBodyBanks      = "dlg_discard_body_banks";
     constexpr const char* DlgDiscard               = "dlg_discard";

@@ -4,6 +4,7 @@
 #include "species_converter.h"
 #include "move_types.h"
 #include "met_info.h"
+#include "update.h"
 #include <algorithm>
 #include <cstdio>
 
@@ -1013,7 +1014,6 @@ void UI::drawAboutPopup() {
         TTF_Font* fTagline = uiFont(17, true);
         drawText("pkHouse", tx, iy - 4, T().text, fName);
         const int nw = textWidth("pkHouse", fName);
-        drawText(i18n::get(StrKey::AboutTagline), tx + nw + 12, iy + 10, T().textDim, fTagline);
 
         // Version and author, right.
         TTF_Font* fVer = uiFont(16, true);
@@ -1023,6 +1023,36 @@ void UI::drawAboutPopup() {
         fillRounded(vx, iy, vw, 30, 8, T().bg);
         strokeRounded(vx, iy, vw, 30, 8, 1, T().panelBorder);
         drawTextCentered(ver, vx + vw / 2, iy + 15, T().text, fVer);
+
+        // What the launch check found, beside the version: a newer release in
+        // the accent, "up to date" in green, anything else quiet.
+        int taglineRight = vx - 12;
+        {
+            std::string status;
+            SDL_Color c = T().textMuted;
+            bool strong = false;
+            switch (Update::state()) {
+                case Update::State::Idle:      status = i18n::get(StrKey::UpdStatusOff); break;
+                case Update::State::Checking:  status = i18n::get(StrKey::UpdStatusChecking); break;
+                case Update::State::UpToDate:  status = i18n::get(StrKey::UpdStatusCurrent); c = T().statusOk; break;
+                case Update::State::Available:
+                    status = i18n::fmt(StrKey::UpdStatusAvailable, Update::latestVersion());
+                    c = T().accent;
+                    strong = true;
+                    break;
+                case Update::State::Failed:    status = i18n::get(StrKey::UpdStatusFailed); break;
+            }
+            TTF_Font* fS = uiFont(13, true);
+            const std::string s = fitText(status, fS, 260);
+            const int sw = 14 + 8 + 8 + textWidth(s, fS) + 12;
+            const int sx = vx - 8 - sw;
+            fillRounded(sx, iy, sw, 30, 8, strong ? T().badgeBg : SDL_Color{c.r, c.g, c.b, 30});
+            fillDisc(sx + 14, iy + 15, 4, c);
+            drawText(s, sx + 14 + 8 + 8, iy + 15 - TTF_FontHeight(fS) / 2, c, fS);
+            taglineRight = sx - 12;
+        }
+        drawText(fitText(i18n::get(StrKey::AboutTagline), fTagline, taglineRight - (tx + nw + 12)),
+                 tx + nw + 12, iy + 10, T().textDim, fTagline);
 
         TTF_Font* fBy = uiFont(13);
         TTF_Font* fByB = uiFont(13, true);
@@ -1152,6 +1182,38 @@ void UI::drawAboutPopup() {
         strokeRounded(bx, by, bw, bh, 10, 1, T().buttonBorder);
         drawFooterKey(bx + 12, by + bh / 2, "B -", false);
         drawText(label, bx + 12 + keysW + 10, by + bh / 2 - TTF_FontHeight(f) / 2, T().text, f);
+
+        // X: check for a new release now, whatever the switch says. Dimmed
+        // while a check is running, since pressing it then does nothing.
+        const bool checking = Update::state() == Update::State::Checking;
+        const std::string cl = i18n::get(StrKey::UpdCheckNow);
+        const int ckW = drawFooterKey(0, -100, "X", true);
+        const int cw = 12 + ckW + 10 + textWidth(cl, f) + 16;
+        const int cbx = bx - 12 - cw;
+        fillRounded(cbx, by, cw, bh, 10, T().buttonBg);
+        strokeRounded(cbx, by, cw, bh, 10, 1, T().buttonBorder);
+        drawFooterKey(cbx + 12, by + bh / 2, "X", false);
+        drawText(cl, cbx + 12 + ckW + 10, by + bh / 2 - TTF_FontHeight(f) / 2,
+                 checking ? T().textMuted : T().text, f);
+
+        // Y: whether to look for a new release at launch, as a switch. It
+        // renames sdmc:/config/pkHouse/autoUPD_on.cfg / autoUPD_off.cfg.
+        const int cy = by + bh / 2;
+        int ax = x + PAD;
+        ax += drawFooterKey(ax, cy, "Y", false) + 10;
+        const std::string al = i18n::get(StrKey::UpdAutoLabel);
+        const int tw = 44, th = 24;
+        const std::string state = i18n::get(autoUpdate_ ? StrKey::FilterYes : StrKey::GtsFilterNo);
+        TTF_Font* fState = uiFont(14);
+        const int room = cbx - 24 - ax - tw - 10 - textWidth(state, fState) - 10;
+        const std::string alFit = fitText(al, f, room);
+        drawText(alFit, ax, cy - TTF_FontHeight(f) / 2, T().text, f);
+        ax += textWidth(alFit, f) + 10;
+        fillRounded(ax, cy - th / 2, tw, th, th / 2, autoUpdate_ ? T().accent : T().bg);
+        strokeRounded(ax, cy - th / 2, tw, th, th / 2, 1, autoUpdate_ ? T().accent : T().buttonBorder);
+        fillDisc(autoUpdate_ ? ax + tw - 12 : ax + 12, cy, 8, autoUpdate_ ? T().keyCapText : T().textDim);
+        ax += tw + 10;
+        drawText(state, ax, cy - TTF_FontHeight(fState) / 2, autoUpdate_ ? T().text : T().textDim, fState);
     }
 }
 

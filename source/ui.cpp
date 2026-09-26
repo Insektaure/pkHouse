@@ -2,6 +2,7 @@
 #include "ui_util.h"
 #include "led.h"
 #include "i18n.h"
+#include "update.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -308,6 +309,12 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
         }
     }
 
+    // Is there a newer release? Asked in the background, at most once a
+    // launch, and only when autoUPD_off.cfg does not say otherwise.
+    autoUpdate_ = Update::autoCheckEnabled();
+    if (autoUpdate_)
+        Update::beginCheck(basePath_);
+
     bool running = true;
 
     while (running) {
@@ -320,7 +327,16 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
                     if (event.cbutton.button == SDL_CONTROLLER_BUTTON_BACK ||
                         event.cbutton.button == SDL_CONTROLLER_BUTTON_A)
                         { showAbout_ = false; markDirty(); }
+                    else if (event.cbutton.button == SDL_CONTROLLER_BUTTON_X)   // Switch Y
+                        { toggleAutoUpdate(); markDirty(); }
+                    else if (event.cbutton.button == SDL_CONTROLLER_BUTTON_Y)   // Switch X
+                        { checkUpdatesNow(); markDirty(); }
                 }
+            }
+            // The launch check can finish while it is open; its pill follows.
+            if (Update::state() != aboutUpdateState_) {
+                aboutUpdateState_ = Update::state();
+                markDirty();
             }
             if (!showAbout_) continue; // dismissed — let main draw section handle it
             if (dirty_) {
@@ -390,6 +406,15 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
             if (gtsCardPreviewIdx_ != previewBefore)
                 markDirty();
         }
+        // A newer release, offered once, and only where installing is safe:
+        // the profile and game selectors, with nothing open over them.
+        if (!updateOffered_ && screenDrawn_ && !showAbout_
+            && (screen_ == AppScreen::ProfileSelector || screen_ == AppScreen::GameSelector)
+            && Update::state() == Update::State::Available) {
+            updateOffered_ = true;
+            offerUpdate(running);
+            markDirty();
+        }
         // If a popup just activated, skip drawing here — the popup branch
         // will handle it next iteration with dirty_ still set.
         if (dirty_ && !showAbout_) {
@@ -408,6 +433,7 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
 
     account_.unmountSave();
     account_.shutdown();
+    Update::shutdown();   // the check's worker, before the network it uses
     Gts::shutdown();
 }
 

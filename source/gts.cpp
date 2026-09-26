@@ -28,6 +28,7 @@ namespace {
 
 bool        g_ready      = false;
 bool        g_socketsUp  = false;
+bool        g_curlUp     = false;
 CURL*       g_handle     = nullptr;
 std::string g_baseUrl;
 std::string g_caBundle;
@@ -327,11 +328,12 @@ Response postJson(const std::string& route, const std::string& body) {
         r.transportFailed = true;
         g_error = curl_easy_strerror(rc);
         if (rc == CURLE_SSL_CACERT || rc == CURLE_PEER_FAILED_VERIFICATION) {
-            // pkHouse ships the Let's Encrypt roots and trusts nothing else, so
-            // this is nearly always a board whose certificate comes from
-            // somewhere else - another CA, or a proxy in front of it.
+            // pkHouse ships the Let's Encrypt and GitHub roots and trusts
+            // nothing else, so this is nearly always a board whose
+            // certificate comes from somewhere else - another CA, or a proxy
+            // in front of it.
             g_error += " (this board's certificate is not from Let's Encrypt;"
-                       " put a CA bundle at cacert.pem next to the NRO)";
+                       " put a CA bundle at sdmc:/config/pkHouse/cacert.pem)";
         }
     }
 
@@ -412,19 +414,18 @@ Gts::Entry parseEntry(const json& j) {
 
 // --- lifecycle ----------------------------------------------------------------
 
-bool Gts::init(const std::string& basePath) {
-    if (g_ready) return true;
-
-    g_error.clear();
+bool Gts::startNetwork(const std::string& basePath) {
+    if (g_socketsUp && g_curlUp) return true;
 
     ensureConfigDir();
 
     // The trust store.
     //
-    // romfs:/cacert.pem ships inside the NRO and holds the two Let's Encrypt
-    // roots and nothing else - 3 KB against the 184 KB of a full bundle, which
-    // matters because mbedTLS parses the whole file on every handshake and the
-    // console is slow at it. See tools/gen_ca_bundle.py.
+    // romfs:/cacert.pem ships inside the NRO and holds the Let's Encrypt roots
+    // (the board, GitHub's release files) and GitHub's Sectigo roots (the
+    // update check) and nothing else - about 10 KB against the 184 KB of a
+    // full bundle, which matters because mbedTLS parses the whole file on
+    // every handshake and the console is slow at it. See tools/gen_ca_bundle.py.
     //
     // A file on the SD card overrides it, so a board behind a different CA, or
     // a root that has rotated since the build, is a copied file rather than a
@@ -436,6 +437,36 @@ bool Gts::init(const std::string& basePath) {
     if (!fileExists(g_caBundle))
         g_caBundle = "romfs:/cacert.pem";
 
+    if (!g_socketsUp) {
+        Result rc = socketInitializeDefault();
+        if (R_FAILED(rc)) {
+            g_error = "could not start networking";
+            return false;
+        }
+        g_socketsUp = true;
+    }
+    if (!g_curlUp) {
+        if (curl_global_init(CURL_GLOBAL_DEFAULT) != CURLE_OK) {
+            g_error = "could not start the network client";
+            socketExit();
+            g_socketsUp = false;
+            return false;
+        }
+        g_curlUp = true;
+    }
+    return true;
+}
+
+const std::string& Gts::caBundle() { return g_caBundle; }
+
+bool Gts::init(const std::string& basePath) {
+    if (g_ready) return true;
+
+    g_error.clear();
+
+    if (!startNetwork(basePath))
+        return false;
+
     // Same order, same reason.
     g_baseUrl = readFirstLine(configPath("gts.txt"));
     if (g_baseUrl.empty())
@@ -446,20 +477,6 @@ bool Gts::init(const std::string& basePath) {
         g_baseUrl.pop_back();
 
     loadOrCreateIdentity(basePath);
-
-    Result rc = socketInitializeDefault();
-    if (R_FAILED(rc)) {
-        g_error = "could not start networking";
-        return false;
-    }
-    g_socketsUp = true;
-
-    if (curl_global_init(CURL_GLOBAL_DEFAULT) != CURLE_OK) {
-        g_error = "could not start the network client";
-        socketExit();
-        g_socketsUp = false;
-        return false;
-    }
 
     // A shared handle is an optimisation, not a requirement: without one every
     // request opens its own, which still works.
@@ -473,9 +490,10 @@ void Gts::shutdown() {
         curl_easy_cleanup(g_handle);
         g_handle = nullptr;
     }
-    if (g_ready) {
+    g_ready = false;
+    if (g_curlUp) {
         curl_global_cleanup();
-        g_ready = false;
+        g_curlUp = false;
     }
     if (g_socketsUp) {
         socketExit();

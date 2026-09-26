@@ -118,6 +118,9 @@ int main(int argc, char* argv[]) {
             ui.setAppletMode(true);
     }
 
+    if (argc > 0 && argv[0])
+        ui.setExePath(argv[0]);
+
     // Run main loop — game selection, bank selection, and save loading all handled inside
     ui.run(basePath, savePath);
 

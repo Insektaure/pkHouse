@@ -7,6 +7,7 @@
 #include "wondercard.h"
 #include "card_import.h"
 #include "gts.h"
+#include "update.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_image.h>
@@ -133,6 +134,8 @@ public:
     uint32_t     backdropGen_ = ~0u;
     AppScreen    backdropScreen_ = AppScreen::GameSelector;
     void setAppletMode(bool mode) { appletMode_ = mode; }
+    // The running NRO (argv[0]), which the updater replaces.
+    void setExePath(const std::string& path) { exePath_ = path; }
     bool isDualBankMode() const { return appletMode_ || allBanksMode_; }
     void run(const std::string& basePath, const std::string& savePath);
 
@@ -453,6 +456,13 @@ private:
     // App screen state
     AppScreen screen_ = AppScreen::GameSelector;
     bool appletMode_ = false;
+    std::string exePath_;
+    bool updateOffered_ = false;   // the launch check's result has been offered
+    Update::State aboutUpdateState_ = Update::State::Idle;   // what the About pill last showed
+    bool autoUpdate_ = true;   // the autoUPD_on / _off setting, read once at launch
+    void toggleAutoUpdate();   // Y in the About popup
+    void checkUpdatesNow();    // X in the About popup
+    void offerUpdate(bool& running);   // source/ui_update.cpp
     std::string basePath_;
     std::string savePath_;
 

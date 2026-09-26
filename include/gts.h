@@ -105,6 +105,12 @@ struct Page {
 bool init(const std::string& basePath);
 void shutdown();
 
+// Just sockets and curl, and the trust store, without the board's address or
+// this console's identity. What init() starts with; the updater uses it on
+// its own at launch. Safe to call more than once. shutdown() stops it.
+bool startNetwork(const std::string& basePath);
+const std::string& caBundle();   // the CA file handshakes verify against
+
 // False when no board address is configured. Every call below fails in that
 // case, so screens check this first and say what to do about it.
 bool configured();

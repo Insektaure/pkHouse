@@ -19,11 +19,30 @@ bool hasPngExtension(const std::string& name) {
     return ext == ".png";
 }
 
-// Exported cards are named "<Species> - <Tag> - [flags] - <EC>.png". Drop the
-// extension and the checksum suffix to get something readable for the list;
-// anything that does not match that shape is listed under its own name.
-std::string labelFor(const std::string& filename) {
+// Newer exports lead with "NNNN-FF - ": the national dex number and the form,
+// fixed width. Reads it off the front of `base` when it is exactly that.
+bool takeSpeciesPrefix(std::string& base, uint16_t& species, uint8_t& form) {
+    // "0037-01 - "
+    if (base.size() < 10) return false;
+    for (int i : {0, 1, 2, 3, 5, 6})
+        if (!std::isdigit(static_cast<unsigned char>(base[i]))) return false;
+    if (base[4] != '-' || base.compare(7, 3, " - ") != 0) return false;
+    const int dex = std::stoi(base.substr(0, 4));
+    const int f   = std::stoi(base.substr(5, 2));
+    if (dex > 1025) return false;
+    species = static_cast<uint16_t>(dex);
+    form = static_cast<uint8_t>(f);
+    base.erase(0, 10);
+    return true;
+}
+
+// Exported cards are named "[NNNN-FF - ]<Species> - <Tag> - [flags] - <EC>.png".
+// Drop the extension, the number prefix and the checksum suffix to get
+// something readable for the list; anything that does not match that shape is
+// listed under its own name.
+std::string labelFor(const std::string& filename, CardFile& cf) {
     std::string base = filename.substr(0, filename.size() - 4);
+    cf.hasSpecies = takeSpeciesPrefix(base, cf.species, cf.form);
     const std::string sep = " - ";
     size_t cut = base.rfind(sep);
     if (cut != std::string::npos && base.size() - cut - sep.size() == 8) {
@@ -52,7 +71,7 @@ std::vector<CardFile> scanCards(const std::string& basePath, GameType game) {
         CardFile cf;
         cf.filename = name;
         cf.path = dir + name;
-        cf.label = labelFor(name);
+        cf.label = labelFor(name, cf);
         results.push_back(std::move(cf));
     }
     closedir(d);

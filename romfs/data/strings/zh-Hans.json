@@ -61,7 +61,6 @@
     "could_not_write": "无法写入文件。",
     "saving_card": "正在保存卡片...",
     "menu_import_card": "导入卡片",
-    "cards_title": "卡片 ({0})",
     "no_cards_found": "未找到卡片。",
     "place_cards_in": "请将 .png 卡片放入:",
     "reading_card": "正在读取卡片...",
@@ -77,7 +76,6 @@
     "card_move_failed": "无法移动文件。",
     "imported": "已导入！",
     "imported_body": "{0} 已放入{1}盒子 {2} 的第 {3} 格。",
-    "card_list_footer": "A：导入   B：关闭",
     "card_press_a_to_read": "按 A 读取此卡片。",
     "menu_export_cards": "导出卡片 ({0})",
     "saving_cards": "正在保存卡片 {0} / {1}...",
@@ -491,5 +489,12 @@
     "wc_into": "放入",
     "wc_file": "文件",
     "wc_inject": "注入{0}",
-    "hint_inject": "注入"
+    "hint_inject": "注入",
+    "ci_title": "导入卡片",
+    "ci_count": "{0} 张",
+    "ci_count_one": "1 张",
+    "ci_subtitle": "保存为卡片的宝可梦（{0}）",
+    "ci_one_title": "目前只有一张卡片",
+    "ci_one_body": "在详情界面（Y）导出的卡片会显示在这里，可导入本游戏的存档或仓库。",
+    "ci_import": "导入{0}"
 }

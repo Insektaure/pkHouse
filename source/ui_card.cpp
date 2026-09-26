@@ -1015,8 +1015,12 @@ std::string UI::renderPokemonCard(const Pokemon& pkm, const CardFonts& f) {
     if (pkm.isAlpha()) flags += "A";
     if (pkm.isEgg())   flags += "E";
 
+    // Dex number and form lead, so the importer can show the right sprite
+    // without decoding the card, and cards sort in Pokedex order. Eggs are
+    // 0000-00, like the "Egg" name.
     char buf[256];
-    std::snprintf(buf, sizeof(buf), "%s - %s%s%s%s - %08X.png",
+    std::snprintf(buf, sizeof(buf), "%04u-%02u - %s - %s%s%s%s - %08X.png",
+                  static_cast<unsigned>(species), pkm.isEgg() ? 0u : static_cast<unsigned>(pkm.form()),
                   name.c_str(), gameInfo(selectedGame_).gameTag,
                   flags.empty() ? "" : " - [", flags.c_str(),
                   flags.empty() ? "" : "]",

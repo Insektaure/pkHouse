@@ -339,6 +339,18 @@ private:
     int          cardPreviewIdx_ = -1;   // which row cardPreview_ belongs to
     uint32_t     cardPreviewSince_ = 0;  // when the cursor last landed
     static constexpr uint32_t CARD_PREVIEW_DELAY_MS = 200;
+    // What each row's card held, once it has been read, so the list can show
+    // it without decoding every file. Indexed like cardList_.
+    struct CardRowInfo {
+        bool known = false;
+        uint16_t species = 0;
+        uint8_t form = 0;
+        bool shiny = false, alpha = false, egg = false;
+        uint8_t gender = 2, level = 0;
+        std::string ot, version;
+    };
+    std::vector<CardRowInfo> cardRowInfo_;
+    static constexpr int CARD_VISIBLE_ROWS = 7;
 
     // --- Online GTS ----------------------------------------------------------
 
@@ -983,6 +995,7 @@ private:
     void handleWondercardListInput(const SDL_Event& event);
     void handleCardListInput(const SDL_Event& event);
     void updateCardPreview();
+    void rememberCardRow(int idx, const CardPayload::Parsed& parsed);
     // Draws whichever decoded card it is handed, so the importer and the GTS
     // deposit picker can each keep their own preview without sharing state.
     // `pending` means the cursor has moved and nothing has been decoded yet.

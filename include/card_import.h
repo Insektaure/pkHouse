@@ -11,6 +11,11 @@ struct CardFile {
     std::string filename;  // as it appears on disk
     std::string path;      // full path
     std::string label;     // "Greninja - SV - [S]" when the name parses, else the filename
+    // From the "0658-00 - " prefix newer exports carry; without it the
+    // species is only known once the card is decoded.
+    bool     hasSpecies = false;
+    uint16_t species = 0;  // national dex, 0 = egg
+    uint8_t  form = 0;
 };
 
 // Where an exported card keeps its QR code, in card pixels. The importer

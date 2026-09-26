@@ -61,7 +61,6 @@
     "could_not_write": "ファイルの書き込みに失敗しました。",
     "saving_card": "カードを保存中...",
     "menu_import_card": "カードを読み込む",
-    "cards_title": "カード ({0})",
     "no_cards_found": "カードが見つかりません。",
     "place_cards_in": ".png カードの保存先:",
     "reading_card": "カードを読み取り中...",
@@ -77,7 +76,6 @@
     "card_move_failed": "ファイルを移動できませんでした。",
     "imported": "読み込みました！",
     "imported_body": "{0} を {1} ボックス {2} の {3} 番に入れました。",
-    "card_list_footer": "A：読み込む   B：閉じる",
     "card_press_a_to_read": "A を押すとこのカードを読み取ります。",
     "menu_export_cards": "カードを出力 ({0})",
     "saving_cards": "カード {0} / {1} を保存中...",
@@ -491,5 +489,12 @@
     "wc_into": "入れる先",
     "wc_file": "ファイル",
     "wc_inject": "{0}を注入",
-    "hint_inject": "注入"
+    "hint_inject": "注入",
+    "ci_title": "カードをインポート",
+    "ci_count": "{0}枚",
+    "ci_count_one": "1枚",
+    "ci_subtitle": "カードとして保存したポケモン（{0}）",
+    "ci_one_title": "カードはまだ1枚だけです",
+    "ci_one_body": "詳細画面（Y）で書き出したカードがここに表示され、このゲームのセーブやバンクにインポートできます。",
+    "ci_import": "{0}をインポート"
 }

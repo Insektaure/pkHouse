@@ -127,7 +127,6 @@ namespace StrKey {
 
     // Card import
     constexpr const char* MenuImportCard       = "menu_import_card";
-    constexpr const char* CardsTitle           = "cards_title";
     constexpr const char* NoCardsFound         = "no_cards_found";
     constexpr const char* PlaceCardsIn         = "place_cards_in";
     constexpr const char* ReadingCard          = "reading_card";
@@ -143,7 +142,6 @@ namespace StrKey {
     constexpr const char* CardMoveFailed       = "card_move_failed";
     constexpr const char* Imported             = "imported";
     constexpr const char* ImportedBody         = "imported_body";
-    constexpr const char* CardListFooter       = "card_list_footer";
     constexpr const char* CardPressAToRead     = "card_press_a_to_read";
     constexpr const char* MenuExportCards      = "menu_export_cards";
     constexpr const char* SavingCards          = "saving_cards";
@@ -530,6 +528,15 @@ namespace StrKey {
     constexpr const char* WcFile                   = "wc_file";
     constexpr const char* WcInject                 = "wc_inject";
     constexpr const char* HintInject               = "hint_inject";
+
+    // Card import (6d)
+    constexpr const char* CiTitle                  = "ci_title";
+    constexpr const char* CiCount                  = "ci_count";
+    constexpr const char* CiCountOne               = "ci_count_one";
+    constexpr const char* CiSubtitle               = "ci_subtitle";
+    constexpr const char* CiOneTitle               = "ci_one_title";
+    constexpr const char* CiOneBody                = "ci_one_body";
+    constexpr const char* CiImport                 = "ci_import";
 
     // dialogs (UI 2.0)
     constexpr const char* DlgOk                    = "dlg_ok";

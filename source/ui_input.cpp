@@ -432,8 +432,7 @@ void UI::handleStickRepeat() {
             cardListCursor_ += stickDirY_ > 0 ? 1 : -1;
             if (cardListCursor_ < 0) cardListCursor_ = count - 1;
             if (cardListCursor_ >= count) cardListCursor_ = 0;
-            constexpr int ROW_H = 36;
-            int visibleRows = (550 - 40 - 50) / ROW_H;
+            const int visibleRows = CARD_VISIBLE_ROWS;
             if (cardListCursor_ < cardListScroll_)
                 cardListScroll_ = cardListCursor_;
             else if (cardListCursor_ >= cardListScroll_ + visibleRows)

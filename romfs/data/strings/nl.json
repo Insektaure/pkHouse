@@ -61,7 +61,6 @@
     "could_not_write": "Kan bestand niet schrijven.",
     "saving_card": "Kaart opslaan...",
     "menu_import_card": "Kaart importeren",
-    "cards_title": "Kaarten ({0})",
     "no_cards_found": "Geen kaarten gevonden.",
     "place_cards_in": "Plaats .png-kaarten in:",
     "reading_card": "Kaart lezen...",
@@ -77,7 +76,6 @@
     "card_move_failed": "Kan het bestand niet verplaatsen.",
     "imported": "Geimporteerd!",
     "imported_body": "{0} geplaatst in {1} box {2}, plek {3}.",
-    "card_list_footer": "A: Importeren   B: Sluiten",
     "card_press_a_to_read": "Druk op A om deze kaart te lezen.",
     "menu_export_cards": "Kaarten exporteren ({0})",
     "saving_cards": "Kaart {0} van {1} opslaan...",
@@ -491,5 +489,12 @@
     "wc_into": "Naar",
     "wc_file": "Bestand",
     "wc_inject": "{0} injecteren",
-    "hint_inject": "Injecteren"
+    "hint_inject": "Injecteren",
+    "ci_title": "Kaart importeren",
+    "ci_count": "{0} kaarten",
+    "ci_count_one": "1 kaart",
+    "ci_subtitle": "Pokémon opgeslagen als kaarten, voor {0}",
+    "ci_one_title": "Nog maar één kaart",
+    "ci_one_body": "Kaarten die je exporteert vanuit het detailscherm (Y) verschijnen hier, klaar om te importeren in de save of de banken van dit spel.",
+    "ci_import": "{0} importeren"
 }

@@ -83,6 +83,16 @@ bool UI::confirmDiscard() {
     return ok;
 }
 
+// "Quit pkHouse?" before closing: PLUS opens the menu on some screens and
+// quits on others, so one press in the wrong place must not end the session.
+// `saving` says the changes are written first (Save & quit).
+bool UI::confirmQuit(bool saving) {
+    ConfirmStyle st;
+    st.confirmKey = StrKey::MenuQuit;
+    return showConfirmDialog(i18n::get(StrKey::DlgQuitTitle),
+                             i18n::get(saving ? StrKey::DlgQuitSaveBody : StrKey::DlgQuitBody), st);
+}
+
 void UI::openMenu() {
     showMenu_ = true;
     menuSelection_ = 0;
@@ -318,13 +328,21 @@ void UI::menuActivate(MenuId id, bool& running) {
         showMenu_ = false;
         return;
     case MenuId::SaveQuit:
+        showMenu_ = false;
+        if (!confirmQuit(true)) { showMenu_ = true; return; }
         saveNow_ = true;
         running = false;
         return;
     case MenuId::QuitNoSave:
     case MenuId::Quit:
-        // Quitting drops unsaved changes: say so first when there are any.
-        if (!confirmDiscard()) return;
+        // Quitting drops unsaved changes: say so first when there are any;
+        // that question is the confirmation, so it is not asked twice.
+        if (unsavedChanges_) {
+            if (!confirmDiscard()) return;
+        } else {
+            showMenu_ = false;
+            if (!confirmQuit(false)) { showMenu_ = true; return; }
+        }
         running = false;
         return;
 

@@ -525,6 +525,10 @@ bool Gts::search(const Filter& filter, int offset, Page& out) {
     if (filter.species != 0)    req["species"] = filter.species;
     if (filter.shiny  >= 0)     req["shiny"]   = (filter.shiny == 1);
     if (filter.egg    >= 0)     req["egg"]     = (filter.egg == 1);
+    // Alpha only means something where alphas exist; with another game picked
+    // it is left out rather than sent to find nothing.
+    if (filter.alpha >= 0 && Gts::alphaApplies(filter))
+        req["alpha"] = (filter.alpha == 1);
     if (filter.ball   >= 0)     req["ball"]    = filter.ball;
     if (filter.minIvs >= 0)     req["min_ivs"] = filter.minIvs;
 

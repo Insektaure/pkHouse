@@ -137,11 +137,8 @@
     "menu_quit": "Выход",
     "a_confirm_b_cancel_menu": "A: Подтвердить  B: Отмена",
 
-    "select_theme": "Выбрать тему",
-    "a_select_b_cancel": "A: Выбрать  B: Отмена",
 
     "filter_species": "Покемон:",
-    "filter_any": "(все)",
     "filter_ot": "Имя ИТ:",
     "filter_shiny": "Блестящий:",
     "filter_yes": "Да",
@@ -157,9 +154,6 @@
     "ribbon_has_any": "Есть что-либо",
     "mode_list_on": "[x] Список",
     "mode_list_off": "[ ] Список",
-    "filter_reset": "[ Сброс ]",
-    "filter_search_btn": "[ Поиск ]",
-    "filter_footer": "A: Изменить  B: Отмена",
 
     "no_pokemon_found": "Покемоны не найдены.",
     "egg": "Яйцо",
@@ -243,7 +237,6 @@
     "hint_cancel": "Отмена",
     "hint_detail": "Детали",
     "hint_open": "Открыть",
-    "hint_theme": "Тема",
     "hint_back": "Назад",
     "hint_about": "О программе",
     "hint_new": "Новый",
@@ -505,5 +498,11 @@
     "gts_legality_checked": "Проверенные",
     "gts_legality_all": "Все",
     "gts_not_downloadable_pending": "Этот покемон ещё не проверен. Его можно будет скачать, когда он пройдёт проверку легальности.",
-    "gts_not_downloadable_unchecked": "Этого покемона не удалось проверить, поэтому его нельзя скачать."
+    "gts_not_downloadable_unchecked": "Этого покемона не удалось проверить, поэтому его нельзя скачать.",
+    "gts_deposit_named": "Отправить: {0}",
+    "gts_chip_ivs": "IV ≥ {0}",
+    "dlg_quit_title": "Выйти из pkHouse?",
+    "dlg_quit_body": "pkHouse будет закрыт.",
+    "dlg_quit_save_body": "Сначала изменения будут сохранены, затем pkHouse закроется.",
+    "gts_filter_ball": "Бол"
 }

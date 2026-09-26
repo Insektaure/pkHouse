@@ -137,11 +137,8 @@
     "menu_quit": "종료",
     "a_confirm_b_cancel_menu": "A: 확인  B: 취소",
 
-    "select_theme": "테마 선택",
-    "a_select_b_cancel": "A: 선택  B: 취소",
 
     "filter_species": "포켓몬:",
-    "filter_any": "(전체)",
     "filter_ot": "부모 이름:",
     "filter_shiny": "색이 다른:",
     "filter_yes": "예",
@@ -157,9 +154,6 @@
     "ribbon_has_any": "하나 이상",
     "mode_list_on": "[x] 목록",
     "mode_list_off": "[ ] 목록",
-    "filter_reset": "[ 초기화 ]",
-    "filter_search_btn": "[ 검색 ]",
-    "filter_footer": "A: 편집/전환  B: 취소",
 
     "no_pokemon_found": "포켓몬을 찾을 수 없습니다.",
     "egg": "알",
@@ -243,7 +237,6 @@
     "hint_cancel": "취소",
     "hint_detail": "상세",
     "hint_open": "열기",
-    "hint_theme": "테마",
     "hint_back": "뒤로",
     "hint_about": "정보",
     "hint_new": "새로 만들기",
@@ -505,5 +498,11 @@
     "gts_legality_checked": "판정 완료",
     "gts_legality_all": "전체",
     "gts_not_downloadable_pending": "이 포켓몬은 아직 판정되지 않았습니다. 정규 판정을 통과하면 다운로드할 수 있습니다.",
-    "gts_not_downloadable_unchecked": "이 포켓몬은 판정할 수 없어 다운로드할 수 없습니다."
+    "gts_not_downloadable_unchecked": "이 포켓몬은 판정할 수 없어 다운로드할 수 없습니다.",
+    "gts_deposit_named": "{0} 맡기기",
+    "gts_chip_ivs": "개체값 ≥ {0}",
+    "dlg_quit_title": "pkHouse를 종료할까요?",
+    "dlg_quit_body": "pkHouse가 종료됩니다.",
+    "dlg_quit_save_body": "변경 사항을 먼저 저장한 뒤 pkHouse가 종료됩니다.",
+    "gts_filter_ball": "볼"
 }

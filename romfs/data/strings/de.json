@@ -137,11 +137,8 @@
     "menu_quit": "Beenden",
     "a_confirm_b_cancel_menu": "A: Bestaetigen  B: Abbrechen",
 
-    "select_theme": "Design waehlen",
-    "a_select_b_cancel": "A: Waehlen  B: Abbrechen",
 
     "filter_species": "Pokemon:",
-    "filter_any": "(alle)",
     "filter_ot": "OT-Name:",
     "filter_shiny": "Schillernd:",
     "filter_yes": "Ja",
@@ -157,9 +154,6 @@
     "ribbon_has_any": "Hat eins davon",
     "mode_list_on": "[x] Liste",
     "mode_list_off": "[ ] Liste",
-    "filter_reset": "[ Zuruecksetzen ]",
-    "filter_search_btn": "[ Suchen ]",
-    "filter_footer": "A: Bearbeiten  B: Abbrechen",
 
     "no_pokemon_found": "Keine Pokemon gefunden.",
     "egg": "Ei",
@@ -243,7 +237,6 @@
     "hint_cancel": "Abbrechen",
     "hint_detail": "Detail",
     "hint_open": "Oeffnen",
-    "hint_theme": "Design",
     "hint_back": "Zurueck",
     "hint_about": "Info",
     "hint_new": "Neu",
@@ -505,5 +498,11 @@
     "gts_legality_checked": "Geprüft",
     "gts_legality_all": "Alles",
     "gts_not_downloadable_pending": "Dieses Pokémon wurde noch nicht geprüft. Es kann heruntergeladen werden, sobald es die Legalitätsprüfung besteht.",
-    "gts_not_downloadable_unchecked": "Dieses Pokémon konnte nicht geprüft werden und kann daher nicht heruntergeladen werden."
+    "gts_not_downloadable_unchecked": "Dieses Pokémon konnte nicht geprüft werden und kann daher nicht heruntergeladen werden.",
+    "gts_deposit_named": "{0} abgeben",
+    "gts_chip_ivs": "DV ≥ {0}",
+    "dlg_quit_title": "pkHouse beenden?",
+    "dlg_quit_body": "pkHouse wird geschlossen.",
+    "dlg_quit_save_body": "Deine Änderungen werden zuerst gespeichert, dann wird pkHouse geschlossen.",
+    "gts_filter_ball": "Ball"
 }

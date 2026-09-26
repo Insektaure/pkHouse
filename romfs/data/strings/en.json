@@ -137,11 +137,8 @@
     "menu_quit": "Quit",
     "a_confirm_b_cancel_menu": "A: Confirm  B: Cancel",
 
-    "select_theme": "Select Theme",
-    "a_select_b_cancel": "A: Select  B: Cancel",
 
     "filter_species": "Species:",
-    "filter_any": "(any)",
     "filter_ot": "OT Name:",
     "filter_shiny": "Shiny:",
     "filter_yes": "Yes",
@@ -157,9 +154,6 @@
     "ribbon_has_any": "Has Any",
     "mode_list_on": "[x] List",
     "mode_list_off": "[ ] List",
-    "filter_reset": "[ Reset ]",
-    "filter_search_btn": "[ Search ]",
-    "filter_footer": "A: Edit/Toggle  B: Cancel",
 
     "no_pokemon_found": "No Pokemon found.",
     "egg": "Egg",
@@ -243,7 +237,6 @@
     "hint_cancel": "Cancel",
     "hint_detail": "Detail",
     "hint_open": "Open",
-    "hint_theme": "Theme",
     "hint_back": "Back",
     "hint_about": "About",
     "hint_new": "New",
@@ -505,5 +498,11 @@
     "gts_legality_checked": "Checked",
     "gts_legality_all": "Everything",
     "gts_not_downloadable_pending": "This Pokémon hasn't been checked yet. It can be downloaded once it passes the legality check.",
-    "gts_not_downloadable_unchecked": "This Pokémon couldn't be checked, so it can't be downloaded."
+    "gts_not_downloadable_unchecked": "This Pokémon couldn't be checked, so it can't be downloaded.",
+    "gts_deposit_named": "Deposit {0}",
+    "gts_chip_ivs": "IV ≥ {0}",
+    "dlg_quit_title": "Quit pkHouse?",
+    "dlg_quit_body": "pkHouse will close.",
+    "dlg_quit_save_body": "Your changes are saved first, then pkHouse closes.",
+    "gts_filter_ball": "Ball"
 }

@@ -137,11 +137,8 @@
     "menu_quit": "Salir",
     "a_confirm_b_cancel_menu": "A: Confirmar  B: Cancelar",
 
-    "select_theme": "Seleccionar tema",
-    "a_select_b_cancel": "A: Seleccionar  B: Cancelar",
 
     "filter_species": "Especie:",
-    "filter_any": "(todos)",
     "filter_ot": "Nombre del EO:",
     "filter_shiny": "Variocolor:",
     "filter_yes": "Si",
@@ -157,9 +154,6 @@
     "ribbon_has_any": "Tiene alguno",
     "mode_list_on": "[x] Lista",
     "mode_list_off": "[ ] Lista",
-    "filter_reset": "[ Reiniciar ]",
-    "filter_search_btn": "[ Buscar ]",
-    "filter_footer": "A: Editar  B: Cancelar",
 
     "no_pokemon_found": "No se encontraron Pokemon.",
     "egg": "Huevo",
@@ -243,7 +237,6 @@
     "hint_cancel": "Cancelar",
     "hint_detail": "Detalle",
     "hint_open": "Abrir",
-    "hint_theme": "Tema",
     "hint_back": "Volver",
     "hint_about": "Acerca de",
     "hint_new": "Nuevo",
@@ -505,5 +498,11 @@
     "gts_legality_checked": "Revisados",
     "gts_legality_all": "Todo",
     "gts_not_downloadable_pending": "Este Pokémon aún no se ha revisado. Podrá descargarse cuando supere la revisión de legalidad.",
-    "gts_not_downloadable_unchecked": "Este Pokémon no se ha podido revisar, así que no se puede descargar."
+    "gts_not_downloadable_unchecked": "Este Pokémon no se ha podido revisar, así que no se puede descargar.",
+    "gts_deposit_named": "Depositar {0}",
+    "gts_chip_ivs": "IV ≥ {0}",
+    "dlg_quit_title": "¿Salir de pkHouse?",
+    "dlg_quit_body": "pkHouse se cerrará.",
+    "dlg_quit_save_body": "Primero se guardan tus cambios y luego pkHouse se cierra.",
+    "gts_filter_ball": "Bola"
 }

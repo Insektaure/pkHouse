@@ -137,11 +137,8 @@
     "menu_quit": "終了",
     "a_confirm_b_cancel_menu": "A：確認  B：キャンセル",
 
-    "select_theme": "テーマを選択",
-    "a_select_b_cancel": "A：選択  B：キャンセル",
 
     "filter_species": "ポケモン：",
-    "filter_any": "（すべて）",
     "filter_ot": "親名：",
     "filter_shiny": "色違い：",
     "filter_yes": "はい",
@@ -157,9 +154,6 @@
     "ribbon_has_any": "どちらか",
     "mode_list_on": "[x] リスト",
     "mode_list_off": "[ ] リスト",
-    "filter_reset": "[ リセット ]",
-    "filter_search_btn": "[ 検索 ]",
-    "filter_footer": "A：編集/切替  B：キャンセル",
 
     "no_pokemon_found": "ポケモンが見つかりません。",
     "egg": "タマゴ",
@@ -243,7 +237,6 @@
     "hint_cancel": "キャンセル",
     "hint_detail": "詳細",
     "hint_open": "開く",
-    "hint_theme": "テーマ",
     "hint_back": "戻る",
     "hint_about": "情報",
     "hint_new": "新規",
@@ -505,5 +498,11 @@
     "gts_legality_checked": "判定済み",
     "gts_legality_all": "すべて",
     "gts_not_downloadable_pending": "このポケモンはまだ判定されていません。正規判定に合格するとダウンロードできます。",
-    "gts_not_downloadable_unchecked": "このポケモンは判定できなかったため、ダウンロードできません。"
+    "gts_not_downloadable_unchecked": "このポケモンは判定できなかったため、ダウンロードできません。",
+    "gts_deposit_named": "{0}をあずける",
+    "gts_chip_ivs": "個体値 ≥ {0}",
+    "dlg_quit_title": "pkHouseを終了しますか？",
+    "dlg_quit_body": "pkHouseを終了します。",
+    "dlg_quit_save_body": "変更を保存してからpkHouseを終了します。",
+    "gts_filter_ball": "ボール"
 }

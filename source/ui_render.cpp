@@ -1119,41 +1119,6 @@ void UI::drawFrame() {
 }
 
 
-void UI::drawThemeSelectorPopup() {
-    drawRect(0, 0, SCREEN_W, SCREEN_H, T().overlay);
-
-    constexpr int POP_W = 380;
-    int POP_H = 50 + THEME_COUNT * 36 + 30;
-    int popX = (SCREEN_W - POP_W) / 2;
-    int popY = (SCREEN_H - POP_H) / 2;
-
-    drawRect(popX, popY, POP_W, POP_H, T().panelBg);
-    drawRectOutline(popX, popY, POP_W, POP_H, T().cursor, 2);
-
-    drawTextCentered(i18n::get(StrKey::SelectTheme), popX + POP_W / 2, popY + 22, T().text, font_);
-
-    int rowH = 36;
-    int startY = popY + 50;
-
-    for (int i = 0; i < THEME_COUNT; i++) {
-        int rowY = startY + i * rowH;
-        if (i == themeSelCursor_) {
-            drawRect(popX + 20, rowY, POP_W - 40, rowH - 4, T().menuHighlight);
-            drawRectOutline(popX + 20, rowY, POP_W - 40, rowH - 4, T().cursor, 2);
-        }
-        std::string label = getThemeName(i);
-        if (i == themeSelOriginal_) label = "* " + label + " *";
-        drawTextCentered(label, popX + POP_W / 2, rowY + (rowH - 4) / 2, T().text, font_);
-    }
-
-    drawTextCentered(i18n::get(StrKey::ASelectBCancel), popX + POP_W / 2, popY + POP_H - 18, T().textDim, fontSmall_);
-}
-
-
-
-
-
-
 // About (UI 2.0): what pkHouse is, the
 // games and versions it was tested with, the controls, and what it builds on.
 void UI::drawAboutPopup() {

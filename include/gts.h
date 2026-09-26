@@ -71,6 +71,7 @@ struct Filter {
     std::string speciesName;         // for showing the filter back to the user
     int  shiny  = -1;                // -1 any, 0 no, 1 yes
     int  egg    = -1;
+    int  alpha  = -1;                // -1 any, 0 no, 1 yes; Legends: Arceus and Z-A only
     int  ball   = -1;                // -1 any
     int  minIvs = -1;                // -1 any, else 0..186
     // Which verdicts to list. Checked is everything the scanner has been
@@ -83,9 +84,14 @@ struct Filter {
 
     bool isDefault() const {
         return family.empty() && species == 0 && shiny < 0 && egg < 0
-            && ball < 0 && minIvs < 0 && legality == Legality::Checked && !byPopularity;
+            && alpha < 0 && ball < 0 && minIvs < 0 && legality == Legality::Checked && !byPopularity;
     }
 };
+
+// Whether the alpha filter applies: any game, or one that has alphas.
+inline bool alphaApplies(const Filter& f) {
+    return f.family.empty() || f.family == "la" || f.family == "za";
+}
 
 struct Page {
     std::vector<Entry> entries;

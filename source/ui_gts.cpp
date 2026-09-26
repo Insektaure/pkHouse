@@ -52,11 +52,45 @@ int familyIndex(const std::string& key) {
     return 0;
 }
 
-// Rows in the search filter, in the order they are drawn.
+// Rows in the search filter. Reset and Search are keys (X / Y) now, as on
+// the box search, rather than rows.
 enum FilterRow {
     ROW_SPECIES = 0, ROW_FAMILY, ROW_SHINY, ROW_EGG, ROW_MIN_IVS,
-    ROW_LEGAL, ROW_SORT, ROW_RESET, ROW_SEARCH, ROW_COUNT
+    ROW_LEGAL, ROW_SORT, ROW_ALPHA, ROW_BALL, ROW_COUNT
 };
+
+// Drawn as two columns; the D-pad walks them as drawn.
+constexpr int GTS_LEFT_ROWS[]  = {ROW_SPECIES, ROW_FAMILY, ROW_BALL, ROW_MIN_IVS};
+constexpr int GTS_RIGHT_ROWS[] = {ROW_SHINY, ROW_EGG, ROW_ALPHA, ROW_LEGAL, ROW_SORT};
+
+// The balls the filter offers: any, then every ball that has a name, in
+// the games' own order.
+std::vector<int> ballChoices() {
+    std::vector<int> v = {-1};
+    for (int b = 1; b <= 37; b++)
+        if (BallName::get(static_cast<uint8_t>(b))[0] != '\0') v.push_back(b);
+    return v;
+}
+
+int stepBall(int ball, int dir) {
+    const auto v = ballChoices();
+    int i = 0;
+    for (int k = 0; k < (int)v.size(); k++) if (v[k] == ball) { i = k; break; }
+    return v[(i + dir + (int)v.size()) % (int)v.size()];
+}
+constexpr int GTS_LEFT_N  = static_cast<int>(sizeof(GTS_LEFT_ROWS) / sizeof(int));
+constexpr int GTS_RIGHT_N = static_cast<int>(sizeof(GTS_RIGHT_ROWS) / sizeof(int));
+
+// Where a row sits: column 0 / 1 and its place in it.
+void gtsRowPos(int row, int& col, int& idx) {
+    for (int i = 0; i < GTS_LEFT_N; i++)  if (GTS_LEFT_ROWS[i] == row)  { col = 0; idx = i; return; }
+    for (int i = 0; i < GTS_RIGHT_N; i++) if (GTS_RIGHT_ROWS[i] == row) { col = 1; idx = i; return; }
+    col = 0; idx = 0;
+}
+
+// A tri-state filter as the segments show it: any, yes, no; A steps right.
+int nextTri(int v) { return v < 0 ? 1 : (v == 1 ? 0 : -1); }
+int triSegment(int v) { return v < 0 ? 0 : (v == 1 ? 1 : 2); }
 
 // The IV totals worth offering. 186 is six perfect, 150 is roughly five.
 constexpr int IV_STEPS[] = {-1, 90, 120, 150, 180, 186};
@@ -67,14 +101,6 @@ int ivStepIndex(int value) {
         if (IV_STEPS[i] == value) return i;
     return 0;
 }
-
-// Cycles a tri-state filter: any -> yes -> no -> any.
-int cycleTri(int value, int dir) {
-    int v = value + 1;              // -1,0,1 -> 0,1,2
-    v = (v + dir + 3) % 3;
-    return v - 1;
-}
-
 
 // --- primitives for the band's artwork ---------------------------------------
 //
@@ -392,9 +418,9 @@ void UI::drawGtsHubFrame() {
 
     {
         const ButtonHint hints[] = {
-            {"A", StrKey::HintSelect3}, {"B", StrKey::HintBack2}, {"Y", StrKey::HintTheme},
+            {"A", StrKey::HintSelect3}, {"B", StrKey::HintBack2},
         };
-        drawFooterBar(hints, 3);
+        drawFooterBar(hints, 2);
     }
 
     if (showGtsFilter_)  drawGtsFilterPopup();
@@ -464,14 +490,8 @@ void UI::handleGtsHubInput(bool& running) {
                 screen_ = AppScreen::GameSelector;
                 break;
 
-            case SDL_CONTROLLER_BUTTON_X: // Switch Y = theme
-                showThemeSelector_ = true;
-                themeSelCursor_ = themeIndex_;
-                themeSelOriginal_ = themeIndex_;
-                break;
-
             case SDL_CONTROLLER_BUTTON_START:
-                running = false;
+                if (confirmQuit()) running = false;
                 break;
         }
     }
@@ -1061,7 +1081,7 @@ void UI::handleGtsBrowseInput(bool& running) {
                 break;
 
             case SDL_CONTROLLER_BUTTON_START:
-                running = false;
+                if (confirmQuit()) running = false;
                 break;
         }
     }
@@ -1142,117 +1162,259 @@ void UI::gtsSaveCurrentAsCard() {
 
 // --- Search filter ------------------------------------------------------------
 
+// UI 2.0, the box search's layout: two columns of rows, the active
+// filters as chips, X Reset / Y Search. Every filter the old list had is here;
+// the D-pad only moves, and A changes the row it is on.
+void UI::moveGtsFilterCursor(int dy) {
+    int col, idx;
+    gtsRowPos(gtsFilterCursor_, col, idx);
+    const int n = col == 0 ? GTS_LEFT_N : GTS_RIGHT_N;
+    idx = (idx + dy + n) % n;
+    gtsFilterCursor_ = col == 0 ? GTS_LEFT_ROWS[idx] : GTS_RIGHT_ROWS[idx];
+}
+
+void UI::switchGtsFilterColumn(int dx) {
+    int col, idx;
+    gtsRowPos(gtsFilterCursor_, col, idx);
+    const int next = std::clamp(col + dx, 0, 1);
+    if (next == col) return;
+    gtsFilterCursor_ = next == 0 ? GTS_LEFT_ROWS[std::min(idx, GTS_LEFT_N - 1)]
+                                 : GTS_RIGHT_ROWS[std::min(idx, GTS_RIGHT_N - 1)];
+}
+
+std::vector<std::string> UI::gtsFilterChips() const {
+    std::vector<std::string> c;
+    auto strip = [](std::string l) {
+        while (!l.empty() && (l.back() == ':' || l.back() == ' ')) l.pop_back();
+        return l;
+    };
+    const Gts::Filter& f = gtsFilter_;
+    if (f.species != 0 && !f.speciesName.empty()) c.push_back(f.speciesName);
+    if (!f.family.empty()) c.push_back(gameInfo(FAMILIES[familyIndex(f.family)].rep).gameTag);
+    if (f.shiny == 1) c.push_back(strip(i18n::get(StrKey::FilterShiny)));
+    if (f.shiny == 0) c.push_back(strip(i18n::get(StrKey::FilterShiny)) + " \xc2\xb7 " + i18n::get(StrKey::GtsFilterNo));
+    if (f.egg == 1)   c.push_back(strip(i18n::get(StrKey::FilterEgg)));
+    if (f.egg == 0)   c.push_back(strip(i18n::get(StrKey::FilterEgg)) + " \xc2\xb7 " + i18n::get(StrKey::GtsFilterNo));
+    if (f.alpha == 1 && Gts::alphaApplies(f)) c.push_back(i18n::get(StrKey::LegendAlpha));
+    if (f.alpha == 0 && Gts::alphaApplies(f))
+        c.push_back(i18n::get(StrKey::LegendAlpha) + " \xc2\xb7 " + i18n::get(StrKey::GtsFilterNo));
+    if (f.ball >= 0) c.push_back(BallName::get(static_cast<uint8_t>(f.ball)));
+    if (f.minIvs >= 0) c.push_back(i18n::fmt(StrKey::GtsChipIvs, std::to_string(f.minIvs)));
+    if (f.legality == Gts::Filter::Legality::LegalOnly) c.push_back(i18n::get(StrKey::GtsFilterLegalOnly));
+    if (f.legality == Gts::Filter::Legality::All)       c.push_back(i18n::get(StrKey::GtsLegalityAll));
+    if (f.byPopularity) c.push_back(i18n::get(StrKey::GtsSortPopular));
+    return c;
+}
+
 void UI::drawGtsFilterPopup() {
-    // handleStickRepeat() scrolls this list from ui_input.cpp and cannot see
+    // handleStickRepeat() moves this cursor from ui_input.cpp and cannot see
     // the enum, so the two counts are pinned together here.
     static_assert(ROW_COUNT == GTS_FILTER_ROWS,
                   "GTS_FILTER_ROWS must match the filter's row enum");
 
-    drawRect(0, 0, SCREEN_W, SCREEN_H, T().overlay);
+    drawRect(0, 0, SCREEN_W, SCREEN_H, SDL_Color{T().bg.r, T().bg.g, T().bg.b, 190});
 
-    constexpr int POP_W = 620;
-    constexpr int ROW_H = 40;
-    const int POP_H = 56 + ROW_COUNT * ROW_H + 30;
-    const int popX = (SCREEN_W - POP_W) / 2;
-    const int popY = (SCREEN_H - POP_H) / 2;
+    constexpr int GF_W = 960, GF_HEAD = 66, GF_ROW_H = 52, GF_ROW_STEP = 64;
+    constexpr int GF_COL_W = 452, GF_LABEL_W = 140, GF_BAR_H = 76, GF_FOOT = 50;
+    const int bodyH = std::max(GTS_LEFT_N, GTS_RIGHT_N) * GF_ROW_STEP + 8;
+    const int H = GF_HEAD + 20 + bodyH + GF_BAR_H + GF_FOOT;
+    const int x = (SCREEN_W - GF_W) / 2, y = (SCREEN_H - H) / 2;
+    fillRounded(x, y, GF_W, H, 22, T().panelBg);
+    strokeRounded(x, y, GF_W, H, 22, 1, T().panelBorder);
 
-    drawRect(popX, popY, POP_W, POP_H, T().panelBg);
-    drawRectOutline(popX, popY, POP_W, POP_H, T().cursor, 2);
-    drawTextCentered(i18n::get(StrKey::GtsFilterTitle), popX + POP_W / 2, popY + 24,
-                     T().goldLabel, font_);
-
-    const int startY = popY + 56;
-    const int labelX = popX + 30;
-    const int valueX = popX + 280;
-
-    auto triText = [&](int v) -> const std::string& {
-        if (v < 0) return i18n::get(StrKey::FilterAny);
-        return i18n::get(v == 1 ? StrKey::FilterYes : StrKey::GtsFilterNo);
-    };
-
-    for (int i = 0; i < ROW_COUNT; i++) {
-        const int rowY = startY + i * ROW_H;
-        const int textY = rowY + (ROW_H - 4) / 2 - 9;
-
-        if (i == gtsFilterCursor_) {
-            drawRect(popX + 20, rowY, POP_W - 40, ROW_H - 4, T().menuHighlight);
-            drawRectOutline(popX + 20, rowY, POP_W - 40, ROW_H - 4, T().cursor, 2);
+    // Header
+    {
+        if (SDL_Texture* ic = uiIcon("search")) {
+            SDL_SetTextureColorMod(ic, T().accent.r, T().accent.g, T().accent.b);
+            SDL_Rect dst = {x + 26, y + 22, 22, 22};
+            SDL_RenderCopy(renderer_, ic, nullptr, &dst);
+            SDL_SetTextureColorMod(ic, 255, 255, 255);
         }
+        TTF_Font* fT = uiFont(24, true);
+        TTF_Font* fS = uiFont(15);
+        const std::string title = i18n::get(StrKey::GtsFilterTitle);
+        drawText(title, x + 60, y + 33 - TTF_FontHeight(fT) / 2, T().text, fT);
+        const int sx = x + 60 + textWidth(title, fT) + 14;
+        drawText(fitText(i18n::get(StrKey::GtsTitle), fS, x + GF_W - 26 - sx), sx,
+                 y + 36 - TTF_FontHeight(fS) / 2, T().textDim, fS);
+    }
+    drawRect(x, y + GF_HEAD, GF_W, 1, T().panelBorder);
 
-        switch (i) {
+    TTF_Font* fLabel = uiFont(16, true);
+    TTF_Font* fVal   = uiFont(15);
+    TTF_Font* fSeg   = uiFont(13, true);
+    auto segmented = [&](int sx, int cy, int w, const std::vector<std::string>& labels, int sel) {
+        const int h = 40, n = static_cast<int>(labels.size());
+        fillRounded(sx, cy - h / 2, w, h, 10, T().bg);
+        const int segW = (w - 8) / n;
+        for (int i = 0; i < n; i++) {
+            const int bx = sx + 4 + i * segW;
+            if (i == sel) fillRounded(bx, cy - h / 2 + 4, segW, h - 8, 8, T().buttonBg);
+            drawTextCentered(fitText(labels[i], fSeg, segW - 6), bx + segW / 2, cy,
+                             i == sel ? T().text : T().textDim, fSeg);
+        }
+    };
+    auto label = [&](const char* key, int rx, int cy) {
+        std::string l = i18n::get(key);
+        while (!l.empty() && (l.back() == ':' || l.back() == ' ')) l.pop_back();
+        drawText(fitText(l, fLabel, GF_LABEL_W - 8), rx + 18, cy - TTF_FontHeight(fLabel) / 2, T().text, fLabel);
+    };
+    const std::string any = i18n::get(StrKey::GenderAny);
+    const std::string yes = i18n::get(StrKey::FilterYes), no = i18n::get(StrKey::GtsFilterNo);
+
+    auto drawRow = [&](int row, int rx, int ry) {
+        const int cy = ry + GF_ROW_H / 2;
+        const bool cur = row == gtsFilterCursor_;
+        if (cur) {
+            strokeRounded(rx - 6, ry - 6, GF_COL_W + 12, GF_ROW_H + 12, 18, 3, T().accent);
+            fillRounded(rx, ry, GF_COL_W, GF_ROW_H, 12, T().slotFull);
+        }
+        const int cx = rx + GF_LABEL_W + 10, right = rx + GF_COL_W - 16, cw = right - cx;
+        switch (row) {
             case ROW_SPECIES:
-                drawText(i18n::get(StrKey::FilterSpecies), labelX, textY, T().text, font_);
+                label(StrKey::FilterSpecies, rx, cy);
                 if (gtsFilter_.species > 0) {
-                    SDL_Texture* spr = getSprite(gtsFilter_.species);
-                    if (spr) {
-                        SDL_Rect dst = { valueX, rowY + 2, ROW_H - 8, ROW_H - 8 };
-                        SDL_RenderCopy(renderer_, spr, nullptr, &dst);
-                        drawText(gtsFilter_.speciesName, valueX + ROW_H, textY, T().text, font_);
-                    } else {
-                        drawText(gtsFilter_.speciesName, valueX, textY, T().text, font_);
-                    }
+                    fillRounded(cx, cy - 16, 32, 32, 8, T().slotFull);
+                    drawSpriteFit(spriteFor(gtsFilter_.species, 0, false, false), cx + 16, cy, 28);
+                    TTF_Font* fN = uiFont(16, true);
+                    TTF_Font* fD = uiFont(12);
+                    const std::string dex = "#" + std::to_string(gtsFilter_.species);
+                    const std::string n = fitText(gtsFilter_.speciesName, fN, cw - 44 - textWidth(dex, fD) - 26);
+                    drawText(n, cx + 42, cy - TTF_FontHeight(fN) / 2, T().text, fN);
+                    drawText(dex, cx + 42 + textWidth(n, fN) + 10, cy - TTF_FontHeight(fD) / 2 + 1, T().textDim, fD);
                 } else {
-                    drawText(i18n::get(StrKey::FilterAny), valueX, textY, T().textDim, font_);
+                    drawText(i18n::get(StrKey::SfAnySpecies), cx, cy - TTF_FontHeight(fVal) / 2, T().textMuted, fVal);
                 }
+                fillArrow(static_cast<float>(right - 4), cy, 6, ArrowDir::Right, T().textDim);
                 break;
-
             case ROW_FAMILY: {
-                drawText(i18n::get(StrKey::GtsFilterGame), labelX, textY, T().text, font_);
+                label(StrKey::GtsFilterGame, rx, cy);
                 const int idx = familyIndex(gtsFilter_.family);
-                if (idx == 0)
-                    drawText(i18n::get(StrKey::FilterAny), valueX, textY, T().textDim, font_);
-                else
-                    drawText(bankGroupNameOf(FAMILIES[idx].rep), valueX, textY, T().text, fontSmall_);
+                const bool all = idx == 0;
+                drawText(fitText(all ? any : std::string(bankGroupNameOf(FAMILIES[idx].rep)), fVal, cw - 60),
+                         cx, cy - TTF_FontHeight(fVal) / 2, all ? T().textMuted : T().text, fVal);
+                // Which of the choices, since A steps through them one by one.
+                TTF_Font* fC = uiFont(12);
+                const std::string pos = std::to_string(idx + 1) + " / " + std::to_string(FAMILY_COUNT);
+                drawText(pos, right - textWidth(pos, fC), cy - TTF_FontHeight(fC) / 2, T().textMuted, fC);
                 break;
             }
-
             case ROW_SHINY:
-                drawText(i18n::get(StrKey::FilterShiny), labelX, textY, T().text, font_);
-                drawText(triText(gtsFilter_.shiny), valueX, textY,
-                         gtsFilter_.shiny < 0 ? T().textDim : T().text, font_);
+                label(StrKey::FilterShiny, rx, cy);
+                segmented(cx, cy, cw, {any, yes, no}, triSegment(gtsFilter_.shiny));
                 break;
-
             case ROW_EGG:
-                drawText(i18n::get(StrKey::FilterEgg), labelX, textY, T().text, font_);
-                drawText(triText(gtsFilter_.egg), valueX, textY,
-                         gtsFilter_.egg < 0 ? T().textDim : T().text, font_);
+                label(StrKey::FilterEgg, rx, cy);
+                segmented(cx, cy, cw, {any, yes, no}, triSegment(gtsFilter_.egg));
                 break;
-
-            case ROW_MIN_IVS:
-                drawText(i18n::get(StrKey::GtsFilterMinIVs), labelX, textY, T().text, font_);
-                if (gtsFilter_.minIvs < 0)
-                    drawText(i18n::get(StrKey::FilterAny), valueX, textY, T().textDim, font_);
-                else
-                    drawText(std::to_string(gtsFilter_.minIvs) + " / 186", valueX, textY, T().text, font_);
+            case ROW_ALPHA: {
+                label(StrKey::FilterAlpha, rx, cy);
+                segmented(cx, cy, cw, {any, yes, no}, triSegment(gtsFilter_.alpha));
+                // Another game has no alphas: shown, but it does nothing there.
+                if (!Gts::alphaApplies(gtsFilter_))
+                    fillRounded(rx, ry, GF_COL_W, GF_ROW_H, 12,
+                                SDL_Color{T().panelBg.r, T().panelBg.g, T().panelBg.b, 170});
                 break;
-
+            }
+            case ROW_BALL: {
+                label(StrKey::GtsFilterBall, rx, cy);
+                if (gtsFilter_.ball < 0) {
+                    drawText(any, cx, cy - TTF_FontHeight(fVal) / 2, T().textMuted, fVal);
+                } else {
+                    int bx = cx;
+                    if (SDL_Texture* tex = getBallSprite(static_cast<uint8_t>(gtsFilter_.ball))) {
+                        SDL_Rect dst = {bx, cy - 12, 24, 24};
+                        SDL_RenderCopy(renderer_, tex, nullptr, &dst);
+                        bx += 32;
+                    }
+                    drawText(fitText(BallName::get(static_cast<uint8_t>(gtsFilter_.ball)), fVal, right - 30 - bx),
+                             bx, cy - TTF_FontHeight(fVal) / 2, T().text, fVal);
+                }
+                // L / R step back and forth; A steps forward.
+                fillArrow(static_cast<float>(right - 18), cy, 5, ArrowDir::Left, T().textDim);
+                fillArrow(static_cast<float>(right - 4), cy, 5, ArrowDir::Right, T().textDim);
+                break;
+            }
+            case ROW_MIN_IVS: {
+                label(StrKey::GtsFilterMinIVs, rx, cy);
+                std::vector<std::string> l = {any};
+                for (int i = 1; i < IV_STEP_COUNT; i++) l.push_back(std::to_string(IV_STEPS[i]));
+                segmented(cx, cy, cw, l, ivStepIndex(gtsFilter_.minIvs));
+                break;
+            }
             case ROW_LEGAL:
-                drawText(i18n::get(StrKey::GtsFilterLegality), labelX, textY, T().text, font_);
-                drawText(i18n::get(gtsFilter_.legality == Gts::Filter::Legality::LegalOnly ? StrKey::GtsFilterLegalOnly
-                                 : gtsFilter_.legality == Gts::Filter::Legality::All       ? StrKey::GtsLegalityAll
-                                                                                           : StrKey::GtsLegalityChecked),
-                         valueX, textY, T().text, font_);
+                label(StrKey::GtsFilterLegality, rx, cy);
+                segmented(cx, cy, cw, {i18n::get(StrKey::GtsLegalityChecked), i18n::get(StrKey::GtsFilterLegalOnly),
+                                       i18n::get(StrKey::GtsLegalityAll)},
+                          static_cast<int>(gtsFilter_.legality));
                 break;
-
             case ROW_SORT:
-                drawText(i18n::get(StrKey::GtsFilterSort), labelX, textY, T().text, font_);
-                drawText(i18n::get(gtsFilter_.byPopularity ? StrKey::GtsSortPopular
-                                                           : StrKey::GtsSortRecent),
-                         valueX, textY, T().text, font_);
+                label(StrKey::GtsFilterSort, rx, cy);
+                segmented(cx, cy, cw, {i18n::get(StrKey::GtsSortRecent), i18n::get(StrKey::GtsSortPopular)},
+                          gtsFilter_.byPopularity ? 1 : 0);
                 break;
+        }
+    };
 
-            case ROW_RESET:
-                drawText(i18n::get(StrKey::FilterReset), labelX, textY, T().text, font_);
-                break;
+    const int top = y + GF_HEAD + 20;
+    const int lx = x + 20, rxCol = x + GF_W - 20 - GF_COL_W;
+    for (int i = 0; i < GTS_LEFT_N; i++)  drawRow(GTS_LEFT_ROWS[i],  lx,    top + i * GF_ROW_STEP);
+    for (int i = 0; i < GTS_RIGHT_N; i++) drawRow(GTS_RIGHT_ROWS[i], rxCol, top + i * GF_ROW_STEP);
 
-            case ROW_SEARCH:
-                drawText(i18n::get(StrKey::FilterSearch), labelX, textY, T().goldLabel, font_);
-                break;
+    // Active filters, and Reset / Search.
+    {
+        const int by = y + H - GF_FOOT - GF_BAR_H;
+        drawRect(x, by, GF_W, 1, T().panelBorder);
+        const int cy = by + GF_BAR_H / 2;
+        TTF_Font* fTag = uiFont(11, true);
+        const std::string tag = toUpperUtf8(i18n::get(StrKey::SfFilters));
+        drawTextTracked(tag, x + 26, cy - TTF_FontHeight(fTag) / 2, T().textDim, fTag, 2);
+        const int chipsX = x + 26 + measureTextTracked(tag, fTag, 2) + 14;
+
+        TTF_Font* fB = uiFont(16, true);
+        auto button = [&](int rightEdge, const char* key, const char* labelKey, bool primary) {
+            const std::string l = i18n::get(labelKey);
+            const int w = 12 + 24 + 10 + textWidth(l, fB) + 18, h = 46;
+            const int bx = rightEdge - w;
+            fillRounded(bx, cy - h / 2, w, h, 12, primary ? T().accent : T().buttonBg);
+            if (!primary) strokeRounded(bx, cy - h / 2, w, h, 12, 1, T().buttonBorder);
+            fillDisc(bx + 12 + 12, cy, 12, primary ? T().keyCapText : T().keyCap);
+            drawTextCentered(key, bx + 24, cy, primary ? T().accent : T().keyCapText, uiFont(13, true));
+            drawText(l, bx + 12 + 24 + 10, cy - TTF_FontHeight(fB) / 2, primary ? T().keyCapText : T().text, fB);
+            return bx;
+        };
+        int bx = button(x + GF_W - 24, "Y", StrKey::HintSearch, true);
+        bx = button(bx - 12, "X", StrKey::HintReset, false);
+
+        const auto chips = gtsFilterChips();
+        if (chips.empty()) {
+            TTF_Font* f = uiFont(13);
+            drawText(fitText(i18n::get(StrKey::SfNoFilters), f, bx - 16 - chipsX), chipsX,
+                     cy - TTF_FontHeight(f) / 2, T().textMuted, f);
+        } else {
+            drawSearchChips(chips, chipsX, cy, bx - 16 - chipsX);
         }
     }
 
-    drawTextCentered(i18n::get(StrKey::FilterFooter), popX + POP_W / 2,
-                     popY + POP_H - 20, T().textDim, fontSmall_);
+    // Footer: what A does on this row.
+    {
+        const int fy = y + H - GF_FOOT;
+        drawRect(x, fy, GF_W, 1, T().panelBorder);
+        const int cy = fy + GF_FOOT / 2;
+        TTF_Font* f = uiFont(15, true);
+        std::vector<std::pair<const char*, const char*>> hints = {
+            {"A", gtsFilterCursor_ == ROW_SPECIES ? StrKey::HintChooseSpecies : StrKey::HintChange},
+        };
+        if (gtsFilterCursor_ == ROW_BALL) hints.push_back({"L R", StrKey::HintChange});
+        hints.push_back({"B", StrKey::HintCancel});
+        int hx = x + 26;
+        for (const auto& h : hints) {
+            hx += drawFooterKey(hx, cy, h.first, false) + 8;
+            const std::string& l = i18n::get(h.second);
+            drawText(l, hx, cy - TTF_FontHeight(f) / 2, T().text, f);
+            hx += textWidth(l, f) + 22;
+        }
+    }
 }
 
 void UI::handleGtsFilterInput(const SDL_Event& event) {
@@ -1266,70 +1428,68 @@ void UI::handleGtsFilterInput(const SDL_Event& event) {
     }
     if (event.type != SDL_CONTROLLERBUTTONDOWN) return;
 
-    // Left/right change a value in place; A opens a picker or runs the search.
-    auto adjust = [&](int dir) {
-        switch (gtsFilterCursor_) {
-            case ROW_SPECIES:
-                if (dir < 0 || gtsFilter_.species != 0) {
-                    gtsFilter_.species = 0;
-                    gtsFilter_.speciesName.clear();
-                }
-                break;
-            case ROW_FAMILY: {
-                int idx = (familyIndex(gtsFilter_.family) + dir + FAMILY_COUNT) % FAMILY_COUNT;
-                gtsFilter_.family = FAMILIES[idx].key;
-                break;
-            }
-            case ROW_SHINY: gtsFilter_.shiny = cycleTri(gtsFilter_.shiny, dir); break;
-            case ROW_EGG:   gtsFilter_.egg   = cycleTri(gtsFilter_.egg, dir);   break;
-            case ROW_MIN_IVS: {
-                int idx = (ivStepIndex(gtsFilter_.minIvs) + dir + IV_STEP_COUNT) % IV_STEP_COUNT;
-                gtsFilter_.minIvs = IV_STEPS[idx];
-                break;
-            }
-            case ROW_LEGAL:
-                gtsFilter_.legality = static_cast<Gts::Filter::Legality>(
-                    (static_cast<int>(gtsFilter_.legality) + dir + 3) % 3);
-                break;
-            case ROW_SORT:  gtsFilter_.byPopularity = !gtsFilter_.byPopularity; break;
-            default: break;
-        }
-    };
-
     switch (event.cbutton.button) {
-        case SDL_CONTROLLER_BUTTON_DPAD_UP:
-            gtsFilterCursor_ = (gtsFilterCursor_ - 1 + ROW_COUNT) % ROW_COUNT;
-            break;
-        case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
-            gtsFilterCursor_ = (gtsFilterCursor_ + 1) % ROW_COUNT;
-            break;
-        case SDL_CONTROLLER_BUTTON_DPAD_LEFT:  adjust(-1); break;
-        case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: adjust(+1); break;
+        case SDL_CONTROLLER_BUTTON_DPAD_UP:    moveGtsFilterCursor(-1); break;
+        case SDL_CONTROLLER_BUTTON_DPAD_DOWN:  moveGtsFilterCursor(+1); break;
+        case SDL_CONTROLLER_BUTTON_DPAD_LEFT:  switchGtsFilterColumn(-1); break;
+        case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: switchGtsFilterColumn(+1); break;
 
-        case SDL_CONTROLLER_BUTTON_B: // Switch A
-            if (gtsFilterCursor_ == ROW_SPECIES) {
-                // The same picker the box search uses; this flag is what tells
-                // it which filter a confirmed pick belongs to.
-                speciesPickerForGts_ = true;
-                availableSpecies_.clear();
-                buildAvailableSpeciesList();
-                showSpeciesLetterPicker_ = true;
-                speciesLetterCursor_ = 0;
-                speciesLetterScroll_ = 0;
-            } else if (gtsFilterCursor_ == ROW_RESET) {
-                gtsFilter_ = Gts::Filter{};
-            } else if (gtsFilterCursor_ == ROW_SEARCH) {
-                showGtsFilter_ = false;
-                if (gtsLoadPage(0)) {
-                    gtsCursor_ = 0;
-                    screen_ = AppScreen::GtsBrowse;
-                } else {
-                    // The filter stays as it was so it can be widened and tried
-                    // again, rather than being thrown away on a miss.
-                    showGtsFilter_ = true;
+        case SDL_CONTROLLER_BUTTON_B: // Switch A: change the row, or pick a species
+            switch (gtsFilterCursor_) {
+                case ROW_SPECIES:
+                    // The same picker the box search uses; this flag is what
+                    // tells it which filter a pick belongs to. Y there is "any
+                    // species", which is how a species is cleared.
+                    speciesPickerForGts_ = true;
+                    availableSpecies_.clear();
+                    buildAvailableSpeciesList();
+                    showSpeciesLetterPicker_ = true;
+                    speciesLetterCursor_ = 0;
+                    speciesLetterScroll_ = 0;
+                    break;
+                case ROW_FAMILY: {
+                    const int idx = (familyIndex(gtsFilter_.family) + 1) % FAMILY_COUNT;
+                    gtsFilter_.family = FAMILIES[idx].key;
+                    break;
                 }
+                case ROW_SHINY: gtsFilter_.shiny = nextTri(gtsFilter_.shiny); break;
+                case ROW_EGG:   gtsFilter_.egg   = nextTri(gtsFilter_.egg);   break;
+                case ROW_MIN_IVS:
+                    gtsFilter_.minIvs = IV_STEPS[(ivStepIndex(gtsFilter_.minIvs) + 1) % IV_STEP_COUNT];
+                    break;
+                case ROW_LEGAL:
+                    gtsFilter_.legality = static_cast<Gts::Filter::Legality>(
+                        (static_cast<int>(gtsFilter_.legality) + 1) % 3);
+                    break;
+                case ROW_SORT: gtsFilter_.byPopularity = !gtsFilter_.byPopularity; break;
+                case ROW_ALPHA:
+                    if (Gts::alphaApplies(gtsFilter_)) gtsFilter_.alpha = nextTri(gtsFilter_.alpha);
+                    break;
+                case ROW_BALL: gtsFilter_.ball = stepBall(gtsFilter_.ball, +1); break;
+            }
+            break;
+
+        // The ball list is long, so it also goes backwards.
+        case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
+            if (gtsFilterCursor_ == ROW_BALL) gtsFilter_.ball = stepBall(gtsFilter_.ball, -1);
+            break;
+        case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:
+            if (gtsFilterCursor_ == ROW_BALL) gtsFilter_.ball = stepBall(gtsFilter_.ball, +1);
+            break;
+
+        case SDL_CONTROLLER_BUTTON_Y: // Switch X = reset
+            gtsFilter_ = Gts::Filter{};
+            break;
+
+        case SDL_CONTROLLER_BUTTON_X: // Switch Y = search
+            showGtsFilter_ = false;
+            if (gtsLoadPage(0)) {
+                gtsCursor_ = 0;
+                screen_ = AppScreen::GtsBrowse;
             } else {
-                adjust(+1);
+                // The filter stays as it was so it can be widened and tried
+                // again, rather than being thrown away on a miss.
+                showGtsFilter_ = true;
             }
             break;
 
@@ -1343,11 +1503,17 @@ void UI::handleGtsFilterInput(const SDL_Event& event) {
 
 void UI::gtsScanAllCards() {
     gtsCards_.clear();
+    gtsCardRowInfo_.clear();
 
     // Every family folder, not just one game's: nothing has been selected at
     // this point, and a card is worth depositing whichever game it came from.
-    for (int i = 1; i < FAMILY_COUNT; i++) {
-        const GameType rep = FAMILIES[i].rep;
+    // In the order the game selector and All banks use (ALL_GAMES), not the
+    // filter's, so the groups read the same everywhere.
+    constexpr GameType DEPOSIT_ORDER[] = {
+        GameType::GP, GameType::Sw, GameType::BD, GameType::LA,
+        GameType::S,  GameType::ZA, GameType::FR,
+    };
+    for (const GameType rep : DEPOSIT_ORDER) {
         for (const CardFile& cf : scanCards(basePath_, rep)) {
             GtsCard entry;
             entry.file = cf;
@@ -1375,79 +1541,178 @@ void UI::updateGtsCardPreview() {
     const GtsCard& card = gtsCards_[gtsCardCursor_];
     gtsCardPreview_ = decodeCard(card.file.path, card.folderGame, true);
     gtsCardPreviewIdx_ = gtsCardCursor_;
+    if (gtsCardRowInfo_.size() != gtsCards_.size()) gtsCardRowInfo_.assign(gtsCards_.size(), CardRowInfo{});
+    fillCardRowInfo(gtsCardRowInfo_[gtsCardCursor_], gtsCardPreview_);
 }
 
+// UI 2.0: the card import's layout, with the cards of every game at once
+// grouped by game the way All banks groups banks, ZL / ZR jumping between
+// the groups. Rows are labelled from the filename; a row whose card has been
+// read (the preview decodes the highlighted one) shows what it holds.
 void UI::drawGtsDepositPopup() {
-    drawRect(0, 0, SCREEN_W, SCREEN_H, T().overlay);
+    drawRect(0, 0, SCREEN_W, SCREEN_H, SDL_Color{T().bg.r, T().bg.g, T().bg.b, 190});
 
-    constexpr int POP_W = 1080;
-    constexpr int POP_H = 560;
-    constexpr int ROW_H = 34;
-    const int popX = (SCREEN_W - POP_W) / 2;
-    const int popY = (SCREEN_H - POP_H) / 2;
-
-    drawRect(popX, popY, POP_W, POP_H, T().panelBg);
-    drawRectOutline(popX, popY, POP_W, POP_H, T().cursor, 2);
-    drawTextCentered(i18n::get(StrKey::GtsPickCard), popX + POP_W / 2, popY + 24,
-                     T().goldLabel, font_);
-
-    const int listX = popX + 20;
-    const int listY = popY + 56;
-    const int listW = 560;
-    const int visible = (POP_H - 96) / ROW_H;
-
-    if (gtsCardCursor_ < gtsCardScroll_)
-        gtsCardScroll_ = gtsCardCursor_;
-    if (gtsCardCursor_ >= gtsCardScroll_ + visible)
-        gtsCardScroll_ = gtsCardCursor_ - visible + 1;
+    constexpr int GD_W = 1120, GD_H = 620, GD_HEAD = 68, GD_FOOT = 52, GD_LIST_W = 472;
+    constexpr int GD_GROUP_H = 34, GD_ROW_H = 60, GD_ROW_STEP = 66;
+    const int x = (SCREEN_W - GD_W) / 2, y = (SCREEN_H - GD_H) / 2;
+    fillRounded(x, y, GD_W, GD_H, 22, T().panelBg);
+    strokeRounded(x, y, GD_W, GD_H, 22, 1, T().panelBorder);
 
     const int total = static_cast<int>(gtsCards_.size());
-    for (int i = 0; i < visible && gtsCardScroll_ + i < total; i++) {
-        const int idx = gtsCardScroll_ + i;
-        const int rowY = listY + i * ROW_H;
+    if (gtsCardRowInfo_.size() != gtsCards_.size()) gtsCardRowInfo_.assign(gtsCards_.size(), CardRowInfo{});
 
-        if (idx == gtsCardCursor_) {
-            drawRect(listX, rowY, listW, ROW_H - 3, T().menuHighlight);
-            drawRectOutline(listX, rowY, listW, ROW_H - 3, T().cursor, 2);
-        }
-
-        // The folder tells you which game a card is for without decoding it,
-        // which is the whole reason the listing is cheap.
-        const GtsCard& card = gtsCards_[idx];
-        drawText(card.file.label, listX + 10, rowY + 6, T().text, fontSmall_);
-
-        std::string fam = bankFolderNameOf(card.folderGame);
-        const auto& te = getTextEntry(fam, fontSmall_, T().textDim);
-        drawText(fam, listX + listW - te.w - 10, rowY + 6, T().textDim, fontSmall_);
-    }
-
-    if (total > visible) {
-        std::string pos = std::to_string(gtsCardCursor_ + 1) + " / " + std::to_string(total);
-        drawText(pos, listX + 10, popY + POP_H - 26, T().textDim, fontSmall_);
-    }
-
-    // The right half shows what the highlighted card actually contains, read
-    // from its QR code and never from its filename.
-    const int paneX = listX + listW + 20;
-    const int paneW = popX + POP_W - 20 - paneX;
-    drawCardPreviewPane(gtsCardPreview_, gtsCardPreviewIdx_ != gtsCardCursor_,
-                        paneX, listY, paneW, POP_H - 96);
-
+    // --- Header: the upload mark, the title, how many, ZL ZR Jump game. ---
     {
-        // Inside the popup, so it is centred rather than laid along the bar.
-        const ButtonHint hints[] = {
+        const int cy = y + GD_HEAD / 2;
+        const int mx = x + 38;
+        fillCircle(renderer_, mx, cy, 14, T().accent);
+        const SDL_Color ink = T().keyCapText;
+        thickLine(renderer_, mx, cy + 4, mx, cy - 7, 3, ink);
+        thickLine(renderer_, mx, cy - 8, mx - 5, cy - 3, 3, ink);
+        thickLine(renderer_, mx, cy - 8, mx + 5, cy - 3, 3, ink);
+        drawRect(mx - 7, cy + 7, 14, 2, ink);
+
+        TTF_Font* fT = uiFont(24, true);
+        const std::string title = i18n::get(StrKey::GtsPickCard);
+        drawText(title, x + 62, cy - TTF_FontHeight(fT) / 2, T().text, fT);
+        int cx = x + 62 + textWidth(title, fT) + 14;
+        if (total > 0) {
+            TTF_Font* fC = uiFont(13, true);
+            const std::string count = total == 1 ? i18n::get(StrKey::CiCountOne)
+                                                 : i18n::fmt(StrKey::CiCount, std::to_string(total));
+            const SDL_Color fc = T().statusOk;
+            const int fw = textWidth(count, fC) + 20;
+            fillRounded(cx, cy - 13, fw, 26, 8, SDL_Color{fc.r, fc.g, fc.b, 36});
+            drawTextCentered(count, cx + fw / 2, cy, fc, fC);
+        }
+        // ZL ZR  Jump game, as on All banks.
+        TTF_Font* fK = uiFont(12, true);
+        TTF_Font* fL = uiFont(13);
+        const std::string jl = i18n::get(StrKey::HintJumpGame);
+        constexpr int KEY_W = 28;
+        int jx = x + GD_W - 26 - (KEY_W + 4 + KEY_W + 8 + textWidth(jl, fL));
+        for (const char* k : {"ZL", "ZR"}) {
+            fillRounded(jx, cy - 10, KEY_W, 20, 5, T().keyCap);
+            drawTextCentered(k, jx + KEY_W / 2, cy, T().keyCapText, fK);
+            jx += KEY_W + 4;
+        }
+        drawText(jl, jx + 4, cy - TTF_FontHeight(fL) / 2, T().textDim, fL);
+    }
+    drawRect(x, y + GD_HEAD, GD_W, 1, T().panelBorder);
+
+    const int footY = y + GD_H - GD_FOOT;
+    drawRect(x, footY, GD_W, 1, T().panelBorder);
+    {
+        const int cy = footY + GD_FOOT / 2;
+        TTF_Font* fH = uiFont(15, true);
+        const std::pair<const char*, const char*> hints[] = {
             {"A", StrKey::HintDeposit}, {"B", StrKey::HintCancel2},
         };
-        int w = 0;
-        for (const auto& hint : hints)
-            w += measureButtonHint(hint.button, i18n::get(hint.labelKey));
-        w += 20;
-        int hx = popX + (POP_W - w) / 2;
-        for (const auto& hint : hints) {
-            hx += drawButtonHint(hx, popY + POP_H - 32, hint.button,
-                                 i18n::get(hint.labelKey)) + 20;
+        int hx = x + 25;
+        for (const auto& h : hints) {
+            hx += drawFooterKey(hx, cy, h.first, false) + 8;
+            const std::string& l = i18n::get(h.second);
+            drawText(l, hx, cy - TTF_FontHeight(fH) / 2, T().text, fH);
+            hx += textWidth(l, fH) + 22;
+        }
+        if (total > 0) {
+            TTF_Font* fc = uiFont(14, true);
+            const std::string pos = std::to_string(gtsCardCursor_ + 1) + " / " + std::to_string(total);
+            drawText(pos, x + GD_W - 25 - textWidth(pos, fc), cy - TTF_FontHeight(fc) / 2, T().textDim, fc);
         }
     }
+    if (total == 0) return;   // the hub says "no cards" before ever opening this
+    gtsCardCursor_ = std::clamp(gtsCardCursor_, 0, total - 1);
+
+    // --- List: a header per game, its cards under it. ---
+    struct Row { bool header; int idx; };
+    std::vector<Row> rows;
+    for (int i = 0; i < total; i++) {
+        if (i == 0 || gtsCards_[i].folderGame != gtsCards_[i - 1].folderGame)
+            rows.push_back({true, i});
+        rows.push_back({false, i});
+    }
+    std::vector<int> topOf(rows.size() + 1, 0);
+    for (size_t i = 0; i < rows.size(); i++)
+        topOf[i + 1] = topOf[i] + (rows[i].header ? GD_GROUP_H : GD_ROW_STEP);
+    const int listTop = y + GD_HEAD + 14, listBottom = footY - 8;
+    // Rows start 6px down so the cursor ring above the first one shows, and
+    // need the same 6px below the last one: both are part of the content.
+    const int viewH = listBottom - listTop, contentH = topOf.back() + 6;
+
+    // Keep the cursor's row in view, and its header with it when it is first.
+    int cur = 0;
+    for (size_t i = 0; i < rows.size(); i++)
+        if (!rows[i].header && rows[i].idx == gtsCardCursor_) { cur = static_cast<int>(i); break; }
+    int want = topOf[cur];
+    if (cur > 0 && rows[cur - 1].header) want = topOf[cur - 1];
+    if (want < gtsCardScroll_) gtsCardScroll_ = want;
+    if (topOf[cur] + GD_ROW_H + 12 > gtsCardScroll_ + viewH) gtsCardScroll_ = topOf[cur] + GD_ROW_H + 12 - viewH;
+    gtsCardScroll_ = std::clamp(gtsCardScroll_, 0, std::max(0, contentH - viewH));
+
+    const bool scrolls = contentH > viewH;
+    const int lx = x + 26, lw = GD_LIST_W - 26 - (scrolls ? 22 : 6);
+    const SDL_Rect clip = {x + 12, listTop - 6, GD_LIST_W - 12, listBottom - listTop + 6};
+    SDL_RenderSetClipRect(renderer_, &clip);
+    TTF_Font* fGroup = uiFont(14, true);
+    TTF_Font* fCount = uiFont(12);
+    for (size_t r = 0; r < rows.size(); r++) {
+        const int ry = listTop + 6 + topOf[r] - gtsCardScroll_;
+        if (ry + GD_ROW_STEP < listTop - 6) continue;
+        if (ry > listBottom) break;
+        const GtsCard& card = gtsCards_[rows[r].idx];
+        if (rows[r].header) {
+            int n = 0;
+            for (const auto& c : gtsCards_) if (c.folderGame == card.folderGame) n++;
+            const int cy = ry + GD_GROUP_H / 2 - 3;
+            fillDisc(lx + 8, cy, 4, gameTint(card.folderGame));
+            const std::string name = bankGroupNameOf(card.folderGame);
+            drawText(name, lx + 22, cy - TTF_FontHeight(fGroup) / 2, T().text, fGroup);
+            const std::string cnt = n == 1 ? i18n::get(StrKey::CiCountOne) : i18n::fmt(StrKey::CiCount, std::to_string(n));
+            const int cw = textWidth(cnt, fCount);
+            drawText(cnt, lx + lw - cw, cy - TTF_FontHeight(fCount) / 2, T().textMuted, fCount);
+            const int dx = lx + 22 + textWidth(name, fGroup) + 12;
+            if (lx + lw - cw - 12 > dx) drawRect(dx, cy, lx + lw - cw - 12 - dx, 1, T().divider);
+            continue;
+        }
+        drawCardRow(card.file, gtsCardRowInfo_[rows[r].idx], lx, ry, lw, rows[r].idx == gtsCardCursor_);
+    }
+    SDL_RenderSetClipRect(renderer_, nullptr);
+    if (scrolls) {
+        const int trackH = viewH;
+        const int thumbH = std::max(30, trackH * viewH / contentH);
+        const int thumbY = listTop + (trackH - thumbH) * gtsCardScroll_ / std::max(1, contentH - viewH);
+        fillRounded(x + GD_LIST_W - 14, listTop, 5, trackH, 2, T().buttonBg);
+        fillRounded(x + GD_LIST_W - 14, thumbY, 5, thumbH, 2, T().textMuted);
+    }
+    drawRect(x + GD_LIST_W, y + GD_HEAD, 1, footY - y - GD_HEAD, T().panelBorder);
+
+    // --- What the highlighted card holds, read from its QR code. ---
+    const int px = x + GD_LIST_W + 24;
+    drawCardDetailPane(gtsCardPreview_, gtsCardPreviewIdx_ != gtsCardCursor_,
+                       px, y + GD_HEAD + 20, x + GD_W - 24 - px, footY - 22 - 52,
+                       StrKey::GtsDepositNamed, StrKey::HintDeposit);
+}
+
+// ZL / ZR: to the first card of the next game, or of this one and then the
+// one before (wrapping), as All banks does.
+void UI::jumpGtsCardGroup(int dir) {
+    const int n = static_cast<int>(gtsCards_.size());
+    if (n == 0) return;
+    int i = std::clamp(gtsCardCursor_, 0, n - 1);
+    const GameType g = gtsCards_[i].folderGame;
+    if (dir > 0) {
+        while (i < n && gtsCards_[i].folderGame == g) i++;
+        if (i >= n) i = 0;
+    } else {
+        while (i > 0 && gtsCards_[i - 1].folderGame == g) i--;
+        int j = i > 0 ? i - 1 : n - 1;
+        const GameType prev = gtsCards_[j].folderGame;
+        while (j > 0 && gtsCards_[j - 1].folderGame == prev) j--;
+        i = j;
+    }
+    gtsCardCursor_ = i;
+    gtsCardPreviewSince_ = SDL_GetTicks();
 }
 
 void UI::handleGtsDepositInput(const SDL_Event& event) {
@@ -1456,6 +1721,18 @@ void UI::handleGtsDepositInput(const SDL_Event& event) {
             event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY) {
             updateStick(SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTX),
                         SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTY));
+        }
+        // ZL / ZR jump between games. Edge-triggered, like All banks.
+        if (event.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERLEFT ||
+            event.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERRIGHT) {
+            const bool left = event.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERLEFT;
+            const bool pressed = event.caxis.value > TRIGGER_DEADZONE;
+            bool& was = left ? zlPressed_ : zrPressed_;
+            if (pressed && !was) {
+                jumpGtsCardGroup(left ? -1 : +1);
+                markDirty();
+            }
+            was = pressed;
         }
         return;
     }
@@ -1494,6 +1771,8 @@ void UI::gtsUploadSelectedCard() {
     // label a row and not enough to commit to an upload. This reads the whole
     // image, the same way importing one does.
     CardPayload::Parsed parsed = decodeCard(card.file.path, card.folderGame, false);
+    if (gtsCardCursor_ < static_cast<int>(gtsCardRowInfo_.size()))
+        fillCardRowInfo(gtsCardRowInfo_[gtsCardCursor_], parsed);
     if (parsed.result != CardPayload::Result::Ok) {
         showMessageAndWait(i18n::get(StrKey::GtsFailed), i18n::get(StrKey::GtsCardUnreadable));
         return;

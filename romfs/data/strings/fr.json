@@ -137,11 +137,8 @@
     "menu_quit": "Quitter",
     "a_confirm_b_cancel_menu": "A : Confirmer  B : Annuler",
 
-    "select_theme": "Choisir un theme",
-    "a_select_b_cancel": "A : Choisir  B : Annuler",
 
     "filter_species": "Espece :",
-    "filter_any": "(tous)",
     "filter_ot": "Nom du DO :",
     "filter_shiny": "Chromatique :",
     "filter_yes": "Oui",
@@ -157,9 +154,6 @@
     "ribbon_has_any": "A l'un ou l'autre",
     "mode_list_on": "[x] Liste",
     "mode_list_off": "[ ] Liste",
-    "filter_reset": "[ Reinitialiser ]",
-    "filter_search_btn": "[ Rechercher ]",
-    "filter_footer": "A : Modifier  B : Annuler",
 
     "no_pokemon_found": "Aucun Pokemon trouve.",
     "egg": "Oeuf",
@@ -243,7 +237,6 @@
     "hint_cancel": "Annuler",
     "hint_detail": "Detail",
     "hint_open": "Ouvrir",
-    "hint_theme": "Theme",
     "hint_back": "Retour",
     "hint_about": "A propos",
     "hint_new": "Nouveau",
@@ -505,5 +498,11 @@
     "gts_legality_checked": "Vérifiés",
     "gts_legality_all": "Tout",
     "gts_not_downloadable_pending": "Ce Pokémon n'a pas encore été vérifié. Il pourra être téléchargé une fois la vérification de légalité réussie.",
-    "gts_not_downloadable_unchecked": "Ce Pokémon n'a pas pu être vérifié, il ne peut donc pas être téléchargé."
+    "gts_not_downloadable_unchecked": "Ce Pokémon n'a pas pu être vérifié, il ne peut donc pas être téléchargé.",
+    "gts_deposit_named": "Déposer {0}",
+    "gts_chip_ivs": "IV ≥ {0}",
+    "dlg_quit_title": "Quitter pkHouse ?",
+    "dlg_quit_body": "pkHouse va se fermer.",
+    "dlg_quit_save_body": "Vos modifications sont d'abord enregistrées, puis pkHouse se ferme.",
+    "gts_filter_ball": "Balle"
 }

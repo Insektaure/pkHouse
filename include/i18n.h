@@ -206,14 +206,11 @@ namespace StrKey {
     constexpr const char* AConfirmBCancelMenu  = "a_confirm_b_cancel_menu";
 
     // ui_render.cpp - theme selector
-    constexpr const char* SelectTheme          = "select_theme";
-    constexpr const char* ASelectBCancel       = "a_select_b_cancel";
 
     // ui_render.cpp - language selector
 
     // ui_render.cpp - search/filter
     constexpr const char* FilterSpecies        = "filter_species";
-    constexpr const char* FilterAny            = "filter_any";
     constexpr const char* FilterOT             = "filter_ot";
     constexpr const char* FilterShiny          = "filter_shiny";
     constexpr const char* FilterYes            = "filter_yes";
@@ -229,9 +226,6 @@ namespace StrKey {
     constexpr const char* RibbonHasAny         = "ribbon_has_any";
     constexpr const char* ModeListOn           = "mode_list_on";
     constexpr const char* ModeListOff          = "mode_list_off";
-    constexpr const char* FilterReset          = "filter_reset";
-    constexpr const char* FilterSearch         = "filter_search_btn";
-    constexpr const char* FilterFooter         = "filter_footer";
 
     // ui_render.cpp - search results
     constexpr const char* NoPokemonFound       = "no_pokemon_found";
@@ -279,7 +273,6 @@ namespace StrKey {
     constexpr const char* HintCancel               = "hint_cancel";
     constexpr const char* HintDetail               = "hint_detail";
     constexpr const char* HintOpen                 = "hint_open";
-    constexpr const char* HintTheme                = "hint_theme";
     constexpr const char* HintBack                 = "hint_back";
     constexpr const char* HintAbout                = "hint_about";
     constexpr const char* HintNew                  = "hint_new";
@@ -468,6 +461,9 @@ namespace StrKey {
     constexpr const char* HintChange               = "hint_change";
     constexpr const char* MenuChangeGameNoSave     = "menu_change_game_no_save";
     constexpr const char* DlgDiscardTitle          = "dlg_discard_title";
+    constexpr const char* DlgQuitTitle             = "dlg_quit_title";
+    constexpr const char* DlgQuitBody              = "dlg_quit_body";
+    constexpr const char* DlgQuitSaveBody          = "dlg_quit_save_body";
     constexpr const char* DlgDiscardBodySave       = "dlg_discard_body_save";
     constexpr const char* DlgDiscardBodyBanks      = "dlg_discard_body_banks";
     constexpr const char* DlgDiscard               = "dlg_discard";
@@ -548,6 +544,9 @@ namespace StrKey {
     constexpr const char* GtsLegalityAll           = "gts_legality_all";
     constexpr const char* GtsNotDownloadablePending   = "gts_not_downloadable_pending";
     constexpr const char* GtsNotDownloadableUnchecked = "gts_not_downloadable_unchecked";
+    constexpr const char* GtsDepositNamed          = "gts_deposit_named";
+    constexpr const char* GtsChipIvs               = "gts_chip_ivs";
+    constexpr const char* GtsFilterBall            = "gts_filter_ball";
 
     // dialogs (UI 2.0)
     constexpr const char* DlgOk                    = "dlg_ok";

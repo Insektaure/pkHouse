@@ -70,124 +70,6 @@ void UI::updateCardPreview() {
     cardPreviewIdx_ = cardListCursor_;
 }
 
-// Compact summary of what the highlighted card actually contains. Everything
-// here comes from the decoded payload, never from the filename.
-void UI::drawCardPreviewPane(const CardPayload::Parsed& parsed, bool pending,
-                             int paneX, int paneY, int paneW, int paneH) {
-    if (pending) {
-        drawTextCentered("...", paneX + paneW / 2, paneY + paneH / 2 - 9, T().textDim, font_);
-        return;
-    }
-    if (parsed.result != CardPayload::Result::Ok) {
-        // A fast-path miss is not a verdict: the whole image still gets scanned
-        // when the user commits, so say that rather than calling it broken.
-        const char* key = (parsed.result == CardPayload::Result::NotACard)
-                        ? StrKey::CardPressAToRead
-                        : cardResultKey(parsed.result);
-        drawTextCentered(i18n::get(key), paneX + paneW / 2, paneY + paneH / 2 - 20,
-                         T().textDim, fontSmall_);
-        if (parsed.result == CardPayload::Result::WrongGame && parsed.gameKnown)
-            drawTextCentered(gameInfo(parsed.game).bankGroupName,
-                             paneX + paneW / 2, paneY + paneH / 2 + 2, T().red, fontSmall_);
-        return;
-    }
-
-    const Pokemon& pkm = parsed.pkm;
-    const uint16_t species = pkm.isEgg() ? 0 : pkm.species();
-    int y = paneY;
-
-    // Sprite, with the name block beside it.
-    constexpr int SPR = 88;
-    SDL_Texture* sprite = nullptr;
-    if (pkm.isEgg()) {
-        sprite = getSprite(0);
-    } else if (pkm.isShiny()) {
-        sprite = getShinySprite(species, pkm.form());
-        if (!sprite) sprite = getSprite(species, pkm.form());
-    } else {
-        sprite = getSprite(species, pkm.form());
-    }
-    if (sprite) {
-        int tw = 0, th = 0;
-        SDL_QueryTexture(sprite, nullptr, nullptr, &tw, &th);
-        int dw = SPR, dh = SPR;
-        if (tw > 0 && th > 0) {
-            float scale = std::min(static_cast<float>(SPR) / tw, static_cast<float>(SPR) / th);
-            dw = static_cast<int>(tw * scale);
-            dh = static_cast<int>(th * scale);
-        }
-        SDL_Rect dst = {paneX + (SPR - dw) / 2, y + (SPR - dh) / 2, dw, dh};
-        SDL_RenderCopy(renderer_, sprite, nullptr, &dst);
-    }
-
-    int infoX = paneX + SPR + 10;
-    drawText(SpeciesName::get(species), infoX, y + 4,
-             pkm.isShiny() ? T().shiny : T().text, font_);
-
-    std::string line = i18n::get(StrKey::LvPrefix) + std::to_string(pkm.level());
-    uint8_t g = pkm.gender();
-    if (g == 0)      line += "  \xe2\x99\x82";
-    else if (g == 1) line += "  \xe2\x99\x80";
-    drawText(line, infoX, y + 30, T().textDim, fontSmall_);
-
-    char dexBuf[16];
-    std::snprintf(dexBuf, sizeof(dexBuf), "#%04u", static_cast<unsigned>(species));
-    drawText(dexBuf, infoX, y + 50, T().textDim, fontSmall_);
-
-    if (pkm.isShiny() && iconShiny_) {
-        SDL_Rect d = {infoX, y + 68, 16, 16};
-        SDL_RenderCopy(renderer_, iconShiny_, nullptr, &d);
-    }
-    if (pkm.isAlpha() && iconAlpha_) {
-        SDL_Rect d = {infoX + 20, y + 68, 16, 16};
-        SDL_RenderCopy(renderer_, iconAlpha_, nullptr, &d);
-    }
-
-    y += SPR + 12;
-
-    auto field = [&](const char* label, const std::string& value) {
-        drawText(label, paneX, y, T().textDim, fontSmall_);
-        drawText(value, paneX + 84, y, T().text, fontSmall_);
-        y += 21;
-    };
-    field(i18n::get(StrKey::NaturePrefix).c_str(), NatureName::get(pkm.nature()));
-    field(i18n::get(StrKey::AbilityPrefix).c_str(), AbilityName::get(pkm.ability()));
-    uint16_t item = pkm.heldItem();
-    field(i18n::get(StrKey::HeldItemPrefix).c_str(),
-          item != 0 ? ItemName::get(item) : i18n::get(StrKey::NoneItem));
-
-    y += 8;
-
-    // Moves, one per row with its type icon.
-    const uint16_t moves[4] = {pkm.move1(), pkm.move2(), pkm.move3(), pkm.move4()};
-    for (int i = 0; i < 4; i++) {
-        if (moves[i] == 0) {
-            drawText("---", paneX + 26, y + 2, T().textDim, fontSmall_);
-        } else {
-            uint8_t mtype = getMoveType(moves[i], pkm.gameType_);
-            if (SDL_Texture* tex = getTypeSprite(mtype)) {
-                SDL_Rect d = {paneX, y, 22, 22};
-                SDL_RenderCopy(renderer_, tex, nullptr, &d);
-            }
-            drawText(MoveName::get(moves[i]), paneX + 26, y + 2, T().text, fontSmall_);
-        }
-        y += 24;
-    }
-
-    y += 8;
-
-    char ivBuf[64];
-    std::snprintf(ivBuf, sizeof(ivBuf), "%d/%d/%d/%d/%d/%d",
-                  pkm.ivHp(), pkm.ivAtk(), pkm.ivDef(),
-                  pkm.ivSpA(), pkm.ivSpD(), pkm.ivSpe());
-    field(i18n::get(StrKey::IVs).c_str(), ivBuf);
-    field(i18n::get(StrKey::OTPrefix).c_str(),
-          pkm.otName() + "  " + std::to_string(pkm.displayTid()));
-    const char* origin = VersionName::get(pkm.originVersion());
-    if (origin[0] != '\0')
-        field("", origin);
-}
-
 // --- List popup (UI 2.0) --------------------------------------------------
 //
 // Rows are labelled from the filename, as before; a row whose card has been
@@ -255,12 +137,9 @@ std::string stripLabel(std::string l) {
 
 } // anonymous namespace
 
-void UI::rememberCardRow(int idx, const CardPayload::Parsed& parsed) {
-    if (cardRowInfo_.size() != cardList_.size()) cardRowInfo_.assign(cardList_.size(), CardRowInfo{});
-    if (idx < 0 || idx >= static_cast<int>(cardRowInfo_.size()) || parsed.result != CardPayload::Result::Ok)
-        return;
+void UI::fillCardRowInfo(CardRowInfo& r, const CardPayload::Parsed& parsed) {
+    if (parsed.result != CardPayload::Result::Ok) return;
     const Pokemon& pkm = parsed.pkm;
-    CardRowInfo& r = cardRowInfo_[idx];
     r.known   = true;
     r.species = pkm.species();
     r.form    = pkm.form();
@@ -273,17 +152,92 @@ void UI::rememberCardRow(int idx, const CardPayload::Parsed& parsed) {
     r.version = VersionName::get(pkm.originVersion());
 }
 
-void UI::drawCardListPopup() {
-    drawRect(0, 0, SCREEN_W, SCREEN_H, SDL_Color{T().bg.r, T().bg.g, T().bg.b, 190});
+void UI::rememberCardRow(int idx, const CardPayload::Parsed& parsed) {
     if (cardRowInfo_.size() != cardList_.size()) cardRowInfo_.assign(cardList_.size(), CardRowInfo{});
+    if (idx < 0 || idx >= static_cast<int>(cardRowInfo_.size())) return;
+    fillCardRowInfo(cardRowInfo_[idx], parsed);
+}
 
-    const int n = static_cast<int>(cardList_.size());
-    const bool empty = n == 0;
-    const int W = empty ? CI_EMPTY_W : CI_W, H = empty ? CI_EMPTY_H : CI_H;
-    const int x = (SCREEN_W - W) / 2, y = (SCREEN_H - H) / 2;
-    fillRounded(x, y, W, H, 22, T().panelBg);
-    strokeRounded(x, y, W, H, 22, 1, T().panelBorder);
+// One card in a list: sprite (or initials until the card is read), marks,
+// name and level, the OT line or the filename, and the game tag. Shared by
+// the import popup and the GTS deposit.
+void UI::drawCardRow(const CardFile& file, const CardRowInfo& info, int lx, int ry, int lw, bool cur) {
+    TTF_Font* fTag  = uiFont(11, true);
+    TTF_Font* fName = uiFont(17, true);
+    TTF_Font* fLv   = uiFont(13);
+    TTF_Font* fSub  = uiFont(13);
+    auto tintedIcon = [&](SDL_Texture* ic, SDL_Rect dst, SDL_Color c) {
+        if (!ic) return;
+        SDL_SetTextureColorMod(ic, c.r, c.g, c.b);
+        SDL_RenderCopy(renderer_, ic, nullptr, &dst);
+        SDL_SetTextureColorMod(ic, 255, 255, 255);
+    };
+    const CardLabel lab = parseCardLabel(file.label);
+    const int cy = ry + CI_ROW_H / 2;
+    if (cur) {
+        strokeRounded(lx - 6, ry - 6, lw + 12, CI_ROW_H + 12, 16, 3, T().accent);
+        fillRounded(lx, ry, lw, CI_ROW_H, 11, T().slotFull);
+    }
+    const bool shiny = info.known ? info.shiny : lab.shiny;
+    const bool alpha = info.known ? info.alpha : lab.alpha;
+    const bool egg   = info.known ? info.egg   : lab.egg;
 
+    // Sprite once read, the name's first letters until then.
+    const int tx = lx + 12;
+    fillRounded(tx, cy - 20, 40, 40, 9, T().slotFull);
+    if (info.known) {
+        drawSpriteFit(spriteFor(info.species, info.form, info.shiny, info.egg), tx + 20, cy, 36);
+    } else if (file.hasSpecies) {
+        // Named by a newer export: the sprite is known from the filename.
+        drawSpriteFit(spriteFor(file.species, file.form, lab.shiny,
+                                lab.egg || file.species == 0), tx + 20, cy, 36);
+    } else {
+        drawTextCentered(initials(lab.name), tx + 20, cy, shiny ? T().accent : T().textDim, uiFont(15, true));
+    }
+    // Marks on the tile's corners: shiny top left, alpha top right, egg
+    // bottom right.
+    if (shiny) tintedIcon(iconShiny_, {tx - 5, cy - 25, 12, 12}, T().accent);
+    if (alpha) tintedIcon(iconAlpha_, {tx + 40 - 7, cy - 25, 12, 12}, T().accent);
+    if (egg)   drawSpriteFit(getSprite(0), tx + 40 - 1, cy + 20 - 1, 16);
+
+    int right = lx + lw - 14;
+    if (!lab.tag.empty()) {
+        const int w = measureTextTracked(lab.tag, fTag, 1) + 14;
+        right -= w;
+        fillRounded(right, cy - 11, w, 22, 6, T().bg);
+        drawTextTracked(lab.tag, right + 7, cy - TTF_FontHeight(fTag) / 2, T().textDim, fTag, 1);
+        right -= 8;
+    }
+
+    const int nx = tx + 54, nw = right - nx - 6;
+    if (info.known) {
+        std::string name = SpeciesName::get(info.species);
+        if (info.egg) name += " - " + i18n::get(StrKey::Egg);
+        std::string gender;
+        SDL_Color gc = T().text;
+        if (!info.egg && info.gender == 0) { gender = "\xe2\x99\x82"; gc = T().genderMale; }
+        if (!info.egg && info.gender == 1) { gender = "\xe2\x99\x80"; gc = T().genderFemale; }
+        const std::string lv = info.egg ? std::string() : i18n::get(StrKey::LvPrefix) + std::to_string(info.level);
+        const int tail = (gender.empty() ? 0 : textWidth(gender, fName) + 6) + (lv.empty() ? 0 : textWidth(lv, fLv) + 8);
+        const std::string nm = fitText(name, fName, nw - tail);
+        drawText(nm, nx, cy - 21, T().text, fName);
+        int ex = nx + textWidth(nm, fName) + 6;
+        if (!gender.empty()) { drawText(gender, ex, cy - 21, gc, fName); ex += textWidth(gender, fName) + 8; }
+        if (!lv.empty()) drawText(lv, ex, cy - 18, T().textDim, fLv);
+        std::string sub = i18n::fmt(StrKey::ChipOt, info.ot);
+        if (!info.version.empty()) sub += " \xc2\xb7 " + info.version;
+        drawText(fitText(sub, fSub, nw), nx, cy + 3, T().textDim, fSub);
+    } else {
+        drawText(fitText(lab.name, fName, nw), nx, cy - 21, T().text, fName);
+        drawText(fitText(file.filename, fSub, nw), nx, cy + 3, T().textMuted, fSub);
+    }
+}
+
+// What a decoded card holds, in the pane beside a card list: the import popup
+// and the GTS deposit both use it. `actionKey` labels the button ("Import
+// {0}"); `plainKey` is the button when the card has not been read.
+void UI::drawCardDetailPane(const CardPayload::Parsed& parsed, bool pending, int px, int paneTop,
+                            int pw, int btnY, const char* actionKey, const char* plainKey) {
     TTF_Font* fTag = uiFont(11, true);
     auto tintedIcon = [&](SDL_Texture* ic, SDL_Rect dst, SDL_Color c) {
         if (!ic) return;
@@ -291,162 +245,6 @@ void UI::drawCardListPopup() {
         SDL_RenderCopy(renderer_, ic, nullptr, &dst);
         SDL_SetTextureColorMod(ic, 255, 255, 255);
     };
-
-    // --- Header ---
-    {
-        const int cy = y + CI_HEAD / 2;
-        tintedIcon(uiIcon("import"), {x + 26, cy - 12, 24, 24}, T().accent);
-        TTF_Font* fT = uiFont(24, true);
-        const std::string title = i18n::get(StrKey::CiTitle);
-        drawText(title, x + 62, cy - TTF_FontHeight(fT) / 2, T().text, fT);
-        int cx = x + 62 + textWidth(title, fT) + 14;
-        if (!empty) {
-            TTF_Font* fC = uiFont(13, true);
-            const std::string count = n == 1 ? i18n::get(StrKey::CiCountOne)
-                                             : i18n::fmt(StrKey::CiCount, std::to_string(n));
-            const SDL_Color fc = T().statusOk;
-            const int fw = textWidth(count, fC) + 20;
-            fillRounded(cx, cy - 13, fw, 26, 8, SDL_Color{fc.r, fc.g, fc.b, 36});
-            drawTextCentered(count, cx + fw / 2, cy, fc, fC);
-            cx += fw + 14;
-        }
-        TTF_Font* fS = uiFont(15);
-        drawText(fitText(i18n::fmt(StrKey::CiSubtitle, std::string(bankGroupNameOf(selectedGame_))), fS, x + W - 26 - cx),
-                 cx, cy - TTF_FontHeight(fS) / 2, T().textDim, fS);
-    }
-    drawRect(x, y + CI_HEAD, W, 1, T().panelBorder);
-
-    const int footY = y + H - CI_FOOT;
-    drawRect(x, footY, W, 1, T().panelBorder);
-    TTF_Font* fHint = uiFont(15, true);
-    auto footer = [&](const std::vector<std::pair<const char*, const char*>>& hints) {
-        const int cy = footY + CI_FOOT / 2;
-        int hx = x + 25;
-        for (const auto& h : hints) {
-            hx += drawFooterKey(hx, cy, h.first, false) + 8;
-            const std::string& l = i18n::get(h.second);
-            drawText(l, hx, cy - TTF_FontHeight(fHint) / 2, T().text, fHint);
-            hx += textWidth(l, fHint) + 22;
-        }
-    };
-
-    // --- Empty: say so, and where the cards go. ---
-    if (empty) {
-        const int cx = x + W / 2, top = y + CI_HEAD + 30;
-        fillDisc(cx, top + 36, 32, T().buttonBg);
-        tintedIcon(uiIcon("import"), {cx - 14, top + 22, 28, 28}, T().textDim);
-        drawTextCentered(i18n::get(StrKey::NoCardsFound), cx, top + 100, T().text, uiFont(20, true));
-        drawTextCentered(i18n::get(StrKey::PlaceCardsIn), cx, top + 136, T().textDim, uiFont(15));
-        const std::string path = "sdmc:/switch/pkHouse/cards/" + std::string(bankFolderNameOf(selectedGame_)) + "/";
-        TTF_Font* fP = uiFont(15, true);
-        const int pw = std::min(W - 80, textWidth(path, fP) + 32);
-        fillRounded(cx - pw / 2, top + 158, pw, 40, 10, T().bg);
-        drawTextCentered(fitText(path, fP, pw - 24), cx, top + 178, T().text, fP);
-        footer({{"B", StrKey::HintClose}});
-        return;
-    }
-
-    cardListCursor_ = std::clamp(cardListCursor_, 0, n - 1);
-    cardListScroll_ = std::clamp(cardListScroll_, 0, std::max(0, n - CARD_VISIBLE_ROWS));
-
-    // --- List ---
-    const int top = y + CI_HEAD + 18;
-    const bool scrolls = n > CARD_VISIBLE_ROWS;
-    const int lx = x + 26, lw = CI_LIST_W - 26 - (scrolls ? 22 : 6);
-    TTF_Font* fName = uiFont(17, true);
-    TTF_Font* fLv   = uiFont(13);
-    TTF_Font* fSub  = uiFont(13);
-    for (int i = cardListScroll_; i < n && i < cardListScroll_ + CARD_VISIBLE_ROWS; i++) {
-        const CardLabel lab = parseCardLabel(cardList_[i].label);
-        const CardRowInfo& info = cardRowInfo_[i];
-        const int ry = top + (i - cardListScroll_) * CI_PITCH, cy = ry + CI_ROW_H / 2;
-        const bool cur = i == cardListCursor_;
-        if (cur) {
-            strokeRounded(lx - 6, ry - 6, lw + 12, CI_ROW_H + 12, 16, 3, T().accent);
-            fillRounded(lx, ry, lw, CI_ROW_H, 11, T().slotFull);
-        }
-        const bool shiny = info.known ? info.shiny : lab.shiny;
-        const bool alpha = info.known ? info.alpha : lab.alpha;
-        const bool egg   = info.known ? info.egg   : lab.egg;
-
-        // Sprite once read, the name's first letters until then.
-        const int tx = lx + 12;
-        fillRounded(tx, cy - 20, 40, 40, 9, T().slotFull);
-        if (info.known) {
-            drawSpriteFit(spriteFor(info.species, info.form, info.shiny, info.egg), tx + 20, cy, 36);
-        } else if (cardList_[i].hasSpecies) {
-            // Named by a newer export: the sprite is known from the filename.
-            drawSpriteFit(spriteFor(cardList_[i].species, cardList_[i].form, lab.shiny,
-                                    lab.egg || cardList_[i].species == 0), tx + 20, cy, 36);
-        } else {
-            drawTextCentered(initials(lab.name), tx + 20, cy, shiny ? T().accent : T().textDim, uiFont(15, true));
-        }
-        // Marks on the tile's corners: shiny top left, alpha top right, egg
-        // bottom right.
-        if (shiny) tintedIcon(iconShiny_, {tx - 5, cy - 25, 12, 12}, T().accent);
-        if (alpha) tintedIcon(iconAlpha_, {tx + 40 - 7, cy - 25, 12, 12}, T().accent);
-        if (egg)   drawSpriteFit(getSprite(0), tx + 40 - 1, cy + 20 - 1, 16);
-
-        int right = lx + lw - 14;
-        if (!lab.tag.empty()) {
-            const int w = measureTextTracked(lab.tag, fTag, 1) + 14;
-            right -= w;
-            fillRounded(right, cy - 11, w, 22, 6, T().bg);
-            drawTextTracked(lab.tag, right + 7, cy - TTF_FontHeight(fTag) / 2, T().textDim, fTag, 1);
-            right -= 8;
-        }
-
-        const int nx = tx + 54, nw = right - nx - 6;
-        if (info.known) {
-            std::string name = SpeciesName::get(info.species);
-            if (info.egg) name += " - " + i18n::get(StrKey::Egg);
-            std::string gender;
-            SDL_Color gc = T().text;
-            if (!info.egg && info.gender == 0) { gender = "\xe2\x99\x82"; gc = T().genderMale; }
-            if (!info.egg && info.gender == 1) { gender = "\xe2\x99\x80"; gc = T().genderFemale; }
-            const std::string lv = info.egg ? std::string() : i18n::get(StrKey::LvPrefix) + std::to_string(info.level);
-            const int tail = (gender.empty() ? 0 : textWidth(gender, fName) + 6) + (lv.empty() ? 0 : textWidth(lv, fLv) + 8);
-            const std::string nm = fitText(name, fName, nw - tail);
-            drawText(nm, nx, cy - 21, T().text, fName);
-            int ex = nx + textWidth(nm, fName) + 6;
-            if (!gender.empty()) { drawText(gender, ex, cy - 21, gc, fName); ex += textWidth(gender, fName) + 8; }
-            if (!lv.empty()) drawText(lv, ex, cy - 18, T().textDim, fLv);
-            std::string sub = i18n::fmt(StrKey::ChipOt, info.ot);
-            if (!info.version.empty()) sub += " \xc2\xb7 " + info.version;
-            drawText(fitText(sub, fSub, nw), nx, cy + 3, T().textDim, fSub);
-        } else {
-            drawText(fitText(lab.name, fName, nw), nx, cy - 21, T().text, fName);
-            drawText(fitText(cardList_[i].filename, fSub, nw), nx, cy + 3, T().textMuted, fSub);
-        }
-    }
-    int listEnd = top + std::min(n, CARD_VISIBLE_ROWS) * CI_PITCH;
-    if (scrolls) {
-        const int trackH = CARD_VISIBLE_ROWS * CI_PITCH - 6;
-        const int thumbH = std::max(30, trackH * CARD_VISIBLE_ROWS / n);
-        const int thumbY = top + (trackH - thumbH) * cardListScroll_ / std::max(1, n - CARD_VISIBLE_ROWS);
-        const int sx = x + CI_LIST_W - 14;
-        fillRounded(sx, top, 5, trackH, 2, T().buttonBg);
-        fillRounded(sx, thumbY, 5, thumbH, 2, T().textMuted);
-    }
-    // A lone card: say where more come from.
-    if (n == 1) {
-        const int bx = lx, by = listEnd + 8, bw = lw;
-        TTF_Font* fH = uiFont(15, true);
-        TTF_Font* fB = uiFont(13);
-        const auto lines = wrapText(i18n::get(StrKey::CiOneBody), fB, bw - 36, 3);
-        const int bh = 20 + TTF_FontHeight(fH) + 8 + static_cast<int>(lines.size()) * 19 + 16;
-        strokeRounded(bx, by, bw, bh, 12, 1, T().panelBorder);
-        drawText(fitText(i18n::get(StrKey::CiOneTitle), fH, bw - 36), bx + 18, by + 20, T().text, fH);
-        int ly = by + 20 + TTF_FontHeight(fH) + 8;
-        for (const auto& l : lines) { drawText(l, bx + 18, ly, T().textDim, fB); ly += 19; }
-    }
-    drawRect(x + CI_LIST_W, y + CI_HEAD, 1, footY - y - CI_HEAD, T().panelBorder);
-
-    // --- The highlighted card ---
-    const int px = x + CI_LIST_W + 24, pw = x + W - 24 - px;
-    const int paneTop = y + CI_HEAD + 20, btnY = footY - 22 - 52;
-    const bool pending = cardPreviewIdx_ != cardListCursor_;
-    const CardPayload::Parsed& parsed = cardPreview_;
     const bool ok = !pending && parsed.result == CardPayload::Result::Ok;
     auto button = [&](const std::string& label) {
         fillRounded(px, btnY, pw, 52, 14, T().accent);
@@ -477,7 +275,7 @@ void UI::drawCardListPopup() {
             for (const auto& l : lines) { drawTextCentered(l, cx, ly, T().text, fM); ly += 22; }
             if (parsed.result == CardPayload::Result::WrongGame && parsed.gameKnown)
                 drawTextCentered(gameInfo(parsed.game).bankGroupName, cx, ly + 6, T().red, uiFont(15, true));
-            button(i18n::get(StrKey::HintImport));
+            button(i18n::get(plainKey));
         }
     } else {
         const Pokemon& pkm = parsed.pkm;
@@ -609,8 +407,120 @@ void UI::drawCardListPopup() {
                 drawText(fitText(std::string("  \xc2\xb7  ") + origin, fD, px + pw - ox), ox, py + 1, T().textDim, fD);
         }
 
-        button(i18n::fmt(StrKey::CiImport, name));
+        button(i18n::fmt(actionKey, name));
     }
+}
+
+void UI::drawCardListPopup() {
+    drawRect(0, 0, SCREEN_W, SCREEN_H, SDL_Color{T().bg.r, T().bg.g, T().bg.b, 190});
+    if (cardRowInfo_.size() != cardList_.size()) cardRowInfo_.assign(cardList_.size(), CardRowInfo{});
+
+    const int n = static_cast<int>(cardList_.size());
+    const bool empty = n == 0;
+    const int W = empty ? CI_EMPTY_W : CI_W, H = empty ? CI_EMPTY_H : CI_H;
+    const int x = (SCREEN_W - W) / 2, y = (SCREEN_H - H) / 2;
+    fillRounded(x, y, W, H, 22, T().panelBg);
+    strokeRounded(x, y, W, H, 22, 1, T().panelBorder);
+
+    auto tintedIcon = [&](SDL_Texture* ic, SDL_Rect dst, SDL_Color c) {
+        if (!ic) return;
+        SDL_SetTextureColorMod(ic, c.r, c.g, c.b);
+        SDL_RenderCopy(renderer_, ic, nullptr, &dst);
+        SDL_SetTextureColorMod(ic, 255, 255, 255);
+    };
+
+    // --- Header ---
+    {
+        const int cy = y + CI_HEAD / 2;
+        tintedIcon(uiIcon("import"), {x + 26, cy - 12, 24, 24}, T().accent);
+        TTF_Font* fT = uiFont(24, true);
+        const std::string title = i18n::get(StrKey::CiTitle);
+        drawText(title, x + 62, cy - TTF_FontHeight(fT) / 2, T().text, fT);
+        int cx = x + 62 + textWidth(title, fT) + 14;
+        if (!empty) {
+            TTF_Font* fC = uiFont(13, true);
+            const std::string count = n == 1 ? i18n::get(StrKey::CiCountOne)
+                                             : i18n::fmt(StrKey::CiCount, std::to_string(n));
+            const SDL_Color fc = T().statusOk;
+            const int fw = textWidth(count, fC) + 20;
+            fillRounded(cx, cy - 13, fw, 26, 8, SDL_Color{fc.r, fc.g, fc.b, 36});
+            drawTextCentered(count, cx + fw / 2, cy, fc, fC);
+            cx += fw + 14;
+        }
+        TTF_Font* fS = uiFont(15);
+        drawText(fitText(i18n::fmt(StrKey::CiSubtitle, std::string(bankGroupNameOf(selectedGame_))), fS, x + W - 26 - cx),
+                 cx, cy - TTF_FontHeight(fS) / 2, T().textDim, fS);
+    }
+    drawRect(x, y + CI_HEAD, W, 1, T().panelBorder);
+
+    const int footY = y + H - CI_FOOT;
+    drawRect(x, footY, W, 1, T().panelBorder);
+    TTF_Font* fHint = uiFont(15, true);
+    auto footer = [&](const std::vector<std::pair<const char*, const char*>>& hints) {
+        const int cy = footY + CI_FOOT / 2;
+        int hx = x + 25;
+        for (const auto& h : hints) {
+            hx += drawFooterKey(hx, cy, h.first, false) + 8;
+            const std::string& l = i18n::get(h.second);
+            drawText(l, hx, cy - TTF_FontHeight(fHint) / 2, T().text, fHint);
+            hx += textWidth(l, fHint) + 22;
+        }
+    };
+
+    // --- Empty: say so, and where the cards go. ---
+    if (empty) {
+        const int cx = x + W / 2, top = y + CI_HEAD + 30;
+        fillDisc(cx, top + 36, 32, T().buttonBg);
+        tintedIcon(uiIcon("import"), {cx - 14, top + 22, 28, 28}, T().textDim);
+        drawTextCentered(i18n::get(StrKey::NoCardsFound), cx, top + 100, T().text, uiFont(20, true));
+        drawTextCentered(i18n::get(StrKey::PlaceCardsIn), cx, top + 136, T().textDim, uiFont(15));
+        const std::string path = "sdmc:/switch/pkHouse/cards/" + std::string(bankFolderNameOf(selectedGame_)) + "/";
+        TTF_Font* fP = uiFont(15, true);
+        const int pw = std::min(W - 80, textWidth(path, fP) + 32);
+        fillRounded(cx - pw / 2, top + 158, pw, 40, 10, T().bg);
+        drawTextCentered(fitText(path, fP, pw - 24), cx, top + 178, T().text, fP);
+        footer({{"B", StrKey::HintClose}});
+        return;
+    }
+
+    cardListCursor_ = std::clamp(cardListCursor_, 0, n - 1);
+    cardListScroll_ = std::clamp(cardListScroll_, 0, std::max(0, n - CARD_VISIBLE_ROWS));
+
+    // --- List ---
+    const int top = y + CI_HEAD + 18;
+    const bool scrolls = n > CARD_VISIBLE_ROWS;
+    const int lx = x + 26, lw = CI_LIST_W - 26 - (scrolls ? 22 : 6);
+    for (int i = cardListScroll_; i < n && i < cardListScroll_ + CARD_VISIBLE_ROWS; i++) {
+        drawCardRow(cardList_[i], cardRowInfo_[i], lx, top + (i - cardListScroll_) * CI_PITCH, lw,
+                    i == cardListCursor_);
+    }
+    int listEnd = top + std::min(n, CARD_VISIBLE_ROWS) * CI_PITCH;
+    if (scrolls) {
+        const int trackH = CARD_VISIBLE_ROWS * CI_PITCH - 6;
+        const int thumbH = std::max(30, trackH * CARD_VISIBLE_ROWS / n);
+        const int thumbY = top + (trackH - thumbH) * cardListScroll_ / std::max(1, n - CARD_VISIBLE_ROWS);
+        const int sx = x + CI_LIST_W - 14;
+        fillRounded(sx, top, 5, trackH, 2, T().buttonBg);
+        fillRounded(sx, thumbY, 5, thumbH, 2, T().textMuted);
+    }
+    // A lone card: say where more come from.
+    if (n == 1) {
+        const int bx = lx, by = listEnd + 8, bw = lw;
+        TTF_Font* fH = uiFont(15, true);
+        TTF_Font* fB = uiFont(13);
+        const auto lines = wrapText(i18n::get(StrKey::CiOneBody), fB, bw - 36, 3);
+        const int bh = 20 + TTF_FontHeight(fH) + 8 + static_cast<int>(lines.size()) * 19 + 16;
+        strokeRounded(bx, by, bw, bh, 12, 1, T().panelBorder);
+        drawText(fitText(i18n::get(StrKey::CiOneTitle), fH, bw - 36), bx + 18, by + 20, T().text, fH);
+        int ly = by + 20 + TTF_FontHeight(fH) + 8;
+        for (const auto& l : lines) { drawText(l, bx + 18, ly, T().textDim, fB); ly += 19; }
+    }
+    drawRect(x + CI_LIST_W, y + CI_HEAD, 1, footY - y - CI_HEAD, T().panelBorder);
+
+    // --- The highlighted card ---
+    drawCardDetailPane(cardPreview_, cardPreviewIdx_ != cardListCursor_,
+                       x + CI_LIST_W + 24, y + CI_HEAD + 20, x + W - 24 - (x + CI_LIST_W + 24),
+                       footY - 22 - 52, StrKey::CiImport, StrKey::HintImport);
 
     // --- Footer ---
     std::vector<std::pair<const char*, const char*>> hints = {{"A", StrKey::HintImport}};

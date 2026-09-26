@@ -252,7 +252,7 @@ void UI::handleProfileSelectorInput(bool& running) {
                     showAbout_ = true;
                     break;
                 case SDL_CONTROLLER_BUTTON_START:
-                    running = false;
+                    if (confirmQuit()) running = false;
                     break;
             }
         }
@@ -1339,8 +1339,8 @@ void UI::handleGameSelectorInput(bool& running) {
                         freeGameIcons();
                         account_.unmountSave();
                         screen_ = AppScreen::ProfileSelector;
-                    } else {
-                        running = false;
+                    } else if (confirmQuit()) {
+                        running = false;   // nothing to go back to: B leaves the app
                     }
                     break;
                 case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:  stepGameFilter(-1); break;
@@ -1349,7 +1349,7 @@ void UI::handleGameSelectorInput(bool& running) {
                     showAbout_ = true;
                     break;
                 case SDL_CONTROLLER_BUTTON_START:
-                    running = false;
+                    if (confirmQuit()) running = false;
                     break;
             }
         }

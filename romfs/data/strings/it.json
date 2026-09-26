@@ -137,11 +137,8 @@
     "menu_quit": "Esci",
     "a_confirm_b_cancel_menu": "A: Conferma  B: Annulla",
 
-    "select_theme": "Seleziona tema",
-    "a_select_b_cancel": "A: Seleziona  B: Annulla",
 
     "filter_species": "Specie:",
-    "filter_any": "(tutti)",
     "filter_ot": "Nome AO:",
     "filter_shiny": "Cromatico:",
     "filter_yes": "Si",
@@ -157,9 +154,6 @@
     "ribbon_has_any": "Ha uno dei due",
     "mode_list_on": "[x] Lista",
     "mode_list_off": "[ ] Lista",
-    "filter_reset": "[ Reimposta ]",
-    "filter_search_btn": "[ Cerca ]",
-    "filter_footer": "A: Modifica  B: Annulla",
 
     "no_pokemon_found": "Nessun Pokemon trovato.",
     "egg": "Uovo",
@@ -243,7 +237,6 @@
     "hint_cancel": "Annulla",
     "hint_detail": "Dettaglio",
     "hint_open": "Apri",
-    "hint_theme": "Tema",
     "hint_back": "Indietro",
     "hint_about": "Info",
     "hint_new": "Nuova",
@@ -505,5 +498,11 @@
     "gts_legality_checked": "Controllati",
     "gts_legality_all": "Tutto",
     "gts_not_downloadable_pending": "Questo Pokémon non è ancora stato controllato. Potrà essere scaricato quando supererà il controllo di legalità.",
-    "gts_not_downloadable_unchecked": "Non è stato possibile controllare questo Pokémon, quindi non può essere scaricato."
+    "gts_not_downloadable_unchecked": "Non è stato possibile controllare questo Pokémon, quindi non può essere scaricato.",
+    "gts_deposit_named": "Deposita {0}",
+    "gts_chip_ivs": "IV ≥ {0}",
+    "dlg_quit_title": "Uscire da pkHouse?",
+    "dlg_quit_body": "pkHouse verrà chiuso.",
+    "dlg_quit_save_body": "Le modifiche vengono salvate prima, poi pkHouse si chiude.",
+    "gts_filter_ball": "Ball"
 }

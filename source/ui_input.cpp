@@ -398,10 +398,8 @@ void UI::handleStickRepeat() {
         moveSpeciesPicker(dx, dy);
     } else if (screen_ == AppScreen::GtsHub) {
         if (showGtsFilter_) {
-            if (stickDirY_ != 0) {
-                int dir = stickDirY_ > 0 ? 1 : -1;
-                gtsFilterCursor_ = (gtsFilterCursor_ + dir + GTS_FILTER_ROWS) % GTS_FILTER_ROWS;
-            }
+            if (stickDirY_ != 0)      moveGtsFilterCursor(stickDirY_ > 0 ? 1 : -1);
+            else if (stickDirX_ != 0) switchGtsFilterColumn(stickDirX_ > 0 ? 1 : -1);
         } else if (showGtsDeposit_) {
             if (stickDirY_ != 0 && !gtsCards_.empty()) {
                 int count = static_cast<int>(gtsCards_.size());

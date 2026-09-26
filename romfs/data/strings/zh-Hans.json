@@ -137,11 +137,8 @@
     "menu_quit": "退出",
     "a_confirm_b_cancel_menu": "A：确认  B：取消",
 
-    "select_theme": "选择主题",
-    "a_select_b_cancel": "A：选择  B：取消",
 
     "filter_species": "宝可梦：",
-    "filter_any": "（全部）",
     "filter_ot": "初训家名：",
     "filter_shiny": "异色：",
     "filter_yes": "是",
@@ -157,9 +154,6 @@
     "ribbon_has_any": "有任一",
     "mode_list_on": "[x] 列表",
     "mode_list_off": "[ ] 列表",
-    "filter_reset": "[ 重置 ]",
-    "filter_search_btn": "[ 搜索 ]",
-    "filter_footer": "A：编辑/切换  B：取消",
 
     "no_pokemon_found": "未找到宝可梦。",
     "egg": "蛋",
@@ -243,7 +237,6 @@
     "hint_cancel": "取消",
     "hint_detail": "详情",
     "hint_open": "打开",
-    "hint_theme": "主题",
     "hint_back": "返回",
     "hint_about": "关于",
     "hint_new": "新建",
@@ -505,5 +498,11 @@
     "gts_legality_checked": "已检查",
     "gts_legality_all": "全部",
     "gts_not_downloadable_pending": "这只宝可梦尚未检查。通过合法性检查后即可下载。",
-    "gts_not_downloadable_unchecked": "这只宝可梦无法检查，因此无法下载。"
+    "gts_not_downloadable_unchecked": "这只宝可梦无法检查，因此无法下载。",
+    "gts_deposit_named": "寄存{0}",
+    "gts_chip_ivs": "个体值 ≥ {0}",
+    "dlg_quit_title": "退出 pkHouse？",
+    "dlg_quit_body": "pkHouse 将会关闭。",
+    "dlg_quit_save_body": "先保存你的更改，然后关闭 pkHouse。",
+    "gts_filter_ball": "球"
 }

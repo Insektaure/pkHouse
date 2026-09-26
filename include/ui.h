@@ -315,10 +315,6 @@ private:
     const Theme* lastTheme_ = nullptr; // tracks theme changes for text cache invalidation
     const Theme& T() const { return *theme_; }
 
-    // Theme selector state
-    bool showThemeSelector_ = false;
-    int  themeSelCursor_    = 0;
-    int  themeSelOriginal_  = 0;
 
     // Wondercard list state
     bool showWondercardList_ = false;
@@ -400,6 +396,7 @@ private:
         GameType folderGame;   // which family folder it was found in
     };
     std::vector<GtsCard> gtsCards_;
+    std::vector<CardRowInfo> gtsCardRowInfo_;   // what each read card held, like cardRowInfo_
     bool showGtsDeposit_   = false;
     int  gtsCardCursor_    = 0;
     int  gtsCardScroll_    = 0;
@@ -784,6 +781,10 @@ private:
     void gtsOpenDetail();
     void gtsSaveCurrentAsCard();
     void gtsScanAllCards();
+    void jumpGtsCardGroup(int dir);
+    void moveGtsFilterCursor(int dy);         // up / down within a column
+    void switchGtsFilterColumn(int dx);       // left / right between them
+    std::vector<std::string> gtsFilterChips() const;
     void gtsUploadSelectedCard();
     std::string gtsEntryLabel(const Gts::Entry& e) const;
     SDL_Color gtsVerdictColor(const Gts::Entry& e) const;
@@ -817,13 +818,13 @@ private:
     void moveMenuCursor(int dx, int dy);
     void openMenu();
     bool confirmDiscard();
+    bool confirmQuit(bool saving = false);   // "Quit pkHouse?"; true to quit
     // Language and theme have no pending state: left/right switch them at once.
 
     // Small white icons from romfs:/icons, loaded on first use.
     std::unordered_map<std::string, SDL_Texture*> uiIcons_;
     SDL_Texture* uiIcon(const std::string& name);
     void drawAboutPopup();
-    void drawThemeSelectorPopup();
     void drawSearchFilterPopup();
 
     // --- Search (source/ui_search.cpp), UI 2.0 ---
@@ -990,11 +991,13 @@ private:
     void handleCardListInput(const SDL_Event& event);
     void updateCardPreview();
     void rememberCardRow(int idx, const CardPayload::Parsed& parsed);
+    static void fillCardRowInfo(CardRowInfo& r, const CardPayload::Parsed& parsed);
+    void drawCardRow(const CardFile& file, const CardRowInfo& info, int lx, int ry, int lw, bool cur);
+    void drawCardDetailPane(const CardPayload::Parsed& parsed, bool pending, int px, int paneTop,
+                            int pw, int btnY, const char* actionKey, const char* plainKey);
     // Draws whichever decoded card it is handed, so the importer and the GTS
     // deposit picker can each keep their own preview without sharing state.
     // `pending` means the cursor has moved and nothing has been decoded yet.
-    void drawCardPreviewPane(const CardPayload::Parsed& parsed, bool pending,
-                             int paneX, int paneY, int paneW, int paneH);
     void freeCardPreview();
     bool showCardImportConfirm(const Pokemon& pkm);
     void importCard(const CardFile& card);

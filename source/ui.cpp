@@ -339,71 +339,6 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
             continue;
         }
 
-        // Theme selector intercepts input from any screen
-        if (showThemeSelector_) {
-            SDL_Event event;
-            while (SDL_PollEvent(&event)) {
-                if (event.type == SDL_QUIT) { running = false; break; }
-                if (event.type == SDL_CONTROLLERAXISMOTION) {
-                    if (event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX ||
-                        event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY) {
-                        int16_t lx = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTX);
-                        int16_t ly = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTY);
-                        updateStick(lx, ly);
-                    }
-                }
-                if (event.type == SDL_CONTROLLERBUTTONDOWN) {
-                    markDirty();
-                    switch (event.cbutton.button) {
-                        case SDL_CONTROLLER_BUTTON_DPAD_UP:
-                            themeSelCursor_ = (themeSelCursor_ + THEME_COUNT - 1) % THEME_COUNT;
-                            theme_ = &getTheme(themeSelCursor_);
-                            break;
-                        case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
-                            themeSelCursor_ = (themeSelCursor_ + 1) % THEME_COUNT;
-                            theme_ = &getTheme(themeSelCursor_);
-                            break;
-                        case SDL_CONTROLLER_BUTTON_B: // Switch A = confirm
-                            themeIndex_ = themeSelCursor_;
-                            theme_ = &getTheme(themeIndex_);
-                            saveThemeIndex(basePath_, themeIndex_);
-                            showThemeSelector_ = false;
-                            showMenu_ = false;
-                            break;
-                        case SDL_CONTROLLER_BUTTON_A: // Switch B = cancel
-                        case SDL_CONTROLLER_BUTTON_X: // Switch Y = cancel
-                            themeIndex_ = themeSelOriginal_;
-                            theme_ = &getTheme(themeIndex_);
-                            showThemeSelector_ = false;
-                            break;
-                    }
-                }
-            }
-            // Joystick repeat
-            if (stickDirY_ != 0) {
-                uint32_t now = SDL_GetTicks();
-                uint32_t delay = stickMoved_ ? STICK_REPEAT_DELAY : STICK_INITIAL_DELAY;
-                if (now - stickMoveTime_ >= delay) {
-                    themeSelCursor_ = (themeSelCursor_ + (stickDirY_ > 0 ? 1 : THEME_COUNT - 1)) % THEME_COUNT;
-                    theme_ = &getTheme(themeSelCursor_);
-                    stickMoveTime_ = now;
-                    stickMoved_ = true;
-                    markDirty();
-                }
-            }
-            if (!showThemeSelector_) continue; // dismissed — let main draw section handle it
-            if (dirty_) {
-                if (theme_ != lastTheme_) { clearTextCache(); lastTheme_ = theme_; }
-                // Draw the underlying screen, then theme popup on top
-                drawCurrentScreen();
-                drawThemeSelectorPopup();
-                SDL_RenderPresent(renderer_);
-                dirty_ = false;
-            }
-            SDL_Delay(16);
-            continue;
-        }
-
         AppScreen screenBefore = screen_;
         if (screen_ == AppScreen::ProfileSelector) {
             handleProfileSelectorInput(running);
@@ -461,7 +396,7 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
         }
         // If a popup just activated, skip drawing here — the popup branch
         // will handle it next iteration with dirty_ still set.
-        if (dirty_ && !showAbout_ && !showThemeSelector_) {
+        if (dirty_ && !showAbout_) {
             if (theme_ != lastTheme_) {
                 clearTextCache();
                 lastTheme_ = theme_;

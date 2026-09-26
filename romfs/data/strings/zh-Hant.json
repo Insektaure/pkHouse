@@ -137,11 +137,8 @@
     "menu_quit": "退出",
     "a_confirm_b_cancel_menu": "A：確認  B：取消",
 
-    "select_theme": "選擇主題",
-    "a_select_b_cancel": "A：選擇  B：取消",
 
     "filter_species": "寶可夢：",
-    "filter_any": "（全部）",
     "filter_ot": "初訓家名：",
     "filter_shiny": "異色：",
     "filter_yes": "是",
@@ -157,9 +154,6 @@
     "ribbon_has_any": "有任一",
     "mode_list_on": "[x] 列表",
     "mode_list_off": "[ ] 列表",
-    "filter_reset": "[ 重設 ]",
-    "filter_search_btn": "[ 搜尋 ]",
-    "filter_footer": "A：編輯/切換  B：取消",
 
     "no_pokemon_found": "未找到寶可夢。",
     "egg": "蛋",
@@ -243,7 +237,6 @@
     "hint_cancel": "取消",
     "hint_detail": "詳情",
     "hint_open": "開啟",
-    "hint_theme": "主題",
     "hint_back": "返回",
     "hint_about": "關於",
     "hint_new": "新建",
@@ -505,5 +498,11 @@
     "gts_legality_checked": "已檢查",
     "gts_legality_all": "全部",
     "gts_not_downloadable_pending": "這隻寶可夢尚未檢查。通過合法性檢查後即可下載。",
-    "gts_not_downloadable_unchecked": "這隻寶可夢無法檢查，因此無法下載。"
+    "gts_not_downloadable_unchecked": "這隻寶可夢無法檢查，因此無法下載。",
+    "gts_deposit_named": "寄存{0}",
+    "gts_chip_ivs": "個體值 ≥ {0}",
+    "dlg_quit_title": "退出 pkHouse？",
+    "dlg_quit_body": "pkHouse 將會關閉。",
+    "dlg_quit_save_body": "先儲存你的變更，然後關閉 pkHouse。",
+    "gts_filter_ball": "球"
 }

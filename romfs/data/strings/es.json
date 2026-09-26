@@ -142,7 +142,6 @@
     "select_theme": "Seleccionar tema",
     "a_select_b_cancel": "A: Seleccionar  B: Cancelar",
 
-
     "filter_species": "Especie:",
     "filter_any": "(todos)",
     "filter_ot": "Nombre del EO:",
@@ -165,7 +164,6 @@
     "filter_footer": "A: Editar  B: Cancelar",
 
     "no_pokemon_found": "No se encontraron Pokemon.",
-    "badge_shiny": "[S]",
     "egg": "Huevo",
     "loc_left": "Izquierda",
     "loc_right": "Derecha",
@@ -177,19 +175,12 @@
     "a_select_b_back": "A: Seleccionar  B: Volver",
     "no_species_found": "No se encontraron especies.",
 
-    "wondercards_title": "Pokemon misterioso ({0})",
     "no_wc_found": "No se encontraron archivos de Pokemon misterioso.",
     "place_files_in": "Coloca los archivos {0} en:",
-    "badge_invalid": "[Invalido]",
-    "player_ot_tag": "[EO del jugador]",
-    "b_close": "B: Cerrar",
-    "wc_footer": "A: Inyectar  L/R: Saltar 10  B: Cancelar",
-
     "supported_games": "Juegos compatibles",
     "credit_pkhex": "Basado en PKHeX de kwsch e investigacion de PokeCrypto.",
     "credit_jksv": "Logica de respaldo y escritura basada en JKSV de J-D-K.",
     "controls": "Controles",
-
 
     "status_main": "D-Pad: Mover  L/R: Caja  A: Coger/Soltar  Y: Seleccionar  YY: Todo  B: Cancelar  X: Detalle",
     "status_search": "Busqueda: {0} resultados  |  B: Borrar  +: Menu",
@@ -486,5 +477,19 @@
     "sr_go_to": "Ir",
     "chip_ivs": "≥{0} IV perfectos",
     "chip_lv": "Nv. {0}–{1}",
-    "chip_ot": "EO {0}"
+    "chip_ot": "EO {0}",
+    "wc_title": "Regalos misteriosos",
+    "wc_shiny_count": "{0} variocolor",
+    "wc_your_ot_count": "{0} usan tu EO",
+    "wc_your_ot": "Tu EO",
+    "wc_event_ot": "EO del evento",
+    "wc_card": "Tarjeta {0}",
+    "wc_level": "Nivel {0}",
+    "wc_shiny": "Variocolor",
+    "wc_trainer": "Entrenador",
+    "wc_region": "Región",
+    "wc_into": "Destino",
+    "wc_file": "Archivo",
+    "wc_inject": "Inyectar {0}",
+    "hint_inject": "Inyectar"
 }

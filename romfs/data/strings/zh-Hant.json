@@ -142,7 +142,6 @@
     "select_theme": "選擇主題",
     "a_select_b_cancel": "A：選擇  B：取消",
 
-
     "filter_species": "寶可夢：",
     "filter_any": "（全部）",
     "filter_ot": "初訓家名：",
@@ -165,7 +164,6 @@
     "filter_footer": "A：編輯/切換  B：取消",
 
     "no_pokemon_found": "未找到寶可夢。",
-    "badge_shiny": "[S]",
     "egg": "蛋",
     "loc_left": "左",
     "loc_right": "右",
@@ -177,19 +175,12 @@
     "a_select_b_back": "A：選擇  B：返回",
     "no_species_found": "未找到寶可夢。",
 
-    "wondercards_title": "神秘禮物（{0}）",
     "no_wc_found": "未找到神秘禮物檔案。",
     "place_files_in": "將{0}檔案放入：",
-    "badge_invalid": "[無效]",
-    "player_ot_tag": "[玩家初訓家]",
-    "b_close": "B：關閉",
-    "wc_footer": "A：注入  L/R：跳過10個  B：取消",
-
     "supported_games": "支援的遊戲",
     "credit_pkhex": "基於kwsch的PKHeX和PokeCrypto研究。",
     "credit_jksv": "存檔備份和寫入邏輯基於J-D-K的JKSV。",
     "controls": "操作",
-
 
     "status_main": "十字鍵：移動  L/R：盒子  A：拿取/放下  Y：選擇  YY：全選  B：取消  X：詳情",
     "status_search": "搜尋：{0}個符合  |  B：清除  +：選單",
@@ -486,5 +477,19 @@
     "sr_go_to": "前往",
     "chip_ivs": "≥{0} 項滿個體",
     "chip_lv": "Lv. {0}–{1}",
-    "chip_ot": "初訓家 {0}"
+    "chip_ot": "初訓家 {0}",
+    "wc_title": "神秘禮物",
+    "wc_shiny_count": "異色 {0}",
+    "wc_your_ot_count": "{0} 個使用你的初訓家",
+    "wc_your_ot": "你的初訓家",
+    "wc_event_ot": "配信初訓家",
+    "wc_card": "卡片 {0}",
+    "wc_level": "等級 {0}",
+    "wc_shiny": "異色",
+    "wc_trainer": "初訓家",
+    "wc_region": "地區",
+    "wc_into": "放入",
+    "wc_file": "檔案",
+    "wc_inject": "注入{0}",
+    "hint_inject": "注入"
 }

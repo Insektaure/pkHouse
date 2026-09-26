@@ -142,7 +142,6 @@
     "select_theme": "Выбрать тему",
     "a_select_b_cancel": "A: Выбрать  B: Отмена",
 
-
     "filter_species": "Покемон:",
     "filter_any": "(все)",
     "filter_ot": "Имя ИТ:",
@@ -165,7 +164,6 @@
     "filter_footer": "A: Изменить  B: Отмена",
 
     "no_pokemon_found": "Покемоны не найдены.",
-    "badge_shiny": "[S]",
     "egg": "Яйцо",
     "loc_left": "Левая",
     "loc_right": "Правая",
@@ -177,19 +175,12 @@
     "a_select_b_back": "A: Выбрать  B: Назад",
     "no_species_found": "Покемоны не найдены.",
 
-    "wondercards_title": "Чудо-карты ({0})",
     "no_wc_found": "Файлы чудо-карт не найдены.",
     "place_files_in": "Поместите файлы {0} в:",
-    "badge_invalid": "[Недейств.]",
-    "player_ot_tag": "[ИТ игрока]",
-    "b_close": "B: Закрыть",
-    "wc_footer": "A: Внедрить  L/R: Пропустить 10  B: Отмена",
-
     "supported_games": "Поддерживаемые игры",
     "credit_pkhex": "На основе PKHeX от kwsch и исследований PokeCrypto.",
     "credit_jksv": "Логика резервного копирования и записи на основе JKSV от J-D-K.",
     "controls": "Управление",
-
 
     "status_main": "D-Pad: Движение  L/R: Бокс  A: Взять/Положить  Y: Выбор  YY: Все  B: Отмена  X: Детали",
     "status_search": "Поиск: {0} совпадений  |  B: Очистить  +: Меню",
@@ -486,5 +477,19 @@
     "sr_go_to": "Перейти",
     "chip_ivs": "≥{0} идеальных IV",
     "chip_lv": "Ур. {0}–{1}",
-    "chip_ot": "ТЛ {0}"
+    "chip_ot": "ТЛ {0}",
+    "wc_title": "Чудо-карты",
+    "wc_shiny_count": "блестящих: {0}",
+    "wc_your_ot_count": "с вашим ИТ: {0}",
+    "wc_your_ot": "Ваш ИТ",
+    "wc_event_ot": "ИТ события",
+    "wc_card": "Карта {0}",
+    "wc_level": "Уровень {0}",
+    "wc_shiny": "Блестящий",
+    "wc_trainer": "Тренер",
+    "wc_region": "Регион",
+    "wc_into": "Куда",
+    "wc_file": "Файл",
+    "wc_inject": "Внедрить: {0}",
+    "hint_inject": "Внедрить"
 }

@@ -446,8 +446,7 @@ void UI::handleStickRepeat() {
             wcListCursor_ += stickDirY_ > 0 ? 1 : -1;
             if (wcListCursor_ < 0) wcListCursor_ = count - 1;
             if (wcListCursor_ >= count) wcListCursor_ = 0;
-            constexpr int ROW_H = 36;
-            int visibleRows = (550 - 40 - 50) / ROW_H;
+            const int visibleRows = WC_VISIBLE_ROWS;
             if (wcListCursor_ < wcListScroll_)
                 wcListScroll_ = wcListCursor_;
             else if (wcListCursor_ >= wcListScroll_ + visibleRows)
@@ -1338,8 +1337,7 @@ void UI::handleWondercardListInput(const SDL_Event& event) {
     }
 
     auto scrollIntoView = [&]() {
-        constexpr int ROW_H = 36;
-        int visibleRows = (550 - 40 - 50) / ROW_H; // matches popup layout
+        const int visibleRows = WC_VISIBLE_ROWS;
         if (wcListCursor_ < wcListScroll_)
             wcListScroll_ = wcListCursor_;
         else if (wcListCursor_ >= wcListScroll_ + visibleRows)

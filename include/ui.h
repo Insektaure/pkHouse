@@ -852,6 +852,7 @@ private:
     void moveSearchResult(int delta);
     void drawSearchResultsPopup();
     void drawSpeciesLetterPicker();
+    static constexpr int WC_VISIBLE_ROWS = 8;
     void drawWondercardListPopup();
     void drawCardListPopup();
     void drawHeldOverlay();

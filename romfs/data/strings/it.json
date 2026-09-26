@@ -142,7 +142,6 @@
     "select_theme": "Seleziona tema",
     "a_select_b_cancel": "A: Seleziona  B: Annulla",
 
-
     "filter_species": "Specie:",
     "filter_any": "(tutti)",
     "filter_ot": "Nome AO:",
@@ -165,7 +164,6 @@
     "filter_footer": "A: Modifica  B: Annulla",
 
     "no_pokemon_found": "Nessun Pokemon trovato.",
-    "badge_shiny": "[S]",
     "egg": "Uovo",
     "loc_left": "Sinistra",
     "loc_right": "Destra",
@@ -177,19 +175,12 @@
     "a_select_b_back": "A: Seleziona  B: Indietro",
     "no_species_found": "Nessuna specie trovata.",
 
-    "wondercards_title": "Doni Segreti ({0})",
     "no_wc_found": "Nessun file Dono Segreto trovato.",
     "place_files_in": "Posiziona i file {0} in:",
-    "badge_invalid": "[Non valido]",
-    "player_ot_tag": "[AO del giocatore]",
-    "b_close": "B: Chiudi",
-    "wc_footer": "A: Inietta  L/R: Salta 10  B: Annulla",
-
     "supported_games": "Giochi supportati",
     "credit_pkhex": "Basato su PKHeX di kwsch e ricerca PokeCrypto.",
     "credit_jksv": "Logica di backup e scrittura basata su JKSV di J-D-K.",
     "controls": "Comandi",
-
 
     "status_main": "D-Pad: Muovi  L/R: Box  A: Prendi/Posa  Y: Seleziona  YY: Tutti  B: Annulla  X: Dettaglio",
     "status_search": "Ricerca: {0} risultati  |  B: Cancella  +: Menu",
@@ -486,5 +477,19 @@
     "sr_go_to": "Vai",
     "chip_ivs": "≥{0} IV perfetti",
     "chip_lv": "Lv. {0}–{1}",
-    "chip_ot": "AO {0}"
+    "chip_ot": "AO {0}",
+    "wc_title": "Doni Segreti",
+    "wc_shiny_count": "{0} cromatici",
+    "wc_your_ot_count": "{0} usano il tuo AO",
+    "wc_your_ot": "Il tuo AO",
+    "wc_event_ot": "AO dell'evento",
+    "wc_card": "Carta {0}",
+    "wc_level": "Livello {0}",
+    "wc_shiny": "Cromatico",
+    "wc_trainer": "Allenatore",
+    "wc_region": "Regione",
+    "wc_into": "Verso",
+    "wc_file": "File",
+    "wc_inject": "Inietta {0}",
+    "hint_inject": "Inietta"
 }

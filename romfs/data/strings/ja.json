@@ -142,7 +142,6 @@
     "select_theme": "テーマを選択",
     "a_select_b_cancel": "A：選択  B：キャンセル",
 
-
     "filter_species": "ポケモン：",
     "filter_any": "（すべて）",
     "filter_ot": "親名：",
@@ -165,7 +164,6 @@
     "filter_footer": "A：編集/切替  B：キャンセル",
 
     "no_pokemon_found": "ポケモンが見つかりません。",
-    "badge_shiny": "[S]",
     "egg": "タマゴ",
     "loc_left": "左",
     "loc_right": "右",
@@ -177,19 +175,12 @@
     "a_select_b_back": "A：選択  B：戻る",
     "no_species_found": "ポケモンが見つかりません。",
 
-    "wondercards_title": "ふしぎなおくりもの ({0})",
     "no_wc_found": "ふしぎなおくりものファイルが見つかりません。",
     "place_files_in": "{0}ファイルを以下に配置：",
-    "badge_invalid": "[無効]",
-    "player_ot_tag": "[プレイヤー親]",
-    "b_close": "B：閉じる",
-    "wc_footer": "A：注入  L/R：10件スキップ  B：キャンセル",
-
     "supported_games": "対応ゲーム",
     "credit_pkhex": "PKHeX (kwsch) およびPokeCryptoの研究に基づいています。",
     "credit_jksv": "セーブのバックアップと書き込みロジックはJKSV (J-D-K) に基づいています。",
     "controls": "操作方法",
-
 
     "status_main": "十字キー：移動  L/R：ボックス  A：取る/置く  Y：選択  YY：全選択  B：キャンセル  X：詳細",
     "status_search": "検索：{0}件一致  |  B：クリア  +：メニュー",
@@ -486,5 +477,19 @@
     "sr_go_to": "移動",
     "chip_ivs": "最高値{0}つ以上",
     "chip_lv": "Lv.{0}〜{1}",
-    "chip_ot": "おや {0}"
+    "chip_ot": "おや {0}",
+    "wc_title": "ふしぎなおくりもの",
+    "wc_shiny_count": "色違い {0}",
+    "wc_your_ot_count": "{0}件はあなたがおや",
+    "wc_your_ot": "あなたがおや",
+    "wc_event_ot": "配布のおや",
+    "wc_card": "カード {0}",
+    "wc_level": "レベル {0}",
+    "wc_shiny": "色違い",
+    "wc_trainer": "おや",
+    "wc_region": "地域",
+    "wc_into": "入れる先",
+    "wc_file": "ファイル",
+    "wc_inject": "{0}を注入",
+    "hint_inject": "注入"
 }

@@ -237,7 +237,6 @@ namespace StrKey {
 
     // ui_render.cpp - search results
     constexpr const char* NoPokemonFound       = "no_pokemon_found";
-    constexpr const char* BadgeShiny           = "badge_shiny";
     constexpr const char* Egg                  = "egg";
     constexpr const char* LocLeft              = "loc_left";
     constexpr const char* LocRight             = "loc_right";
@@ -251,13 +250,8 @@ namespace StrKey {
     constexpr const char* NoSpeciesFound       = "no_species_found";
 
     // ui_render.cpp - wondercard list
-    constexpr const char* WondercardsTitle     = "wondercards_title";
     constexpr const char* NoWCFound            = "no_wc_found";
     constexpr const char* PlaceFilesIn         = "place_files_in";
-    constexpr const char* BadgeInvalid         = "badge_invalid";
-    constexpr const char* PlayerOTTag          = "player_ot_tag";
-    constexpr const char* BClose               = "b_close";
-    constexpr const char* WCFooter             = "wc_footer";
 
     // ui_render.cpp - about popup
     constexpr const char* SupportedGames       = "supported_games";
@@ -520,6 +514,22 @@ namespace StrKey {
     constexpr const char* ChipIvs                  = "chip_ivs";
     constexpr const char* ChipLv                   = "chip_lv";
     constexpr const char* ChipOt                   = "chip_ot";
+
+    // Wondercards (6c)
+    constexpr const char* WcTitle                  = "wc_title";
+    constexpr const char* WcShinyCount             = "wc_shiny_count";
+    constexpr const char* WcYourOTCount            = "wc_your_ot_count";
+    constexpr const char* WcYourOT                 = "wc_your_ot";
+    constexpr const char* WcEventOT                = "wc_event_ot";
+    constexpr const char* WcCard                   = "wc_card";
+    constexpr const char* WcLevel                  = "wc_level";
+    constexpr const char* WcShiny                  = "wc_shiny";
+    constexpr const char* WcTrainer                = "wc_trainer";
+    constexpr const char* WcRegion                 = "wc_region";
+    constexpr const char* WcInto                   = "wc_into";
+    constexpr const char* WcFile                   = "wc_file";
+    constexpr const char* WcInject                 = "wc_inject";
+    constexpr const char* HintInject               = "hint_inject";
 
     // dialogs (UI 2.0)
     constexpr const char* DlgOk                    = "dlg_ok";

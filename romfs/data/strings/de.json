@@ -142,7 +142,6 @@
     "select_theme": "Design waehlen",
     "a_select_b_cancel": "A: Waehlen  B: Abbrechen",
 
-
     "filter_species": "Pokemon:",
     "filter_any": "(alle)",
     "filter_ot": "OT-Name:",
@@ -165,7 +164,6 @@
     "filter_footer": "A: Bearbeiten  B: Abbrechen",
 
     "no_pokemon_found": "Keine Pokemon gefunden.",
-    "badge_shiny": "[S]",
     "egg": "Ei",
     "loc_left": "Links",
     "loc_right": "Rechts",
@@ -177,19 +175,12 @@
     "a_select_b_back": "A: Waehlen  B: Zurueck",
     "no_species_found": "Keine Pokemon gefunden.",
 
-    "wondercards_title": "Wunderkarten ({0})",
     "no_wc_found": "Keine Wunderkarten-Dateien gefunden.",
     "place_files_in": "{0}-Dateien hier ablegen:",
-    "badge_invalid": "[Ungueltig]",
-    "player_ot_tag": "[Spieler-OT]",
-    "b_close": "B: Schliessen",
-    "wc_footer": "A: Injizieren  L/R: 10 ueberspringen  B: Abbrechen",
-
     "supported_games": "Unterstuetzte Spiele",
     "credit_pkhex": "Basierend auf PKHeX von kwsch & PokeCrypto-Forschung.",
     "credit_jksv": "Speicher-Backup & Schreiblogik basierend auf JKSV von J-D-K.",
     "controls": "Steuerung",
-
 
     "status_main": "Steuerkreuz: Bewegen  L/R: Box  A: Nehmen/Ablegen  Y: Waehlen  YY: Alle  B: Abbrechen  X: Detail",
     "status_search": "Suche: {0} Treffer  |  B: Loeschen  +: Menue",
@@ -486,5 +477,19 @@
     "sr_go_to": "Hin",
     "chip_ivs": "≥{0} perfekte DVs",
     "chip_lv": "Lv. {0}–{1}",
-    "chip_ot": "OT {0}"
+    "chip_ot": "OT {0}",
+    "wc_title": "Wunderkarten",
+    "wc_shiny_count": "{0} schillernd",
+    "wc_your_ot_count": "{0} mit deinem OT",
+    "wc_your_ot": "Dein OT",
+    "wc_event_ot": "Event-OT",
+    "wc_card": "Karte {0}",
+    "wc_level": "Level {0}",
+    "wc_shiny": "Schillernd",
+    "wc_trainer": "Trainer",
+    "wc_region": "Region",
+    "wc_into": "Nach",
+    "wc_file": "Datei",
+    "wc_inject": "{0} injizieren",
+    "hint_inject": "Injizieren"
 }

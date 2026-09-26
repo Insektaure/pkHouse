@@ -142,7 +142,6 @@
     "select_theme": "Selecionar tema",
     "a_select_b_cancel": "A: Selecionar  B: Cancelar",
 
-
     "filter_species": "Especie:",
     "filter_any": "(todos)",
     "filter_ot": "Nome do TO:",
@@ -165,7 +164,6 @@
     "filter_footer": "A: Editar  B: Cancelar",
 
     "no_pokemon_found": "Nenhum Pokemon encontrado.",
-    "badge_shiny": "[S]",
     "egg": "Ovo",
     "loc_left": "Esquerda",
     "loc_right": "Direita",
@@ -177,19 +175,12 @@
     "a_select_b_back": "A: Selecionar  B: Voltar",
     "no_species_found": "Nenhuma especie encontrada.",
 
-    "wondercards_title": "Pokemon misterioso ({0})",
     "no_wc_found": "Nenhum arquivo de Pokemon misterioso encontrado.",
     "place_files_in": "Coloque os arquivos {0} em:",
-    "badge_invalid": "[Invalido]",
-    "player_ot_tag": "[TO do jogador]",
-    "b_close": "B: Fechar",
-    "wc_footer": "A: Injetar  L/R: Pular 10  B: Cancelar",
-
     "supported_games": "Jogos compativeis",
     "credit_pkhex": "Baseado no PKHeX de kwsch e pesquisa PokeCrypto.",
     "credit_jksv": "Logica de backup e gravacao baseada no JKSV de J-D-K.",
     "controls": "Controles",
-
 
     "status_main": "D-Pad: Mover  L/R: Box  A: Pegar/Colocar  Y: Selecionar  YY: Todos  B: Cancelar  X: Detalhe",
     "status_search": "Busca: {0} resultados  |  B: Limpar  +: Menu",
@@ -486,5 +477,19 @@
     "sr_go_to": "Ir",
     "chip_ivs": "≥{0} IVs perfeitos",
     "chip_lv": "Nv. {0}–{1}",
-    "chip_ot": "TO {0}"
+    "chip_ot": "TO {0}",
+    "wc_title": "Presentes misteriosos",
+    "wc_shiny_count": "{0} brilhantes",
+    "wc_your_ot_count": "{0} usam seu TO",
+    "wc_your_ot": "Seu TO",
+    "wc_event_ot": "TO do evento",
+    "wc_card": "Cartão {0}",
+    "wc_level": "Nível {0}",
+    "wc_shiny": "Brilhante",
+    "wc_trainer": "Treinador",
+    "wc_region": "Região",
+    "wc_into": "Destino",
+    "wc_file": "Arquivo",
+    "wc_inject": "Injetar {0}",
+    "hint_inject": "Injetar"
 }

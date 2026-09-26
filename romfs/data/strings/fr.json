@@ -142,7 +142,6 @@
     "select_theme": "Choisir un theme",
     "a_select_b_cancel": "A : Choisir  B : Annuler",
 
-
     "filter_species": "Espece :",
     "filter_any": "(tous)",
     "filter_ot": "Nom du DO :",
@@ -165,7 +164,6 @@
     "filter_footer": "A : Modifier  B : Annuler",
 
     "no_pokemon_found": "Aucun Pokemon trouve.",
-    "badge_shiny": "[S]",
     "egg": "Oeuf",
     "loc_left": "Gauche",
     "loc_right": "Droite",
@@ -177,19 +175,12 @@
     "a_select_b_back": "A : Choisir  B : Retour",
     "no_species_found": "Aucune espece trouvee.",
 
-    "wondercards_title": "Cadeaux mystere ({0})",
     "no_wc_found": "Aucun fichier cadeau mystere trouve.",
     "place_files_in": "Placez les fichiers {0} dans :",
-    "badge_invalid": "[Invalide]",
-    "player_ot_tag": "[DO du joueur]",
-    "b_close": "B : Fermer",
-    "wc_footer": "A : Injecter  L/R : Sauter 10  B : Annuler",
-
     "supported_games": "Jeux compatibles",
     "credit_pkhex": "Base sur PKHeX par kwsch et les recherches PokeCrypto.",
     "credit_jksv": "Logique de sauvegarde basee sur JKSV par J-D-K.",
     "controls": "Controles",
-
 
     "status_main": "D-Pad : Deplacer  L/R : Boite  A : Prendre/Poser  Y : Selectionner  YY : Tout  B : Annuler  X : Detail",
     "status_search": "Recherche : {0} resultats  |  B : Effacer  + : Menu",
@@ -486,5 +477,19 @@
     "sr_go_to": "Y aller",
     "chip_ivs": "≥{0} IV parfaits",
     "chip_lv": "N. {0}–{1}",
-    "chip_ot": "DO {0}"
+    "chip_ot": "DO {0}",
+    "wc_title": "Cadeaux mystère",
+    "wc_shiny_count": "{0} chromatiques",
+    "wc_your_ot_count": "{0} prennent votre DO",
+    "wc_your_ot": "Votre DO",
+    "wc_event_ot": "DO de l'événement",
+    "wc_card": "Carte {0}",
+    "wc_level": "Niveau {0}",
+    "wc_shiny": "Chromatique",
+    "wc_trainer": "Dresseur",
+    "wc_region": "Région",
+    "wc_into": "Vers",
+    "wc_file": "Fichier",
+    "wc_inject": "Injecter {0}",
+    "hint_inject": "Injecter"
 }

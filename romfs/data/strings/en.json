@@ -142,7 +142,6 @@
     "select_theme": "Select Theme",
     "a_select_b_cancel": "A: Select  B: Cancel",
 
-
     "filter_species": "Species:",
     "filter_any": "(any)",
     "filter_ot": "OT Name:",
@@ -165,7 +164,6 @@
     "filter_footer": "A: Edit/Toggle  B: Cancel",
 
     "no_pokemon_found": "No Pokemon found.",
-    "badge_shiny": "[S]",
     "egg": "Egg",
     "loc_left": "Left",
     "loc_right": "Right",
@@ -177,19 +175,12 @@
     "a_select_b_back": "A: Select  B: Back",
     "no_species_found": "No species found.",
 
-    "wondercards_title": "Wondercards ({0})",
     "no_wc_found": "No wondercard files found.",
     "place_files_in": "Place {0} files in:",
-    "badge_invalid": "[Invalid]",
-    "player_ot_tag": "[Player OT]",
-    "b_close": "B: Close",
-    "wc_footer": "A: Inject  L/R: Skip 10  B: Cancel",
-
     "supported_games": "Supported Games",
     "credit_pkhex": "Based on PKHeX by kwsch & PokeCrypto research.",
     "credit_jksv": "Save backup & write logic based on JKSV by J-D-K.",
     "controls": "Controls",
-
 
     "status_main": "D-Pad: Move  L/R: Box  A: Pick/Place  Y: Select  YY: All  B: Cancel  X: Detail",
     "status_search": "Search: {0} matches  |  B: Clear  +: Menu",
@@ -486,5 +477,19 @@
     "sr_go_to": "Go to",
     "chip_ivs": "≥{0} perfect IVs",
     "chip_lv": "Lv. {0}–{1}",
-    "chip_ot": "OT {0}"
+    "chip_ot": "OT {0}",
+    "wc_title": "Wondercards",
+    "wc_shiny_count": "{0} shiny",
+    "wc_your_ot_count": "{0} take your OT",
+    "wc_your_ot": "Your OT",
+    "wc_event_ot": "Event OT",
+    "wc_card": "Card {0}",
+    "wc_level": "Level {0}",
+    "wc_shiny": "Shiny",
+    "wc_trainer": "Trainer",
+    "wc_region": "Region",
+    "wc_into": "Into",
+    "wc_file": "File",
+    "wc_inject": "Inject {0}",
+    "hint_inject": "Inject"
 }

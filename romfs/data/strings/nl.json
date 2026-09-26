@@ -142,7 +142,6 @@
     "select_theme": "Thema selecteren",
     "a_select_b_cancel": "A: Selecteren  B: Annuleren",
 
-
     "filter_species": "Pokemon:",
     "filter_any": "(alle)",
     "filter_ot": "OT-naam:",
@@ -165,7 +164,6 @@
     "filter_footer": "A: Bewerken  B: Annuleren",
 
     "no_pokemon_found": "Geen Pokemon gevonden.",
-    "badge_shiny": "[S]",
     "egg": "Ei",
     "loc_left": "Links",
     "loc_right": "Rechts",
@@ -177,19 +175,12 @@
     "a_select_b_back": "A: Selecteren  B: Terug",
     "no_species_found": "Geen soorten gevonden.",
 
-    "wondercards_title": "Mysterieuze geschenken ({0})",
     "no_wc_found": "Geen mysterieuze geschenkbestanden gevonden.",
     "place_files_in": "Plaats {0}-bestanden in:",
-    "badge_invalid": "[Ongeldig]",
-    "player_ot_tag": "[Speler-OT]",
-    "b_close": "B: Sluiten",
-    "wc_footer": "A: Injecteren  L/R: 10 overslaan  B: Annuleren",
-
     "supported_games": "Ondersteunde spellen",
     "credit_pkhex": "Gebaseerd op PKHeX van kwsch en PokeCrypto-onderzoek.",
     "credit_jksv": "Opslagback-up en schrijflogica gebaseerd op JKSV van J-D-K.",
     "controls": "Besturing",
-
 
     "status_main": "D-Pad: Bewegen  L/R: Box  A: Pakken/Plaatsen  Y: Selecteren  YY: Alles  B: Annuleren  X: Detail",
     "status_search": "Zoeken: {0} resultaten  |  B: Wissen  +: Menu",
@@ -486,5 +477,19 @@
     "sr_go_to": "Ga",
     "chip_ivs": "≥{0} perfecte IV’s",
     "chip_lv": "Lv. {0}–{1}",
-    "chip_ot": "OT {0}"
+    "chip_ot": "OT {0}",
+    "wc_title": "Mysterieuze geschenken",
+    "wc_shiny_count": "{0} shiny",
+    "wc_your_ot_count": "{0} krijgen jouw OT",
+    "wc_your_ot": "Jouw OT",
+    "wc_event_ot": "Event-OT",
+    "wc_card": "Kaart {0}",
+    "wc_level": "Level {0}",
+    "wc_shiny": "Shiny",
+    "wc_trainer": "Trainer",
+    "wc_region": "Regio",
+    "wc_into": "Naar",
+    "wc_file": "Bestand",
+    "wc_inject": "{0} injecteren",
+    "hint_inject": "Injecteren"
 }

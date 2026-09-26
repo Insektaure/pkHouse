@@ -17,6 +17,8 @@
 #include "i18n.h"
 #include "species_converter.h"
 #include "form_names.h"
+#include "met_info.h"
+#include "ui_util.h"
 
 #include <algorithm>
 #include <cmath>
@@ -262,143 +264,137 @@ void UI::drawGtsStars(const SDL_Rect& area, int count, uint32_t seed) {
 // default and follows the palette everywhere else.
 // --- Hub ----------------------------------------------------------------------
 
+// UI 2.0: the same three choices as before - Browse, Search, Deposit -
+// with the same labels and keys, restyled. Nothing on it changes while it is
+// open: no board contents, no counts.
 void UI::drawGtsHubFrame() {
     SDL_SetRenderDrawColor(renderer_, T().bg.r, T().bg.g, T().bg.b, 255);
     SDL_RenderClear(renderer_);
 
-    constexpr int MARGIN = 60;
-    constexpr int GAP    = 24;
-    constexpr int HEAD_H = 112;
-    constexpr int TOP    = 128;
-    constexpr int BOT    = 640;
-    const int totalH = BOT - TOP;
-    const int contentW = SCREEN_W - MARGIN * 2;
+    // Prefixed: UI has constants of its own that a plain name would resolve to.
+    constexpr int HUB_L = 32, HUB_R = SCREEN_W - 32;
+    constexpr int HUB_TOP = 84, HUB_BOT = FOOTER_Y - 18;
+    constexpr int HUB_GAP = 22;
+    constexpr int HUB_LEFT_W = 742;
 
-    // --- header ---------------------------------------------------------------
-    //
-    // The same composition as the band on the game selector, scaled up.
+    // --- Top bar: the logo, then the GTS mark with its title and subtitle. ---
     {
-        const SDL_Rect clip = {0, 0, SCREEN_W, HEAD_H};
-        drawGtsStars({640, 8, 600, HEAD_H - 16}, 14, 0x60BEu);
-        drawGtsGlobe(clip, 1060, HEAD_H / 2, 150, 34);
+        drawRect(0, 0, SCREEN_W, ACCENT_RULE_H, T().accent);
+        const int cy = 42;
+        int x = drawLogo(32, cy) + 16;
+        drawRect(x, cy - 14, 1, 28, T().divider);
+        x += 17;
 
-        SDL_RenderSetClipRect(renderer_, &clip);
-        drawGtsLink(880, 78, 1180, 30, 46, 190, 4, 3);
+        const int mx = x + 20;
+        fillCircle(renderer_, mx, cy, 20, T().accent);
+        ellipseOutline(renderer_, mx, cy, 11, 11, T().keyCapText);
+        ellipseOutline(renderer_, mx, cy,  5, 11, T().keyCapText);
+        chord(renderer_, mx, cy, 11, 0, T().keyCapText);
+        x += 40 + 12;
+
+        TTF_Font* fT = uiFont(20, true);
+        TTF_Font* fS = uiFont(13);
+        drawText(i18n::get(StrKey::GtsTitle), x, cy - 22, T().text, fT);
+        drawText(i18n::get(StrKey::GtsSubtitle), x, cy + 4, T().textDim, fS);
+
+        // The current profile, as on the game selector.
+        drawProfileChip(SCREEN_W - 32, cy);
+    }
+
+    auto panel = [&](const SDL_Rect& r, bool focused) {
+        if (focused)
+            strokeRounded(r.x - 6, r.y - 6, r.w + 12, r.h + 12, 24, 3, T().accent);
+        fillRounded(r.x, r.y, r.w, r.h, 18, focused ? T().slotFull : T().panelBg);
+        strokeRounded(r.x, r.y, r.w, r.h, 18, 1, T().panelBorder);
+    };
+
+    // --- Browse: the whole left column. ---
+    {
+        const SDL_Rect r = {HUB_L, HUB_TOP, HUB_LEFT_W, HUB_BOT - HUB_TOP};
+        const bool focused = gtsHubCursor_ == 0;
+        panel(r, focused);
+
+        // The globe, under the heading, inside the rounded corners.
+        const SDL_Rect art = {r.x + 18, r.y + 120, r.w - 36, r.h - 138};
+        drawGtsStars(art, 18, 0x60BEu);
+        drawGtsGlobe(art, r.x + r.w / 2, art.y + art.h / 2 + 10, 215, focused ? 40 : 28);
+        SDL_RenderSetClipRect(renderer_, &art);
+        drawGtsLink(r.x + 150, art.y + art.h - 70, r.x + r.w - 130, art.y + 60, 70,
+                    focused ? 170 : 110, 5, 4);
         SDL_RenderSetClipRect(renderer_, nullptr);
 
-        // The mark, matching the band's.
-        const int cx = MARGIN + 22, cy = HEAD_H / 2 - 2;
-        fillCircle(renderer_, cx, cy, 22, T().goldLabel);
-        ellipseOutline(renderer_, cx, cy, 13, 13, T().bg);
-        ellipseOutline(renderer_, cx, cy,  6, 13, T().bg);
-        chord(renderer_, cx, cy, 13,  0, T().bg);
-        chord(renderer_, cx, cy, 13, -7, T().bg);
-        chord(renderer_, cx, cy, 13,  7, T().bg);
-
-        drawText(i18n::get(StrKey::GtsTitle), MARGIN + 58, 30, T().goldLabel, fontLarge_);
-        drawText(i18n::get(StrKey::GtsSubtitle), MARGIN + 60, 68, T().textDim, fontSmall_);
-
-        drawRect(MARGIN, HEAD_H - 2, contentW, 2, T().goldLabel);
+        // A board of listings, as the mark.
+        const int ix = r.x + 26, iy = r.y + 26;
+        fillRounded(ix, iy, 60, 60, 14, T().badgeBg);
+        for (int k = 0; k < 4; k++) {
+            const int sx = ix + 16 + (k % 2) * 16, sy = iy + 16 + (k / 2) * 16;
+            strokeRounded(sx, sy, 12, 12, 3, 2, T().accent);
+        }
+        TTF_Font* fT = uiFont(28, true);
+        TTF_Font* fS = uiFont(16);
+        const int tx = ix + 60 + 16, tw = r.x + r.w - 26 - tx;
+        drawText(fitText(i18n::get(StrKey::GtsBrowseBtn), fT, tw), tx, iy + 2, T().text, fT);
+        drawText(fitText(i18n::get(StrKey::GtsBrowseHint), fS, tw), tx, iy + 38, T().textDim, fS);
     }
 
-    // --- Browse: the whole left column ----------------------------------------
-    //
-    const int leftW = 620;
-    const int leftX = MARGIN;
-    {
-        const bool focused = (gtsHubCursor_ == 0);
-        drawRect(leftX, TOP, leftW, totalH, focused ? T().menuHighlight : T().panelBg);
-
-        drawGtsGlobe({leftX, TOP, leftW, totalH},
-                     leftX + leftW / 2, TOP + totalH / 2, 205, focused ? 34 : 26);
-
-        drawRect(leftX, TOP, 6, totalH, T().goldLabel);
-        if (focused)
-            drawRectOutline(leftX, TOP, leftW, totalH, T().cursor, 3);
-
-        drawTextCentered(i18n::get(StrKey::GtsBrowseBtn),
-                         leftX + leftW / 2, TOP + totalH / 2 - 14, T().text, fontLarge_);
-        drawTextCentered(i18n::get(StrKey::GtsBrowseHint),
-                         leftX + leftW / 2, TOP + totalH / 2 + 22, T().textDim, fontSmall_);
-    }
-
-    // --- Search and Deposit ---------------------------------------------------
-    const int rightX = leftX + leftW + GAP;
-    const int rightW = SCREEN_W - rightX - MARGIN;
-    const int halfH  = (totalH - GAP) / 2;
-
+    // --- Search and Deposit, stacked on the right. ---
+    const int rx = HUB_L + HUB_LEFT_W + HUB_GAP + 4, rw = HUB_R - rx;
+    const int halfH = (HUB_BOT - HUB_TOP - HUB_GAP) / 2;
     struct HubButton { int cursor; const char* label; const char* hint; };
     const HubButton buttons[] = {
         {1, StrKey::GtsSearchBtn,  StrKey::GtsSearchHint},
         {2, StrKey::GtsDepositBtn, StrKey::GtsDepositHint},
     };
-
     for (int i = 0; i < 2; i++) {
-        const int by = TOP + i * (halfH + GAP);
-        const bool focused = (gtsHubCursor_ == buttons[i].cursor);
-        const int midY = by + halfH / 2;
+        const SDL_Rect r = {rx, HUB_TOP + i * (halfH + HUB_GAP), rw, halfH};
+        const bool focused = gtsHubCursor_ == buttons[i].cursor;
+        panel(r, focused);
 
-        drawRect(rightX, by, rightW, halfH, focused ? T().menuHighlight : T().panelBg);
-
-        // A route in each, pointing the way the action goes: searching brings
-        // something in, depositing sends something out. Kept in the bottom
-        // corner - the label and its hint are centred, and a panel only 244px
-        // tall has no room for artwork behind them.
+        // A route in the bottom corner, pointing the way the action goes:
+        // searching brings something in, depositing sends something out.
         {
-            const SDL_Rect clip = {rightX, by, rightW, halfH};
+            const SDL_Rect clip = {r.x + 12, r.y + 12, r.w - 24, r.h - 24};
             SDL_RenderSetClipRect(renderer_, &clip);
-
             const uint8_t trail = focused ? 150 : 90;
-            const int outX = rightX + rightW - 40;
-            const int inX  = rightX + rightW - 150;
-            const int base = by + halfH - 28;
-
-            if (i == 0)
-                drawGtsLink(outX, base - 20, inX, base, 18, trail, 3, 5);   // in
-            else
-                drawGtsLink(inX, base, outX, base - 20, 18, trail, 5, 3);   // out
-
+            const int outX = r.x + r.w - 44, inX = r.x + r.w - 154, base = r.y + r.h - 34;
+            if (i == 0) drawGtsLink(outX, base - 20, inX, base, 18, trail, 3, 5);   // in
+            else        drawGtsLink(inX, base, outX, base - 20, 18, trail, 5, 3);   // out
             SDL_RenderSetClipRect(renderer_, nullptr);
         }
 
-        drawRect(rightX, by, 6, halfH, T().goldLabel);
-        if (focused)
-            drawRectOutline(rightX, by, rightW, halfH, T().cursor, 3);
-
-        // --- the mark ---------------------------------------------------------
-        //
-        {
-            const int cx = rightX + 64;
-            const SDL_Color face = focused ? T().menuHighlight : T().panelBg;
-            fillCircle(renderer_, cx, midY, 34, T().goldLabel);
-
-            if (i == 0) {
-                // A glass: a ring and a handle away from the centre.
-                ellipseOutline(renderer_, cx - 4, midY - 4, 13, 13, face);
-                ellipseOutline(renderer_, cx - 4, midY - 4, 12, 12, face);
-                thickLine(renderer_, cx + 6, midY + 6, cx + 15, midY + 15, 5, face);
-            } else {
-                // An arrow leaving a line: something of yours going out.
-                thickLine(renderer_, cx, midY + 8, cx, midY - 12, 4, face);
-                thickLine(renderer_, cx, midY - 13, cx - 9, midY - 4, 4, face);
-                thickLine(renderer_, cx, midY - 13, cx + 9, midY - 4, 4, face);
-                drawRect(cx - 13, midY + 12, 26, 4, face);
+        // The mark: a disc with the action's symbol.
+        const int cx = r.x + 54, cy = r.y + 54;
+        fillCircle(renderer_, cx, cy, 30, T().accent);
+        const SDL_Color ink = T().keyCapText;
+        if (i == 0) {
+            if (SDL_Texture* ic = uiIcon("search")) {
+                SDL_SetTextureColorMod(ic, ink.r, ink.g, ink.b);
+                SDL_Rect dst = {cx - 12, cy - 12, 24, 24};
+                SDL_RenderCopy(renderer_, ic, nullptr, &dst);
+                SDL_SetTextureColorMod(ic, 255, 255, 255);
             }
+        } else {
+            // An arrow leaving a line: something of yours going out.
+            thickLine(renderer_, cx, cy + 6, cx, cy - 11, 4, ink);
+            thickLine(renderer_, cx, cy - 12, cx - 8, cy - 4, 4, ink);
+            thickLine(renderer_, cx, cy - 12, cx + 8, cy - 4, 4, ink);
+            drawRect(cx - 11, cy + 10, 22, 3, ink);
         }
 
-        // --- what it does -----------------------------------------------------
-        drawText(i18n::get(buttons[i].label), rightX + 116, midY - 26, T().text, font_);
-        drawText(i18n::get(buttons[i].hint), rightX + 118, midY + 4, T().textDim, fontSmall_);
-
-        drawTextCentered(">", rightX + rightW - 30, midY,
-                         focused ? T().text : T().textDim, font_);
+        TTF_Font* fT = uiFont(24, true);
+        TTF_Font* fS = uiFont(15);
+        const int tx = r.x + 100, tw = r.x + r.w - 50 - tx;
+        drawText(fitText(i18n::get(buttons[i].label), fT, tw), tx, cy - 30, T().text, fT);
+        drawText(fitText(i18n::get(buttons[i].hint), fS, tw), tx, cy + 4, T().textDim, fS);
+        fillArrow(static_cast<float>(r.x + r.w - 28), static_cast<float>(cy), 6, ArrowDir::Right,
+                  focused ? T().text : T().textDim);
     }
 
     {
         const ButtonHint hints[] = {
             {"A", StrKey::HintSelect3}, {"B", StrKey::HintBack2}, {"Y", StrKey::HintTheme},
         };
-        drawHintBar(hints, 3);
+        drawFooterBar(hints, 3);
     }
 
     if (showGtsFilter_)  drawGtsFilterPopup();
@@ -440,7 +436,7 @@ void UI::handleGtsHubInput(bool& running) {
             case SDL_CONTROLLER_BUTTON_B: // Switch A = select
                 if (gtsHubCursor_ == 0) {
                     // Browse: whatever the filter currently says, which is
-                    // "everything legal" until Search changes it.
+                    // everything the scanner has judged until Search changes it.
                     if (gtsLoadPage(0)) {
                         gtsCursor_ = 0;
                         screen_ = AppScreen::GtsBrowse;
@@ -529,238 +525,435 @@ std::string UI::gtsEntryLabel(const Gts::Entry& e) const {
     return name.empty() ? std::to_string(e.species) : name;
 }
 
-void UI::drawGtsSlot(int x, int y, const Gts::Entry& e, bool isCursor) {
-    drawRect(x, y, GTS_CELL_W, GTS_CELL_H, e.egg ? T().slotEgg : T().slotFull);
+// The board's full legality report for a listing, in a dialog of its own: the
+// info strip only has room for its start. It is already in the listing, so
+// this asks the board nothing and counts nothing. Up / down scroll a report
+// longer than the dialog.
+void UI::showGtsReport(const Gts::Entry& e) {
+    if (!renderer_ || e.legalityReport.empty()) return;
+    markDirty();
 
-    // Anything the board has not judged yet is framed rather than hidden. The
-    // default filter never shows these, so a frame here means the user asked
-    // to see them and should be able to tell which is which at a glance.
-    if (e.legality != "legal")
-        drawRectOutline(x + 1, y + 1, GTS_CELL_W - 2, GTS_CELL_H - 2, T().searchMatch, 2);
+    constexpr int RP_W = 760, RP_PAD = 24, RP_BADGE = 56, RP_LINE = 21, RP_VISIBLE = 14, RP_BTN_H = 52;
+    TTF_Font* fTitle = uiFont(22, true);
+    TTF_Font* fTag   = uiFont(11, true);
+    TTF_Font* fBody  = uiFont(15);
+    const int textX = RP_PAD + RP_BADGE + 16, textW = RP_W - textX - RP_PAD;
 
-    if (isCursor)
-        drawRectOutline(x, y, GTS_CELL_W, GTS_CELL_H, T().cursor, 3);
-
-    SDL_Texture* sprite = nullptr;
-    if (e.egg) {
-        sprite = getSprite(0);
-    } else if (e.shiny) {
-        sprite = getShinySprite(e.species, e.form);
-        if (!sprite) sprite = getSprite(e.species, e.form);
-    } else {
-        sprite = getSprite(e.species, e.form);
-    }
-
-    if (sprite) {
-        int texW = 0, texH = 0;
-        SDL_QueryTexture(sprite, nullptr, nullptr, &texW, &texH);
-        int dstW = GTS_SPRITE, dstH = GTS_SPRITE;
-        if (texW > 0 && texH > 0) {
-            float scale = std::min(static_cast<float>(GTS_SPRITE) / texW,
-                                   static_cast<float>(GTS_SPRITE) / texH);
-            dstW = static_cast<int>(texW * scale);
-            dstH = static_cast<int>(texH * scale);
+    // Every line of the report, wrapped; nothing cut.
+    std::vector<std::string> lines;
+    {
+        std::string para;
+        auto flush = [&]() {
+            while (!para.empty() && (para.back() == ' ' || para.back() == '\r' || para.back() == '\t')) para.pop_back();
+            if (para.empty()) { if (!lines.empty() && !lines.back().empty()) lines.push_back(std::string()); }
+            else for (auto& l : wrapText(para, fBody, textW, 1000)) lines.push_back(l);
+            para.clear();
+        };
+        for (char ch : e.legalityReport) {
+            if (ch == '\n') flush();
+            else para.push_back(ch == '\t' ? ' ' : ch);
         }
-        SDL_Rect dst = { x + (GTS_CELL_W - dstW) / 2, y + 2 + (GTS_SPRITE - dstH) / 2, dstW, dstH };
-        SDL_RenderCopy(renderer_, sprite, nullptr, &dst);
+        flush();
+        while (!lines.empty() && lines.back().empty()) lines.pop_back();
     }
+    const int total = static_cast<int>(lines.size());
+    const int shown = std::min(total, RP_VISIBLE);
+    const int maxScroll = std::max(0, total - RP_VISIBLE);
 
-    // Laid out like a box slot, so a cell reads the same whichever screen it is
-    // on: name under the sprite in the shiny colour when it is one, level at
-    // the bottom, gender top-right, and shiny/alpha top-left.
-    std::string label = gtsEntryLabel(e);
-    if (label.size() > 11) label = label.substr(0, 10) + ".";
-    drawTextCentered(label, x + GTS_CELL_W / 2, y + GTS_SPRITE + 10,
-                     e.shiny ? T().shiny : T().text, fontSmall_);
+    const char* verdictKey = e.legality == "illegal" ? StrKey::GtsVerdictIllegal
+                           : e.legality == "pending" ? StrKey::GtsVerdictPending
+                           : e.legality == "legal"   ? StrKey::GtsVerdictLegal
+                                                     : StrKey::GtsVerdictUnknown;
+    const SDL_Color vc = gtsVerdictColor(e);
+    const std::string title = fitText(gtsEntryLabel(e), fTitle, textW);
 
-    if (!e.egg && e.level > 0) {
-        const std::string lvl = i18n::get(StrKey::LvPrefix) + std::to_string(e.level);
-        drawTextCentered(lvl, x + GTS_CELL_W / 2, y + GTS_CELL_H - 12, T().textDim, fontSmall_);
-    }
+    int scroll = 0;
+    bool waiting = true, redraw = true;
+    while (waiting) {
+        SDL_Event event;
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) waiting = false;
+            if (event.type != SDL_CONTROLLERBUTTONDOWN) continue;
+            switch (event.cbutton.button) {
+                case SDL_CONTROLLER_BUTTON_B:   // Switch A
+                case SDL_CONTROLLER_BUTTON_A:   // Switch B
+                    waiting = false;
+                    break;
+                case SDL_CONTROLLER_BUTTON_DPAD_UP:
+                    if (scroll > 0) { scroll--; redraw = true; }
+                    break;
+                case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+                    if (scroll < maxScroll) { scroll++; redraw = true; }
+                    break;
+            }
+        }
+        if (redraw && waiting) {
+            drawDialogBackdrop();
+            const int headH = 18 + TTF_FontHeight(fTitle) + 10;
+            const int h = RP_PAD + headH + shown * RP_LINE + 20 + RP_BTN_H + RP_PAD;
+            const int x = (SCREEN_W - RP_W) / 2, y = (SCREEN_H - h) / 2;
+            fillRounded(x, y, RP_W, h, 20, T().panelBg);
+            strokeRounded(x, y, RP_W, h, 20, 1, T().panelBorder);
 
-    // Gender, top-right. The glyphs rather than M/F: they are what the boxes
-    // use and they do not need translating.
-    if (e.gender == 0)
-        drawText("\xe2\x99\x82", x + GTS_CELL_W - 16, y + 2, T().genderMale, fontSmall_);
-    else if (e.gender == 1)
-        drawText("\xe2\x99\x80", x + GTS_CELL_W - 16, y + 2, T().genderFemale, fontSmall_);
+            // Badge in the verdict's colour, then the verdict and the listing.
+            const int bcx = x + RP_PAD + RP_BADGE / 2, bcy = y + RP_PAD + RP_BADGE / 2;
+            fillDisc(bcx, bcy, RP_BADGE / 2, SDL_Color{vc.r, vc.g, vc.b, 50});
+            if (iconWarn_) {
+                SDL_SetTextureColorMod(iconWarn_, vc.r, vc.g, vc.b);
+                SDL_Rect dst = {bcx - 13, bcy - 14, 26, 26};
+                SDL_RenderCopy(renderer_, iconWarn_, nullptr, &dst);
+                SDL_SetTextureColorMod(iconWarn_, 255, 255, 255);
+            }
+            int ty = y + RP_PAD;
+            drawTextTracked(toUpperUtf8(i18n::get(verdictKey)), x + textX, ty, vc, fTag, 2);
+            ty += 18;
+            drawText(title, x + textX, ty, T().text, fTitle);
+            ty += TTF_FontHeight(fTitle) + 10;
 
-    // Shiny / alpha / both, top-left.
-    SDL_Texture* statusIcon = nullptr;
-    if (e.shiny && e.alpha) statusIcon = iconShinyAlpha_;
-    else if (e.shiny)       statusIcon = iconShiny_;
-    else if (e.alpha)       statusIcon = iconAlpha_;
+            for (int i = 0; i < shown; i++)
+                drawText(lines[scroll + i], x + textX, ty + i * RP_LINE, T().textDim, fBody);
+            if (maxScroll > 0) {
+                const int trackY = ty, trackH = shown * RP_LINE;
+                const int thumbH = std::max(24, trackH * RP_VISIBLE / total);
+                const int thumbY = trackY + (trackH - thumbH) * scroll / maxScroll;
+                fillRounded(x + RP_W - 14, trackY, 4, trackH, 2, T().buttonBg);
+                fillRounded(x + RP_W - 14, thumbY, 4, thumbH, 2, T().textMuted);
+            }
 
-    if (statusIcon) {
-        SDL_Rect iconDst = { x + 2, y + 2, 14, 14 };
-        SDL_RenderCopy(renderer_, statusIcon, nullptr, &iconDst);
+            // OK, and how to scroll when there is more.
+            const int by = y + h - RP_PAD - RP_BTN_H;
+            TTF_Font* fBtn = uiFont(16, true);
+            const std::string ok = i18n::get(StrKey::DlgOk);
+            const int bw = std::max(160, 24 + 10 + textWidth(ok, fBtn) + 48);
+            const int bx = x + RP_W - RP_PAD - bw, bcy2 = by + RP_BTN_H / 2;
+            fillRounded(bx, by, bw, RP_BTN_H, 12, T().accent);
+            const int gx = bx + (bw - (24 + 10 + textWidth(ok, fBtn))) / 2;
+            fillDisc(gx + 12, bcy2, 12, T().keyCapText);
+            drawTextCentered("A", gx + 12, bcy2, T().accent, uiFont(13, true));
+            drawText(ok, gx + 34, bcy2 - TTF_FontHeight(fBtn) / 2, T().keyCapText, fBtn);
+            if (maxScroll > 0) {
+                TTF_Font* fH = uiFont(15, true);
+                const int hx = x + RP_PAD;
+                const int kw = drawFooterKey(hx, bcy2, HINT_DPAD, false);
+                drawText(i18n::get(StrKey::HintScroll), hx + kw + 8, bcy2 - TTF_FontHeight(fH) / 2, T().text, fH);
+            }
+            SDL_RenderPresent(renderer_);
+            redraw = false;
+        }
+        SDL_Delay(16);
     }
 }
 
+// Whether A on this listing shows its report rather than fetching it: an
+// illegal one with a report. Without a report A still tries the fetch, and the
+// board's own message says why it cannot.
+bool UI::gtsOpensReport(const Gts::Entry& e) const {
+    return e.legality == "illegal" && !e.legalityReport.empty();
+}
+
+// One colour per verdict, shared by the pill in the info strip and the frame
+// on the cell, so the two always agree.
+SDL_Color UI::gtsVerdictColor(const Gts::Entry& e) const {
+    if (e.legality == "legal")   return T().statusOk;
+    if (e.legality == "pending") return T().statusWarn;
+    if (e.legality == "illegal") return T().red;
+    return T().textDim;
+}
+
+// UI 2.0 laid out like the box view: one wide panel with the page as
+// its "box", the same cells, and the info strip under it. Everything shown
+// comes from the listing the board sends; the payload itself is only fetched
+// when a listing is opened (A), exactly as before.
 void UI::drawGtsBrowseFrame() {
     SDL_SetRenderDrawColor(renderer_, T().bg.r, T().bg.g, T().bg.b, 255);
     SDL_RenderClear(renderer_);
 
-    const int gridW = GTS_COLS * GTS_CELL_W + (GTS_COLS - 1) * GTS_CELL_PAD;
-    const int gridX = (SCREEN_W - gridW) / 2;
-    constexpr int GRID_TOP = GTS_GRID_TOP;
-
-    // Header: what is being shown, and where in the board we are.
+    // --- Top bar: logo, the GTS mark, "Online GTS > Board", the profile. ---
     {
-        std::string title = i18n::get(StrKey::GtsTitle);
-        if (gtsFilter_.species != 0 && !gtsFilter_.speciesName.empty())
-            title += "  -  " + gtsFilter_.speciesName;
-        else if (!gtsFilter_.family.empty())
-            title += "  -  " + std::string(bankGroupNameOf(FAMILIES[familyIndex(gtsFilter_.family)].rep));
-        drawText(title, gridX, 18, T().goldLabel, font_);
-
-        const int page = gtsOffset_ / Gts::PAGE_SIZE + 1;
-        std::string right = i18n::fmt(StrKey::GtsPage, std::to_string(page));
-        const auto& te = getTextEntry(right, fontSmall_, T().textDim);
-        drawText(right, gridX + gridW - te.w, 24, T().textDim, fontSmall_);
+        drawRect(0, 0, SCREEN_W, ACCENT_RULE_H, T().accent);
+        const int cy = 38;
+        int x = drawLogo(32, cy) + 16;
+        drawRect(x, cy - 14, 1, 28, T().divider);
+        x += 17;
+        const int mx = x + 16;
+        fillCircle(renderer_, mx, cy, 16, T().accent);
+        ellipseOutline(renderer_, mx, cy, 9, 9, T().keyCapText);
+        ellipseOutline(renderer_, mx, cy, 4, 9, T().keyCapText);
+        chord(renderer_, mx, cy, 9, 0, T().keyCapText);
+        x += 32 + 12;
+        TTF_Font* fT = uiFont(18, true);
+        const std::string gts = i18n::get(StrKey::GtsTitle);
+        drawText(gts, x, cy - TTF_FontHeight(fT) / 2, T().textDim, fT);
+        x += textWidth(gts, fT) + 14;
+        fillArrow(static_cast<float>(x), static_cast<float>(cy), 4, ArrowDir::Right, T().textMuted);
+        x += 14;
+        drawText(i18n::get(StrKey::GtsBoard), x, cy - TTF_FontHeight(fT) / 2, T().text, fT);
+        drawProfileChip(SCREEN_W - 32, cy);
     }
 
     const int count = static_cast<int>(gtsPage_.entries.size());
-    for (int i = 0; i < GTS_PER_PAGE; i++) {
-        const int col = i % GTS_COLS;
-        const int row = i / GTS_COLS;
-        const int x = gridX + col * (GTS_CELL_W + GTS_CELL_PAD);
-        const int y = GRID_TOP + row * (GTS_CELL_H + GTS_CELL_PAD);
+    constexpr int GB_X = INFO_X, GB_W = INFO_W;
 
-        if (i >= count) {
-            // The tail of a short last page. Drawn as empty slots rather than
-            // left blank so the grid keeps its shape.
-            drawRect(x, y, GTS_CELL_W, GTS_CELL_H, T().slotEmpty);
-            if (i == gtsCursor_)
-                drawRectOutline(x, y, GTS_CELL_W, GTS_CELL_H, T().cursor, 3);
-            continue;
+    // --- The panel: L / R page keys, what is shown, which page. ---
+    {
+        fillRounded(GB_X, PANEL_Y, GB_W, PANEL_H, PANEL_RADIUS, T().panelBg);
+        strokeRounded(GB_X, PANEL_Y, GB_W, PANEL_H, PANEL_RADIUS, 1, T().panelBorder);
+
+        constexpr int KEY_W = 56, KEY_H = 44, KEY_INSET = 17;
+        TTF_Font* keyFont = uiFont(16, true);
+        const int keyY = PANEL_Y + KEY_INSET, keyCy = keyY + KEY_H / 2;
+        for (int side = 0; side < 2; side++) {
+            // Lit only when there is a page that way.
+            const bool can = side == 0 ? gtsOffset_ >= Gts::PAGE_SIZE : gtsPage_.more;
+            const SDL_Color keyText = can ? T().text : T().textMuted;
+            const int kx = side == 0 ? GB_X + KEY_INSET : GB_X + GB_W - KEY_INSET - KEY_W;
+            fillRounded(kx, keyY, KEY_W, KEY_H, 8, T().buttonBg);
+            strokeRounded(kx, keyY, KEY_W, KEY_H, 8, 1, T().buttonBorder);
+            const int kcx = kx + KEY_W / 2;
+            if (side == 0) {
+                fillArrow(kcx - 8, keyCy, 8, ArrowDir::Left, keyText);
+                drawTextCentered("L", kcx + 5, keyCy, keyText, keyFont);
+            } else {
+                drawTextCentered("R", kcx - 5, keyCy, keyText, keyFont);
+                fillArrow(kcx + 8, keyCy, 8, ArrowDir::Right, keyText);
+            }
         }
-        drawGtsSlot(x, y, gtsPage_.entries[i], i == gtsCursor_);
+
+        // Tag: the board, narrowed to what the search asked for, as the old
+        // title was.
+        const int cx = GB_X + GB_W / 2;
+        const int maxW = GB_W - 2 * (KEY_INSET + KEY_W + 12);
+        std::string tag = i18n::get(StrKey::GtsTitle);
+        if (gtsFilter_.species != 0 && !gtsFilter_.speciesName.empty())
+            tag += " \xc2\xb7 " + gtsFilter_.speciesName;
+        else if (!gtsFilter_.family.empty())
+            tag += " \xc2\xb7 " + std::string(bankGroupNameOf(FAMILIES[familyIndex(gtsFilter_.family)].rep));
+        {
+            TTF_Font* f = uiFont(12, true);
+            const std::string full = toUpperUtf8(tag);
+            std::string t = full;
+            for (int budget = textWidth(full, f); budget > 0 && measureTextTracked(t, f, 2) > maxW; ) {
+                budget -= 8;
+                t = fitText(full, f, budget);
+            }
+            drawTextTracked(t, cx - measureTextTracked(t, f, 2) / 2, PANEL_Y + 15, T().accent, f, 2);
+        }
+        {
+            TTF_Font* fTitle = uiFont(22, true);
+            TTF_Font* fCount = uiFont(15);
+            const std::string title = i18n::fmt(StrKey::GtsPage, std::to_string(gtsOffset_ / Gts::PAGE_SIZE + 1));
+            const std::string cnt = std::to_string(count) + " / " + std::to_string(GTS_PER_PAGE);
+            const int tw = textWidth(title, fTitle), cw = textWidth(cnt, fCount) + 8;
+            const int x0 = cx - (tw + cw) / 2, baseline = PANEL_Y + 56;
+            drawText(title, x0, baseline - TTF_FontAscent(fTitle), T().text, fTitle);
+            drawText(cnt, x0 + tw + 8, baseline - TTF_FontAscent(fCount), T().textMuted, fCount);
+        }
     }
 
-    // One line about whatever the cursor is on, under the grid.
-    if (gtsCursor_ < count) {
+    // --- The grid: box cells. A listing the board has not passed as legal
+    // keeps its frame, the search-match rim, as before.
+    {
+        const int gridW = GTS_COLS * CELL_W + (GTS_COLS - 1) * CELL_GAP;
+        const int x0 = GB_X + (GB_W - gridW) / 2;
+        for (int i = 0; i < GTS_PER_PAGE; i++) {
+            const int x = x0 + (i % GTS_COLS) * (CELL_W + CELL_GAP);
+            const int y = GRID_Y + (i / GTS_COLS) * (CELL_H + CELL_GAP);
+            SlotDisplay sd;
+            bool framed = false;
+            SDL_Color rim{};
+            if (i < count) {
+                const Gts::Entry& e = gtsPage_.entries[i];
+                sd.empty   = false;
+                sd.egg     = e.egg;
+                sd.shiny   = e.shiny;
+                sd.alpha   = e.alpha;
+                sd.species = e.species;
+                sd.form    = e.form;
+                // Framed in the colour of its verdict pill in the info strip.
+                if (e.legality != "legal") { framed = true; rim = gtsVerdictColor(e); }
+            }
+            drawSlot(x, y, sd, i == gtsCursor_ && !gtsDetail_, 0, 0, false);
+            if (framed) strokeRounded(x, y, CELL_W, CELL_H, CELL_RADIUS, 2, rim);
+        }
+    }
+
+    // --- Info strip: the listing under the cursor. ---
+    fillRounded(INFO_X, INFO_Y, INFO_W, INFO_H, 12, T().panelBg);
+    strokeRounded(INFO_X, INFO_Y, INFO_W, INFO_H, 12, 1, T().panelBorder);
+    const int midY = INFO_Y + INFO_H / 2;
+    if (gtsCursor_ >= count) {
+        TTF_Font* f = uiFont(15);
+        drawText(i18n::get(StrKey::InfoEmptySlot), INFO_X + 24, midY - TTF_FontHeight(f) / 2, T().textMuted, f);
+    } else {
         const Gts::Entry& e = gtsPage_.entries[gtsCursor_];
-        const int infoY = GRID_TOP + GTS_ROWS * (GTS_CELL_H + GTS_CELL_PAD) + 6;
+        auto top = [](TTF_Font* f, int baseline) { return baseline - TTF_FontAscent(f); };
 
-        // The verdict, first and in colour. A frame around a 118px cell cannot
-        // carry this, and with "legal only" turned off the grid is a mix.
-        const char* verdictKey = StrKey::GtsVerdictLegal;
-        SDL_Color verdictColor = T().text;
-        if (e.legality == "pending") {
-            verdictKey = StrKey::GtsVerdictPending;
-            verdictColor = T().goldLabel;
-        } else if (e.legality == "illegal") {
-            verdictKey = StrKey::GtsVerdictIllegal;
-            verdictColor = T().red;
-        } else if (e.legality != "legal") {
-            verdictKey = StrKey::GtsVerdictUnknown;
-            verdictColor = T().textDim;
-        }
+        // Portrait
+        constexpr int PORTRAIT = 56;
+        const int portX = INFO_X + 20, portY = midY - PORTRAIT / 2;
+        fillRounded(portX, portY, PORTRAIT, PORTRAIT, 10, e.egg ? T().slotEgg : T().slotFull);
+        drawSpriteFit(spriteFor(e.species, e.form, e.shiny, e.egg), portX + PORTRAIT / 2, portY + PORTRAIT / 2, 48);
 
-        const std::string& verdict = i18n::get(verdictKey);
-        drawText(verdict, gridX, infoY, verdictColor, fontSmall_);
-        const int factsX = gridX + getTextEntry(verdict, fontSmall_, verdictColor).w + 18;
-
-        // What sits on the right, measured now so the middle knows how much
-        // room it actually has rather than reserving a guess.
-        const bool hasNote = !e.note.empty();
-        const std::string right = hasNote
-            ? e.note
-            : i18n::fmt(StrKey::GtsDownloads, std::to_string(e.downloads));
-        const SDL_Color rightColor = hasNote ? T().text : T().textDim;
-        const int rightW = getTextEntry(right, fontSmall_, rightColor).w;
-        const int room = gridX + gridW - rightW - 20 - factsX;
-
-        std::string facts;
-        SDL_Color factsColor = T().textDim;
-
-        if (!e.legalityReport.empty()) {
-            // A rejected Pokemon's spread is beside the point; why it was
-            // rejected is the whole of what you need. Writes over
-            // several lines, so it is flattened onto the one line there is.
-            facts.reserve(e.legalityReport.size());
-            for (char ch : e.legalityReport) {
-                if (ch == '\n' || ch == '\r' || ch == '\t') ch = ' ';
-                if (ch == ' ' && (facts.empty() || facts.back() == ' ')) continue;
-                facts.push_back(ch);
+        // Identity: marks, name, gender, level; then nature, ability, ball.
+        const int idX = portX + PORTRAIT + 20, idRight = 400;
+        {
+            TTF_Font* fName = uiFont(20, true);
+            TTF_Font* fLv   = uiFont(15);
+            const int baseline = INFO_Y + 38;
+            int x = idX;
+            constexpr int ICON = 16;
+            if (e.shiny && iconShiny_) {
+                SDL_SetTextureColorMod(iconShiny_, T().accent.r, T().accent.g, T().accent.b);
+                SDL_Rect dst = {x, baseline - ICON, ICON, ICON};
+                SDL_RenderCopy(renderer_, iconShiny_, nullptr, &dst);
+                SDL_SetTextureColorMod(iconShiny_, 255, 255, 255);
+                x += ICON + 6;
             }
-            while (!facts.empty() && facts.back() == ' ') facts.pop_back();
-            factsColor = T().red;
-
-            // Cut to fit, measured rather than counted: the font is
-            // proportional, so a character count is wrong in every language.
-            //
-            // TTF_SizeUTF8 and not getTextEntry, because getTextEntry caches a
-            // texture per string it is asked about and trimming a long report a
-            // character at a time would leave hundreds of them behind.
-            int w = 0, h = 0;
-            if (TTF_SizeUTF8(fontSmall_, facts.c_str(), &w, &h) == 0 && w > room && room > 0) {
-                // Proportional first guess, so the walk back is a few steps and
-                // not a few hundred.
-                size_t guess = facts.size() * static_cast<size_t>(room)
-                                            / static_cast<size_t>(w);
-                if (guess < facts.size()) facts.resize(guess);
-
-                for (;;) {
-                    // Never leave half a UTF-8 character behind.
-                    while (!facts.empty() && (facts.back() & 0xC0) == 0x80)
-                        facts.pop_back();
-                    if (facts.empty()) break;
-                    if (TTF_SizeUTF8(fontSmall_, (facts + "...").c_str(), &w, &h) != 0) break;
-                    if (w <= room) break;
-                    facts.pop_back();
-                }
-                facts += "...";
+            if (e.alpha && iconAlpha_) {
+                SDL_Rect dst = {x, baseline - ICON, ICON, ICON};
+                SDL_RenderCopy(renderer_, iconAlpha_, nullptr, &dst);
+                x += ICON + 6;
             }
-        } else {
-            auto add = [&facts](const std::string& part) {
-                if (part.empty()) return;
-                if (!facts.empty()) facts += "  -  ";
-                facts += part;
-            };
-
-            // Which game it can ever be imported into: the hard gate, since a
-            // card only goes back into the family it came from.
-            if (e.gameKnown) add(bankGroupNameOf(e.game));
-
+            std::string lv, gender;
+            SDL_Color gc = T().text;
             if (!e.egg) {
-                add(NatureName::get(e.nature));
-                if (e.ability != 0) add(AbilityName::get(e.ability));
+                if (e.level > 0) lv = i18n::get(StrKey::LvPrefix) + std::to_string(e.level);
+                if (e.gender == 0) { gender = "\xe2\x99\x82"; gc = T().genderMale; }
+                if (e.gender == 1) { gender = "\xe2\x99\x80"; gc = T().genderFemale; }
             }
-            if (e.ivTotal > 0) add(i18n::get(StrKey::IVs) + " " + std::to_string(e.ivTotal) + "/186");
-            if (e.evTotal > 0) add(i18n::get(StrKey::EVs) + " " + std::to_string(e.evTotal) + "/510");
-            if (e.heldItem != 0) add("@ " + ItemName::get(e.heldItem));
+            const int tailW = (gender.empty() ? 0 : textWidth(gender, fName) + 8)
+                            + (lv.empty() ? 0 : textWidth(lv, fLv) + 8);
+            const std::string name = fitText(gtsEntryLabel(e), fName, idRight - 16 - x - tailW);
+            drawText(name, x, top(fName, baseline), T().text, fName);
+            x += textWidth(name, fName) + 8;
+            if (!gender.empty()) { drawText(gender, x, top(fName, baseline), gc, fName); x += textWidth(gender, fName) + 8; }
+            if (!lv.empty()) drawText(lv, x, top(fLv, baseline), T().textDim, fLv);
+
+            TTF_Font* fSub = uiFont(14);
+            const int subTop = top(fSub, INFO_Y + 62), subRight = idRight - 16;
+            std::string sub;
+            if (!e.egg) {
+                sub = NatureName::get(e.nature);
+                if (e.ability != 0) sub += " \xc2\xb7 " + AbilityName::get(e.ability);
+            }
+            const char* ball = BallName::get(e.ball);
+            if (ball[0] != '\0' && !sub.empty()) sub += " \xc2\xb7 ";
+            sub = fitText(sub, fSub, subRight - idX);
+            drawText(sub, idX, subTop, T().textDim, fSub);
+            int bx = idX + textWidth(sub, fSub);
+            if (ball[0] != '\0' && bx < subRight) {
+                constexpr int BALL = 16;
+                const int subCy = subTop + TTF_FontHeight(fSub) / 2;
+                if (SDL_Texture* ballTex = getBallSprite(e.ball)) {
+                    SDL_Rect dst = {bx, subCy - BALL / 2, BALL, BALL};
+                    SDL_RenderCopy(renderer_, ballTex, nullptr, &dst);
+                    bx += BALL + 4;
+                }
+                if (bx < subRight) drawText(fitText(ball, fSub, subRight - bx), bx, subTop, T().textDim, fSub);
+            }
+        }
+        drawRect(idRight, INFO_Y + 14, 1, INFO_H - 28, T().divider);
+
+        // Middle: the verdict and the game it can go back into; then why it
+        // was rejected, or what it holds.
+        const int statsX = 840;
+        {
+            const int x0 = idRight + 20, right = statsX - 20;
+            const char* verdictKey = StrKey::GtsVerdictLegal;
+            if (e.legality == "pending")      verdictKey = StrKey::GtsVerdictPending;
+            else if (e.legality == "illegal") verdictKey = StrKey::GtsVerdictIllegal;
+            else if (e.legality != "legal")   verdictKey = StrKey::GtsVerdictUnknown;
+            const SDL_Color vc = gtsVerdictColor(e);
+            TTF_Font* fV = uiFont(11, true);
+            const std::string verdict = toUpperUtf8(i18n::get(verdictKey));
+            const int vw = measureTextTracked(verdict, fV, 1) + 16 + 10;
+            const int vy = INFO_Y + 16;
+            fillRounded(x0, vy, vw, 24, 7, SDL_Color{vc.r, vc.g, vc.b, 40});
+            fillDisc(x0 + 10, vy + 12, 3, vc);
+            drawTextTracked(verdict, x0 + 18, vy + 12 - TTF_FontHeight(fV) / 2, vc, fV, 1);
+            if (e.gameKnown) {
+                TTF_Font* fG = uiFont(15, true);
+                drawText(fitText(bankGroupNameOf(e.game), fG, right - (x0 + vw + 12)), x0 + vw + 12,
+                         vy + 12 - TTF_FontHeight(fG) / 2, T().text, fG);
+            }
+
+            TTF_Font* fL = uiFont(14);
+            const int lineTop = top(fL, INFO_Y + 62);
+            if (!e.legalityReport.empty()) {
+                // A rejected Pokemon's spread is beside the point; why it was
+                // rejected is the whole of what you need, on the one line.
+                std::string report;
+                for (char ch : e.legalityReport) {
+                    if (ch == '\n' || ch == '\r' || ch == '\t') ch = ' ';
+                    if (ch == ' ' && (report.empty() || report.back() == ' ')) continue;
+                    report.push_back(ch);
+                }
+                while (!report.empty() && report.back() == ' ') report.pop_back();
+                drawText(fitText(report, fL, right - x0), x0, lineTop, T().red, fL);
+            } else if (e.heldItem != 0) {
+                std::string label = i18n::get(StrKey::HeldItemPrefix);
+                while (!label.empty() && (label.back() == ' ' || label.back() == ':')) label.pop_back();
+                drawText(fitText(label + " \xc2\xb7 " + ItemName::get(e.heldItem), fL, right - x0),
+                         x0, lineTop, T().textDim, fL);
+            }
+        }
+        drawRect(statsX, INFO_Y + 14, 1, INFO_H - 28, T().divider);
+
+        // IV and EV totals, each with a bar.
+        {
+            const int x0 = statsX + 20, barW = 150;
+            TTF_Font* f = uiFont(13, true);
+            auto total = [&](const std::string& label, int value, int max, int baseline) {
+                drawText(label, x0, top(f, baseline), T().textDim, f);
+                const int by = baseline + 5;
+                fillRounded(x0, by, barW, 5, 2, T().bg);
+                const int w = barW * std::clamp(value, 0, max) / max;
+                if (w > 0) fillRounded(x0, by, std::max(w, 5), 5, 2, value >= max ? T().accent : T().accentBank);
+            };
+            if (!e.egg) {
+                total(i18n::fmt(StrKey::InfoIvTotal, std::to_string(e.ivTotal)), e.ivTotal, 186, INFO_Y + 30);
+                total(i18n::fmt(StrKey::InfoEvTotal, std::to_string(e.evTotal)), e.evTotal, 510, INFO_Y + 62);
+            }
         }
 
-        drawText(facts, factsX, infoY, factsColor, fontSmall_);
-
-        // The depositor's own words when there are any, how many people have
-        // kept it when there are not. Neither is decisive, and they never both
-        // need to be on screen at once.
-        drawText(right, gridX + gridW - rightW, infoY, rightColor, fontSmall_);
+        // Trainer, then the depositor's note or how many have kept it.
+        {
+            const int right = INFO_X + INFO_W - 20;
+            const int maxW = right - (statsX + 20 + 150 + 20);
+            TTF_Font* fOt = uiFont(16, true);
+            if (!e.otName.empty()) {
+                const std::string ot = fitText(i18n::fmt(StrKey::ChipOt, e.otName), fOt, maxW);
+                drawText(ot, right - textWidth(ot, fOt), top(fOt, INFO_Y + 36), T().text, fOt);
+            }
+            TTF_Font* fN = uiFont(13);
+            const bool hasNote = !e.note.empty();
+            const std::string line = fitText(hasNote ? e.note
+                                                     : i18n::fmt(StrKey::GtsDownloads, std::to_string(e.downloads)),
+                                             fN, maxW);
+            drawText(line, right - textWidth(line, fN), top(fN, INFO_Y + 60),
+                     hasNote ? T().text : T().textDim, fN);
+        }
     }
 
     if (gtsDetail_) {
         const ButtonHint hints[] = {
             {"Y", StrKey::HintSaveAsCard}, {"B", StrKey::HintClose},
         };
-        drawHintBar(hints, 2);
-    } else {
-        const ButtonHint hints[] = {
-            {"A", StrKey::HintOpen2}, {"L/R", StrKey::HintPage2}, {"B", StrKey::HintBack2},
-        };
-        drawHintBar(hints, 3);
-    }
-
-    if (gtsDetail_) {
+        drawFooterBar(hints, 2);
         // The chip names the game family: on the board you are in no game,
         // and the family decides which saves can ever take this Pokemon.
-        const ButtonHint detailHints[] = {
-            {"Y", StrKey::HintSaveAsCard}, {"B", StrKey::HintClose},
-        };
-        drawDetailPopup(gtsDetailPkm_, detailHints, 2,
+        drawDetailPopup(gtsDetailPkm_, hints, 2,
                         std::string("GTS \xc2\xb7 ") + gameInfo(gtsDetailGame_).gameTag);
+    } else {
+        const Gts::Entry* cur = gtsCursor_ < count ? &gtsPage_.entries[gtsCursor_] : nullptr;
+        const bool report = cur && !cur->legalityReport.empty();
+        // On an illegal listing A already shows the reason; X is not repeated.
+        const bool aIsReport = cur && gtsOpensReport(*cur);
+        std::vector<ButtonHint> hints = {{"A", aIsReport ? StrKey::HintReason : StrKey::HintOpen2}};
+        if (report && !aIsReport) hints.push_back({"X", StrKey::HintReason});
+        hints.push_back({"L R", StrKey::HintPage2});
+        hints.push_back({"B", StrKey::HintBack2});
+        drawFooterBar(hints.data(), static_cast<int>(hints.size()));
     }
 }
 
@@ -827,7 +1020,19 @@ void UI::handleGtsBrowseInput(bool& running) {
             case SDL_CONTROLLER_BUTTON_DPAD_DOWN:  moveGtsCursor(0, +1); break;
 
             case SDL_CONTROLLER_BUTTON_B: // Switch A = open
-                gtsOpenDetail();
+                // The board refuses to hand over an illegal Pokemon, so
+                // opening one would only ever end in that error. Its report
+                // is what there is to see.
+                if (gtsCursor_ < static_cast<int>(gtsPage_.entries.size())
+                    && gtsOpensReport(gtsPage_.entries[gtsCursor_]))
+                    showGtsReport(gtsPage_.entries[gtsCursor_]);
+                else
+                    gtsOpenDetail();
+                break;
+
+            case SDL_CONTROLLER_BUTTON_Y: // Switch X = the full legality report
+                if (gtsCursor_ < static_cast<int>(gtsPage_.entries.size()))
+                    showGtsReport(gtsPage_.entries[gtsCursor_]);
                 break;
 
             case SDL_CONTROLLER_BUTTON_A: // Switch B = back to the hub
@@ -1011,8 +1216,10 @@ void UI::drawGtsFilterPopup() {
                 break;
 
             case ROW_LEGAL:
-                drawText(i18n::get(StrKey::GtsFilterLegalOnly), labelX, textY, T().text, font_);
-                drawText(i18n::get(gtsFilter_.onlyLegal ? StrKey::FilterYes : StrKey::GtsFilterNo),
+                drawText(i18n::get(StrKey::GtsFilterLegality), labelX, textY, T().text, font_);
+                drawText(i18n::get(gtsFilter_.legality == Gts::Filter::Legality::LegalOnly ? StrKey::GtsFilterLegalOnly
+                                 : gtsFilter_.legality == Gts::Filter::Legality::All       ? StrKey::GtsLegalityAll
+                                                                                           : StrKey::GtsLegalityChecked),
                          valueX, textY, T().text, font_);
                 break;
 
@@ -1069,7 +1276,10 @@ void UI::handleGtsFilterInput(const SDL_Event& event) {
                 gtsFilter_.minIvs = IV_STEPS[idx];
                 break;
             }
-            case ROW_LEGAL: gtsFilter_.onlyLegal = !gtsFilter_.onlyLegal; break;
+            case ROW_LEGAL:
+                gtsFilter_.legality = static_cast<Gts::Filter::Legality>(
+                    (static_cast<int>(gtsFilter_.legality) + dir + 3) % 3);
+                break;
             case ROW_SORT:  gtsFilter_.byPopularity = !gtsFilter_.byPopularity; break;
             default: break;
         }

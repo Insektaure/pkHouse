@@ -275,6 +275,7 @@
     "status_banks_clean": "已載入倉庫 · 無變更",
     "status_unsaved": "有未儲存的變更",
     "info_empty_slot": "空位",
+    "info_iv_total": "個體值 {0} / 186",
     "info_ev_total": "努力值 {0} / 510",
     "info_perfect_ivs": "{0} × 31",
     "info_ot": "初訓家 {0} {1}",
@@ -496,5 +497,11 @@
     "ci_subtitle": "儲存為卡片的寶可夢（{0}）",
     "ci_one_title": "目前只有一張卡片",
     "ci_one_body": "在詳情畫面（Y）匯出的卡片會顯示在這裡，可匯入本遊戲的存檔或倉庫。",
-    "ci_import": "匯入{0}"
+    "ci_import": "匯入{0}",
+    "gts_board": "看板",
+    "hint_reason": "原因",
+    "hint_scroll": "捲動",
+    "gts_filter_legality": "合法性",
+    "gts_legality_checked": "已檢查",
+    "gts_legality_all": "全部"
 }

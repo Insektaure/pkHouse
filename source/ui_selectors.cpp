@@ -678,27 +678,32 @@ void UI::drawGameSelTopBar() {
     drawGameSelTopRight();
 }
 
+// The selected profile's chip, right-aligned at `rightX`. Returns where the
+// next thing to its left should end; `rightX` itself when there is no profile.
+int UI::drawProfileChip(int rightX, int cy) {
+    if (selectedProfile_ < 0 || selectedProfile_ >= account_.profileCount())
+        return rightX;
+    const UserProfile& p = account_.profiles()[selectedProfile_];
+    TTF_Font* f = uiFont(16, true);
+    const std::string name = fitText(p.nickname, f, 160);
+    const int w = 8 + 32 + 10 + textWidth(name, f) + 16;
+    const int rx = rightX - w;
+    fillRounded(rx, cy - 23, w, 46, 23, T().panelBg);
+    strokeRounded(rx, cy - 23, w, 46, 23, 1, T().panelBorder);
+    if (p.iconTexture)
+        blitRounded(p.iconTexture, rx + 8, cy - 16, 32, 32, 16, T().panelBg);
+    else {
+        fillDisc(rx + 24, cy, 16, T().badgeBg);
+        drawTextCentered(p.nickname.substr(0, 1), rx + 24, cy, T().accent, uiFont(15, true));
+    }
+    drawText(name, rx + 8 + 32 + 10, cy - TTF_FontHeight(f) / 2, T().text, f);
+    return rx - 12;
+}
+
 void UI::drawGameSelTopRight() {
     const int cy = 40;
     // Right: launch mode, then the profile.
-    int rx = SCREEN_W - 32;
-    if (selectedProfile_ >= 0 && selectedProfile_ < account_.profileCount()) {
-        const UserProfile& p = account_.profiles()[selectedProfile_];
-        TTF_Font* f = uiFont(16, true);
-        const std::string name = fitText(p.nickname, f, 160);
-        const int w = 8 + 32 + 10 + textWidth(name, f) + 16;
-        rx -= w;
-        fillRounded(rx, cy - 23, w, 46, 23, T().panelBg);
-        strokeRounded(rx, cy - 23, w, 46, 23, 1, T().panelBorder);
-        if (p.iconTexture)
-            blitRounded(p.iconTexture, rx + 8, cy - 16, 32, 32, 16, T().panelBg);
-        else {
-            fillDisc(rx + 24, cy, 16, T().badgeBg);
-            drawTextCentered(p.nickname.substr(0, 1), rx + 24, cy, T().accent, uiFont(15, true));
-        }
-        drawText(name, rx + 8 + 32 + 10, cy - TTF_FontHeight(f) / 2, T().text, f);
-        rx -= 12;
-    }
+    int rx = drawProfileChip(SCREEN_W - 32, cy);
     {
         TTF_Font* f = uiFont(13, true);
         const bool applet = appletMode_ || selectedProfile_ < 0;

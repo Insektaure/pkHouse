@@ -275,6 +275,7 @@
     "status_banks_clean": "已载入仓库 · 无更改",
     "status_unsaved": "有未保存的更改",
     "info_empty_slot": "空位",
+    "info_iv_total": "个体值 {0} / 186",
     "info_ev_total": "努力值 {0} / 510",
     "info_perfect_ivs": "{0} × 31",
     "info_ot": "初训家 {0} {1}",
@@ -496,5 +497,11 @@
     "ci_subtitle": "保存为卡片的宝可梦（{0}）",
     "ci_one_title": "目前只有一张卡片",
     "ci_one_body": "在详情界面（Y）导出的卡片会显示在这里，可导入本游戏的存档或仓库。",
-    "ci_import": "导入{0}"
+    "ci_import": "导入{0}",
+    "gts_board": "看板",
+    "hint_reason": "原因",
+    "hint_scroll": "滚动",
+    "gts_filter_legality": "合法性",
+    "gts_legality_checked": "已检查",
+    "gts_legality_all": "全部"
 }

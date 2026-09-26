@@ -275,6 +275,7 @@
     "status_banks_clean": "Banques chargées · aucune modification",
     "status_unsaved": "Modifications non enregistrées",
     "info_empty_slot": "Emplacement vide",
+    "info_iv_total": "IV {0} / 186",
     "info_ev_total": "EV {0} / 510",
     "info_perfect_ivs": "{0} × 31",
     "info_ot": "DO {0} {1}",
@@ -496,5 +497,11 @@
     "ci_subtitle": "Pokémon enregistrés en cartes, pour {0}",
     "ci_one_title": "Une seule carte pour l'instant",
     "ci_one_body": "Les cartes exportées depuis l'écran de détails (Y) apparaissent ici, prêtes à être importées dans la sauvegarde ou les banques de ce jeu.",
-    "ci_import": "Importer {0}"
+    "ci_import": "Importer {0}",
+    "gts_board": "Tableau",
+    "hint_reason": "Raison",
+    "hint_scroll": "Défiler",
+    "gts_filter_legality": "Légalité",
+    "gts_legality_checked": "Vérifiés",
+    "gts_legality_all": "Tout"
 }

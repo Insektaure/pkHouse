@@ -360,23 +360,14 @@ private:
     // Hub: 0 = browse, 1 = search, 2 = deposit.
     int  gtsHubCursor_ = 0;
 
-    // The 60-slot browse grid. One page is exactly one request, which is why
-    // PAGE_SIZE and the grid size are the same number.
-    static constexpr int GTS_COLS = 10;
-    static constexpr int GTS_ROWS = 6;
+    // The 60-slot browse grid: the box view's cells, 12 x 5 in one wide
+    // panel. One page is exactly one request, which is why PAGE_SIZE and the
+    // grid size are the same number.
+    static constexpr int GTS_COLS = 12;
+    static constexpr int GTS_ROWS = 5;
     static constexpr int GTS_PER_PAGE = GTS_COLS * GTS_ROWS;
     static_assert(GTS_PER_PAGE == Gts::PAGE_SIZE,
                   "the browse grid and a server page must hold the same number");
-
-    // Sized so six rows plus one line of detail clear the status bar. The two
-    // pixels a row gives up buy the line: the grid cannot tell you whether a
-    // Pokemon is legal, and that is the thing most worth knowing before
-    // spending a download on it.
-    static constexpr int GTS_CELL_W = 118;
-    static constexpr int GTS_CELL_H = 94;
-    static constexpr int GTS_CELL_PAD = 4;
-    static constexpr int GTS_SPRITE = 54;
-    static constexpr int GTS_GRID_TOP = 58;
 
     Gts::Filter gtsFilter_;
     Gts::Page   gtsPage_;
@@ -782,7 +773,6 @@ private:
     void handleGtsHubInput(bool& running);
     void drawGtsBrowseFrame();
     void handleGtsBrowseInput(bool& running);
-    void drawGtsSlot(int x, int y, const Gts::Entry& e, bool isCursor);
     void moveGtsCursor(int dx, int dy);
     void drawGtsFilterPopup();
     void handleGtsFilterInput(const SDL_Event& event);
@@ -796,6 +786,9 @@ private:
     void gtsScanAllCards();
     void gtsUploadSelectedCard();
     std::string gtsEntryLabel(const Gts::Entry& e) const;
+    SDL_Color gtsVerdictColor(const Gts::Entry& e) const;
+    void showGtsReport(const Gts::Entry& e);   // blocks until dismissed
+    bool gtsOpensReport(const Gts::Entry& e) const;
 
     // Rendering helpers
 
@@ -881,6 +874,7 @@ private:
     // House icon and "pkHouse", vertically centred on cy. Returns the x just
     // past the wordmark.
     int  drawLogo(int x, int cy);
+    int  drawProfileChip(int rightX, int cy);
     void drawTopBar();
     // One box panel. Everything it shows - which box, its name, the tag above
     // it - comes from the current state, so the bank selector can draw the

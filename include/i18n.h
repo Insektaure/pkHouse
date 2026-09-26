@@ -313,6 +313,7 @@ namespace StrKey {
     constexpr const char* StatusBanksClean         = "status_banks_clean";
     constexpr const char* StatusUnsaved            = "status_unsaved";
     constexpr const char* InfoEmptySlot            = "info_empty_slot";
+    constexpr const char* InfoIvTotal              = "info_iv_total";
     constexpr const char* InfoEvTotal              = "info_ev_total";
     constexpr const char* InfoPerfectIvs           = "info_perfect_ivs";
     constexpr const char* InfoOt                   = "info_ot";
@@ -537,6 +538,14 @@ namespace StrKey {
     constexpr const char* CiOneTitle               = "ci_one_title";
     constexpr const char* CiOneBody                = "ci_one_body";
     constexpr const char* CiImport                 = "ci_import";
+
+    // GTS board (9c)
+    constexpr const char* GtsBoard                 = "gts_board";
+    constexpr const char* HintReason               = "hint_reason";
+    constexpr const char* HintScroll               = "hint_scroll";
+    constexpr const char* GtsFilterLegality        = "gts_filter_legality";
+    constexpr const char* GtsLegalityChecked       = "gts_legality_checked";
+    constexpr const char* GtsLegalityAll           = "gts_legality_all";
 
     // dialogs (UI 2.0)
     constexpr const char* DlgOk                    = "dlg_ok";

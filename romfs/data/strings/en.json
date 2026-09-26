@@ -275,6 +275,7 @@
     "status_banks_clean": "Banks loaded · no changes",
     "status_unsaved": "Unsaved changes",
     "info_empty_slot": "Empty slot",
+    "info_iv_total": "IV {0} / 186",
     "info_ev_total": "EV {0} / 510",
     "info_perfect_ivs": "{0} × 31",
     "info_ot": "OT {0} {1}",
@@ -496,5 +497,11 @@
     "ci_subtitle": "Pokémon saved as card files, for {0}",
     "ci_one_title": "Only one card so far",
     "ci_one_body": "Cards you export from the details screen (Y) show up here, ready to import into this game's save or banks.",
-    "ci_import": "Import {0}"
+    "ci_import": "Import {0}",
+    "gts_board": "Board",
+    "hint_reason": "Reason",
+    "hint_scroll": "Scroll",
+    "gts_filter_legality": "Legality",
+    "gts_legality_checked": "Checked",
+    "gts_legality_all": "Everything"
 }

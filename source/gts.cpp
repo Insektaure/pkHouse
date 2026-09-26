@@ -513,7 +513,9 @@ bool Gts::search(const Filter& filter, int offset, Page& out) {
     json req;
     req["limit"]  = PAGE_SIZE;
     req["offset"] = offset < 0 ? 0 : offset;
-    req["legality"] = filter.onlyLegal ? "legal" : "any";
+    req["legality"] = filter.legality == Filter::Legality::LegalOnly ? "legal"
+                    : filter.legality == Filter::Legality::All       ? "any"
+                                                                     : "checked";
     req["sort"]     = filter.byPopularity ? "popular" : "recent";
 
     // Only what was actually asked for: a filter sent as "any" and a filter

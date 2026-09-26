@@ -275,6 +275,7 @@
     "status_banks_clean": "Bancos carregados · sem alterações",
     "status_unsaved": "Alterações não salvas",
     "info_empty_slot": "Espaço vazio",
+    "info_iv_total": "IV {0} / 186",
     "info_ev_total": "EV {0} / 510",
     "info_perfect_ivs": "{0} × 31",
     "info_ot": "TO {0} {1}",
@@ -496,5 +497,11 @@
     "ci_subtitle": "Pokémon salvos como cartões, para {0}",
     "ci_one_title": "Só um cartão por enquanto",
     "ci_one_body": "Os cartões que você exportar na tela de detalhes (Y) aparecem aqui, prontos para importar no save ou nos bancos deste jogo.",
-    "ci_import": "Importar {0}"
+    "ci_import": "Importar {0}",
+    "gts_board": "Mural",
+    "hint_reason": "Motivo",
+    "hint_scroll": "Rolar",
+    "gts_filter_legality": "Legalidade",
+    "gts_legality_checked": "Verificados",
+    "gts_legality_all": "Tudo"
 }

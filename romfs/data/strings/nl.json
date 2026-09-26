@@ -275,6 +275,7 @@
     "status_banks_clean": "Banken geladen · geen wijzigingen",
     "status_unsaved": "Niet-opgeslagen wijzigingen",
     "info_empty_slot": "Leeg vak",
+    "info_iv_total": "IV {0} / 186",
     "info_ev_total": "EV {0} / 510",
     "info_perfect_ivs": "{0} × 31",
     "info_ot": "OT {0} {1}",
@@ -496,5 +497,11 @@
     "ci_subtitle": "Pokémon opgeslagen als kaarten, voor {0}",
     "ci_one_title": "Nog maar één kaart",
     "ci_one_body": "Kaarten die je exporteert vanuit het detailscherm (Y) verschijnen hier, klaar om te importeren in de save of de banken van dit spel.",
-    "ci_import": "{0} importeren"
+    "ci_import": "{0} importeren",
+    "gts_board": "Prikbord",
+    "hint_reason": "Reden",
+    "hint_scroll": "Scrollen",
+    "gts_filter_legality": "Legaliteit",
+    "gts_legality_checked": "Gecontroleerd",
+    "gts_legality_all": "Alles"
 }

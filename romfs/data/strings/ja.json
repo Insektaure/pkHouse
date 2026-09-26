@@ -275,6 +275,7 @@
     "status_banks_clean": "バンク読込済み · 変更なし",
     "status_unsaved": "未保存の変更",
     "info_empty_slot": "空き",
+    "info_iv_total": "個体値 {0} / 186",
     "info_ev_total": "努力値 {0} / 510",
     "info_perfect_ivs": "{0} × 31",
     "info_ot": "おや {0} {1}",
@@ -496,5 +497,11 @@
     "ci_subtitle": "カードとして保存したポケモン（{0}）",
     "ci_one_title": "カードはまだ1枚だけです",
     "ci_one_body": "詳細画面（Y）で書き出したカードがここに表示され、このゲームのセーブやバンクにインポートできます。",
-    "ci_import": "{0}をインポート"
+    "ci_import": "{0}をインポート",
+    "gts_board": "ボード",
+    "hint_reason": "理由",
+    "hint_scroll": "スクロール",
+    "gts_filter_legality": "正規判定",
+    "gts_legality_checked": "判定済み",
+    "gts_legality_all": "すべて"
 }

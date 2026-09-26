@@ -64,7 +64,7 @@ struct Entry {
     uint32_t    created   = 0;
 };
 
-// What to ask the board for. Defaults are "everything legal, newest first".
+// What to ask the board for. Defaults are "everything the scanner has judged, newest first".
 struct Filter {
     std::string family;              // "" = every game
     uint16_t    species = 0;         // 0 = any
@@ -73,12 +73,17 @@ struct Filter {
     int  egg    = -1;
     int  ball   = -1;                // -1 any
     int  minIvs = -1;                // -1 any, else 0..186
-    bool onlyLegal = true;           // false also shows deposits not yet judged
+    // Which verdicts to list. Checked is everything the scanner has been
+    // through - legal, illegal, unreadable - so a rejected deposit shows with
+    // its reason; All adds the ones still waiting to be judged. A board that
+    // predates "checked" answers it with legal only.
+    enum class Legality { Checked, LegalOnly, All };
+    Legality legality = Legality::Checked;
     bool byPopularity = false;       // false = newest first
 
     bool isDefault() const {
         return family.empty() && species == 0 && shiny < 0 && egg < 0
-            && ball < 0 && minIvs < 0 && onlyLegal && !byPopularity;
+            && ball < 0 && minIvs < 0 && legality == Legality::Checked && !byPopularity;
     }
 };
 

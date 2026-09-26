@@ -275,6 +275,7 @@
     "status_banks_clean": "Bancos cargados · sin cambios",
     "status_unsaved": "Cambios sin guardar",
     "info_empty_slot": "Espacio vacío",
+    "info_iv_total": "IV {0} / 186",
     "info_ev_total": "EV {0} / 510",
     "info_perfect_ivs": "{0} × 31",
     "info_ot": "EO {0} {1}",
@@ -496,5 +497,11 @@
     "ci_subtitle": "Pokémon guardados como tarjetas, para {0}",
     "ci_one_title": "Solo una tarjeta por ahora",
     "ci_one_body": "Las tarjetas que exportes desde la pantalla de detalles (Y) aparecen aquí, listas para importarlas a la partida o a los bancos de este juego.",
-    "ci_import": "Importar {0}"
+    "ci_import": "Importar {0}",
+    "gts_board": "Tablón",
+    "hint_reason": "Motivo",
+    "hint_scroll": "Desplazar",
+    "gts_filter_legality": "Legalidad",
+    "gts_legality_checked": "Revisados",
+    "gts_legality_all": "Todo"
 }

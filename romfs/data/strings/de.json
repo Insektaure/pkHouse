@@ -275,6 +275,7 @@
     "status_banks_clean": "Banken geladen · keine Änderungen",
     "status_unsaved": "Ungespeicherte Änderungen",
     "info_empty_slot": "Leerer Platz",
+    "info_iv_total": "DV {0} / 186",
     "info_ev_total": "FP {0} / 510",
     "info_perfect_ivs": "{0} × 31",
     "info_ot": "OT {0} {1}",
@@ -496,5 +497,11 @@
     "ci_subtitle": "Als Karten gespeicherte Pokémon, für {0}",
     "ci_one_title": "Bisher nur eine Karte",
     "ci_one_body": "Karten, die du im Detailbildschirm (Y) exportierst, erscheinen hier und lassen sich in den Spielstand oder die Banken dieses Spiels importieren.",
-    "ci_import": "{0} importieren"
+    "ci_import": "{0} importieren",
+    "gts_board": "Pinnwand",
+    "hint_reason": "Grund",
+    "hint_scroll": "Scrollen",
+    "gts_filter_legality": "Legalität",
+    "gts_legality_checked": "Geprüft",
+    "gts_legality_all": "Alles"
 }

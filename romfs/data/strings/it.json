@@ -275,6 +275,7 @@
     "status_banks_clean": "Banche caricate · nessuna modifica",
     "status_unsaved": "Modifiche non salvate",
     "info_empty_slot": "Spazio vuoto",
+    "info_iv_total": "IV {0} / 186",
     "info_ev_total": "EV {0} / 510",
     "info_perfect_ivs": "{0} × 31",
     "info_ot": "AO {0} {1}",
@@ -496,5 +497,11 @@
     "ci_subtitle": "Pokémon salvati come carte, per {0}",
     "ci_one_title": "Per ora una sola carta",
     "ci_one_body": "Le carte esportate dalla schermata dei dettagli (Y) compaiono qui, pronte da importare nel salvataggio o nelle banche di questo gioco.",
-    "ci_import": "Importa {0}"
+    "ci_import": "Importa {0}",
+    "gts_board": "Bacheca",
+    "hint_reason": "Motivo",
+    "hint_scroll": "Scorri",
+    "gts_filter_legality": "Legalità",
+    "gts_legality_checked": "Controllati",
+    "gts_legality_all": "Tutto"
 }

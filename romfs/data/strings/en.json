@@ -391,7 +391,7 @@
     "menu_desc_export_cards": "PNG cards, one per Pokémon",
     "menu_note_save": "Writes your changes to the save and the bank.",
     "menu_note_dual_clean": "Nothing to save. Your game save is never touched.",
-    "menu_note_dual_dirty": "Quit does not save the banks. Your game save is never touched.",
+    "menu_note_dual_dirty": "Your game save is never touched.",
     "hint_change": "Change",
     "menu_change_game_no_save": "Change game without saving",
     "dlg_discard_title": "Discard your changes?",

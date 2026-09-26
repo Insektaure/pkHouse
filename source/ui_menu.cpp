@@ -38,7 +38,7 @@ SDL_Texture* UI::uiIcon(const std::string& name) {
 std::vector<UI::MenuItem> UI::menuItems() const {
     std::vector<MenuItem> items;
     const bool dual = isDualBankMode();
-    // Left: tools, then where to go.
+    // Left: tools, then which bank.
     items.push_back({MenuId::Search, 0});
     if (gameInfo(selectedGame_).hasWondercards)
         items.push_back({MenuId::Wondercard, 0});
@@ -53,19 +53,16 @@ std::vector<UI::MenuItem> UI::menuItems() const {
     } else {
         items.push_back({MenuId::SwitchBank, 0});
     }
-    items.push_back({MenuId::ChangeGame, 0});
-    // Right: settings, then leaving. Theme is shown even with a single theme,
-    // so the row is in place as more are added.
+    // Right: settings, then every way out, from the safest to the most final:
+    // save, change game (saves), change game without saving, quit without
+    // saving. Theme is shown even with a single theme, so the row is in place
+    // as more are added.
     items.push_back({MenuId::Theme, 1});
     items.push_back({MenuId::Language, 1});
-    if (dual) {
-        items.push_back({MenuId::SaveBanks, 1});
-        items.push_back({MenuId::Quit, 1});
-    } else {
-        items.push_back({MenuId::SaveQuit, 1});
-        items.push_back({MenuId::QuitNoSave, 1});
-    }
+    items.push_back({dual ? MenuId::SaveBanks : MenuId::SaveQuit, 1});
+    items.push_back({MenuId::ChangeGame, 1});
     items.push_back({MenuId::ChangeGameNoSave, 1});
+    items.push_back({MenuId::QuitNoSave, 1});
     return items;
 }
 
@@ -334,7 +331,6 @@ void UI::menuActivate(MenuId id, bool& running) {
         running = false;
         return;
     case MenuId::QuitNoSave:
-    case MenuId::Quit:
         // Quitting drops unsaved changes: say so first when there are any;
         // that question is the confirmation, so it is not asked twice.
         if (unsavedChanges_) {
@@ -387,20 +383,19 @@ void UI::drawMenuPopup() {
             case MenuId::Language:   return 50;
             case MenuId::SaveQuit:
             case MenuId::SaveBanks:  return 52;
-            case MenuId::QuitNoSave:
-            case MenuId::Quit:
-            case MenuId::ChangeGameNoSave: return 46;
+            case MenuId::ChangeGame:
+            case MenuId::ChangeGameNoSave:
+            case MenuId::QuitNoSave:       return 46;
             default:                 return MN_ROW_H;
         }
     };
     auto isGoTo = [](MenuId id) {
         return id == MenuId::SwitchBank || id == MenuId::SwitchLeft ||
-               id == MenuId::SwitchRight || id == MenuId::ChangeGame;
+               id == MenuId::SwitchRight;
     };
     auto isLeave = [](MenuId id) {
-        return id == MenuId::SaveQuit || id == MenuId::QuitNoSave ||
-               id == MenuId::SaveBanks || id == MenuId::Quit ||
-               id == MenuId::ChangeGameNoSave;
+        return id == MenuId::SaveQuit || id == MenuId::SaveBanks || id == MenuId::ChangeGame ||
+               id == MenuId::ChangeGameNoSave || id == MenuId::QuitNoSave;
     };
 
     // The note that goes with the save button, measured first so the layout
@@ -498,7 +493,8 @@ void UI::drawMenuPopup() {
         const bool cur = p.id == curId;
 
         if (isLeave(p.id)) {
-            // Buttons: the saving one in the accent, quitting without saving red.
+            // Buttons: the saving one in the accent, change game (which also
+            // saves) plain, the two that drop changes red.
             const bool primary = p.id == MenuId::SaveQuit || p.id == MenuId::SaveBanks;
             const bool danger  = p.id == MenuId::QuitNoSave || p.id == MenuId::ChangeGameNoSave;
             if (cur) strokeRounded(rx - 6, ry - 6, p.w + 12, p.h + 12, 18, 3, T().accent);
@@ -511,9 +507,9 @@ void UI::drawMenuPopup() {
             }
             const char* key = p.id == MenuId::SaveQuit ? StrKey::MenuSaveQuit
                             : p.id == MenuId::SaveBanks ? StrKey::MenuSaveBanks
-                            : p.id == MenuId::QuitNoSave ? StrKey::MenuQuitNoSave
+                            : p.id == MenuId::ChangeGame ? StrKey::MenuChangeGame
                             : p.id == MenuId::ChangeGameNoSave ? StrKey::MenuChangeGameNoSave
-                                                               : StrKey::MenuQuit;
+                                                               : StrKey::MenuQuitNoSave;
             TTF_Font* f = uiFont(primary ? 17 : 15, true);
             const std::string label = fitText(i18n::get(key), f, p.w - 60);
             const SDL_Color tc = primary ? T().keyCapText : danger ? red : T().text;
@@ -586,8 +582,6 @@ void UI::drawMenuPopup() {
                 badge = i18n::get(StrKey::BsTagLeft); break;
             case MenuId::SwitchRight: iconName = "bank";   titleKey = StrKey::MenuSwitchBank; value = activeBankName_;
                 badge = i18n::get(StrKey::BsTagRight); break;
-            case MenuId::ChangeGame:  iconName = "gamepad"; titleKey = StrKey::MenuChangeGame;
-                value = gameDisplayNameOf(selectedGame_); break;
             default: break;
         }
         if (title.empty()) title = i18n::get(titleKey);

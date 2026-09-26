@@ -391,7 +391,7 @@
     "menu_desc_export_cards": "Cartes PNG, une par Pokémon",
     "menu_note_save": "Enregistre vos modifications dans la sauvegarde et la banque.",
     "menu_note_dual_clean": "Rien à enregistrer. Votre sauvegarde n’est jamais modifiée.",
-    "menu_note_dual_dirty": "Quitter n’enregistre pas les banques. Votre sauvegarde n’est jamais modifiée.",
+    "menu_note_dual_dirty": "Votre sauvegarde n’est jamais modifiée.",
     "hint_change": "Changer",
     "menu_change_game_no_save": "Changer de jeu sans enregistrer",
     "dlg_discard_title": "Abandonner vos modifications ?",

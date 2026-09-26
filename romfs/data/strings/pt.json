@@ -391,7 +391,7 @@
     "menu_desc_export_cards": "Cartões PNG, um por Pokémon",
     "menu_note_save": "Grava suas alterações no jogo salvo e no banco.",
     "menu_note_dual_clean": "Nada para salvar. Seu jogo salvo nunca é alterado.",
-    "menu_note_dual_dirty": "Sair não salva os bancos. Seu jogo salvo nunca é alterado.",
+    "menu_note_dual_dirty": "Seu jogo salvo nunca é alterado.",
     "hint_change": "Mudar",
     "menu_change_game_no_save": "Trocar de jogo sem salvar",
     "dlg_discard_title": "Descartar as alterações?",

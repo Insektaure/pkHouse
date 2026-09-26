@@ -804,7 +804,7 @@ private:
     enum class MenuId {
         Search, Wondercard, ExportPk, ExportCards, ImportCard,
         SwitchBank, SwitchLeft, SwitchRight, ChangeGame,
-        Theme, Language, SaveQuit, QuitNoSave, SaveBanks, Quit, ChangeGameNoSave,
+        Theme, Language, SaveQuit, QuitNoSave, SaveBanks, ChangeGameNoSave,
     };
     struct MenuItem { MenuId id; int column; };
     std::vector<MenuItem> menuItems() const;

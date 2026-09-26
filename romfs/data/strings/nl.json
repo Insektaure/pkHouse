@@ -391,7 +391,7 @@
     "menu_desc_export_cards": "PNG-kaarten, één per Pokémon",
     "menu_note_save": "Schrijft je wijzigingen naar de opslag en de bank.",
     "menu_note_dual_clean": "Niets op te slaan. Je spelopslag wordt nooit aangeraakt.",
-    "menu_note_dual_dirty": "Afsluiten slaat de banken niet op. Je spelopslag wordt nooit aangeraakt.",
+    "menu_note_dual_dirty": "Je spelopslag wordt nooit aangeraakt.",
     "hint_change": "Wijzigen",
     "menu_change_game_no_save": "Ander spel zonder opslaan",
     "dlg_discard_title": "Wijzigingen verwerpen?",

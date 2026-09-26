@@ -391,7 +391,7 @@
     "menu_desc_export_cards": "PNG-Karten, eine pro Pokémon",
     "menu_note_save": "Schreibt deine Änderungen in Spielstand und Bank.",
     "menu_note_dual_clean": "Nichts zu speichern. Dein Spielstand wird nie verändert.",
-    "menu_note_dual_dirty": "Beenden speichert die Banken nicht. Dein Spielstand wird nie verändert.",
+    "menu_note_dual_dirty": "Dein Spielstand wird nie verändert.",
     "hint_change": "Ändern",
     "menu_change_game_no_save": "Spiel wechseln ohne Speichern",
     "dlg_discard_title": "Änderungen verwerfen?",

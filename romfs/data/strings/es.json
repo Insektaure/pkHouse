@@ -391,7 +391,7 @@
     "menu_desc_export_cards": "Cartas PNG, una por Pokémon",
     "menu_note_save": "Guarda tus cambios en la partida y en el banco.",
     "menu_note_dual_clean": "Nada que guardar. Tu partida nunca se modifica.",
-    "menu_note_dual_dirty": "Salir no guarda los bancos. Tu partida nunca se modifica.",
+    "menu_note_dual_dirty": "Tu partida nunca se modifica.",
     "hint_change": "Cambiar",
     "menu_change_game_no_save": "Cambiar de juego sin guardar",
     "dlg_discard_title": "¿Descartar los cambios?",

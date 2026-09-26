@@ -391,7 +391,7 @@
     "menu_desc_export_cards": "PNGカード（1匹ずつ）",
     "menu_note_save": "変更をセーブデータとバンクに書き込みます。",
     "menu_note_dual_clean": "保存するものはありません。セーブデータは変更されません。",
-    "menu_note_dual_dirty": "終了してもバンクは保存されません。セーブデータは変更されません。",
+    "menu_note_dual_dirty": "セーブデータは変更されません。",
     "hint_change": "変更",
     "menu_change_game_no_save": "保存せずにゲームを変更",
     "dlg_discard_title": "変更を破棄しますか？",

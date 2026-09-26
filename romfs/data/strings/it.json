@@ -391,7 +391,7 @@
     "menu_desc_export_cards": "Schede PNG, una per Pokémon",
     "menu_note_save": "Scrive le modifiche nel salvataggio e nella banca.",
     "menu_note_dual_clean": "Niente da salvare. Il tuo salvataggio non viene mai toccato.",
-    "menu_note_dual_dirty": "Uscire non salva le banche. Il tuo salvataggio non viene mai toccato.",
+    "menu_note_dual_dirty": "Il tuo salvataggio non viene mai toccato.",
     "hint_change": "Cambia",
     "menu_change_game_no_save": "Cambia gioco senza salvare",
     "dlg_discard_title": "Annullare le modifiche?",

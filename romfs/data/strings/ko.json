@@ -391,7 +391,7 @@
     "menu_desc_export_cards": "PNG 카드, 포켓몬마다 하나",
     "menu_note_save": "변경 사항을 세이브와 뱅크에 씁니다.",
     "menu_note_dual_clean": "저장할 것이 없습니다. 게임 세이브는 바뀌지 않습니다.",
-    "menu_note_dual_dirty": "나가면 뱅크가 저장되지 않습니다. 게임 세이브는 바뀌지 않습니다.",
+    "menu_note_dual_dirty": "게임 세이브는 바뀌지 않습니다.",
     "hint_change": "변경",
     "menu_change_game_no_save": "저장하지 않고 게임 변경",
     "dlg_discard_title": "변경 사항을 버릴까요?",

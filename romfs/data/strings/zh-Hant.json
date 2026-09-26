@@ -391,7 +391,7 @@
     "menu_desc_export_cards": "PNG 卡片，每隻一張",
     "menu_note_save": "將變更寫入存檔和倉庫。",
     "menu_note_dual_clean": "沒有需要儲存的內容。遊戲存檔不會被改動。",
-    "menu_note_dual_dirty": "離開不會儲存倉庫。遊戲存檔不會被改動。",
+    "menu_note_dual_dirty": "遊戲存檔不會被改動。",
     "hint_change": "變更",
     "menu_change_game_no_save": "不儲存並更換遊戲",
     "dlg_discard_title": "放棄變更？",

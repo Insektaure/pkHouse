@@ -15,7 +15,7 @@ While the app has been tested, it may contain bugs that could corrupt or damage 
 
 The author is not responsible for any data loss or damage to your save data.
 
-This is why the automatic backup system exists — always verify your backups before making changes.
+This is why the automatic backup system exists - always verify your backups before making changes.
 
 If you need to restore a backup, use a save manager such as [Checkpoint](https://github.com/FlagBrew/Checkpoint) or [JKSV](https://github.com/J-D-K/JKSV) to import the backup files back onto your Switch.
 
@@ -37,18 +37,32 @@ If you need to restore a backup, use a save manager such as [Checkpoint](https:/
 | Pokemon FireRed           | 1.0.0          | GBA sectors (`FireRed_*.sav`)   | 14    | 30        |
 | Pokemon LeafGreen         | 1.0.0          | GBA sectors (`LeafGreen_*.sav`) | 14    | 30        |
 
-All regional versions of FireRed / LeafGreen are supported: English, Spanish, French, German, Italian, and Japanese. The save file format is identical across all languages — only the title ID and save filename differ.
+All regional versions of FireRed / LeafGreen are supported: English, Spanish, French, German, Italian, and Japanese. The save file format is identical across all languages - only the title ID and save filename differ.
 
 > **Note:** Moving Pokemon between different games is not supported. Banks are separated by game family because transferred Pokemon would lack the HOME Tracker ID required for cross-game compatibility.
 
 ## Features
 
+pkHouse 2.0 redraws every screen: rounded panels, the same top bar and button hints on every screen, and a
+details bar under the boxes. Every feature and every piece of information from 1.x is still there, on the
+same buttons.
+
 ### Profile Selection
 
-On Switch, pkHouse loads all user profiles from the system.\
+On Switch, pkHouse loads all user profiles from the system, each with how many supported saves it has.\
 Select your profile, then choose a game.\
-The app detects which games have save data for the selected profile.\
-Your profile name is shown alongside the game name in all views.
+Your profile is shown in the top right of every screen that follows.
+
+### Game Selection
+
+The games are a grid of cards, each with its generation and how many banks it has. **L / R** switch
+between filters: **All**, **Recent** (backed up in the last 30 days) and one per generation.
+
+The panel on the right describes the highlighted game: whether a save was found, when it was last backed
+up, how many backups are on the SD card, its box format, and its banks. Pressing **A** backs the save up
+and then opens the bank picker; the top bar follows the steps (Game → Backup → Bank).
+
+Two tiles sit above the grid: **Online GTS** and **All Banks**.
 
 ### Two-Panel Box Viewer
 
@@ -56,11 +70,17 @@ In **title override mode**, the main view displays your **game save** on the lef
 In **applet mode** (bank-only), both panels show **banks**, allowing bank-to-bank transfers.\
 Navigate freely between both panels to move Pokemon back and forth.
 
+The **details bar** under the boxes describes the Pokemon under the cursor (or the one you are holding):
+sprite, shiny and alpha marks, name, gender and level; nature, ability and ball; all four moves with
+their types; how many perfect IVs it has and its EV total; its trainer, origin game and met location.
+
 ### View All Banks
 
-Browse banks across all your games from a single screen. On the game selector, navigate below the game cards to the **"View All Banks"** option.\
-Banks are displayed in a grouped list organized by game family (e.g. "Sword / Shield", "Scarlet / Violet"), in the same order as the game cards.\
-Selecting a bank opens it in dual-bank mode — no save file needed. After picking your first bank, you're prompted to pick a second bank from the same game for side-by-side management.
+Browse banks across all your games from a single screen: the **All Banks** tile above the game grid.\
+Banks are grouped by game family (e.g. "Sword / Shield", "Scarlet / Violet"), in the same order as the
+game cards. **ZL / ZR** jump from one game to the next, and the highlighted bank's boxes are previewed on
+the right before you open it (**L / R** page through them).\
+Selecting a bank opens it in dual-bank mode - no save file needed. After picking your first bank, you're prompted to pick a second bank from the same game for side-by-side management.
 
 ### Pick & Place
 
@@ -81,33 +101,37 @@ Only occupied slots are selected. Selected slots display a numbered badge showin
 
 Press **A** to pick up all selected Pokemon, then navigate to another box and press **A** to place them.\
 Regular selections (cyan) place Pokemon into the first available empty slots.\
-"Select all" selections (green) preserve original positions — each Pokemon is placed at the same slot index in the target box. All matching slots must be empty.\
+"Select all" selections (green) preserve original positions - each Pokemon is placed at the same slot index in the target box. All matching slots must be empty.\
 Press **B** to cancel and return all Pokemon to their original positions.
 
 Selection is cleared when switching boxes or panels.
 
 ### Box View
 
-Press **ZL** to open a box overview of all save boxes, or **ZR** for all bank boxes.\
-Navigate the grid with the D-Pad. A semi-transparent preview of the highlighted box's contents (Pokemon sprites) appears as you move.\
+Press **ZL** to open a box overview of all save boxes, or **ZR** for all bank boxes; inside it, ZL / ZR
+switch between the two.\
+Navigate the grid with the D-Pad. A preview of the highlighted box's contents (Pokemon sprites) appears as you move.\
 Press **A** to jump directly to that box, **Y** to rename the box (bank boxes only, max 16 characters), or **B** to cancel.
 
 ### Pokemon Details
 
-Press **X** on any Pokemon to view detailed information:
+Press **X** on any Pokemon to open its summary, laid out like a card:
 
-- Catch ball icon and species name, level, gender
-- National Pokedex number
-- Original Trainer (OT) and Trainer ID
+- Sprite, catch ball, species name, nickname, level, gender and National Pokedex number
+- Status badges: shiny, alpha, Gigantamax, egg; types, and Tera type on Scarlet / Violet
+- Original Trainer (OT) and Trainer ID, origin game, met date and location
 - Nature and Ability
 - Held item (or "---" if none)
-- All 4 moves with type icons (2x2 grid layout)
-- IVs displayed as a hexagonal radar chart (perfect 31s highlighted in gold)
-- EVs displayed as a hexagonal radar chart
-- Ribbons and marks (displayed as sprite icons with names)
+- All 4 moves with their types
+- IVs as a hexagonal radar chart (perfect 31s highlighted in gold, with a count badge)
+- EVs with their total out of 510
+- Ribbons and marks, split into a ribbon count and a mark count (**Up / Down** scroll them)
 - Technical data: PID, EC, raw TID/SID, and TSV
 
-Sprites are form-aware — alternate forms like Alolan, Galarian, Hisuian, Paldean, Origin, Therian, and many others display their correct sprite.\
+From the summary, **X** exports the Pokemon as a `.pk` file, **Y** saves it as a card, and **A** releases
+it - held for two seconds, since a released Pokemon is gone.
+
+Sprites are form-aware - alternate forms like Alolan, Galarian, Hisuian, Paldean, Origin, Therian, and many others display their correct sprite.\
 Shiny Pokemon use their shiny color sprites. Both apply everywhere: box grid, detail popup, held overlay, box view preview, and wondercard list.\
 If a form or shiny sprite is not available, the base sprite is used as fallback.
 
@@ -132,14 +156,15 @@ Banks are local `.bin` files stored per game family. Paired games share the same
 
 From the bank selector you can:
 
-- **Create** a new bank (up to 32-character name). On Switch, available SD card space is checked before creating — if there isn't enough room, an error is shown. A name that already exists in the game is rejected with a message instead of failing silently (the SD card filesystem is case-insensitive, so `MyBank` and `mybank` count as the same name).
-- **Rename** an existing bank — renaming onto a name that already exists is rejected with the same message.
-- **Delete** a bank (with confirmation). This is a **soft delete**: the file is moved to `banks/trash/<GameFamily>/` instead of being erased, so it can be recovered with a file manager. If a bank of the same name is already in the trash, a numeric suffix is added (e.g. `MyBank (2).bin`) so nothing is overwritten.
+- **Create** a new bank (up to 32-character name). On Switch, available SD card space is checked before creating - if there isn't enough room, an error is shown. A name that already exists in the game is rejected with a message instead of failing silently (the SD card filesystem is case-insensitive, so `MyBank` and `mybank` count as the same name).
+- **Rename** an existing bank - renaming onto a name that already exists is rejected with the same message.
+- **Delete** a bank (with confirmation - held for two seconds when the bank still holds Pokemon). This is a **soft delete**: the file is moved to `banks/trash/<GameFamily>/` instead of being erased, so it can be recovered with a file manager. If a bank of the same name is already in the trash, a numeric suffix is added (e.g. `MyBank (2).bin`) so nothing is overwritten.
 
 Each bank has the same box capacity as its game family (32 or 40 boxes).\
-The bank list shows the number of occupied slots for each bank.
+The bank list shows how full each bank is and when it was last edited, and the highlighted bank's boxes
+are previewed beside the list before you open it.
 
-Bank files are validated when the folder is listed. A `.bin` that isn't a valid pkHouse bank (missing or corrupt header — for example a stray `.bin` copied into the folder by mistake) is shown as **`[INVALID BANK FILE]`** in place of its slot count and cannot be opened.
+Bank files are validated when the folder is listed. A `.bin` that isn't a valid pkHouse bank (missing or corrupt header - for example a stray `.bin` copied into the folder by mistake) is shown as **`[INVALID BANK FILE]`** in place of its slot count and cannot be opened.
 
 You can switch between banks from the main view via the menu. Both the save and bank are saved together before switching to prevent data inconsistency.\
 If no other bank is available when switching, the app offers to create a new one directly.\
@@ -153,28 +178,16 @@ When loading a game save on Switch, an automatic backup is created before any mo
 backups/<profile>/<game>/<profile>_YYYY-MM-DD_HH-MM-SS/
 ```
 
-This is a full copy of the mounted save directory.\
-The backup is only created once when initially selecting a game — switching banks does not trigger additional backups.
+This is a full copy of the mounted save directory, made as its own step with a progress bar, and the bank
+picker then says where it was written.\
+The backup is only created once when initially selecting a game - switching banks does not trigger additional backups.
 
 Before backing up, the app checks available SD card space. If there isn't enough free space (2x the save size), a warning is shown with the option to continue without a backup or cancel. If the backup itself fails, you'll see a similar prompt before proceeding.
 
-### Themes
+### Theme
 
-pkHouse includes 7 color themes:
-
-| Theme | Style |
-|-------|-------|
-| Default | Dark blue-gray (original) |
-| HOME | Light pastels inspired by Pokemon HOME |
-| HOME - Violet | Purple/lavender tones from HOME's Pokedex |
-| HOME - Blue | Blue palette from HOME's GTS |
-| HOME - Green | Green variant of the HOME style |
-| HOME - Red | Red variant of the HOME style |
-| Pikachu | Yellow and brown Pikachu colors |
-
-Change themes from the **menu** (+ button) in the main view, or press **Y** on the profile/game selection screens.\
-A live preview is applied as you scroll through the list. Press **A** to confirm or **B** to cancel and revert.\
-Your theme choice is saved automatically and persists across sessions.
+pkHouse 2.0 has a single design. The 1.x colour themes were retired with the redesign; the **Theme** row in
+the menu stays, so new themes can be added later without changing the screens.
 
 ### Language
 
@@ -192,12 +205,12 @@ pkHouse supports 9 languages:
 | Русский | ru |
 | 日本語 | ja |
 
-The app automatically detects the Switch system language on startup. You can also manually override the language from the **menu** (+ button → Language).\
+The app automatically detects the Switch system language on startup. You can also override it from the **menu** (+ button): **Left / Right** on the Language row switch languages straight away, and the menu redraws in the new one.\
 Your language choice is saved to `language.txt` and persists across sessions. Delete this file to revert to automatic system detection.
 
 Missing keys automatically fall back to English.
 
-> **Note:** Korean (한국어), Simplified Chinese (简体中文), and Traditional Chinese (繁體中文) translation files are included but currently disabled. The system font (`PlSharedFontType_Standard`) does not include CJK/Korean glyphs — enabling these languages requires loading additional system fonts.
+> **Note:** Korean (한국어), Simplified Chinese (简体中文), and Traditional Chinese (繁體中文) translation files are included but currently disabled. The system font (`PlSharedFontType_Standard`) does not include CJK/Korean glyphs - enabling these languages requires loading additional system fonts.
 
 ### Search / Filter
 
@@ -207,20 +220,23 @@ Available filters:
 
 | Filter | Description |
 |--------|-------------|
-| Species | Alphabetical picker — select a letter, then choose from species available in the current game (with sprites). Letters with no matching species are dimmed and skipped. |
+| Species | One-screen picker: the letters on the left, that letter's species (with sprites) on the right. Only species available in the current game are listed; **Y** picks "any species". |
 | OT Name | Text search (substring, case-insensitive) |
-| Shiny | Toggle to match shiny Pokemon only |
-| Egg | Toggle to match eggs only |
-| Alpha | Toggle to match alpha Pokemon only (Legends: Arceus / Z-A only) |
-| Gender | Cycle: Any / Male / Female / Genderless |
-| Level | Min and max level range |
-| Perfect IVs | Off / 1+ (at least one 31 IV) / 6IV (all 31) |
-| Ribbons/Marks | Off / Has Ribbon / Has Mark / Has Any |
+| Gender | Any / Male / Female / Genderless |
+| Level | Min and max level: **A** types a value, **L / R** pick the end, **ZL / ZR** step it by one |
+| Shiny | On / off |
+| Egg | On / off |
+| Alpha | On / off (Legends: Arceus / Z-A only) |
+| Perfect IVs | Off, or at least 1 to 6 perfect IVs |
+| Ribbons/Marks | Off / Has Ribbon / Has Mark / Has Either |
 
-Two result modes are available (selectable in the filter with Left/Right, defaults to Highlight):
+The filters sit in two columns: the D-Pad moves between them and **A** changes the one you are on. The
+active filters are shown as chips; **X** resets them and **Y** runs the search.
+
+Two result modes are available (the "Show results" row, defaults to Highlight):
 
 - **Highlight** (default): Returns to the box view with matching Pokemon outlined in color and non-matching Pokemon dimmed. The highlight follows Pokemon as you move them between slots. In box view (ZL/ZR), boxes containing matches are outlined and matching slots are highlighted in the preview. Press **B** to clear highlights, or open the menu to start a new search.
-- **List**: Results are shown as a scrollable list with status badges ([S] shiny, [A] alpha, [E] egg), species name, level, gender, and location. Press **A** to jump directly to a result in the box view, **L/R** to skip 10 results (hold to auto-repeat), **X** to go back and adjust filters, or **B** to close.
+- **List**: Results are shown as a scrollable list with the sprite, shiny and alpha marks, species name, gender, level, and where it is (save or bank, box and slot). Press **A** to jump directly to a result in the box view, **L/R** to skip 10 results (hold to auto-repeat), **X** to go back and adjust filters, or **B** to close.
 
 ### Wondercard Injection
 
@@ -237,9 +253,13 @@ Place wondercard files in the corresponding folder on your SD card:
 | Scarlet / Violet | `wondercards/ScarletViolet/` | `.wc9` |
 | Legends: Z-A | `wondercards/LegendsZA/` | `.wa9` |
 
-The wondercard list shows each card's species, level, and shiny status. Select a card and press **A** to inject it into the currently selected box slot.
+The wondercard list shows each card's number, species, level and shiny status, the card's title and region
+(read from the file name), and a **YOUR OT** tag on the cards that take your trainer as their OT. The pane
+beside it says which slot the Pokemon will go into - and, for a card that takes your OT, that it can only
+go into a save, before you press anything. Select a card and press **A** to inject it into the currently
+selected box slot; **L / R** skip 10 cards.
 
-The injected Pokemon is fully generated from the wondercard data — PID, IVs, nature, ability, moves, OT, and all metadata are set according to the event's rules, matching official distribution behavior.
+The injected Pokemon is fully generated from the wondercard data - PID, IVs, nature, ability, moves, OT, and all metadata are set according to the event's rules, matching official distribution behavior.
 
 Wondercard files can be downloaded from the [Project Pokemon EventsGallery](https://github.com/projectpokemon/EventsGallery) repository.
 
@@ -273,8 +293,12 @@ several Pokemon and use **menu (+) → Export Cards** to write them all in one p
 Cards are written to:
 
 ```
-cards/<GameFamily>/<Species> - <GameTag> - [flags] - <EC>.png
+cards/<GameFamily>/<Dex>-<Form> - <Species> - <GameTag> - [flags] - <EC>.png
 ```
+
+for example `0111-00 - Rhyhorn - LGPE - [S] - 4FCD97B2.png`. The four-digit Pokedex number and two-digit
+form come first so that the import list can show the right sprite before a card is read, and lists cards
+in Pokedex order; eggs are `0000-00`. Cards made before 2.0 have no number and still import as before.
 
 The card shows, at a glance:
 
@@ -290,9 +314,8 @@ The card shows, at a glance:
 - Ribbons and marks
 - A QR code carrying the entire Pokemon
 
-The card is painted in the app's **Default** theme colours, so it looks like the app it came from. That
-palette is fixed rather than following whichever theme is active: a card gets shared, and it should look
-the same wherever it lands. The QR tile is the one exception — it keeps a white ground and black modules
+The card is painted in a fixed palette of its own rather than following the app's theme: a card gets
+shared, and it should look the same wherever it lands. The QR tile is the one exception - it keeps a white ground and black modules
 whatever the rest of the card is painted in, because scanners need real black on real white.
 
 > **Note:** Only the public Trainer ID is printed on the card. The secret ID is deliberately left off,
@@ -310,14 +333,14 @@ strip or re-encode it; a QR code survives re-encoding, resizing, and a photo of 
 |--------|------|-------|
 | 0 | 4 | Magic `PKHC` |
 | 4 | 1 | Payload format version (currently 1) |
-| 5 | 1 | `GameType` enum value — tells the reader which PKM format the body is in |
+| 5 | 1 | `GameType` enum value - tells the reader which PKM format the body is in |
 | 6 | 2 | Body length in bytes, little endian |
 | 8 | 2 | CRC-16/CCITT-FALSE over the body, little endian |
 | 10 | N | Decrypted party-size Pokemon data, byte for byte what the `.pk` export writes |
 
 Payloads run from 110 bytes (FireRed / LeafGreen) to 386 (Legends: Arceus), which encodes to a version 7
-to version 15 QR at ECC level M. The code is drawn at a whole number of pixels per module — never scaled
-up afterwards, which is what actually breaks scanners — giving at least 4 pixels per module and a 4 module
+to version 15 QR at ECC level M. The code is drawn at a whole number of pixels per module - never scaled
+up afterwards, which is what actually breaks scanners - giving at least 4 pixels per module and a 4 module
 quiet zone for every supported game.
 
 Encoding uses [qrcodegen](https://www.nayuki.io/page/qr-code-generator-library) by Project Nayuki (MIT),
@@ -336,15 +359,20 @@ Cards can be read back in. Open the **menu** (+ button) and choose **Import Card
 `cards/<GameFamily>/`.
 
 The browser shows the file list on the left and, on the right, **what the highlighted card actually
-contains** — sprite, species, level, gender, nature, ability, held item, all four moves with their types,
+contains** - sprite, species, level, gender, nature, ability, held item, all four moves with their types,
 IVs, OT and origin game. All of it is read out of the QR code, never from the filename, so the pane shows
 the Pokemon you would really be importing.
+
+The list itself is labelled from the filename, so it stays quick however many cards there are: the name,
+the game tag and the shiny / alpha / egg marks, with the sprite taken from the Pokedex number a 2.0 card
+starts with. Once a card has been read, its row shows what it holds - species, gender, level, trainer and
+game.
 
 A card that has been resized or re-cropped outside those proportions cannot be read that cheaply; the pane
 says **Press A to read this card** and the full-image search runs when you commit.
 
 Press **A** and pkHouse decodes the whole image, validates the payload, and shows the Pokemon in the
-**full detail view** — IV and EV radar charts, ribbons, technical data — with **A: Import  B: Cancel**.
+**full detail view** - IV and EV radar charts, ribbons, technical data - with **A: Import  B: Cancel**.
 Nothing is written until you confirm.
 
 An imported Pokemon goes through exactly the same path as a bank-to-save move, so the handling trainer is
@@ -372,13 +400,13 @@ A card is checked in this order before anything is written:
 The **game family match** is the one that matters. The folder a card sits in is a convenience for
 listing, never a guarantee: the payload carries the family it was exported from, that byte is covered by
 the CRC, and it is what gets compared. This has to be a hard gate, because placing a Pokemon writes it
-through the open game's field offsets — a Sword Pokemon written into a Scarlet save would be read with
+through the open game's field offsets - a Sword Pokemon written into a Scarlet save would be read with
 Gen 9 offsets and corrupted.
 
 Family, not exact version: a Sword card imports into a Shield bank, the same rule banks already follow.
 
 > **Tip:** If you drop a card into the wrong game folder, pkHouse tells you which family it belongs to and
-> offers to move the file there for you. Nothing is overwritten — a name that is already taken gets a
+> offers to move the file there for you. Nothing is overwritten - a name that is already taken gets a
 > numeric suffix.
 
 Decoding uses [quirc](https://github.com/dlbeer/quirc) by Daniel Beer (ISC). A card that a chat app has
@@ -414,26 +442,43 @@ The games compare the full trainer identity (TID/SID, name, gender, game version
 
 This keeps friendship routing (e.g. friendship evolutions), memories, and legality checks correct after transferring Pokemon between save files with the bank.
 
-> **_FireRed / LeafGreen_** are unaffected — Gen 3 has no handling trainer concept, so no changes are needed there.
+> **_FireRed / LeafGreen_** are unaffected - Gen 3 has no handling trainer concept, so no changes are needed there.
 
 ### Online GTS
 
 A public board for cards: leave a Pokemon on it for anyone to take, and take what other people have left.
-Reached from the row above the game icons, before a game is picked — the board carries every game at once,
-and what you take off it is saved as a card rather than dropped into a save, so it can be imported into
-whichever game you open next.
+Reached from the **Online GTS** tile above the game grid, before a game is picked - the board carries every
+game at once, and what you take off it is saved as a card rather than dropped into a save, so it can be
+imported into whichever game you open next.
 
-**Browse** shows 60 Pokemon at a time in one panel, moved through like a box, with L/R paging. The line
-under the grid carries what the cells cannot: whether the Pokemon is legal, which game family it belongs
-to, its nature, ability, IV and EV totals, and held item. A opens the full detail view — the same one the
-boxes use, with the game family shown in the corner — and Y saves it into `cards/<GameFamily>/`.
+**Browse** shows 60 Pokemon a page, laid out like a box (12 × 5), with **L / R** paging through the board.
+The details bar under the grid describes the listing under the cursor from what the board already sent,
+without downloading it: sprite, shiny and alpha marks, name, gender and level; nature, ability and ball;
+its legality and the game it belongs to; its IV and EV totals; its trainer, and the depositor's note or
+how many people have kept it. **A** opens the full summary - the same one the boxes use, with the game
+shown in the corner - and **Y** there saves it into `cards/<GameFamily>/`.
 
-**Search** filters by species, game family, shiny, egg and minimum IV total, sorted by newest or most
-downloaded. The species picker is the one the box search already uses.
+**Search** filters the board:
 
-**Deposit** lists the cards you have already exported, from every game folder at once, decodes the one you
-pick and shows it in full before uploading. Depositing the same Pokemon twice does nothing — the board
-deduplicates on a hash of the payload, so a blob that was taken down cannot be re-listed as though it
+| Filter | Choices |
+|--------|---------|
+| Species | Any, or one species (the box search's picker) |
+| Game | Any, or one game family |
+| Ball | Any, or one ball (**A** steps forward, **L / R** step back and forth) |
+| Min IV total | Any / 90 / 120 / 150 / 180 / 186 |
+| Shiny | Any / Yes / No |
+| Egg | Any / Yes / No |
+| Alpha | Any / Yes / No (only with Any game, Legends: Arceus or Z-A) |
+| Legality | **Checked** (default) / Legal only / Everything |
+| Sort by | Newest / Most downloaded |
+
+As in the box search, the D-Pad moves between the filters, **A** changes the one you are on, **X** resets
+them and **Y** searches.
+
+**Deposit** lists the cards you have already exported, from every game folder at once, grouped by game in
+the game list's order (**ZL / ZR** jump between games). The highlighted card is read and shown in full, and
+it is read again in full before anything is uploaded. Depositing the same Pokemon twice does nothing - the
+board deduplicates on a hash of the payload, so a blob that was taken down cannot be re-listed as though it
 were new.
 
 #### Legality
@@ -442,8 +487,14 @@ A deposit is listed the moment it arrives, marked as not yet checked.
 
 Judging a Pokemon properly means encounter and RNG analysis: a legality script goes over the board every 15 minutes and writes each verdict back.
 
-- Browsing shows legal Pokemon only, unless that is turned off in the search filter
-- An illegal deposit cannot be downloaded at all, even if a verdict lands while you are looking at it
+- By default the board shows what has been checked: legal Pokemon, and illegal or unverifiable ones too,
+  so a depositor can see why theirs was refused. **Legal only** hides those; **Everything** also shows
+  what is still waiting to be checked
+- A listing that is not legal is framed in the colour of its verdict
+- **X** - or **A** on an illegal listing - shows the checker's full report
+- **Only a Pokemon that passed can be downloaded.** An illegal, unchecked or unverifiable one stays
+  listed to look at, but the board will not hand it over, even if a verdict lands while you are looking
+  at it
 
 #### Your identity on the board
 
@@ -451,6 +502,44 @@ The board attributes a deposit to an id kept in `sdmc:/config/pkHouse/gts_id.txt
 
 > **Warning:** a deposit is public. Anyone can browse it, download it and keep it, and taking it off the
 > board later does not reach copies people already have.
+
+### Updates
+
+pkHouse checks for a new release when it starts, in the background, so a slow or missing network
+never holds the screen up. When there is one, it is offered on the profile or game selector - the only
+places nothing is open that could have unsaved changes.
+
+The offer is made once per launch. Turned down, it does not come back until the next launch - unless you
+check again yourself from the About screen (see below), which offers it again.
+
+> **Updating from 1.12.0 or earlier:** those versions cannot update themselves, so 2.0.0 has to be
+> installed by hand, once: extract the release zip to the root of the SD card. From 2.0.0 on, pkHouse
+> updates itself.
+
+Installing is built around never destroying the only working copy:
+
+1. The release zip is downloaded to `sdmc:/config/pkHouse/`, with a progress bar
+2. The NRO inside it is unpacked first and its version checked against the release; a wrong or broken
+   download changes nothing
+3. The other files the release carries under `switch/pkHouse/` (the bundled wondercards) are written into
+   the app's folder, each through a temporary file. Nothing the release does not carry is touched -
+   banks, backups and cards included
+4. The running NRO is backed up, replaced, and read back; if it does not verify, the backup is restored
+5. pkHouse restarts straight into the new version
+
+If any step fails, an **Update failed** message says why, and the version you are running stays in place:
+nothing is replaced until the new build has been checked, and a replacement that does not verify is
+rolled back from the backup.
+
+The **About** screen (**−**) shows the check's result beside the version (up to date, a newer version
+available, or that it could not check), **X** checks right away, and **Y** turns the check at launch on or
+off.
+
+### Quitting
+
+Leaving the app always asks first - **+** opens the menu in the boxes but quits on the selectors and in
+the GTS, so one press in the wrong place must not end the session. With unsaved changes, the "discard your
+changes?" question is the confirmation.
 
 ### LED Activity Indicator
 
@@ -461,7 +550,7 @@ The controller notification LED blinks during save and backup operations (save w
 
 This works automatically with no configuration required.
 
-> To disable the LED Indicator, place a `noled.cfg` file in the pkHouse folder (next to the NRO). Remove it to re-enable. The file can be empty — only its presence is checked.
+> To disable the LED Indicator, place a `noled.cfg` file in the pkHouse folder (next to the NRO). Remove it to re-enable. The file can be empty - only its presence is checked.
 
 ### Save Integrity
 
@@ -473,39 +562,27 @@ This works automatically with no configuration required.
 
 ## Controls
 
+Every screen shows its buttons in the footer; these tables are the same, in one place.
+
 ### Profile Selector
 
 | Button | Action |
 |--------|--------|
 | D-Pad Left/Right | Navigate profiles |
 | A | Select profile |
-| Y | Theme selector |
 | - | About |
-| + | Quit |
+| + | Quit (asks first) |
 
 ### Game Selector
 
 | Button | Action |
 |--------|--------|
-| D-Pad | Navigate game grid, chevron buttons, "Online GTS" and "View All Banks" |
-| A | Select game / Change page / Open the online GTS / View All Banks |
-| L / R | Previous / Next page |
-| B | Back to profile selector |
-| Y | Theme selector |
+| D-Pad | Navigate the game grid and the Online GTS / All Banks tiles |
+| A | Back up the save and choose a bank / Open the online GTS / Open All Banks |
+| L / R | Previous / next filter (All, Recent, one per generation) |
+| B | Back to profile selector (in applet mode: quit, asks first) |
 | - | About |
-| + | Quit |
-
-When more than 12 games are available, the game selector is paginated. Use L/R or navigate to the chevron buttons on either side to switch pages.
-
-### Online GTS
-
-| Button | Action |
-|--------|--------|
-| D-Pad | Move between Browse, Search and Deposit / move the browse grid |
-| A | Select / open a listing |
-| L / R | Previous / next page of the board |
-| Y | Save the open listing as a card / Theme selector on the hub |
-| B | Back |
+| + | Quit (asks first) |
 
 ### Bank Selector
 
@@ -513,9 +590,11 @@ When more than 12 games are available, the game selector is paginated. Use L/R o
 |--------|--------|
 | D-Pad Up/Down | Navigate bank list |
 | A | Open bank |
-| Y | Create new bank |
-| X | Rename bank |
-| + | Delete bank |
+| X | Create new bank |
+| Y | Rename bank |
+| + | Delete bank (hold A to confirm when it still holds Pokemon) |
+| L / R | Page through the previewed bank's boxes |
+| ZL / ZR | Jump to the previous / next game (All Banks) |
 | B | Back (main view if bank loaded, otherwise game selector) |
 | - | About |
 
@@ -527,57 +606,95 @@ When switching banks, the selector appears on the side being switched while the 
 |--------|--------|
 | D-Pad | Move cursor |
 | L / R | Switch box (hold to repeat) |
-| ZL / ZR | Box view (save / bank) |
+| ZL / ZR | Box overview (save / bank) |
 | A | Pick up / Place Pokemon |
 | B | Cancel / Return held Pokemon |
-| Y | Toggle multi-select / Export PNG card (in detail view) |
-| X | View Pokemon details / Delete held Pokemon / Export .pk (in detail view) |
+| Y | Toggle multi-select (hold + D-Pad to draw, double-tap for the whole box) |
+| X | Pokemon summary / Delete held Pokemon |
 | + | Open menu |
 | - | About |
 
-### Menu Options (Title Override Mode)
+### Pokemon Summary
+
+| Button | Action |
+|--------|--------|
+| L / R | Previous / next Pokemon in the box |
+| Up / Down | Scroll ribbons and marks |
+| X | Export as `.pk` |
+| Y | Save as a PNG card |
+| A (hold) | Release |
+| B | Close |
+
+### Online GTS
+
+| Button | Action |
+|--------|--------|
+| D-Pad | Move between Browse, Search and Deposit / move the board's cursor |
+| A | Select / open a listing (on an illegal listing: its report) |
+| X | The legality report of the listing under the cursor |
+| L / R | Previous / next page of the board |
+| Y | Save the open listing as a card |
+| ZL / ZR | Jump to the previous / next game (Deposit) |
+| B | Back |
+| + | Quit (asks first, hub and board) |
+
+### About
+
+| Button | Action |
+|--------|--------|
+| X | Check for updates now |
+| Y | Turn the update check at launch on / off |
+| B / - | Close |
+
+### Menu (Title Override Mode)
+
+The menu has two columns: tools and bank switching on the left, settings and every way out on the right,
+from the safest to the most final.
 
 | Option | Description |
 |--------|-------------|
-| Theme | Open the theme selector |
-| Language | Open the language selector |
 | Search | Search for Pokemon across both panels |
 | Wondercard | Inject event wondercards as Pokemon (supported games only) |
 | Export Selected | Export selected Pokemon as `.pk` files (shown when Pokemon are selected) |
 | Export Cards | Export selected Pokemon as PNG cards (shown when Pokemon are selected) |
 | Import Card | Browse `cards/<GameFamily>/` and import a Pokemon from a card PNG |
 | Switch Bank | Save game and bank, return to bank selector |
+| Theme | The theme (one for now); **Left / Right** switch it |
+| Language | **Left / Right** switch the language straight away |
+| Save & Quit | Save everything and exit (asks first) |
 | Change Game | Save everything, return to game selector |
-| Save & Quit | Save everything and exit |
-| Quit Without Saving | Exit without saving changes |
+| Change game without saving | Return to game selector, dropping unsaved changes (asks first when there are any) |
+| Quit Without Saving | Exit without saving changes (asks first) |
 
-### Menu Options (Applet / Bank-Only Mode)
+### Menu (Applet / Bank-Only Mode)
 
 | Option | Description |
 |--------|-------------|
-| Theme | Open the theme selector |
-| Language | Open the language selector |
 | Search | Search for Pokemon across both panels |
 | Wondercard | Inject event wondercards as Pokemon (supported games only) |
 | Export Selected | Export selected Pokemon as `.pk` files (shown when Pokemon are selected) |
 | Export Cards | Export selected Pokemon as PNG cards (shown when Pokemon are selected) |
 | Import Card | Browse `cards/<GameFamily>/` and import a Pokemon from a card PNG |
-| Switch Left Bank | Save both banks, switch the left bank |
-| Switch Right Bank | Save both banks, switch the right bank |
-| Change Game | Save both banks, return to game selector |
+| Switch Bank (Left) | Save both banks, switch the left bank |
+| Switch Bank (Right) | Save both banks, switch the right bank |
+| Theme | The theme (one for now); **Left / Right** switch it |
+| Language | **Left / Right** switch the language straight away |
 | Save Banks | Save both banks |
-| Quit | Exit |
+| Change Game | Save both banks, return to game selector |
+| Change game without saving | Return to game selector, dropping unsaved changes (asks first when there are any) |
+| Quit Without Saving | Exit without saving the banks (asks first) |
 
 ## Building
 
 ### Prerequisites
 
 - [devkitPro](https://devkitpro.org/) with the devkitA64 toolchain
-- Switch portlibs: SDL2, SDL2_image, SDL2_ttf, and curl with mbedTLS for the online GTS
+- Switch portlibs: SDL2, SDL2_image, SDL2_ttf, curl with mbedTLS for the online GTS and updates, and
+  zlib with minizip for opening release zips
 
 ```bash
 dkp-pacman -S switch-sdl2 switch-sdl2_image switch-sdl2_ttf switch-freetype switch-harfbuzz \
-             switch-curl switch-mbedtls
+             switch-curl switch-mbedtls switch-zlib
 ```
 
 ### Build
@@ -595,10 +712,11 @@ make clean
 
 ### Running
 
-Place `pkHouse.nro` on your Switch SD card (`sdmc:/switch/pkHouse/`) and launch via a homebrew launcher.
+Extract the release zip to the root of your SD card (it holds `switch/pkHouse/pkHouse.nro` and the bundled
+wondercards), and launch via a homebrew launcher. From then on pkHouse updates itself (see **Updates**).
 
-- **Title override mode**: Full access — game save on the left, bank on the right. Requires launching through a game title.
-- **Applet mode** (album/homebrew menu): Bank-only access — two banks side by side for bank-to-bank transfers. Save data is not accessible in this mode. Use title override mode to transfer Pokemon between your save and a bank.
+- **Title override mode**: Full access - game save on the left, bank on the right. Requires launching through a game title.
+- **Applet mode** (album/homebrew menu): Bank-only access - two banks side by side for bank-to-bank transfers. Save data is not accessible in this mode. Use title override mode to transfer Pokemon between your save and a bank.
 
 ## Screenshots
 
@@ -606,64 +724,74 @@ Place `pkHouse.nro` on your Switch SD card (`sdmc:/switch/pkHouse/`) and launch 
 
 |  |  |
 |:--:|:--:|
-| <img src="screenshots/001.jpg" width="420"> | <img src="screenshots/002.jpg" width="420"> |
-| Splash screen | Profile selector |
-| <img src="screenshots/003.jpg" width="420"> | <img src="screenshots/004.jpg" width="420"> |
-| Game selector, dual bank mode | Bank selector, before any bank exists |
+| <img src="screenshots/2.0/01-profile-selector.jpg" width="420"> | <img src="screenshots/2.0/02-loading-progress.jpg" width="420"> |
+| Profile selector | Long operations show their progress |
+| <img src="screenshots/2.0/03-game-selector-gts.jpg" width="420"> | <img src="screenshots/2.0/04-game-selector-detail.jpg" width="420"> |
+| Game selector, with the Online GTS and All banks | A game's save, last backup and banks |
+| <img src="screenshots/2.0/05-backing-up.jpg" width="420"> | <img src="screenshots/2.0/06-choose-bank.jpg" width="420"> |
+| The save is backed up before any bank opens | Choosing a bank, the save beside it |
+
+### Banks
+
+|  |  |
+|:--:|:--:|
+| <img src="screenshots/2.0/07-all-banks.jpg" width="420"> | <img src="screenshots/2.0/08-all-banks-preview.jpg" width="420"> |
+| All banks, grouped by game | A bank's boxes, previewed before opening it |
+
+|  |
+|:--:|
+| <img src="screenshots/2.0/09-dual-bank-picker.jpg" width="866"> |
+| Dual bank: picking the left bank |
 
 ### Moving Pokemon
 
 |  |  |
 |:--:|:--:|
-| <img src="screenshots/005.jpg" width="420"> | <img src="screenshots/006.jpg" width="420"> |
-| A bank, freshly created | Save on the left, bank on the right |
-| <img src="screenshots/007.jpg" width="420"> | <img src="screenshots/008.jpg" width="420"> |
-| Holding a Pokemon | Placed into the bank |
-| <img src="screenshots/009.jpg" width="420"> | <img src="screenshots/010.jpg" width="420"> |
-| Multi-select, numbered in pick-up order | Holding all five |
-
-### Browsing boxes
+| <img src="screenshots/2.0/10-box-view-save-bank.jpg" width="420"> | <img src="screenshots/2.0/11-box-view-dual-bank.jpg" width="420"> |
+| Save on the left, bank on the right, the details bar under them | Two banks side by side |
 
 |  |  |
 |:--:|:--:|
-| <img src="screenshots/011.jpg" width="420"> | <img src="screenshots/011_1.jpg" width="420"> |
-| The group placed in one go | Save box overview, with a preview of the highlighted box |
-| <img src="screenshots/011_2.jpg" width="420"> | <img src="screenshots/012.jpg" width="420"> |
-| Bank box overview | Pokemon details, with IV and EV charts |
+| <img src="screenshots/2.0/12-box-overview.jpg" width="420"> | <img src="screenshots/2.0/13-pokemon-summary.jpg" width="420"> |
+| Box overview (ZL / ZR), with a preview of the highlighted box | The Pokemon summary (X) |
 
-### Search and wondercards
+### Search, wondercards and cards
 
 |  |  |
 |:--:|:--:|
-| <img src="screenshots/013_1.jpg" width="420"> | <img src="screenshots/013_1_1.jpg" width="420"> |
-| Search filter | Species picker, by letter |
-| <img src="screenshots/013_1_2.jpg" width="420"> | <img src="screenshots/013_2.jpg" width="420"> |
-| Species picker, with sprites | Matches highlighted in the grid |
-| <img src="screenshots/013_3.jpg" width="420"> | <img src="screenshots/013.jpg" width="420"> |
-| Wondercard list | Menu, in dual bank mode |
-
-### About, and an exported card
+| <img src="screenshots/2.0/14-search.jpg" width="420"> | <img src="screenshots/2.0/15-wondercards.jpg" width="420"> |
+| Search | Wondercards |
 
 |  |  |
 |:--:|:--:|
-| <img src="screenshots/014.jpg" width="420"> | <img src="screenshots/015.png" width="420"> |
-| About | A card exported from the detail view |
+| <img src="screenshots/2.0/16-import-card.jpg" width="420"> | <img src="screenshots/1.0/015.png" width="420"> |
+| Importing a card, read from its QR code | A card exported from the detail view |
+
+### Menu and About
+
+|  |  |
+|:--:|:--:|
+| <img src="screenshots/2.0/17-menu.jpg" width="420"> | <img src="screenshots/2.0/18-menu-dual-bank.jpg" width="420"> |
+| Menu, with a save and a bank | Menu, in dual bank mode |
+
+|  |
+|:--:|
+| <img src="screenshots/2.0/19-about.jpg" width="866"> |
+| About, with the update check |
 
 ### The online GTS
 
 |  |  |
 |:--:|:--:|
-| <img src="screenshots/016.jpg" width="420"> | <img src="screenshots/017.jpg" width="420"> |
-| The GTS row, above the game icons | Browse, search or deposit |
-| <img src="screenshots/020.jpg" width="420"> | <img src="screenshots/021.jpg" width="420"> |
-| 60 listings a page, legality and spread underneath | A listing in full; Y saves it as a card |
-| <img src="screenshots/019.jpg" width="420"> | <img src="screenshots/018.jpg" width="420"> |
-| Search filter | Picking a card to deposit, decoded before it is sent |
+| <img src="screenshots/2.0/20-gts-hub.jpg" width="420"> | <img src="screenshots/2.0/21-gts-board.jpg" width="420"> |
+| Browse, search or deposit | The board: 60 listings a page, the details bar under them |
+| <img src="screenshots/2.0/22-gts-search.jpg" width="420"> | <img src="screenshots/2.0/23-gts-deposit.jpg" width="420"> |
+| Searching the board | Picking a card to deposit, read before it is sent |
 
 ## Credits
 
-- [PKHeX](https://github.com/kwsch/PKHeX) by kwsch — PokeCrypto research and save structure reference
-- [JKSV](https://github.com/J-D-K/JKSV) by J-D-K — Save backup and write logic reference
-- [QR Code generator library](https://www.nayuki.io/page/qr-code-generator-library) by Project Nayuki (MIT) — QR encoding for Pokemon cards
-- [quirc](https://github.com/dlbeer/quirc) by Daniel Beer (ISC) — QR decoding for card import
+- [PKHeX](https://github.com/kwsch/PKHeX) by kwsch - PokeCrypto research and save structure reference
+- [JKSV](https://github.com/J-D-K/JKSV) by J-D-K - Save backup and write logic reference
+- [QR Code generator library](https://www.nayuki.io/page/qr-code-generator-library) by Project Nayuki (MIT) - QR encoding for Pokemon cards
+- [quirc](https://github.com/dlbeer/quirc) by Daniel Beer (ISC) - QR decoding for card import
 - Built with [libnx](https://github.com/switchbrew/libnx) and [SDL2](https://www.libsdl.org/)

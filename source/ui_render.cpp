@@ -586,11 +586,10 @@ void UI::drawTopBar() {
         }
     }
     TTF_Font* fWho = uiFont(15);
-    if (!who.empty())
-        drawText(who, x, baselineTop(fWho, baseline), T().textDim, fWho);
 
     // Right: the profile, as on the game selector, when a save is open (banks
-    // alone belong to no profile), then the save state beside it.
+    // alone belong to no profile), then the save state beside it. Placed
+    // before the trainer, which gets what is left between them.
     const int right = isDualBankMode() ? SCREEN_W - 32 : drawProfileChip(SCREEN_W - 32, cy);
     const std::string status = unsavedChanges_ ? i18n::get(StrKey::StatusUnsaved)
                              : isDualBankMode() ? i18n::get(StrKey::StatusBanksClean)
@@ -599,6 +598,11 @@ void UI::drawTopBar() {
     const int sx = (right < SCREEN_W - 32 ? right - 6 : SCREEN_W - 32) - sw;
     drawText(status, sx, baselineTop(fWho, baseline), T().text, fWho);
     fillDisc(sx - 14, cy, 4, unsavedChanges_ ? T().statusWarn : T().statusOk);
+
+    // The trainer, cut short rather than run under the status dot.
+    const int whoRoom = (sx - 14 - 4) - 16 - x;
+    if (!who.empty() && whoRoom > 24)
+        drawText(fitText(who, fWho, whoRoom), x, baselineTop(fWho, baseline), T().textDim, fWho);
 }
 
 void UI::drawInfoStrip() {

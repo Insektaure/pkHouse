@@ -119,10 +119,16 @@ struct Pokemon {
     // Gender: byte bits for modern, PID-based for PK3 (impl in pokemon.cpp)
     uint8_t gender() const;
 
-    // Form: byte for modern, always 0 for PK3
+    // Form: byte for modern. PK3 has no form byte: Unown's letter comes from
+    // the PID (PKHeX EntityPID.GetUnownForm3), every other species is 0.
     uint8_t form() const {
         auto& o = ofs();
-        return o.form >= 0 ? static_cast<uint8_t>(data[o.form] >> o.formShift) : 0;
+        if (o.form >= 0) return static_cast<uint8_t>(data[o.form] >> o.formShift);
+        if (species() != 201) return 0;
+        const uint32_t p = pid();
+        const uint32_t v = ((p & 0x3000000) >> 18) | ((p & 0x30000) >> 12)
+                         | ((p & 0x300) >> 6) | (p & 0x3);
+        return static_cast<uint8_t>(v % 28);
     }
 
     // Ball: byte for modern, bits 11-14 of u16@0x46 for PK3

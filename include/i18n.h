@@ -293,6 +293,7 @@ namespace StrKey {
     constexpr const char* LegendPokemon            = "legend_pokemon";
     constexpr const char* LegendShiny              = "legend_shiny";
     constexpr const char* LegendAlpha              = "legend_alpha";
+    constexpr const char* LegendShinyAlpha         = "legend_shiny_alpha";
     constexpr const char* HintGoToBox              = "hint_go_to_box";
     constexpr const char* HintNavigate             = "hint_navigate";
     constexpr const char* HintSaveBank             = "hint_save_bank";

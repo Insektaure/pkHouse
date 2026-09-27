@@ -250,6 +250,7 @@
     "legend_pokemon": "ポケモン",
     "legend_shiny": "色違い",
     "legend_alpha": "オヤブン",
+    "legend_shiny_alpha": "色違いオヤブン",
     "hint_go_to_box": "ボックスへ移動",
     "hint_navigate": "操作",
     "hint_save_bank": "セーブ / バンク",

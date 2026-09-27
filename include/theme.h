@@ -62,6 +62,7 @@ struct Theme {
     SDL_Color statusOk;        // "save loaded, no changes"
     SDL_Color statusWarn;      // "unsaved changes"
     SDL_Color alphaMark;
+    SDL_Color shinyAlphaMark;   // box overview dot for a Pokemon both shiny and alpha
     SDL_Color badgeBg;         // "3 x 31" perfect-IV pill
 
     // Box overview mini grid, one dot per slot

@@ -1362,24 +1362,33 @@ void UI::drawBoxViewStats() {
 }
 
 int UI::drawBoxViewLegend(bool measureOnly) {
-    struct Item { SDL_Color color; const char* key; };
-    const Item items[] = {
-        {T().miniDotFull, StrKey::LegendPokemon},
-        {T().accent,      StrKey::LegendShiny},
-        {T().alphaMark,   StrKey::LegendAlpha},
-        {T().eggMark,     StrKey::Egg},
+    struct Item { SDL_Color color; const char* key; bool alphaOnly; };
+    const Item all[] = {
+        {T().miniDotFull,    StrKey::LegendPokemon,     false},
+        {T().accent,         StrKey::LegendShiny,       false},
+        {T().alphaMark,      StrKey::LegendAlpha,       false},
+        {T().shinyAlphaMark, StrKey::LegendShinyAlpha,  true},
+        {T().eggMark,        StrKey::Egg,               false},
     };
+    // Shiny alphas only exist where alphas do; elsewhere the entry is noise.
+    const bool alphas = gameInfo(selectedGame_).hasAlphaForms;
+    Item items[5];
+    int count = 0;
+    for (const auto& it : all)
+        if (!it.alphaOnly || alphas) items[count++] = it;
+
     TTF_Font* f = uiFont(13);
     constexpr int DOT = 9;
     const int cy = FOOTER_Y + FOOTER_H / 2;
 
     int w = 0;
-    for (const auto& it : items)
-        w += (w ? 16 : 0) + DOT + 6 + textWidth(i18n::get(it.key), f);
+    for (int i = 0; i < count; i++)
+        w += (w ? 16 : 0) + DOT + 6 + textWidth(i18n::get(items[i].key), f);
     if (measureOnly) return w;
 
     int x = SCREEN_W - 32 - w;
-    for (const auto& it : items) {
+    for (int i = 0; i < count; i++) {
+        const auto& it = items[i];
         const std::string& label = i18n::get(it.key);
         fillRounded(x, cy - DOT / 2, DOT, DOT, 2, it.color);
         x += DOT + 6;
@@ -1431,10 +1440,11 @@ void UI::drawBoxCard(int idx, const SDL_Rect& r, bool isCursor) {
         const auto& sd = disp[s];
         SDL_Color c = T().miniDotEmpty;
         if (!sd.empty) {
-            if (sd.egg)        c = T().eggMark;
-            else if (sd.shiny) c = T().accent;
-            else if (sd.alpha) c = T().alphaMark;
-            else               c = T().miniDotFull;
+            if (sd.egg)                    c = T().eggMark;
+            else if (sd.shiny && sd.alpha) c = T().shinyAlphaMark;
+            else if (sd.shiny)             c = T().accent;
+            else if (sd.alpha)             c = T().alphaMark;
+            else                           c = T().miniDotFull;
             if (searchHighlightActive_ && isSearchMatch(boxViewPanel_, idx, s))
                 c = T().searchMatch;
         }

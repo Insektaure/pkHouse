@@ -557,7 +557,7 @@ int UI::drawLogo(int x, int cy) {
 
 void UI::drawTopBar() {
     drawRect(0, 0, SCREEN_W, ACCENT_RULE_H, T().accent);
-    const int cy = ACCENT_RULE_H + (TOPBAR_H - ACCENT_RULE_H) / 2 - 4;
+    const int cy = 40;   // as the game selector's top bar
 
     int x = drawLogo(32, cy) + 16;
     const int baseline = cy + 8;

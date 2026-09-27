@@ -256,7 +256,6 @@ private:
     // The info strip sits in the middle of the space between the panels and
     // the footer, so it has the same gap above and below.
     static constexpr int ACCENT_RULE_H = 4;
-    static constexpr int TOPBAR_H      = 72;
 
     static constexpr int PANEL_Y   = 72;
     static constexpr int PANEL_H   = 500;

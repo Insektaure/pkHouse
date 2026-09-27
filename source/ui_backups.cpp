@@ -411,11 +411,24 @@ void UI::showBackupManager(GameType game) {
         frameGen_++;           // the backdrop behind has changed
     };
 
+    // The stick as on the other screens (updateStick, same delays): a move at
+    // once, then repeats while held. Up / down only: the list is one column.
+    // Cleared on the way in and out, so a stick still tilted on the game
+    // selector does not scroll the list, nor the list the selector.
+    updateStick(0, 0);
+
     bool open = true, redraw = true;
     while (open) {
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) { open = false; break; }
+            if (event.type == SDL_CONTROLLERAXISMOTION &&
+                (event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX ||
+                 event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY)) {
+                updateStick(SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTX),
+                            SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTY));
+                continue;
+            }
             if (event.type != SDL_CONTROLLERBUTTONDOWN) continue;
             redraw = true;
             switch (event.cbutton.button) {
@@ -445,6 +458,21 @@ void UI::showBackupManager(GameType game) {
                     break;
                 }
             }
+            // A restore or a delete ran a dialog with its own event loop: the
+            // stick may have been let go meanwhile without this loop seeing it.
+            updateStick(SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTX),
+                        SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_LEFTY));
+        }
+        if (open && stickDirY_ != 0) {
+            const uint32_t now = SDL_GetTicks();
+            const uint32_t delay = stickMoved_ ? STICK_REPEAT_DELAY : STICK_INITIAL_DELAY;
+            if (now - stickMoveTime_ >= delay) {
+                cursor += stickDirY_;
+                clampView();
+                stickMoveTime_ = now;
+                stickMoved_ = true;
+                redraw = true;
+            }
         }
         if (redraw && open) {
             drawBackupManager(game, list, cursor, scroll, onConsole);
@@ -453,6 +481,7 @@ void UI::showBackupManager(GameType game) {
         }
         SDL_Delay(16);
     }
+    updateStick(0, 0);
     markDirty();
 }
 

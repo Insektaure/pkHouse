@@ -571,6 +571,54 @@ TrainerInfo SaveFile::getTrainerInfo() const {
         return info;
     }
 
+    // Gen3 (GBA): trainer block at the start of section 0 of the active slot
+    // (PKHeX SaveBlock3Small*: OT 0x00, gender 0x08, ID32 0x0A — FRLG)
+    if (isFRLG(gameType_)) {
+        if (rawData_.size() < static_cast<size_t>(GBA_SAVE_SIZE))
+            return info;
+        const uint8_t* s = nullptr;
+        const int slotBase = gbaActiveSlot_ * GBA_SECTOR_COUNT * GBA_SECTOR_SIZE;
+        for (int i = 0; i < GBA_SECTOR_COUNT; i++) {
+            const uint8_t* sector = rawData_.data() + slotBase + i * GBA_SECTOR_SIZE;
+            if (readU16LE(sector + GBA_OFS_SECTOR_ID) == 0) {
+                s = sector;
+                break;
+            }
+        }
+        if (!s)
+            return info;
+
+        // OT Name at 0x00: 8 bytes Gen3-encoded, 0xFF-terminated
+        const uint16_t* table = isFRLG_JA(gameType_) ? G3_JP_SAVE : G3_EN_SAVE;
+        for (int i = 0; i < 8; i++) {
+            if (s[i] == 0xFF) break;
+            const uint16_t ch = table[s[i]];
+            if (ch == 0) break;
+            info.otName += static_cast<char16_t>(ch);
+        }
+
+        // Gender at 0x08 (0=Male, 1=Female)
+        info.gender = s[0x08];
+
+        // ID32 at 0x0A (TID16 low, SID16 high)
+        std::memcpy(&info.id32, s + 0x0A, 4);
+
+        // Not stored in the save: implied by the release (game path suffix)
+        const std::string path = gamePathNameOf(gameType_);
+        auto endsWith = [&](const char* suf) {
+            const size_t n = std::strlen(suf);
+            return path.size() >= n && path.compare(path.size() - n, n, suf) == 0;
+        };
+        info.language = endsWith("_JA") ? 1 : endsWith("_FR") ? 3 : endsWith("_IT") ? 4
+                      : endsWith("_DE") ? 5 : endsWith("_ES") ? 7 : 2;
+
+        // Game version: FR=4, LG=5
+        info.gameVersion = (path[0] == 'F') ? 4 : 5;
+
+        info.valid = !info.otName.empty();
+        return info;
+    }
+
     // Only for SCBlock-based games (SV, ZA, SwSh)
     if (blocks_.empty())
         return info;

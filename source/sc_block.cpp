@@ -1,10 +1,17 @@
 #include "sc_block.h"
 #include "binary_io.h"
 
-SCBlock SCBlock::readFromOffset(const uint8_t* buf, size_t bufLen, size_t& offset) {
-    SCBlock block{};
+// Every length comes from the file, so each one is checked against what is
+// left of the buffer before it is used: a damaged save (a backup with a bad
+// byte, a corrupt file) then fails to load instead of reading past the end or
+// asking for gigabytes. The decryption stream is consumed in the same order
+// as before, so a valid save parses exactly as it always did.
+bool SCBlock::readFromOffset(const uint8_t* buf, size_t bufLen, size_t& offset, SCBlock& block) {
+    block = SCBlock{};
+    auto room = [&](uint64_t n) { return offset <= bufLen && n <= bufLen - offset; };
 
-    // Read key
+    // Key and type
+    if (!room(5)) return false;
     block.key = readU32LE(buf + offset);
     offset += 4;
 
@@ -19,42 +26,48 @@ SCBlock SCBlock::readFromOffset(const uint8_t* buf, size_t bufLen, size_t& offse
         case SCTypeCode::Bool2:
         case SCTypeCode::Bool3:
             // No data payload
-            return block;
+            return true;
 
         case SCTypeCode::Object: {
             // Read encrypted length
+            if (!room(4)) return false;
             int32_t numBytes = static_cast<int32_t>(readU32LE(buf + offset) ^ static_cast<uint32_t>(xk.next32()));
             offset += 4;
+            if (numBytes < 0 || !room(static_cast<uint64_t>(numBytes))) return false;
             block.data.resize(numBytes);
             for (int32_t i = 0; i < numBytes; i++)
                 block.data[i] = buf[offset + i] ^ xk.next();
             offset += numBytes;
-            return block;
+            return true;
         }
 
         case SCTypeCode::Array: {
-            // Read encrypted entry count
+            // Read encrypted entry count, then the encrypted sub-type
+            if (!room(5)) return false;
             int32_t numEntries = static_cast<int32_t>(readU32LE(buf + offset) ^ static_cast<uint32_t>(xk.next32()));
             offset += 4;
-            // Read encrypted sub-type
             block.subType = static_cast<SCTypeCode>(buf[offset++] ^ xk.next());
-            int elemSize = getTypeSize(block.subType);
-            int32_t numBytes = numEntries * elemSize;
-            block.data.resize(numBytes);
-            for (int32_t i = 0; i < numBytes; i++)
+            // In 64 bits: the product cannot overflow. Negative is refused,
+            // as the old resize(negative) could not survive it; a negative
+            // count of a zero-sized type is 0 bytes, as it always was.
+            const int64_t numBytes = static_cast<int64_t>(numEntries) * getTypeSize(block.subType);
+            if (numBytes < 0 || !room(static_cast<uint64_t>(numBytes))) return false;
+            block.data.resize(static_cast<size_t>(numBytes));
+            for (int64_t i = 0; i < numBytes; i++)
                 block.data[i] = buf[offset + i] ^ xk.next();
-            offset += numBytes;
-            return block;
+            offset += static_cast<size_t>(numBytes);
+            return true;
         }
 
         default: {
             // Single primitive value
             int numBytes = getTypeSize(block.type);
+            if (!room(static_cast<uint64_t>(numBytes))) return false;
             block.data.resize(numBytes);
             for (int i = 0; i < numBytes; i++)
                 block.data[i] = buf[offset + i] ^ xk.next();
             offset += numBytes;
-            return block;
+            return true;
         }
     }
 }

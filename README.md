@@ -17,7 +17,7 @@ The author is not responsible for any data loss or damage to your save data.
 
 This is why the automatic backup system exists - always verify your backups before making changes.
 
-If you need to restore a backup, use a save manager such as [Checkpoint](https://github.com/FlagBrew/Checkpoint) or [JKSV](https://github.com/J-D-K/JKSV) to import the backup files back onto your Switch.
+To put a backup back, press **Y** on a game in the game selector (see [Restoring a backup](#restoring-a-backup)). Save managers such as [Checkpoint](https://github.com/FlagBrew/Checkpoint) or [JKSV](https://github.com/J-D-K/JKSV) can import the backup files too.
 
 
 ## Supported Games
@@ -183,6 +183,46 @@ picker then says where it was written.\
 The backup is only created once when initially selecting a game - switching banks does not trigger additional backups.
 
 Before backing up, the app checks available SD card space. If there isn't enough free space (2x the save size), a warning is shown with the option to continue without a backup or cancel. If the backup itself fails, you'll see a similar prompt before proceeding.
+
+Each backup also holds a small `.pkhouse_backup` file: which save it was taken from (game and Switch
+profile) and the size and MD5 of every file, read back from the SD card after the copy. It is what lets a
+restore check that a backup belongs to this profile and is still intact.
+
+### Restoring a backup
+
+**Y** on a game in the game selector lists that save's backups, newest first. Each row shows the date, the
+trainer, how many Pokemon were in the boxes and the size, and how it relates to the others: *Replaced by …*
+(the backup a restore put over it), *Restored …*, *Same as …* (an identical, older backup). Marks on the
+right, explained in the footer:
+
+| Mark | Meaning |
+|------|---------|
+| Green tick | Checked: its record says which save it came from, and every file matches it |
+| Blue rollback arrow | Made just before a restore |
+| Yellow gamepad | Holds exactly what the console holds now |
+| **Older format** | Made before 2.1.0: no record, so neither can be checked |
+
+**A** restores the highlighted one, **X** deletes it from the SD card (hold **A** to confirm), **B** closes
+the list.
+
+A restore goes through these steps, and stops at the first one that fails, with nothing changed:
+
+1. Every file is read from the SD card and compared with its `.pkhouse_backup` record: another profile's
+   backup, or one the SD card has damaged, is refused before anything reads it as a save. Older backups
+   have no record and restore with a warning
+2. The backup is read as a save of this game, as opening the game would read it. A damaged save fails to
+   load and is refused
+3. You confirm, holding **A**. The dialog shows the backup's date and trainer
+4. The save on the console is backed up (and that backup read back) before anything is written. If that
+   fails, the restore does not happen
+5. The backup is written to the console. When it fits in the save's journal - normally the case, since
+   pkHouse writes these saves in one go every time - it is applied in **a single commit**: until that
+   commit nothing changes, and a failure or a power cut leaves the save exactly as it was. A backup too
+   large for one commit is written the way [JKSV](https://github.com/J-D-K/JKSV) does it, committing as
+   it goes; the dialog says so before you confirm
+6. Every file is read back from the console and compared with the backup, byte for byte
+
+The backup made in step 4 appears in the list with the rollback arrow, so a restore can itself be undone.
 
 ### Themes
 
@@ -588,6 +628,7 @@ Every screen shows its buttons in the footer; these tables are the same, in one 
 | D-Pad | Navigate the game grid and the Online GTS / All Banks tiles |
 | A | Back up the save and choose a bank / Open the online GTS / Open All Banks |
 | L / R | Previous / next filter (All, Recent, one per generation) |
+| Y | Backups of the highlighted game (restore, delete) |
 | B | Back to profile selector (in applet mode: quit, asks first) |
 | - | About |
 | + | Quit (asks first) |

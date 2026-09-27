@@ -89,8 +89,10 @@ struct SCBlock {
     SCTypeCode subType = SCTypeCode::None;
     std::vector<uint8_t> data;
 
-    // Parse one block from XOR-decrypted data. Advances offset.
-    static SCBlock readFromOffset(const uint8_t* buf, size_t bufLen, size_t& offset);
+    // Parse one block from XOR-decrypted data into `out`. Advances offset.
+    // False when the data is damaged: a length that is negative or runs past
+    // the end of the buffer. Nothing is read out of bounds.
+    static bool readFromOffset(const uint8_t* buf, size_t bufLen, size_t& offset, SCBlock& out);
 
     // Write block back (encrypted) into output buffer. Returns bytes written.
     size_t writeBlock(uint8_t* out) const;

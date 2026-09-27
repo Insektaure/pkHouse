@@ -37,6 +37,28 @@ std::vector<std::string> splitLines(const std::string& s) {
 
 } // anonymous namespace
 
+// A path for a dialog's body, on lines of its own: broken after a '/', so a
+// folder name is only split when it alone is wider than the line. Measured
+// with the body's font and width, as drawDialog lays the body out.
+std::string UI::dialogPath(const std::string& path) {
+    TTF_Font* f = uiFont(15);
+    const int maxW = DLG_W - (DLG_PAD + BADGE + 16) - DLG_PAD;
+    std::string out, line;
+    size_t i = 0;
+    while (i < path.size()) {
+        const size_t slash = path.find('/', i);
+        const size_t end = slash == std::string::npos ? path.size() : slash + 1;
+        const std::string seg = path.substr(i, end - i);
+        if (!line.empty() && textWidth(line + seg, f) > maxW) {
+            out += line + "\n";
+            line.clear();
+        }
+        line += seg;
+        i = end;
+    }
+    return out + line;
+}
+
 void UI::drawDialogBackdrop() {
     // Reused while no frame has been presented since and the screen is the
     // same one: a blocking operation, or a dialog redrawing for its hold.
@@ -94,11 +116,16 @@ void UI::drawDialog(DialogIcon icon, const std::string& title, const std::string
     for (const auto& para : splitLines(body)) {
         if (para.empty()) { bodyLines.push_back(std::string()); continue; }
         for (const auto& l : wrapText(para, fBody, textW, 3)) bodyLines.push_back(l);
-        if (bodyLines.size() >= 7) break;
+        // 10: a failed restore says what failed, where, and where the save
+        // it made first is, a path on lines of its own (dialogPath).
+        if (bodyLines.size() >= 10) break;
     }
     while (!bodyLines.empty() && bodyLines.back().empty()) bodyLines.pop_back();
+    // Up to 6 lines: a restore's warnings are whole sentences - two of them,
+    // for an older backup too large for one commit, about 6 lines in German -
+    // and one that is cut off is a warning not given. The dialog grows to fit.
     const auto noteLines = note.empty() ? std::vector<std::string>()
-                                        : wrapText(note, fNote, innerW - 16, 2);
+                                        : wrapText(note, fNote, innerW - 16, 6);
     const auto footLines = footnote.empty() ? std::vector<std::string>()
                                             : wrapText(footnote, fFoot, innerW, 2);
 

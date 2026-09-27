@@ -41,6 +41,8 @@ struct ConfirmStyle {
     std::function<void(int x, int y, int w)> drawObject;
 };
 
+namespace SaveBackup { struct Entry; struct Summary; }
+
 // Which panel the cursor is on. Preview is never under the cursor: it is the
 // bank picker's look at a bank that has not been opened (UI::previewBank_).
 enum class Panel { Game, Bank, Preview };
@@ -707,6 +709,21 @@ private:
     void handleGameSelectorInput(bool& running);
     void selectGame(GameType game);
     std::string buildBackupDir(GameType game) const;
+    // Backups of the highlighted game (Y on the game selector): the list, a
+    // restore onto the console, deleting one. source/ui_backups.cpp
+    std::string backupGameDir(GameType game) const;   // backups/<profile>/<game>/
+    void showBackupManager(GameType game);
+    void drawBackupManager(GameType game, const std::vector<SaveBackup::Entry>& list,
+                           int cursor, int scroll, const std::string& onConsole);
+    bool restoreBackup(GameType game, const SaveBackup::Entry& entry);
+    // What a backup's meta says about the save in it: trainer, ID, Pokemon in
+    // the boxes. Empty when the save is not loaded.
+    SaveBackup::Summary backupSummary(const SaveFile& save, GameType game) const;
+    // The fingerprint of the save on the console now (mounted for the read,
+    // unmounted after); empty when it cannot be read.
+    std::string consoleFingerprint(GameType game);
+    void drawIconDisc(const char* icon, int cx, int cy, int radius, SDL_Color c);   // tinted icon on a faint disc
+    SDL_Texture* iconAt(const std::string& name, int size);   // romfs icon averaged down to size, for 1:1
     bool saveBankFiles();
 
     // Bank selector
@@ -730,6 +747,7 @@ private:
         float       held = 0.0f;       // Hold: how far along, 0..1
     };
     void drawDialogBackdrop();
+    std::string dialogPath(const std::string& path);   // a path on its own lines, broken at '/'
     void drawDialog(DialogIcon icon, const std::string& title, const std::string& body,
                     int objectH, const std::function<void(int, int, int)>& drawObject,
                     const std::string& note, const std::vector<DialogButton>& buttons,

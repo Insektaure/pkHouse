@@ -1126,12 +1126,14 @@ void UI::drawGameSelectorFrame() {
     drawGameDetailPanel();
 
     // Same keys as before; L/R now step through the filters instead of pages.
-    ButtonHint hints[6];
+    ButtonHint hints[7];
     int n = 0;
     hints[n++] = {"A", StrKey::HintSelect2};
     if (visibleGameFilters().size() > 1)
         hints[n++] = {"L R", StrKey::HintFilter};
     hints[n++] = {"B", selectedProfile_ >= 0 ? StrKey::HintBack : StrKey::HintQuit};
+    if (!onTiles && count > 0 && selectedProfile_ >= 0 && !appletMode_)
+        hints[n++] = {"Y", StrKey::HintBackups};
     hints[n++] = {"-", StrKey::HintAbout};
     if (selectedProfile_ >= 0)
         hints[n++] = {"+", StrKey::HintQuit};
@@ -1344,6 +1346,11 @@ void UI::handleGameSelectorInput(bool& running) {
                 case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: stepGameFilter(+1); break;
                 case SDL_CONTROLLER_BUTTON_BACK: // - = about
                     showAbout_ = true;
+                    break;
+                case SDL_CONTROLLER_BUTTON_X: // Switch Y = this game's backups
+                    if (!gameSelOnGts_ && !gameSelOnAllBanks_ && count > 0
+                        && selectedProfile_ >= 0 && !appletMode_)
+                        showBackupManager(availableGames_[gameSelList_[gameSelCursor_]]);
                     break;
                 case SDL_CONTROLLER_BUTTON_START:
                     if (confirmQuit()) running = false;

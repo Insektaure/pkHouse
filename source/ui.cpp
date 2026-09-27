@@ -3,6 +3,7 @@
 #include "led.h"
 #include "i18n.h"
 #include "update.h"
+#include "save_backup.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -535,6 +536,16 @@ void UI::selectGame(GameType game) {
         if (withSave)
             drawBackupProgress(game, backupDir, 3, 1.0f);
         save_.load(savePath_);
+
+        // The backup's meta, now that the save has been read and can say
+        // what is in it: what the restore checks a backup against (its save,
+        // every file as read back from the SD card) and what the backup list
+        // shows. A backup whose meta cannot be written is still a backup, one
+        // that restores as an older one does, with a warning.
+        if (lastBackup_ == BackupOutcome::Saved)
+            SaveBackup::writeMeta(lastBackupDir_, titleIdOf(game),
+                                  account_.profiles()[selectedProfile_].uid, "open",
+                                  backupSummary(save_, game));
 
         // Debug: verify encryption round-trip (encrypt(decrypt(file)) == file)
         if (!isBDSP(game) && !isLGPE(game) && !isFRLG(game)) {

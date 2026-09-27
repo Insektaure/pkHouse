@@ -158,6 +158,10 @@ void SwishCrypto::cryptStaticXorpadBytes(uint8_t* data, size_t len) {
 }
 
 std::vector<SCBlock> SwishCrypto::decrypt(uint8_t* fileData, size_t fileSize) {
+    // Too short to hold even the hash: not a save.
+    if (fileSize < SIZE_HASH)
+        return {};
+
     // Ignore last 32 bytes (SHA256 hash)
     size_t payloadLen = fileSize - SIZE_HASH;
 
@@ -168,8 +172,13 @@ std::vector<SCBlock> SwishCrypto::decrypt(uint8_t* fileData, size_t fileSize) {
     std::vector<SCBlock> blocks;
     blocks.reserve(payloadLen / 500); // rough estimate
     size_t offset = 0;
+    // A damaged block ends the parse with nothing: a save is read whole or
+    // not at all, and the caller sees no blocks (loadSCBlock then fails).
     while (offset < payloadLen) {
-        blocks.push_back(SCBlock::readFromOffset(fileData, payloadLen, offset));
+        SCBlock block;
+        if (!SCBlock::readFromOffset(fileData, payloadLen, offset, block))
+            return {};
+        blocks.push_back(std::move(block));
     }
 
     return blocks;

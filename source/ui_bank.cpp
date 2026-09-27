@@ -144,8 +144,10 @@ void UI::drawBankPickerTopBar() {
     }
     drawFlowTopBar(title, steps, current);
 
-    // Right: what is open.
+    // Right: the profile, as on the game selector, when a save is open (banks
+    // alone belong to no profile), then what is open.
     const int cy = 40;
+    const int right = (all || dual) ? SCREEN_W - 32 : drawProfileChip(SCREEN_W - 32, cy);
     TTF_Font* f = uiFont(15, true);
     std::string label;
     SDL_Color tint = T().text, bg = T().panelBg;
@@ -158,13 +160,21 @@ void UI::drawBankPickerTopBar() {
         tint = T().accent;
         bg = T().badgeBg;
     } else {
-        if (selectedProfile_ >= 0 && selectedProfile_ < account_.profileCount())
-            label = account_.profiles()[selectedProfile_].nickname + " \xc2\xb7 ";
-        label += gameDisplayNameOf(selectedGame_);
+        label = gameDisplayNameOf(selectedGame_);   // whose it is: the profile chip
     }
-    label = fitText(label, f, 320);
+    // Never into the steps (centred at 634 by drawFlowTopBar, measured as
+    // drawSteps does), now that the profile chip takes the right end.
+    int stepsRight = 0;
+    if (!steps.empty()) {
+        TTF_Font* fs = uiFont(15, true);
+        int total = 22 * (static_cast<int>(steps.size()) - 1);
+        for (const auto& st : steps) total += 6 + 12 * 2 + 8 + textWidth(st, fs) + 14;
+        stepsRight = 634 + total / 2;
+    }
+    const int room = right - (stepsRight ? stepsRight + 16 : 0) - (8 + 32 + 10 + 14);
+    label = fitText(label, f, std::max(40, std::min(320, room)));
     const int w = 8 + 32 + 10 + textWidth(label, f) + 14;
-    const int x = SCREEN_W - 32 - w;
+    const int x = right - w;
     fillRounded(x, cy - 23, w, 46, 12, bg);
     strokeRounded(x, cy - 23, w, 46, 12, 1, T().panelBorder);
     if (all) {

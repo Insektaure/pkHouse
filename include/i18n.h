@@ -607,6 +607,7 @@ namespace StrKey {
     constexpr const char* HintBackups              = "hint_backups";
     constexpr const char* BmTitle                  = "bm_title";
     constexpr const char* BmCount                  = "bm_count";
+    constexpr const char* BmAllProfiles            = "bm_all_profiles";
     constexpr const char* BmEmpty                  = "bm_empty";
     constexpr const char* BmOlder                  = "bm_older";
     constexpr const char* BmBeforeRestore          = "bm_before_restore";

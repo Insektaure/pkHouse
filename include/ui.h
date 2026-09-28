@@ -43,6 +43,12 @@ struct ConfirmStyle {
 
 namespace SaveBackup { struct Entry; struct Summary; }
 
+// What the backups of one game take on the SD card, for the backup screen.
+struct BackupSpace {
+    int64_t mine = 0;          // this game, this profile: the list
+    int64_t allProfiles = 0;   // this game, every profile's backups folder
+};
+
 // Which panel the cursor is on. Preview is never under the cursor: it is the
 // bank picker's look at a bank that has not been opened (UI::previewBank_).
 enum class Panel { Game, Bank, Preview };
@@ -714,7 +720,9 @@ private:
     std::string backupGameDir(GameType game) const;   // backups/<profile>/<game>/
     void showBackupManager(GameType game);
     void drawBackupManager(GameType game, const std::vector<SaveBackup::Entry>& list,
-                           int cursor, int scroll, const std::string& onConsole);
+                           int cursor, int scroll, const std::string& onConsole,
+                           const BackupSpace& space);
+    BackupSpace backupSpace(GameType game, const std::vector<SaveBackup::Entry>& list) const;
     bool restoreBackup(GameType game, const SaveBackup::Entry& entry);
     // What a backup's meta says about the save in it: trainer, ID, Pokemon in
     // the boxes. Empty when the save is not loaded.

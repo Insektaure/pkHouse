@@ -353,6 +353,12 @@ std::vector<Entry> list(const std::string& gameDir) {
     return out;
 }
 
+int64_t bytesIn(const std::string& gameDir) {
+    int64_t total = 0;
+    for (const Entry& e : list(gameDir)) total += e.bytes;
+    return total;
+}
+
 bool remove(const std::string& backupDir) {
     std::string path = backupDir;
     while (path.size() > 1 && path.back() == '/') path.pop_back();

@@ -101,6 +101,10 @@ std::vector<Entry> list(const std::string& gameDir);
 // Deletes a backup folder from the SD card.
 bool remove(const std::string& backupDir);
 
+// The size of every backup of one game folder (backups/<profile>/<game>/),
+// counted as list() counts them. 0 when there is none.
+int64_t bytesIn(const std::string& gameDir);
+
 enum class Error {
     None,
     Empty,          // no files in the backup

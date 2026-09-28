@@ -21,6 +21,7 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <dirent.h>
 #include <sys/statvfs.h>
 
 namespace {
@@ -55,6 +56,18 @@ std::string noteStampOf(time_t t, bool seconds = false) {
         std::snprintf(buf, sizeof(buf), "%04d-%02d-%02d %02d:%02d",
                       a.tm_year + 1900, a.tm_mon + 1, a.tm_mday, a.tm_hour, a.tm_min);
     return buf;
+}
+
+// Sizes for the header: GB with one decimal once there are that many, as a
+// free SD card usually has; MB and KB as formatSize writes them.
+std::string sizeText(int64_t bytes) {
+    constexpr int64_t GB = 1024LL * 1024 * 1024;
+    if (bytes >= GB) {
+        char buf[32];
+        std::snprintf(buf, sizeof(buf), "%.1f GB", static_cast<double>(bytes) / GB);
+        return buf;
+    }
+    return formatSize(static_cast<size_t>(std::max<int64_t>(0, bytes)));
 }
 
 // Whether another backup in the list was made in the same minute as `t`.
@@ -182,6 +195,25 @@ SDL_Texture* UI::iconAt(const std::string& name, int size) {
     return tex;
 }
 
+BackupSpace UI::backupSpace(GameType game, const std::vector<SaveBackup::Entry>& list) const {
+    BackupSpace sp;
+    for (const SaveBackup::Entry& e : list) sp.mine += e.bytes;
+
+    // This game in every profile's folder (backups/<profile>/<game>/); the
+    // current profile's is the list, already counted.
+    sp.allProfiles = sp.mine;
+    const std::string root = basePath_ + "backups/";
+    const std::string mineName = account_.profiles()[selectedProfile_].pathSafeName;
+    if (DIR* d = opendir(root.c_str())) {
+        while (dirent* e = readdir(d)) {
+            if (e->d_name[0] == '.' || mineName == e->d_name) continue;
+            sp.allProfiles += SaveBackup::bytesIn(root + e->d_name + "/" + gamePathNameOf(game) + "/");
+        }
+        closedir(d);
+    }
+    return sp;
+}
+
 // A mark: the icon tinted, on a faint disc of its colour - drawCheckDisc's
 // look, for any icon, drawn at its own size so it stays smooth.
 void UI::drawIconDisc(const char* icon, int cx, int cy, int radius, SDL_Color c) {
@@ -198,7 +230,8 @@ void UI::drawIconDisc(const char* icon, int cx, int cy, int radius, SDL_Color c)
 // --- The list ------------------------------------------------------------------------
 
 void UI::drawBackupManager(GameType game, const std::vector<SaveBackup::Entry>& list,
-                           int cursor, int scroll, const std::string& onConsole) {
+                           int cursor, int scroll, const std::string& onConsole,
+                           const BackupSpace& space) {
     drawDialogBackdrop();
 
     const int x = (SCREEN_W - BM_W) / 2, y = (SCREEN_H - BM_H) / 2;
@@ -214,7 +247,11 @@ void UI::drawBackupManager(GameType game, const std::vector<SaveBackup::Entry>& 
         TTF_Font* fSub   = uiFont(14);
         const int tx = inX + 52 + 14;
         const std::string who = account_.profiles()[selectedProfile_].nickname;
-        const std::string count = i18n::fmt(StrKey::BmCount, std::to_string(list.size()));
+        // Right: what this game's backups take, with every profile's when
+        // others have some too.
+        std::string count = i18n::fmt(StrKey::BmCount, std::to_string(list.size()), sizeText(space.mine));
+        if (space.allProfiles > space.mine)
+            count += "  " + i18n::fmt(StrKey::BmAllProfiles, sizeText(space.allProfiles));
         const int cw = textWidth(count, fSub);
         drawText(count, inX + inW - cw, y + 30, T().textDim, fSub);
         drawText(fitText(i18n::get(StrKey::BmTitle), fTitle, inW - 66 - cw - 12), tx, y + 22, T().text, fTitle);
@@ -393,6 +430,7 @@ void UI::showBackupManager(GameType game) {
     showWorking(i18n::get(StrKey::BmReading));
     std::vector<SaveBackup::Entry> list = SaveBackup::list(gameDir);
     std::string onConsole = consoleFingerprint(game);
+    BackupSpace space = backupSpace(game, list);
     int cursor = 0, scroll = 0;
     const int visible = (BM_H - BM_HEAD - BM_FOOT) / BM_PITCH;
     auto clampView = [&]() {
@@ -406,6 +444,7 @@ void UI::showBackupManager(GameType game) {
         showWorking(i18n::get(StrKey::BmReading));
         list = SaveBackup::list(gameDir);
         onConsole = consoleFingerprint(game);
+        space = backupSpace(game, list);
         clampView();
         refreshBankCounts();   // the detail panel's backup count and date
         frameGen_++;           // the backdrop behind has changed
@@ -475,7 +514,7 @@ void UI::showBackupManager(GameType game) {
             }
         }
         if (redraw && open) {
-            drawBackupManager(game, list, cursor, scroll, onConsole);
+            drawBackupManager(game, list, cursor, scroll, onConsole, space);
             SDL_RenderPresent(renderer_);
             redraw = false;
         }

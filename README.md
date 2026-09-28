@@ -785,6 +785,13 @@ wondercards), and launch via a homebrew launcher. From then on pkHouse updates i
 | <img src="screenshots/2.0/05-backing-up.jpg" width="420"> | <img src="screenshots/2.0/06-choose-bank.jpg" width="420"> |
 | The save is backed up before any bank opens | Choosing a bank, the save beside it |
 
+### Backups
+
+|  |  |
+|:--:|:--:|
+| <img src="screenshots/2.0/24-backups.jpg" width="420"> | <img src="screenshots/2.0/25-restore-confirm.jpg" width="420"> |
+| A game's backups (Y on the game selector) | Restoring one, after backing up the current save |
+
 ### Banks
 
 |  |  |

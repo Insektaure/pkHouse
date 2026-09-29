@@ -285,6 +285,8 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
     basePath_ = basePath;
     savePath_ = savePath;
 
+    tourPending_ = tourNotSeen();
+
     // Load persisted theme
     themeIndex_ = loadThemeIndex(basePath_);
     theme_ = &getTheme(themeIndex_);
@@ -332,6 +334,8 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
                         { toggleAutoUpdate(); markDirty(); }
                     else if (event.cbutton.button == SDL_CONTROLLER_BUTTON_Y)   // Switch X
                         { checkUpdatesNow(); markDirty(); }
+                    else if (event.cbutton.button == SDL_CONTROLLER_BUTTON_B)   // Switch A
+                        { showTour(); markDirty(); }   // back to About after it
                     else if (event.cbutton.button == SDL_CONTROLLER_BUTTON_LEFTSHOULDER)
                         stepTheme(-1);
                     else if (event.cbutton.button == SDL_CONTROLLER_BUTTON_RIGHTSHOULDER)
@@ -410,6 +414,15 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
             updateGtsCardPreview();
             if (gtsCardPreviewIdx_ != previewBefore)
                 markDirty();
+        }
+        // The first-launch tour, before anything else is offered: someone who
+        // has just installed pkHouse learns what it is before being asked to
+        // update it.
+        if (tourPending_ && screenDrawn_ && !showAbout_
+            && (screen_ == AppScreen::ProfileSelector || screen_ == AppScreen::GameSelector)) {
+            tourPending_ = false;
+            showTour();
+            markDirty();
         }
         // A newer release, offered once, and only where installing is safe:
         // the profile and game selectors, with nothing open over them.

@@ -538,5 +538,19 @@
     "bm_restored": "已于 {0} 恢复",
     "bm_same_as": "与 {0} 相同",
     "bm_pokemon": "{0} 只宝可梦",
-    "bm_reading": "正在读取主机上的存档…"
+    "bm_reading": "正在读取主机上的存档…",
+    "tour_welcome_title": "欢迎使用 pkHouse",
+    "tour_welcome_body": "在游戏之外存放宝可梦的仓库。\n在存档和仓库之间移动宝可梦。\n做成卡片分享，或在 GTS 上交换。",
+    "tour_modes_title": "两种启动方式",
+    "tour_modes_body": "在游戏之上：存档与仓库并排显示。\n按住 [R] 启动任意游戏，再打开 pkHouse。\n从相册启动：只有仓库，两个并排显示。",
+    "tour_mode_title": "你在游戏之上启动：可以访问存档。",
+    "tour_mode_applet": "你从相册启动：目前只有仓库。",
+    "tour_safe_title": "你的存档很安全",
+    "tour_safe_body": "打开存档前总会先备份。\n在游戏上按 [Y] 查看备份，可恢复任意一个。\n可能丢失宝可梦的操作都需要按住 [A]。",
+    "tour_keys_title": "基本操作",
+    "tour_keys_body": "[A] 拿起和放下宝可梦。\n[Y] 多选，[X] 查看概要。\n[+] 打开菜单，[-] 打开关于界面。\n本指南可在关于界面再次查看。",
+    "tour_next": "下一步",
+    "tour_done": "开始",
+    "tour_skip": "跳过",
+    "about_tour": "查看指南"
 }

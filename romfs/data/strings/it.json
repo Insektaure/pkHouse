@@ -538,5 +538,19 @@
     "bm_restored": "Ripristinato {0}",
     "bm_same_as": "Uguale a {0}",
     "bm_pokemon": "{0} Pokémon",
-    "bm_reading": "Lettura del salvataggio sulla console…"
+    "bm_reading": "Lettura del salvataggio sulla console…",
+    "tour_welcome_title": "Benvenuto in pkHouse",
+    "tour_welcome_body": "Banche per i tuoi Pokémon, fuori dai giochi.\nSpostali tra i tuoi salvataggi e le tue banche.\nCondividili come carte o scambiali sul GTS.",
+    "tour_modes_title": "Due modi di avvio",
+    "tour_modes_body": "Sopra un gioco: il tuo salvataggio e una banca.\nTieni premuto [R] avviando un gioco, poi apri pkHouse.\nDall'album: solo banche, due affiancate.",
+    "tour_mode_title": "Sei sopra un gioco: i tuoi salvataggi sono accessibili.",
+    "tour_mode_applet": "Sei nell'album: per ora solo banche.",
+    "tour_safe_title": "Il tuo salvataggio è al sicuro",
+    "tour_safe_body": "Ogni salvataggio viene copiato prima di aprirlo.\n[Y] su un gioco elenca i suoi backup, per ripristinarne uno.\nCiò che fa perdere Pokémon chiede di tenere premuto [A].",
+    "tour_keys_title": "Come muoversi",
+    "tour_keys_body": "[A] prende un Pokémon e lo posa.\n[Y] ne seleziona diversi, [X] mostra il riepilogo.\n[+] apre il menu, [-] la schermata Informazioni.\nQuesta guida si rivede da Informazioni.",
+    "tour_next": "Avanti",
+    "tour_done": "Iniziamo",
+    "tour_skip": "Salta",
+    "about_tour": "Rivedi la guida"
 }

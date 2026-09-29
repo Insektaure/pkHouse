@@ -693,6 +693,7 @@ When switching banks, the selector appears on the side being switched while the 
 | Button | Action |
 |--------|--------|
 | L / R | Previous / next theme |
+| A | Show the first-launch tour again |
 | X | Check for updates now |
 | Y | Turn the update check at launch on / off |
 | B / - | Close |

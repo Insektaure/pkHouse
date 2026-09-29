@@ -1252,6 +1252,18 @@ void UI::drawAboutPopup() {
         drawFooterKey(cbx + 12, by + bh / 2, "X", false);
         drawText(cl, cbx + 12 + ckW + 10, by + bh / 2 - TTF_FontHeight(f) / 2,
                  checking ? T().textMuted : T().text, f);
+
+        // A: the first-launch tour again, at the other end of the row.
+        const std::string tl = i18n::get(StrKey::AboutTour);
+        const int tkW = drawFooterKey(0, -100, "A", true);
+        const int tw = 12 + tkW + 10 + textWidth(tl, f) + 16;
+        const int tbx = x + PAD;
+        if (tbx + tw <= cbx - 12) {
+            fillRounded(tbx, by, tw, bh, 10, T().buttonBg);
+            strokeRounded(tbx, by, tw, bh, 10, 1, T().buttonBorder);
+            drawFooterKey(tbx + 12, by + bh / 2, "A", false);
+            drawText(tl, tbx + 12 + tkW + 10, by + bh / 2 - TTF_FontHeight(f) / 2, T().text, f);
+        }
     }
 }
 

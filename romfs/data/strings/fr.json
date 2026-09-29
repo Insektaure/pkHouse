@@ -538,5 +538,19 @@
     "bm_restored": "Restaurée le {0}",
     "bm_same_as": "Identique au {0}",
     "bm_pokemon": "{0} Pokémon",
-    "bm_reading": "Lecture de la sauvegarde de la console…"
+    "bm_reading": "Lecture de la sauvegarde de la console…",
+    "tour_welcome_title": "Bienvenue dans pkHouse",
+    "tour_welcome_body": "Des banques pour vos Pokémon, en dehors des jeux.\nDéplacez-les entre vos sauvegardes et vos banques.\nPartagez-les en cartes, ou échangez-les sur le GTS.",
+    "tour_modes_title": "Deux façons de lancer",
+    "tour_modes_body": "Par-dessus un jeu : votre sauvegarde et une banque.\nMaintenez [R] en lançant un jeu, puis ouvrez pkHouse.\nDepuis l'album : les banques seulement.",
+    "tour_mode_title": "Vous êtes par-dessus un jeu : vos sauvegardes sont accessibles.",
+    "tour_mode_applet": "Vous êtes dans l'album : les banques seulement pour l'instant.",
+    "tour_safe_title": "Votre sauvegarde est protégée",
+    "tour_safe_body": "Chaque sauvegarde est copiée avant d'être ouverte.\n[Y] sur un jeu liste ses copies, pour en restaurer une.\nTout ce qui fait perdre des Pokémon demande de maintenir [A].",
+    "tour_keys_title": "Se repérer",
+    "tour_keys_body": "[A] prend un Pokémon et le repose.\n[Y] en sélectionne plusieurs, [X] affiche son résumé.\n[+] ouvre le menu, [-] l'écran À propos.\nCette visite se revoit depuis À propos.",
+    "tour_next": "Suivant",
+    "tour_done": "C'est parti",
+    "tour_skip": "Passer",
+    "about_tour": "Revoir la visite"
 }

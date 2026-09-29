@@ -538,5 +538,19 @@
     "bm_restored": "Restaurada {0}",
     "bm_same_as": "Igual que {0}",
     "bm_pokemon": "{0} Pokémon",
-    "bm_reading": "Leyendo la partida de la consola…"
+    "bm_reading": "Leyendo la partida de la consola…",
+    "tour_welcome_title": "Te damos la bienvenida a pkHouse",
+    "tour_welcome_body": "Bancos para tus Pokémon, fuera de los juegos.\nMuévelos entre tus partidas y tus bancos.\nCompártelos como cartas o intercámbialos en el GTS.",
+    "tour_modes_title": "Dos formas de iniciar",
+    "tour_modes_body": "Sobre un juego: tu partida y un banco, lado a lado.\nMantén [R] al iniciar un juego y abre pkHouse.\nDesde el álbum: solo bancos, dos lado a lado.",
+    "tour_mode_title": "Estás sobre un juego: tus partidas están disponibles.",
+    "tour_mode_applet": "Estás en el álbum: por ahora, solo bancos.",
+    "tour_safe_title": "Tu partida está a salvo",
+    "tour_safe_body": "Cada partida se copia antes de que pkHouse la abra.\n[Y] en un juego muestra sus copias, para restaurar una.\nTodo lo que hace perder Pokémon pide mantener [A].",
+    "tour_keys_title": "Cómo moverse",
+    "tour_keys_body": "[A] coge un Pokémon y lo suelta.\n[Y] selecciona varios, [X] muestra su resumen.\n[+] abre el menú, [-] la pantalla Acerca de.\nEsta guía se puede ver de nuevo en Acerca de.",
+    "tour_next": "Siguiente",
+    "tour_done": "¡Vamos!",
+    "tour_skip": "Saltar",
+    "about_tour": "Ver la guía"
 }

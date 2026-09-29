@@ -43,6 +43,16 @@ struct ConfirmStyle {
 
 namespace SaveBackup { struct Entry; struct Summary; }
 
+// One page of a series shown once (the first-launch tour; later "What's new"):
+// an icon from romfs:/icons/ in a colour, a title, and a body whose '\n'
+// start new paragraphs. source/ui_tour.cpp
+struct InfoPage {
+    std::string icon;
+    SDL_Color   color;
+    std::string title;
+    std::string body;
+};
+
 // What the backups of one game take on the SD card, for the backup screen.
 struct BackupSpace {
     int64_t mine = 0;          // this game, this profile: the list
@@ -724,6 +734,13 @@ private:
                            const BackupSpace& space);
     BackupSpace backupSpace(GameType game, const std::vector<SaveBackup::Entry>& list) const;
     bool restoreBackup(GameType game, const SaveBackup::Entry& entry);
+    // First-launch tour (source/ui_tour.cpp): once, until tour_v1.cfg exists.
+    bool tourPending_ = false;
+    bool tourNotSeen() const;
+    void markTourSeen();
+    void showTour();                                        // also A in About
+    void showPages(const std::vector<InfoPage>& pages);     // blocking pager
+    void drawInfoPage(const InfoPage& page, int index, int count);
     // What a backup's meta says about the save in it: trainer, ID, Pokemon in
     // the boxes. Empty when the save is not loaded.
     SaveBackup::Summary backupSummary(const SaveFile& save, GameType game) const;

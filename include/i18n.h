@@ -650,4 +650,18 @@ namespace StrKey {
     constexpr const char* BmSameAs                 = "bm_same_as";
     constexpr const char* BmPokemon                = "bm_pokemon";
     constexpr const char* BmReading                = "bm_reading";
+    constexpr const char* TourWelcomeTitle         = "tour_welcome_title";
+    constexpr const char* TourWelcomeBody          = "tour_welcome_body";
+    constexpr const char* TourModesTitle           = "tour_modes_title";
+    constexpr const char* TourModesBody            = "tour_modes_body";
+    constexpr const char* TourModeTitle            = "tour_mode_title";
+    constexpr const char* TourModeApplet           = "tour_mode_applet";
+    constexpr const char* TourSafeTitle            = "tour_safe_title";
+    constexpr const char* TourSafeBody             = "tour_safe_body";
+    constexpr const char* TourKeysTitle            = "tour_keys_title";
+    constexpr const char* TourKeysBody             = "tour_keys_body";
+    constexpr const char* TourNext                 = "tour_next";
+    constexpr const char* TourDone                 = "tour_done";
+    constexpr const char* TourSkip                 = "tour_skip";
+    constexpr const char* AboutTour                = "about_tour";
 }

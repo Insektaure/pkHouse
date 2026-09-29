@@ -538,5 +538,19 @@
     "bm_restored": "Restaurado {0}",
     "bm_same_as": "Igual a {0}",
     "bm_pokemon": "{0} Pokémon",
-    "bm_reading": "Lendo o jogo salvo do console…"
+    "bm_reading": "Lendo o jogo salvo do console…",
+    "tour_welcome_title": "Boas-vindas ao pkHouse",
+    "tour_welcome_body": "Bancos para seus Pokémon, fora dos jogos.\nMova-os entre seus jogos salvos e seus bancos.\nCompartilhe como cartas ou troque no GTS online.",
+    "tour_modes_title": "Duas formas de abrir",
+    "tour_modes_body": "Sobre um jogo: seu jogo salvo e um banco, lado a lado.\nSegure [R] ao iniciar um jogo e abra o pkHouse.\nPelo álbum: só bancos, dois lado a lado.",
+    "tour_mode_title": "Você está sobre um jogo: seus jogos salvos estão acessíveis.",
+    "tour_mode_applet": "Você está no álbum: por enquanto, só bancos.",
+    "tour_safe_title": "Seu jogo salvo está seguro",
+    "tour_safe_body": "Todo jogo salvo recebe um backup antes de ser aberto.\n[Y] em um jogo lista seus backups, para restaurar um.\nTudo que faz perder Pokémon pede para segurar [A].",
+    "tour_keys_title": "Como usar",
+    "tour_keys_body": "[A] pega um Pokémon e o solta.\n[Y] seleciona vários, [X] mostra o resumo.\n[+] abre o menu, [-] a tela Sobre.\nEste guia pode ser revisto em Sobre.",
+    "tour_next": "Próximo",
+    "tour_done": "Vamos lá",
+    "tour_skip": "Pular",
+    "about_tour": "Rever o guia"
 }

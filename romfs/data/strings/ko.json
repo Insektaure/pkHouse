@@ -538,5 +538,19 @@
     "bm_restored": "{0} 복원됨",
     "bm_same_as": "{0}와 같음",
     "bm_pokemon": "포켓몬 {0}마리",
-    "bm_reading": "본체의 세이브를 읽고 있습니다…"
+    "bm_reading": "본체의 세이브를 읽고 있습니다…",
+    "tour_welcome_title": "pkHouse에 오신 것을 환영합니다",
+    "tour_welcome_body": "게임 밖에 포켓몬을 보관하는 뱅크입니다.\n세이브와 뱅크 사이에서 포켓몬을 옮기세요.\n카드로 공유하거나 GTS에서 교환하세요.",
+    "tour_modes_title": "두 가지 실행 방법",
+    "tour_modes_body": "게임 위에서: 세이브와 뱅크를 나란히.\n[R]을 누른 채 게임을 실행한 뒤 pkHouse를 여세요.\n앨범에서: 뱅크만, 두 개를 나란히.",
+    "tour_mode_title": "게임 위에서 실행 중: 세이브를 다룰 수 있습니다.",
+    "tour_mode_applet": "앨범에서 실행 중: 지금은 뱅크만 사용할 수 있습니다.",
+    "tour_safe_title": "세이브는 안전합니다",
+    "tour_safe_body": "세이브는 열기 전에 항상 백업됩니다.\n게임에서 [Y]를 누르면 백업을 복원할 수 있습니다.\n포켓몬을 잃을 수 있는 작업은 [A]를 길게 눌러야 합니다.",
+    "tour_keys_title": "기본 조작",
+    "tour_keys_body": "[A]로 포켓몬을 들고 내려놓습니다.\n[Y]로 여러 마리 선택, [X]로 요약을 봅니다.\n[+]는 메뉴, [-]는 정보 화면입니다.\n이 안내는 정보 화면에서 다시 볼 수 있습니다.",
+    "tour_next": "다음",
+    "tour_done": "시작하기",
+    "tour_skip": "건너뛰기",
+    "about_tour": "안내 보기"
 }

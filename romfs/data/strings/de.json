@@ -538,5 +538,19 @@
     "bm_restored": "Wiederhergestellt {0}",
     "bm_same_as": "Wie {0}",
     "bm_pokemon": "{0} Pokémon",
-    "bm_reading": "Spielstand auf der Konsole wird gelesen…"
+    "bm_reading": "Spielstand auf der Konsole wird gelesen…",
+    "tour_welcome_title": "Willkommen bei pkHouse",
+    "tour_welcome_body": "Banken für deine Pokémon, außerhalb der Spiele.\nVerschiebe sie zwischen Spielständen und Banken.\nTeile sie als Karten oder tausche sie im GTS.",
+    "tour_modes_title": "Zwei Arten zu starten",
+    "tour_modes_body": "Über ein Spiel: dein Spielstand und eine Bank.\nHalte [R] beim Start eines Spiels, dann öffne pkHouse.\nAus dem Album: nur Banken, zwei nebeneinander.",
+    "tour_mode_title": "Du bist über einem Spiel: Deine Spielstände sind offen.",
+    "tour_mode_applet": "Du bist im Album: vorerst nur Banken.",
+    "tour_safe_title": "Dein Spielstand ist sicher",
+    "tour_safe_body": "Jeder Spielstand wird vor dem Öffnen gesichert.\n[Y] bei einem Spiel zeigt seine Sicherungen.\nAlles, was Pokémon kosten kann, verlangt [A] zu halten.",
+    "tour_keys_title": "Zurechtfinden",
+    "tour_keys_body": "[A] nimmt ein Pokémon auf und legt es ab.\n[Y] wählt mehrere aus, [X] zeigt seine Übersicht.\n[+] öffnet das Menü, [-] den Info-Bildschirm.\nDiese Tour gibt es jederzeit unter Info.",
+    "tour_next": "Weiter",
+    "tour_done": "Los geht's",
+    "tour_skip": "Überspringen",
+    "about_tour": "Tour zeigen"
 }

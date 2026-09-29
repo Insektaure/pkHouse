@@ -538,5 +538,19 @@
     "bm_restored": "Restored {0}",
     "bm_same_as": "Same as {0}",
     "bm_pokemon": "{0} Pokémon",
-    "bm_reading": "Reading the save on the console…"
+    "bm_reading": "Reading the save on the console…",
+    "tour_welcome_title": "Welcome to pkHouse",
+    "tour_welcome_body": "Banks for your Pokémon, outside the games.\nMove them between your saves and your banks.\nShare them as cards, or trade them on the online GTS.",
+    "tour_modes_title": "Two ways to launch",
+    "tour_modes_body": "Over a game: your save and a bank, side by side.\nHold [R] while starting any game, then open pkHouse.\nFrom the album: banks only, two side by side.",
+    "tour_mode_title": "You are over a game: your saves are open to pkHouse.",
+    "tour_mode_applet": "You are in the album: banks only for now.",
+    "tour_safe_title": "Your save is safe",
+    "tour_safe_body": "Every save is backed up before pkHouse opens it.\n[Y] on a game lists its backups, to restore any of them.\nAnything that loses Pokémon asks you to hold [A].",
+    "tour_keys_title": "Getting around",
+    "tour_keys_body": "[A] picks a Pokémon up and puts it down.\n[Y] selects several, [X] shows its summary.\n[+] opens the menu, [-] the About screen.\nThis tour can be seen again from About.",
+    "tour_next": "Next",
+    "tour_done": "Let's go",
+    "tour_skip": "Skip",
+    "about_tour": "Show the tour"
 }

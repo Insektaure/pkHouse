@@ -538,5 +538,19 @@
     "bm_restored": "Hersteld {0}",
     "bm_same_as": "Zelfde als {0}",
     "bm_pokemon": "{0} Pokémon",
-    "bm_reading": "Opslag op de console lezen…"
+    "bm_reading": "Opslag op de console lezen…",
+    "tour_welcome_title": "Welkom bij pkHouse",
+    "tour_welcome_body": "Banken voor je Pokémon, buiten de spellen.\nVerplaats ze tussen je opslag en je banken.\nDeel ze als kaarten of ruil ze op de GTS.",
+    "tour_modes_title": "Twee manieren om te starten",
+    "tour_modes_body": "Over een spel: je opslag en een bank naast elkaar.\nHoud [R] ingedrukt bij het starten, open dan pkHouse.\nVanuit het album: alleen banken, twee naast elkaar.",
+    "tour_mode_title": "Je zit over een spel: je opslag is toegankelijk.",
+    "tour_mode_applet": "Je zit in het album: voorlopig alleen banken.",
+    "tour_safe_title": "Je opslag is veilig",
+    "tour_safe_body": "Van elke opslag wordt eerst een back-up gemaakt.\n[Y] op een spel toont de back-ups, om er een te herstellen.\nAlles waarbij Pokémon verloren gaan, vraagt [A] ingedrukt.",
+    "tour_keys_title": "Wegwijs",
+    "tour_keys_body": "[A] pakt een Pokémon op en zet hem neer.\n[Y] selecteert er meerdere, [X] toont het overzicht.\n[+] opent het menu, [-] het Info-scherm.\nDeze rondleiding zie je opnieuw via Info.",
+    "tour_next": "Volgende",
+    "tour_done": "Aan de slag",
+    "tour_skip": "Overslaan",
+    "about_tour": "Rondleiding"
 }

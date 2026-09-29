@@ -538,5 +538,19 @@
     "bm_restored": "已於 {0} 還原",
     "bm_same_as": "與 {0} 相同",
     "bm_pokemon": "{0} 隻寶可夢",
-    "bm_reading": "正在讀取主機上的存檔…"
+    "bm_reading": "正在讀取主機上的存檔…",
+    "tour_welcome_title": "歡迎使用 pkHouse",
+    "tour_welcome_body": "在遊戲之外存放寶可夢的倉庫。\n在存檔和倉庫之間移動寶可夢。\n做成卡片分享，或在 GTS 上交換。",
+    "tour_modes_title": "兩種啟動方式",
+    "tour_modes_body": "在遊戲之上：存檔與倉庫並排顯示。\n按住 [R] 啟動任意遊戲，再開啟 pkHouse。\n從相簿啟動：只有倉庫，兩個並排顯示。",
+    "tour_mode_title": "你在遊戲之上啟動：可以存取存檔。",
+    "tour_mode_applet": "你從相簿啟動：目前只有倉庫。",
+    "tour_safe_title": "你的存檔很安全",
+    "tour_safe_body": "開啟存檔前一定會先備份。\n在遊戲上按 [Y] 查看備份，可還原任意一個。\n可能遺失寶可夢的操作都需要按住 [A]。",
+    "tour_keys_title": "基本操作",
+    "tour_keys_body": "[A] 拿起和放下寶可夢。\n[Y] 多選，[X] 查看摘要。\n[+] 開啟選單，[-] 開啟關於畫面。\n本指南可在關於畫面再次查看。",
+    "tour_next": "下一步",
+    "tour_done": "開始",
+    "tour_skip": "略過",
+    "about_tour": "查看指南"
 }

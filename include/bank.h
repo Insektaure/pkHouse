@@ -38,6 +38,11 @@ public:
     void clearSlot(int box, int slot);
 
     std::string getBoxName(int box) const;
+    // True when the box was given a name (getBoxName falls back to "Bank N").
+    bool hasBoxName(int box) const {
+        return box >= 0 && box < (int)boxNames_.size() && !boxNames_[box].empty();
+    }
+    GameType gameType() const { return gameType_; }
     void setBoxName(int box, const std::string& name);
 
     int boxCount() const { return boxCount_; }

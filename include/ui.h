@@ -855,13 +855,18 @@ private:
     // "leave" items of save + bank or of dual bank. Left column tools and
     // destinations, right column settings and leaving.
     enum class MenuId {
-        Search, Wondercard, ExportPk, ExportCards, ImportCard,
+        Search, Wondercard, ExportPk, ExportCards, ImportCard, SortBank,
         SwitchBank, SwitchLeft, SwitchRight, ChangeGame,
         Theme, Language, SaveQuit, QuitNoSave, SaveBanks, ChangeGameNoSave,
     };
     struct MenuItem { MenuId id; int column; };
     std::vector<MenuItem> menuItems() const;
     void menuActivate(MenuId id, bool& running);
+    // Sort & tidy (source/ui_sort.cpp): the bank under the cursor, one box or
+    // all of it, in memory until the banks are saved.
+    bool canSortHere() const;
+    Bank* sortTargetBank();
+    void showSortDialog();
     void moveMenuCursor(int dx, int dy);
     void openMenu();
     bool confirmDiscard();

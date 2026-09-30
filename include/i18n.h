@@ -664,4 +664,26 @@ namespace StrKey {
     constexpr const char* TourDone                 = "tour_done";
     constexpr const char* TourSkip                 = "tour_skip";
     constexpr const char* AboutTour                = "about_tour";
+    constexpr const char* MenuSort                 = "menu_sort";
+    constexpr const char* MenuDescSort             = "menu_desc_sort";
+    constexpr const char* SortTitle                = "sort_title";
+    constexpr const char* SortScopeBox             = "sort_scope_box";
+    constexpr const char* SortScopeBank            = "sort_scope_bank";
+    constexpr const char* SortScopeHint            = "sort_scope_hint";
+    constexpr const char* SortOrderDex             = "sort_order_dex";
+    constexpr const char* SortOrderName            = "sort_order_name";
+    constexpr const char* SortOrderShiny           = "sort_order_shiny";
+    constexpr const char* SortOrderLevel           = "sort_order_level";
+    constexpr const char* SortOrderIvs             = "sort_order_ivs";
+    constexpr const char* SortOrderCompact         = "sort_order_compact";
+    constexpr const char* SortOrderLiving          = "sort_order_living";
+    constexpr const char* SortNoteLiving           = "sort_note_living";
+    constexpr const char* SortNoteNames            = "sort_note_names";
+    constexpr const char* SortGo                   = "sort_go";
+    constexpr const char* SortDoneTitle            = "sort_done_title";
+    constexpr const char* SortDoneBody             = "sort_done_body";
+    constexpr const char* SortDoneLiving           = "sort_done_living";
+    constexpr const char* SortFullTitle            = "sort_full_title";
+    constexpr const char* SortFullBody             = "sort_full_body";
+    constexpr const char* SortNothing              = "sort_nothing";
 }

@@ -47,6 +47,10 @@ std::vector<UI::MenuItem> UI::menuItems() const {
         items.push_back({MenuId::ExportCards, 0});
     }
     items.push_back({MenuId::ImportCard, 0});
+    // With a selection the export entries take its row: the column stays as
+    // tall as it was, and a sort would drop the selection anyway.
+    if (selectedSlots_.empty() && canSortHere())
+        items.push_back({MenuId::SortBank, 0});
     if (dual) {
         items.push_back({MenuId::SwitchLeft, 0});
         items.push_back({MenuId::SwitchRight, 0});
@@ -253,6 +257,10 @@ void UI::menuActivate(MenuId id, bool& running) {
         showMessageAndWait(i18n::get(StrKey::ExportComplete), body, DialogKind::Success);
         return;
     }
+    case MenuId::SortBank:
+        showMenu_ = false;
+        showSortDialog();
+        return;
     case MenuId::ImportCard:
         showMenu_ = false;
         cardList_ = scanCards(basePath_, selectedGame_);
@@ -586,6 +594,7 @@ void UI::drawMenuPopup() {
             case MenuId::ExportCards: iconName = "card";   descKey = StrKey::MenuDescExportCards;
                 title = i18n::fmt(StrKey::MenuExportCards, std::to_string(selectedSlots_.size())); break;
             case MenuId::ImportCard:  iconName = "import"; titleKey = StrKey::MenuImportCard; descKey = StrKey::MenuDescImport; break;
+            case MenuId::SortBank:    iconName = "sort";   titleKey = StrKey::MenuSort;       descKey = StrKey::MenuDescSort;   break;
             case MenuId::SwitchBank:  iconName = "bank";   titleKey = StrKey::MenuSwitchBank; value = activeBankName_; break;
             case MenuId::SwitchLeft:  iconName = "bank";   titleKey = StrKey::MenuSwitchBank; value = leftBankName_;
                 badge = i18n::get(StrKey::BsTagLeft); break;

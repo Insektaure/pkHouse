@@ -959,12 +959,17 @@ static constexpr uint8_t IS_PRESENT[1424] = {
     1,1,1,1
 };
 
+// The form entry of (natdex, form > 0) is FORM_STATS_INDEX + form - 1, as in
+// PKHeX's PersonalInfo.FormIndex and the other games' tables. (It read
+// FORM_STATS_INDEX + form before 2.2.0: one entry too far, so each alternate
+// form got the data of the next entry - Paldean Wooper Galarian Slowpoke's
+// abilities, a species' last form the next species' first form.)
 inline int getEntryIndex(uint16_t natdex, uint8_t form = 0) {
     if (natdex >= 1424) return 0;
     if (form == 0) return natdex;
     uint16_t fsi = FORM_STATS_INDEX[natdex];
     if (fsi == 0) return natdex;
-    int idx = fsi + form;
+    int idx = fsi + form - 1;
     return (idx < 1424) ? idx : natdex;
 }
 

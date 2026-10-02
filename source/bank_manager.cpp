@@ -283,6 +283,13 @@ std::string BankManager::loadBank(const std::string& name, Bank& bank) {
     return path;
 }
 
+std::string BankManager::loadBankFile(const std::string& path, Bank& bank) {
+    if (path.empty())
+        return "";
+    bank.load(path);
+    return path;
+}
+
 std::string BankManager::pathFor(const std::string& name) const {
     for (const auto& info : bankList_) {
         if (info.name == name)

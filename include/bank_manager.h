@@ -32,6 +32,11 @@ public:
     bool deleteBank(const std::string& name);
     bool renameBank(const std::string& oldName, const std::string& newName);
     std::string loadBank(const std::string& name, Bank& bank);
+    // The same, from the exact file of a listed bank. Opening goes through this:
+    // a name is only unique within one game, and All banks lists every game, so
+    // a Violet bank and a Z-A bank of the same name must not be told apart by
+    // name.
+    std::string loadBankFile(const std::string& path, Bank& bank);
     std::string pathFor(const std::string& name) const;
     static int countOccupied(const std::string& filePath);
     static int countBanks(const std::string& basePath, GameType game);

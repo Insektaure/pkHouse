@@ -735,13 +735,17 @@ void UI::openSelectedBank() {
     showWorking(i18n::get(StrKey::LoadingBank));
 
     const time_t modified = banks[bankSelCursor_].modified;
+    // The file of the entry under the cursor, not a lookup by name: in All
+    // banks the list holds every game, and two games can each have a bank of
+    // the same name (a lookup took the first, the wrong game's file).
+    const std::string path = banks[bankSelCursor_].fullPath;
     if (isDualBankMode() && bankSelTarget_ == Panel::Game) {
-        leftBankPath_ = bankManager_.loadBank(name, bankLeft_);
+        leftBankPath_ = bankManager_.loadBankFile(path, bankLeft_);
         bankLeft_.setGameType(selectedGame_);
         leftBankName_ = name;
         leftBankModified_ = modified;
     } else {
-        activeBankPath_ = bankManager_.loadBank(name, bank_);
+        activeBankPath_ = bankManager_.loadBankFile(path, bank_);
         bank_.setGameType(selectedGame_);
         activeBankName_ = name;
         activeBankModified_ = modified;

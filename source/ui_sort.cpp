@@ -11,12 +11,12 @@
 
 namespace {
 
-constexpr int SD_W = 700, SD_H = 590, SD_PAD = 32;
+constexpr int SD_W = 700, SD_H = 640, SD_PAD = 32;
 constexpr int SD_HEAD = 84, SD_SCOPE_H = 56, SD_ROW_H = 44, SD_FOOT = 58;
 
 // Rows: 0 is the scope, then one per order.
 constexpr const char* ORDER_KEYS[BankSort::ORDER_COUNT] = {
-    StrKey::SortOrderDex, StrKey::SortOrderName, StrKey::SortOrderShiny, StrKey::SortOrderLevel,
+    StrKey::SortOrderDex, StrKey::SortOrderNational, StrKey::SortOrderName, StrKey::SortOrderShiny, StrKey::SortOrderLevel,
     StrKey::SortOrderIvs, StrKey::SortOrderCompact, StrKey::SortOrderLiving,
 };
 

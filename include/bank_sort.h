@@ -11,7 +11,9 @@
 namespace BankSort {
 
 enum class Order {
-    Dex,         // national Pokedex number, then form
+    GameDex,     // the game's own Pokedex order (as the Living Dex, no gaps); species
+                 // outside it after, in national order; then form
+    National,    // national Pokedex number, then form
     Name,        // species name in the app's language
     ShinyFirst,  // shinies, then the others; each by Pokedex number
     Level,       // highest first
@@ -19,7 +21,7 @@ enum class Order {
     Compact,     // the current order, gaps closed
     LivingDex,   // one slot per species of the game's Pokedex (whole bank)
 };
-constexpr int ORDER_COUNT = 7;
+constexpr int ORDER_COUNT = 8;
 
 struct Result {
     bool done = false;   // the bank was rearranged

@@ -43,6 +43,20 @@ void writeBack(Bank& bank, int first, const std::vector<int>& target, const std:
     }
 }
 
+// Each species' place in the game's Pokedex order, and how many each section
+// adds - the order both the Living Dex and the game-Pokedex sort use. The
+// generator already keeps a species to one section; counting here as well
+// keeps the layout within its vectors whatever the data.
+void gameOrder(const LivingDexData::Section* sections, int sectionCount,
+               std::unordered_map<uint16_t, int>& order, std::vector<int>& sectionSize) {
+    order.clear();
+    sectionSize.assign(sectionCount, 0);
+    for (int s = 0; s < sectionCount; s++)
+        for (int k = 0; k < sections[s].count; k++)
+            if (order.emplace(sections[s].species[k], static_cast<int>(order.size())).second)
+                sectionSize[s]++;
+}
+
 BankSort::Result livingDex(Bank& bank, GameType game, std::vector<Item>& items) {
     BankSort::Result r;
     r.pokemon = static_cast<int>(items.size());
@@ -51,15 +65,9 @@ BankSort::Result livingDex(Bank& bank, GameType game, std::vector<Item>& items) 
     if (!sections) return r;
     const int per = bank.slotsPerBox(), total = bank.totalSlots();
 
-    // Each species' place in the layout order, and how many each section
-    // adds. The generator already keeps a species to one section; counting
-    // here as well keeps the layout within its vectors whatever the data.
     std::unordered_map<uint16_t, int> order;
-    std::vector<int> sectionSize(sectionCount, 0);
-    for (int s = 0; s < sectionCount; s++)
-        for (int k = 0; k < sections[s].count; k++)
-            if (order.emplace(sections[s].species[k], static_cast<int>(order.size())).second)
-                sectionSize[s]++;
+    std::vector<int> sectionSize;
+    gameOrder(sections, sectionCount, order, sectionSize);
     r.species = static_cast<int>(order.size());
 
     // The slot of each layout index: each Pokedex starting a new box
@@ -161,6 +169,23 @@ Result sort(Bank& bank, GameType game, Order order, int box) {
     r.pokemon = static_cast<int>(items.size());
     if (items.empty()) return r;
 
+    // The game's Pokedex rank of each Pokemon, for GameDex: species outside
+    // the game's Pokedex after it, in national order.
+    std::vector<int> rank;
+    if (order == Order::GameDex) {
+        int sectionCount = 0;
+        const LivingDexData::Section* sections = sectionsFor(game, sectionCount);
+        std::unordered_map<uint16_t, int> place;
+        std::vector<int> sectionSize;
+        if (sections) gameOrder(sections, sectionCount, place, sectionSize);
+        const int outside = static_cast<int>(place.size());
+        rank.reserve(items.size());
+        for (const Item& it : items) {
+            auto f = place.find(it.pkm.species());
+            rank.push_back(f != place.end() ? f->second : outside + it.pkm.species());
+        }
+    }
+
     // Species names looked up once, not on every comparison.
     std::vector<std::string> names;
     if (order == Order::Name) {
@@ -175,6 +200,9 @@ Result sort(Bank& bank, GameType game, Order order, int box) {
             const Pokemon& pb = items[b].pkm;
             if (pa.isEgg() != pb.isEgg()) return !pa.isEgg();
             switch (order) {
+                case Order::GameDex:
+                    if (rank[a] != rank[b]) return rank[a] < rank[b];
+                    break;
                 case Order::Name:
                     if (names[a] != names[b]) return names[a] < names[b];
                     break;

@@ -671,6 +671,7 @@ namespace StrKey {
     constexpr const char* SortScopeBank            = "sort_scope_bank";
     constexpr const char* SortScopeHint            = "sort_scope_hint";
     constexpr const char* SortOrderDex             = "sort_order_dex";
+    constexpr const char* SortOrderNational        = "sort_order_national";
     constexpr const char* SortOrderName            = "sort_order_name";
     constexpr const char* SortOrderShiny           = "sort_order_shiny";
     constexpr const char* SortOrderLevel           = "sort_order_level";

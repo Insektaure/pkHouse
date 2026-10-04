@@ -599,5 +599,9 @@
     "web_matches": "个结果",
     "web_loading": "正在加载...",
     "web_lost": "Switch 已停止响应。请在 Switch 上重新打开手机查看，然后刷新此页面。",
-    "web_gmax": "超极巨化"
+    "web_gmax": "超极巨化",
+    "about_changelog": "更新日志",
+    "changelog_title": "更新日志",
+    "changelog_updated": "已更新到 {0}",
+    "changelog_missing": "找不到更新日志。"
 }

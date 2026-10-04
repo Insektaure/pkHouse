@@ -599,5 +599,9 @@
     "web_matches": "résultats",
     "web_loading": "Chargement...",
     "web_lost": "La Switch ne répond plus. Rouvrez la vue téléphone dessus, puis rechargez cette page.",
-    "web_gmax": "Gigamax"
+    "web_gmax": "Gigamax",
+    "about_changelog": "Nouveautés",
+    "changelog_title": "Nouveautés",
+    "changelog_updated": "Mis à jour en {0}",
+    "changelog_missing": "Le journal des modifications est introuvable."
 }

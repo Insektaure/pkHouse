@@ -602,6 +602,9 @@ The **About** screen (**−**) shows the check's result beside the version (up t
 available, or that it could not check), **X** checks right away, and **Y** turns the check at launch on or
 off.
 
+**+** in the About screen opens the **changelog**: every release's notes, newest first (**D-Pad** scrolls,
+**L / R** a page at a time). It also opens by itself, once, on the first launch after an update.
+
 ### Quitting
 
 Leaving the app always asks first - **+** opens the menu in the boxes but quits on the selectors and in

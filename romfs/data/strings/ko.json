@@ -599,5 +599,9 @@
     "web_matches": "건",
     "web_loading": "불러오는 중...",
     "web_lost": "Switch가 응답하지 않습니다. Switch에서 휴대폰으로 보기를 다시 연 다음 이 페이지를 새로 고치세요.",
-    "web_gmax": "거다이맥스"
+    "web_gmax": "거다이맥스",
+    "about_changelog": "변경 내역",
+    "changelog_title": "변경 내역",
+    "changelog_updated": "{0}(으)로 업데이트됨",
+    "changelog_missing": "변경 내역을 찾을 수 없습니다."
 }

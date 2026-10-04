@@ -1,0 +1,577 @@
+## Version 2.3.1 (2026-10-04)
+### Changelog
+
+Every release's notes, in the app.
+
+- Press + in the About screen (-) to open it: newest first, D-Pad to scroll, L / R a page at a time
+- It also opens by itself once, the first time a new version starts, so you can see what changed
+- The notes are the ones published with each release on GitHub
+
+## Version 2.3.0 (2026-10-04)
+### Phone view
+
+Browse your banks from a phone or PC browser on the same Wi-Fi as the Switch: scan the code displayed, nothing to install.
+
+- Open it with X button on the profile or game selector (every bank, no game needed), or from the menu (+) in the box view (your open save too)
+- Boxes are drawn the same, search by name, filters for Shiny, Alpha, Gigantamax and Eggs
+- Tap a Pokemon for the same summary as on the Switch, icons included
+- In your theme and language
+
+Read-only, and only while its screen is open.
+There is no password, so anyone on the same Wi-Fi can look while it is open.
+
+### Menu
+
+- Long bank names scroll when highlighted instead of cutting "Switch bank" short
+
+## Version 2.2.1 (2026-10-02)
+### Sort & tidy
+
+- New order: Pokedex number in the game's own order
+- The 2.2.0 order is still there, now called National Pokedex number
+
+### Fixes - All banks mode (1.7.6 to 2.2.0)
+
+Opening a bank whose name another game's bank also has opened that other game's bank instead.
+A Legends: Z-A bank called "Shiny 001" opened the Scarlet / Violet bank of the same name, shown as if it were a Z-A bank.
+
+Banks now open from the exact file chosen in the list.
+
+If you moved Pokemon and saved while that happened, one of those banks may now hold Pokemon from the wrong game: check the banks that share a name across games.
+
+## Version 2.2.0 (2026-10-02)
+### Sort & tidy
+
+A bank's boxes can now be put in order in one go: menu (+) with the cursor on a bank, then Sort & tidy.
+
+- This box, or the whole bank (L / R)
+- By Pokedex number, by name, shiny first, by level, by IVs, or just close the gaps
+- Living Dex: one slot per species in the game's own Pokedex order
+- Eggs always go last, and Pokemon that sort equal keep their order
+- Nothing is saved until you save: leave without saving and the bank is as it was
+
+### A tour of the App
+
+The first time 2.2.0 starts, it shows four short pages before anything else:
+
+- What pkHouse is
+- The two ways to launch it
+- How your save is kept safe
+- The main buttons
+
+It shows once. To see it again, press A in the About screen (-), which opens from nearly every screen.
+
+### Fixes
+
+Scarlet / Violet read every alternate form with the data of the next entry in the game's tables.
+It has been there since 1.7.0 and is fixed in 2.2.0; each part of pkHouse was affected from the version it started using that data, up to 2.1.0:
+
+- Exported cards (1.11.0 to 2.1.0) and the Pokemon summary (2.0.0 to 2.1.0) showed the wrong types for 118 of them (Hisuian Typhlosion as Electric / Dragon, Rotom-Heat with Rotom-Wash's types)
+- Cards (1.11.0 to 2.1.0) and GTS listings (1.12.0 to 2.1.0) of 29 forms that are in the game were refused as "not in this game", on import, on deposit and on download - Hisuian Typhlosion, Hisuian Samurott, Hisuian Arcanine, Galarian Slowpoke, Paldean Tauros (Aqua Breed) and Zamazenta (Crowned Shield) among them
+- Those same 29 forms were not registered in the Pokedex when moved into a save (1.9.0 to 2.1.0)
+- A Pokemon of 25 forms coming from another trainer had its friendship reset to the wrong value when moved into a save (1.10.3 to 2.1.0; Rotom-Mow 0 instead of 50, Urshifu Rapid Strike 0 instead of 50)
+- Seven wondercards were written with wrong data (1.7.0 to 2.1.0):
+
+0001 PokéCenter Flabébé (White Flower), Rev. 1 and Rev. 2
+0505 Worlds23 Tatsugiri (Stretchy)
+0506 Eduardo Gastrodon (East Sea)
+1005 정원석 Gastrodon (East Sea)
+0527 バクフーン Hisuian Typhlosion
+1513 Zoroark (Hisui), Dark Tera Type
+
+The other Scarlet / Violet wondercards were not affected, nor were the other Flabébé colours.
+A Pokemon injected from one of the seven above, or moved in with the wrong friendship, keeps what was written then: delete it and inject the wondercard again.
+
+## Version 2.1.0 (2026-09-28)
+### Restoring a backup
+
+pkHouse has always backed up a save when you open it. Until now, putting one back meant a save manager such as JKSV or Checkpoint. Now it is one button.
+
+- Y on a game in the game selector lists that save's backups, newest first
+- Works for every game pkHouse supports
+- Available in title override mode, with a profile chosen, as the rest of the save features
+
+### A new theme: pkHome
+
+- 2.0.0 kept the Theme setting so that new themes could be added. The first one is here.
+- L / R in the About screen switches theme, from wherever you opened it
+- Left / Right on the Theme row of the menu (+) still works too
+- The screen redraws in the new theme straight away, and the choice is saved
+
+### FireRed / LeafGreen
+
+- The top bar now shows your trainer name and ID for FireRed / LeafGreen saves, as it already did for the other games
+- Unown now shows its letter. Gen 3 has no form field: the letter comes from the PID, and pkHouse now reads it from there, so each Unown gets its own sprite instead of all showing as "A". Its cards carry the right letter too
+
+### Fixes
+
+- A damaged Legends: Z-A, Scarlet / Violet, Sword / Shield or Legends: Arceus save could crash pkHouse while being read. It is now refused instead. Valid saves are read exactly as before
+- The top bar on the boxes screen sits at the same height as on the game selector
+- Box overview (ZL / ZR): a shiny alpha used to show as a plain shiny. It now has its own colour, violet, and its own entry in the hints in Legends: Arceus and Legends: Z-A
+- Longer warnings in confirmation dialogs are no longer cut off
+
+## Version 2.0.0 (2026-09-26)
+A new interface on every screen, the Online GTS, and updates that install themselves.
+
+Your banks, saves and cards are untouched: the files are the same as in 1.12.0, and nothing needs converting.
+
+### A new interface
+
+Every screen has been redrawn, from the profile picker to the smallest dialog. Nothing was taken away along the way: every feature, every piece of information and every button hint from 1.12.0 is still there.
+
+- Profile and game selectors: the game list with filters, a detail panel per game (save found, last backup, backups on the SD card, box format), and tiles for the Online GTS and All banks
+- Backing up is its own step, with progress, before the bank picker opens
+- Bank picker: how full each bank is, a preview of its boxes before opening it, and in All banks the banks grouped by game, ZL / ZR jumping from one game to the next
+- Box view: the save and the bank side by side, and a details bar under them with the moves, perfect IVs, EV total, trainer and origin of the Pokemon under the cursor
+- Box overview (ZL / ZR): every box at a glance
+- Pokemon summary: laid out like a card - everything the old detail view showed, PID, EC, TID / SID / TSV, ribbons and marks included
+- Menu (+): tools on the left, settings and every way out on the right, from the safest to the most final
+- Dialogs: releasing a Pokemon or deleting a bank that still holds some now asks you to hold A for two seconds
+- Quitting with + on the selectors and the GTS now asks first, since + opens the menu everywhere else
+
+### One design
+
+The seven colour themes are replaced by this one design. The theme setting stays in the menu, so new themes can be added later.
+
+### The console's own font
+
+pkHouse now uses the Switch's system font instead of carrying its own, which makes the app smaller. Should the console not provide it, pkHouse says so on start instead of showing an empty screen.
+
+### Search
+
+- Species (a one-screen letter + list picker), OT name, gender, level range, shiny, egg, alpha (in the games that have them), perfect IVs from 1 to 6, ribbons / marks
+- Results as a list you can jump from, or highlighted in the boxes
+- The D-pad moves between the filters, A changes the one you are on
+
+### Cards
+
+- Cards now start their file name with the Pokedex number and form ("0111-00 - Rhyhorn - LGPE - [S] - ....png"), so the import list shows the right sprite before a card is even read, and sorts in Pokedex order
+- The import list shows what each card holds once it has been read: species, gender, level, trainer and game
+- Shiny, alpha and egg marks on every card in the list
+- The card image itself has not changed. Cards made with earlier versions import exactly as before
+
+### Wondercards
+
+- The list shows the card number, the title and region read from the file name, and which cards take your trainer as their OT
+- A detail pane says where the Pokemon will go, and why it cannot when a card needs a save rather than a bank
+
+### Online GTS
+
+A public board for cards. Leave a Pokemon on it for anyone to take, and take what other people have left. Open it from the tile at the top of the game list - the board carries every game at once, and what you take off it is saved as a card.
+
+- Browse: 60 Pokemon a page, laid out like a box, L / R to page through the board
+- The details bar shows what the board knows about the Pokemon under the cursor without downloading it: legality, the game it belongs to, nature, ability, ball, IV and EV totals, trainer, and the depositor's note or how many people kept it
+- A opens the full summary, and Y saves it as a card, ready to import into a save
+- Search: species, game, ball, minimum IV total, shiny, egg, alpha, legality, and newest or most downloaded
+- Deposit: the cards you have exported, from every game, grouped by game (ZL / ZR to jump between them), each read and shown in full before it goes up
+
+### Legality
+
+Every deposit is listed straight away as "not checked", and a legality checker goes over the board every 15 minutes.
+
+- The board shows what has been checked by default: legal Pokemon, and illegal ones too, so you can see why they were refused
+- Each Pokemon is framed in the colour of its verdict
+- X, or A on an illegal one, shows the checker's full report
+- Only a Pokemon that passed can be downloaded. Anything illegal, not yet checked, or that could not be checked stays on the board to look at, but cannot be taken
+
+### Updates
+
+pkHouse now checks for a new release when it starts, in the background, and offers to install it on the profile or game selector.
+
+- The download is checked before anything is replaced, the current version is kept until the new one has been verified, and pkHouse restarts straight into it
+- If anything goes wrong, pkHouse says why and the version you are running stays in place
+- The offer is made once per launch; turned down, X on the About screen brings it back
+- The bundled wondercards are updated along with the app. Your banks, backups and cards are never touched
+- The About screen (-) shows whether you are up to date, X checks right away, and Y turns the check at launch on or off
+- The setting is a file you can also change yourself: sdmc:/config/pkHouse/autoUPD_on.cfg or autoUPD_off.cfg
+
+This update itself has to be installed by hand: 1.12.0 does not know how to update itself. Extract the release zip to the root of your SD card, as before. From 2.0.0 on, pkHouse updates itself.
+
+## Version 1.12.0 (2026-09-24)
+### Online GTS
+
+Introducing a public board for Cards. Leave a Pokemon on it for anyone to take, and take what other people have left.
+
+Open it from the new row above the game icons, before picking a game - the board carries every game at once, and what you take off it is saved as a Card. Nothing to set up.
+
+### Browsing
+
+- 60 Pokemon on screen at a time, one panel, moved through like a box
+- L and R page through the board
+- The line under the grid says whether the Pokemon is legal, which game it belongs to, its nature, ability, IV and EV totals and held item
+- 'A' opens the full detail view, the same one the boxes use, with the game it belongs to shown in the corner
+- 'Y' saves it as a card in cards/<GameFamily>/, ready to import into a save
+
+### Searching
+
+- Species, game, shiny, egg, minimum IV total, and newest or most downloaded
+- The species picker is the one the box search already uses
+
+### Depositing
+
+- Deposit lists the Cards you have already exported, from every game folder at once
+- The Card is read and shown in full before anything is uploaded
+- Depositing the same Pokemon twice does nothing: the board keeps one copy
+
+### Legality
+
+Every deposit is listed straight away and marked as "not checked".
+A legality checker goes over the board every 15 minutes and marks each one "legal" or "illegal", so a new upload is usually judged within the quarter hour.
+
+- Browsing shows legal Pokemon only, unless you turn that off in the search filter
+- Something marked illegal cannot be downloaded at all, even if you were looking at it when the verdict landed
+
+### Your identity on the board
+
+The board knows your deposits by an id kept in sdmc:/config/pkHouse/gts_id.txt. It is generated on first use.
+Nothing about it is derived from the hardware: no serial, no MAC, no account id.
+
+### Improvements
+
+- Refactored the bottom hints bar to display controls in a more user friendly way
+
+## Version 1.11.0 (2026-09-23)
+### Pokemon Cards
+
+Export any Pokemon from your boxes as a shareable 1280x720 PNG, and read one back in.
+
+- Export from the detailed view (X), then Y - cards are written to cards/<GameFamily>/
+- Select several Pokemon and use the menu (+) → Export Cards to write them all at once
+- The card shows the sprite, types, nature, ability, held item, Tera type, moves, IVs, EVs, and where the Pokemon came from
+
+### The QR code
+
+Each card carries the complete Pokemon in a QR code, so a card is not a picture of a Pokemon - it is the Pokemon.
+
+Image metadata would have been the obvious place for that, but chat apps and image hosts strip or re-encode it.
+A QR code survives re-encoding, resizing, and even a photo of a screen.
+
+### Importing
+
+- Menu (+) → Import Card browses cards/<GameFamily>/
+- The browser shows what a card actually contains, read from its QR code and never from the filename
+- The decoded Pokemon is shown in full before anything is written
+- Damaged data is refused, and a card belonging to another game is offered a move to the folder it belongs in
+- An imported Pokemon updates its handling trainer and registers in the Pokedex, exactly like a bank → save move
+
+Warning: only the public Trainer ID is printed on the card, but the QR code carries everything. Treat a card you post publicly as you would the .pk file.
+
+## Version 1.10.6 (2026-09-09)
+- Add support for Worlds 2026 Greninja Wondercard
+
+## Version 1.10.5 (2026-07-16)
+Bank files validation
+
+- Some users are dropping unrelated random .bin files in the Bank folder : we now check if the files are valid Banks
+- Invalid files are marked as such
+- Invalid files cannot be opened as a Bank
+- Invalid files can be deleted from the listing (same as any valid Banks)
+
+Bank file deletion
+
+- Add soft-delete system
+- Deleted Banks are now moved inside a "trash" sub-folder, keeping the same game folder structure
+- Restoring deleted Banks require manual action (moving the file back to the corresponding game folder)
+
+Bank name checks
+
+- Now checks if the Bank name is already used for the target game
+- Add UI feedback when trying to create / rename a Bank with an already existing name
+
+## Version 1.10.4 (2026-06-19)
+- Add Handling Trainer (HT) info in detailed view
+- Add support for SV PJCS26 Garchomp Wondercard
+
+## Version 1.10.3 (2026-06-11)
+Fixed: Pokemon moved between saves kept the wrong handler
+
+Until now, moving a Pokemon through the bank into another save file did a raw copy - nothing about the Pokemon was adapted to its new trainer.
+
+In the games, anytime a Pokemon changes owners through a trade, the receiving trainer is registered as its handling trainer.
+
+Skipping that step caused real problems:
+
+- Friendship didn't work correctly.
+
+The game reads friendship from the OT or the handler depending on who currently holds the Pokemon. A transferred Pokemon pointed at the wrong field, so friendship gained on the new save could be lost, and friendship evolutions (Eevee → Sylveon, Golbat → Crobat, etc.) could behave unexpectedly.
+
+- Legality issues.
+
+A Pokemon whose OT doesn't match the save but which claims to still be with its OT is flagged by legality checkers and looks suspicious to Pokemon HOME.
+
+- Same name ≠ same trainer.
+
+Two saves with the same trainer name are still different trainers -  the games compare TID/SID, gender, and more, not just the name.
+pkHouse now does the same.
+
+What happens now
+
+Placing a Pokemon into a save behaves exactly like a real in-game trade:
+
+- If the Pokemon belongs to the save's trainer (same game version, TID/SID, name, gender, plus language in SV/Z-A), it's simply marked as being back with its OT.
+- If it's a different trainer, that trainer is registered as the handler: handler name/gender/language are set, handler friendship resets to the species' base value, and stale handler memories are cleared. The original OT data is never touched.
+- No friendship loss on round-trips: moving a Pokemon bank ↔ save repeatedly does not keep resetting the friendship it earned with its current handler.
+- Eggs traded to a different trainer are marked as link-traded with today's date, like the games do (including BDSP's quirk of also updating the handler, and SV's Jacq gift-egg exception).
+- Let's Go: friendship is carried over instead of reset, so CP values are unaffected.
+
+Applies to all supported games with handler data:
+
+Legends: Z-A, Scarlet/Violet, Sword/Shield, Brilliant Diamond/Shining Pearl, Legends: Arceus, Let's Go Pikachu/Eevee.
+
+FireRed/LeafGreen are unaffected - Gen 3 has no handler concept, so transfers there were already correct.
+
+Warning: Existing Pokemon already sitting in your saves are not modified: the update applies whenever a Pokemon is next placed into a save.
+
+## Version 1.10.2 (2026-04-30)
+- Add Wondercard support for Shiny Volcanion (Legends Z-A)
+
+## Version 1.10.1 (2026-04-18)
+- Add box-state icons in ZL/ZR all-boxes overview (box cell now shows a small icon on the left indicating its state).
+
+## Version 1.10.0 (2026-04-06)
+Multi-Language Support
+- Internationalization (i18n): the app now supports 9 languages, with automatic detection based on the Switch system language.
+- Support English, Deutsch, Español, Français, Italiano, Nederlands, Português, Русский, 日本語
+- Language Selector: New "Language" option in the menu (+) to manually override the language at any time. Your choice is saved and persists across sessions.
+
+Note : languages files are machine translated. Feedback is welcome !
+
+## Version 1.9.1 (2026-04-01)
+FireRed / LeafGreen Multiple Version Support
+- All regional versions of FireRed / LeafGreen are now supported (English, Spanish, French, German, Italian, and Japanese)
+- Each version is detected automatically by title ID
+- All FRLG versions share the same bank folder, so Pokemon can be moved freely between any language version via the bank
+- Japanese character encoding support
+- Nicknames and OT names from Japanese FRLG saves now display correctly in hiragana / katakana
+- Uses the per-Pokemon language byte, so Japanese Pokemon traded into other language saves (or stored in the bank) are always decoded correctly
+- Box names in Japanese saves also display properly
+
+Game selector pagination
+- When more than 12 games are available, the selector is paginated across multiple pages
+- Navigate pages with L / R shoulder buttons or buttons on the left and right edges
+
+## Version 1.9.0 (2026-03-29)
+New: Pokedex Auto-Registration
+
+Pokemon transferred from the bank or wondercard to a save file are now automatically registered in the Pokedex as caught.
+This fixes the potential issue where version-exclusive Pokemon transferred between dual games would not appear in the Pokedex.
+
+Supported games:
+- Scarlet / Violet (+DLCs)
+- Sword / Shield (+DLCs)
+- Brilliant Diamond / Shining Pearl
+- Let's Go Pikachu / Eevee
+- FireRed / LeafGreen
+
+Legends: Arceus & Legends: Z-A are excluded since all Pokemon are available (no version exclusive).
+
+What gets registered:
+- Caught & Seen status
+- Gender, Language, and shiny flags
+- Form tracking (BDSP alternate forms, SwSh Alcremie decorations, Eternatus Gigantamax)
+- Display entry (form, gender, shiny) on first registration
+- Size data and capture count (LGPE)
+- Seen copies sync (FRLG)
+- Neighbor discovery / "heard" entries (SV)
+- Battled count (SwSh)
+
+## Version 1.8.1 (2026-03-24)
+This release is a code quality refactoring, no user-facing changes. The app behaves exactly as before.
+
+- Consolidated game format data
+- Unified Pokemon data field offsets
+- Shared binary I/O helpers
+- Modularized input handling
+- Removed dead PC debug code
+
+## Version 1.8.0 (2026-03-21)
+Species Search Overhaul
+- Replaced the free-text keyboard species search with a visual two-step picker
+- First screen: alphabetical letter grid - select a letter to filter species
+- Second screen: species list with sprites, sorted alphabetically - select to set the filter
+- Only species available in the current game are shown
+- Letters with no matching species are dimmed and cannot be selected
+- Selected species appears with its sprite on the search filter screen
+- Select "-" to clear the species filter back to "any"
+
+## Version 1.7.6 (2026-03-15)
+New "View All Banks" option
+- On the game selector screen - navigate below the game cards to access it
+- Banks are displayed in a grouped list with game headers (e.g. "Sword / Shield", "Scarlet / Violet")
+- Selecting a bank opens it in dual-bank mode - no save file needed, just like applet mode
+- After picking your first bank, you're prompted to pick a second bank from the same game for side-by-side management
+- Full bank management (create, rename, delete) available once a bank is opened
+- Theme selector accessible from the all-banks list via Y
+
+Navigation Improvements
+- Cursor now wraps between panels - pressing left at the edge of the left panel jumps to the right panel, and vice versa
+- When only one panel is loaded, the cursor wraps within it instead of getting stuck at the edge
+
+Bug Fixes
+- Fixed bank list scroll not resetting when the cursor wraps around (top to bottom or bottom to top)
+- Fixed left panel showing stale Pokemon data from a previously loaded bank when no left bank is loaded in dual-bank mode
+
+## Version 1.7.5 (2026-03-12)
+- Shiny Sprites: shiny Pokemon now display their actual shiny color sprites
+- Form-Aware Sprites: alternate forms (Alolan, Galarian, Hisuian, Paldean, Origin, Therian, Unown letters, and 140+ others) now show their correct sprite
+- LED Activity Indicator: can now be disabled by placing a noled.cfg file in the pkHouse folder
+
+## Version 1.7.4 (2026-03-12)
+- LED Activity Indicator: the controller LED now blinks during save and backup operations (save writes, bank saves, backup creation, ...). On Switch Lite, the built-in notification LED lights up during writes instead.
+- Optimized UI Rendering: text measurement now uses the rendering cache, eliminating redundant FreeType glyph shaping.
+
+## Version 1.7.3 (2026-03-09)
+Performance Improvements
+- Reduced input lag and improved frame responsiveness across all screens
+- Pokemon data is now cached per box, eliminating repeated decryption overhead
+- Text and UI labels are now cached, reducing rendering workload
+- Slot display info (species, name, level, shiny, etc.) is pre-computed and cached per box
+- Screen only redraws when something actually changes, saving CPU/GPU cycles
+- App should now be smoother !
+
+## Version 1.7.2 (2026-03-09)
+- Ball Icon — The Poke Ball used to catch the Pokemon is displayed next to the species name in the detail view
+- Move Type Icons — Each move in the detail view now shows its type icon
+- Moves in 2-Column Layout — Moves display in a 2x2 grid, matching the in-game battle layout
+- Technical Data — PID, EC, raw TID/SID, and TSV shown at the bottom of the detail view
+- Hold L / R shoulder buttons to auto-repeat navigating in detail view (no more mashing!)
+
+## Version 1.7.1 (2026-03-07)
+Improvements:
+- Pokemon details now show all ribbons and marks as sprite icons with names
+- Pokemon details now display Held item
+- Use L / R to jump to the previous / next non-empty slot without closing the detail popup
+- Filter Pokemon by Has Ribbon, Has Mark, or Has Any in the search menu
+
+New: Export Pokemon to file
+- Export individual Pokemon as PKHeX-compatible .pk files from the detail view (X button)
+- Select multiple Pokemon and export them all at once from the menu
+- Exported filenames include human-readable form names (Alolan, Galarian, Origin, etc.) instead of numeric form IDs
+
+## Version 1.7.0 (2026-03-05)
+New: Wondercard Injection
+- Inject event wondercard files directly into your saves / banks as fully formed Pokemon
+- Support : LGPE / SWSH / BDSP / PLA / SV / LZA
+- Fully generates the Pokemon from wondercard data (PID, IVs, nature, ability, moves, OT, ribbons, ...)
+- Matches official distribution behavior — shiny locks, fixed IVs, ability restrictions, and date windows are all respected
+- Game-specific stat calculations are handled correctly (LGPE awakening values + CP, PLA ganbaru values, ...)
+
+## Version 1.6.3 (2026-03-03)
+- Add radar chart visualization for IVs and EVs
+- Add bank count display for each game in UI
+- Display correct TID and SID in Pokemon details (miscalculated before)
+- Fix wrong gender calculation & display for Gen 9
+
+## Version 1.6.2 (2026-03-02)
+- Forbid releasing LGPE party members
+- Remove selected slots from multi-select when releasing individual selected Pokemon from details view
+
+## Version 1.6.1 (2026-03-01)
+- Forbid LGPE party members to be able to move to bank (could make save-file invalid)
+
+## Version 1.6.0 (2026-02-27)
+- Add FireRed / LeafGreen support (game version 1.0.0)
+
+## Version 1.5.2 (2026-02-24)
+New: Bank Box Renaming
+- Rename bank boxes from the box view (ZL / ZR) — press Y on any box to set a custom name (max 16 characters)
+- Names are saved in the bank file and persist across sessions
+- Existing banks are fully backward compatible — unnamed boxes display as "Bank 1", "Bank 2", etc.
+- Box view overlay now shows a subtitle: bank file name for bank panels, profile and game name for save panels
+- Long bank file names are truncated with (..) in the panel header to prevent overflow
+
+## Version 1.5.1 (2026-02-23)
+Box Switching
+- Hold L / R shoulder buttons to auto-repeat box switching (no more mashing!)
+- Hold L / R in search results list to fast-scroll through pages
+
+New: Search Highlight Mode
+- Search result modes: Choose between two ways to view search results
+- Highlight (default): Returns to the box view with matching Pokemon outlined and non-matches dimmed
+- List: Scrollable result list with jump-to — same as before
+- Mode selector: Use Left / Right on the Mode row in the search filter to switch between List and Highlight
+- Live highlight tracking: Moving, swapping, or deleting Pokemon while highlights are active updates the highlights in real-time
+- Dismiss highlights: Press B to clear highlights and return to normal view
+
+New: Search Highlight in Box View
+- Boxes containing search matches are outlined in the box view (ZL / ZR)
+- Matching Pokemon highlighted in the mini box preview
+- Non-matching Pokemon dimmed in the mini preview
+
+## Version 1.5.0 (2026-02-22)
+New : Search / Filter
+- Search for Pokemon across both panels (save and bank) from the menu (+ → Search)
+- Filter by species name, OT name, shiny, egg, alpha, gender, level range, and perfect IVs
+- Alpha filter only shown for Legends: Arceus and Legends: Z-A
+- Results displayed as a scrollable list with status badges: [S] shiny, [A] alpha, [E] egg
+- Press A to jump directly to a Pokemon in the box view
+- Press L/R to skip 10 results at a time
+- Press X to go back and adjust filters
+
+New : Delete Pokemon
+- Press X while holding Pokemon (single or multi-select) to delete them
+- Confirmation dialog prevents accidental deletion
+- Useful for clearing boxes of rejected eggs or unwanted Pokemon
+
+## Version 1.4.0 (2026-02-19)
+New Theme System
+- 7 selectable color themes
+- Theme selector accessible from the main view menu (+ button → Theme)
+- Quick theme switching with Y button on profile and game selection screens
+- Theme choice is saved automatically and persists across sessions
+- Preview theme live when scrolling the list
+
+## Version 1.3.1 (2026-02-17)
+Save Backup Safety Checks
+- Before backing up your save data, the app now checks if your SD card has enough free space (requires 2x the save file size).
+- If space is low, a warning dialog shows how much space is available vs. needed, with the option to continue without a backup or cancel.
+- If a backup fails for any other reason, you'll get a similar prompt before proceeding — no more silent failures.
+
+Bank Creation Space Check
+- Creating a new bank now checks available SD card space first.
+- If there isn't enough room, an error dialog shows the free and required amounts instead of attempting (and potentially failing) the write.
+- Overwrite / save of existing banks remains unchanged.
+
+## Version 1.3.0 (2026-02-15)
+Improvements & Fixes :
+
+- New Applet mode (album/HB menu): Bank-only access — All Games — two banks side by side for bank-to-bank transfers. Save data is not accessible in this mode.
+- Banks that are currently in use cannot be deleted.
+- When switching banks, the selector appears on the side being switched while the other panel stays visible.
+- Bank switching now always saves your game and bank together to prevent data corruption.
+
+Multi-Select Improvements :
+
+- Drag selection : Hold Y and move with the D-Pad to select a rectangular group of Pokemon at once, instead of selecting them one by one.
+- Select all : Double-tap Y to select every Pokemon in the current box. Selected slots are highlighted in green instead of cyan.
+- Position-preserving placement : When using "select all" (green), Pokemon are placed at their original slot positions in the target box, allowing you to move an entire box layout as-is. All matching slots in the target must be empty.
+- Regular selections (individual toggle and drag) continue to fill the first available empty slots as before.
+
+## Version 1.2.0 (2026-02-14)
+- Implement all boxes overview for Save and Bank boxes (access with ZL / ZR)
+
+## Version 1.1.0 (2026-02-12)
+### Feature Release
+
+- Add Let's Go Pikachu / Eevee support (game version 1.0.2)
+
+## Version 1.0.1 (2026-02-12)
+### Fix Release
+
+- Implement full swap history to avoid losing pokemon when doing multiple in-place swaps then canceling with B button.
+
+## Version 1.0.0 (2026-02-12)
+### Initial Release
+
+Extract at the Root of your SD-Card
+
+For Games :
+
+- Sword : 1.3.2
+- Shield : 1.3.2
+- Brilliant Diamond : 1.3.0
+- Shining Pearl : 1.3.0
+- Legends: Arceus : 1.1.1
+- Scarlet : 4.0.0
+- Violet : 4.0.0
+- Legends: Z-A : 2.0.1

@@ -747,6 +747,12 @@ private:
     void markTourSeen();
     void showTour();                                        // also A in About
     void showPages(const std::vector<InfoPage>& pages);     // blocking pager
+    // Changelog (source/ui_changelog.cpp): + in About, and once by itself on
+    // the first launch after an update. checkWhatsNew() decides that at start
+    // and records the version running now.
+    bool whatsNewPending_ = false;
+    void checkWhatsNew();
+    void showChangelog(bool afterUpdate);
     void drawInfoPage(const InfoPage& page, int index, int count);
     // What a backup's meta says about the save in it: trainer, ID, Pokemon in
     // the boxes. Empty when the save is not loaded.

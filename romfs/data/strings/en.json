@@ -599,5 +599,9 @@
     "web_matches": "matches",
     "web_loading": "Loading...",
     "web_lost": "The Switch stopped answering. Open Phone view on it again, then reload this page.",
-    "web_gmax": "Gigantamax"
+    "web_gmax": "Gigantamax",
+    "about_changelog": "Changelog",
+    "changelog_title": "Changelog",
+    "changelog_updated": "Updated to {0}",
+    "changelog_missing": "The changelog could not be found."
 }

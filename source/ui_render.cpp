@@ -1263,6 +1263,18 @@ void UI::drawAboutPopup() {
             strokeRounded(tbx, by, tw, bh, 10, 1, T().buttonBorder);
             drawFooterKey(tbx + 12, by + bh / 2, "A", false);
             drawText(tl, tbx + 12 + tkW + 10, by + bh / 2 - TTF_FontHeight(f) / 2, T().text, f);
+
+            // +: every release's notes, beside the tour.
+            const std::string gl = i18n::get(StrKey::AboutChangelog);
+            const int gkW = drawFooterKey(0, -100, "+", true);
+            const int gw = 12 + gkW + 10 + textWidth(gl, f) + 16;
+            const int gbx = tbx + tw + 12;
+            if (gbx + gw <= cbx - 12) {
+                fillRounded(gbx, by, gw, bh, 10, T().buttonBg);
+                strokeRounded(gbx, by, gw, bh, 10, 1, T().buttonBorder);
+                drawFooterKey(gbx + 12, by + bh / 2, "+", false);
+                drawText(gl, gbx + 12 + gkW + 10, by + bh / 2 - TTF_FontHeight(f) / 2, T().text, f);
+            }
         }
     }
 }

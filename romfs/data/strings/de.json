@@ -599,5 +599,9 @@
     "web_matches": "Treffer",
     "web_loading": "Wird geladen...",
     "web_lost": "Die Switch antwortet nicht mehr. Öffne dort die Handy-Ansicht erneut und lade diese Seite neu.",
-    "web_gmax": "Gigadynamax"
+    "web_gmax": "Gigadynamax",
+    "about_changelog": "Änderungen",
+    "changelog_title": "Änderungen",
+    "changelog_updated": "Aktualisiert auf {0}",
+    "changelog_missing": "Die Liste der Änderungen wurde nicht gefunden."
 }

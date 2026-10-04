@@ -710,5 +710,9 @@ namespace StrKey {
     constexpr const char* WebLoading               = "web_loading";
     constexpr const char* WebLost                  = "web_lost";
     constexpr const char* WebGmax                  = "web_gmax";
+    constexpr const char* AboutChangelog           = "about_changelog";
+    constexpr const char* ChangelogTitle           = "changelog_title";
+    constexpr const char* ChangelogUpdated         = "changelog_updated";
+    constexpr const char* ChangelogMissing         = "changelog_missing";
     constexpr const char* PhoneStop                = "phone_stop";
 }

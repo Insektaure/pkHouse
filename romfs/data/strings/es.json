@@ -599,5 +599,9 @@
     "web_matches": "resultados",
     "web_loading": "Cargando...",
     "web_lost": "La Switch ha dejado de responder. Vuelve a abrir en ella la vista en el móvil y recarga esta página.",
-    "web_gmax": "Gigamax"
+    "web_gmax": "Gigamax",
+    "about_changelog": "Novedades",
+    "changelog_title": "Novedades",
+    "changelog_updated": "Actualizado a {0}",
+    "changelog_missing": "No se ha encontrado el registro de cambios."
 }

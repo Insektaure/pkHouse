@@ -599,5 +599,9 @@
     "web_matches": "resultaten",
     "web_loading": "Laden...",
     "web_lost": "De Switch reageert niet meer. Open daar opnieuw de telefoonweergave en laad deze pagina opnieuw.",
-    "web_gmax": "Gigantamax"
+    "web_gmax": "Gigantamax",
+    "about_changelog": "Wijzigingen",
+    "changelog_title": "Wijzigingen",
+    "changelog_updated": "Bijgewerkt naar {0}",
+    "changelog_missing": "De lijst met wijzigingen is niet gevonden."
 }

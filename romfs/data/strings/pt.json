@@ -599,5 +599,9 @@
     "web_matches": "resultados",
     "web_loading": "Carregando...",
     "web_lost": "O Switch parou de responder. Abra de novo a visualização no celular nele e recarregue esta página.",
-    "web_gmax": "Gigantamax"
+    "web_gmax": "Gigantamax",
+    "about_changelog": "Novidades",
+    "changelog_title": "Novidades",
+    "changelog_updated": "Atualizado para {0}",
+    "changelog_missing": "Não foi possível encontrar o registro de alterações."
 }

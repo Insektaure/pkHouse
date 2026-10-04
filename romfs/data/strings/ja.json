@@ -599,5 +599,9 @@
     "web_matches": "件",
     "web_loading": "読み込み中...",
     "web_lost": "Switchが応答しなくなりました。Switchでもう一度「スマホで見る」を開いてから、このページを再読み込みしてください。",
-    "web_gmax": "キョダイマックス"
+    "web_gmax": "キョダイマックス",
+    "about_changelog": "更新履歴",
+    "changelog_title": "更新履歴",
+    "changelog_updated": "{0} に更新しました",
+    "changelog_missing": "更新履歴が見つかりません。"
 }

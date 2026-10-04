@@ -286,6 +286,7 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
     savePath_ = savePath;
 
     tourPending_ = tourNotSeen();
+    checkWhatsNew();   // after the tour's check: a fresh install gets the tour instead
 
     // Load persisted theme
     themeIndex_ = loadThemeIndex(basePath_);
@@ -336,6 +337,8 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
                         { checkUpdatesNow(); markDirty(); }
                     else if (event.cbutton.button == SDL_CONTROLLER_BUTTON_B)   // Switch A
                         { showTour(); markDirty(); }   // back to About after it
+                    else if (event.cbutton.button == SDL_CONTROLLER_BUTTON_START)   // +
+                        { showChangelog(false); markDirty(); }
                     else if (event.cbutton.button == SDL_CONTROLLER_BUTTON_LEFTSHOULDER)
                         stepTheme(-1);
                     else if (event.cbutton.button == SDL_CONTROLLER_BUTTON_RIGHTSHOULDER)
@@ -422,6 +425,13 @@ void UI::run(const std::string& basePath, const std::string& savePath) {
             && (screen_ == AppScreen::ProfileSelector || screen_ == AppScreen::GameSelector)) {
             tourPending_ = false;
             showTour();
+            markDirty();
+        }
+        // What's new, once, on the first launch after an update.
+        if (whatsNewPending_ && !tourPending_ && screenDrawn_ && !showAbout_
+            && (screen_ == AppScreen::ProfileSelector || screen_ == AppScreen::GameSelector)) {
+            whatsNewPending_ = false;
+            showChangelog(true);
             markDirty();
         }
         // A newer release, offered once, and only where installing is safe:

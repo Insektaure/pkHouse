@@ -1,4 +1,4 @@
-## Version 2.3.1 (2026-10-04)
+## Version 2.3.1 (2026-11-08)
 ### Changelog
 
 Every release's notes, in the app.
@@ -6,6 +6,17 @@ Every release's notes, in the app.
 - Press + in the About screen (-) to open it: newest first, D-Pad to scroll, L / R a page at a time
 - It also opens by itself once, the first time a new version starts, so you can see what changed
 - The notes are the ones published with each release on GitHub
+
+### Wondercards
+
+Added:
+
+- Scarlet / Violet: 0072 PokéCenter Fidough Birthday Gift (Extension)
+- Legends: Z-A: 1615 Spewpa, 1616 Poké Ball Vivillon, 0105 PokéCenter Audino Birthday Gift (Extension)
+
+Fixed:
+
+- Scarlet / Violet: 0527 EUIC 2026 Yuma Kinugawa's Hisuian Typhlosion was illegal (wrong met date). Inject it again
 
 ## Version 2.3.0 (2026-10-04)
 ### Phone view

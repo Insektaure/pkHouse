@@ -18,7 +18,7 @@ struct WC9DateEntry {
 /// WC9Gifts - keyed by CardID (decimal)
 static constexpr WC9DateEntry WC9Gifts[] = {
     //  CardID  StartY  SM  SD   EndY  EM  ED  Days  Description
-    {    1, 2022, 11, 17,    0,  0,  0, 0}, // PokéCenter Birthday Flabébé
+    {    1, 2022, 11, 17, 2024,  2,  1, 0}, // PokéCenter Birthday Flabébé
     {    6, 2022, 12, 16, 2023,  2,  1, 0}, // Jump Festa Gyarados
     {  501, 2023,  2, 16, 2023,  2, 21, 0}, // Jiseok's Garganacl
     { 1513, 2023,  2, 27, 2024,  3,  1, 0}, // Hisuian Zoroark DLC Purchase Gift
@@ -86,6 +86,8 @@ static constexpr WC9DateEntry WC9Gifts[] = {
     { 1540, 2025,  9, 25, 2025, 10, 25, 0}, // Shiny Miraidon/Koraidon Gift
     {   70, 2025, 10, 31, 2027,  2,  1, 0}, // PokéCenter Fidough Birthday Gift
     {  526, 2025, 11, 21, 2025, 12,  1, 0}, // LAIC 2026 Federico Camporesi's Whimsicott
+    {  527, 2026,  2, 12, 2026,  2, 21, 0}, // EUIC 2026 Yuma Kinugawa's Hisuian Typhlosion
+    {   72, 2026, 11,  1, 2028,  2,  1, 0}, // PokéCenter Fidough Birthday Gift (Extension)
 
     // HOME 3.0.0+ gifts (open-ended)
     { 9021, 2023,  5, 30,    0,  0,  0, 0}, // Hidden Ability Sprigatito
@@ -123,6 +125,7 @@ static constexpr WC8DateEntry WC8Gifts[] = {
     { 9013, 2021,  6, 17,    0,  0,  0, 0}, // Gigantamax Bulbasaur
     { 9014, 2021,  6, 17,    0,  0,  0, 0}, // Gigantamax Squirtle
     { 9029, 2025,  2, 11,    0,  0,  0, 0}, // Shiny Keldeo
+    { 9036, 2026, 10,  6,    0,  0,  0, 1}, // HOME Celebi
 };
 
 static constexpr size_t WC8Gifts_Count = sizeof(WC8Gifts) / sizeof(WC8Gifts[0]);
@@ -162,7 +165,10 @@ static constexpr WA9DateEntry WA9Gifts[] = {
     {  102, 2025, 10, 23, 2026,  2,  1, 2}, // Slowpoke PokéCenter Gift
     {  101, 2025, 10, 31, 2027,  2,  1, 0}, // PokéCenter Audino Birthday Gift
     { 1607, 2025, 12,  9, 2026,  1, 20, 0}, // Alpha Charizard
-    {  603, 2026,  8, 28, 2026,  8, 31, 0}, // Worlds 2026 Greninja
+    { 1615, 2026, 10, 28, 2026, 11, 19, 0}, // Spewpa
+    {  105, 2026, 11,  1, 2028,  2,  1, 0}, // PokéCenter Audino Birthday Gift (Extension)
+    { 1616, 2026, 11,  5, 2027,  2, 26, 0}, // Poké Ball Vivillon
+    {  603, 2026,  8, 28,    0,  0,  0, 0}, // WCS 2026 Greninja (still redeemable)
     { 9031, 2026,  4,  2,    0,  0,  0, 0}, // Alpha Chikorita
     { 9032, 2026,  4,  2,    0,  0,  0, 0}, // Alpha Tepig
     { 9033, 2026,  4,  2,    0,  0,  0, 0}, // Alpha Totodile

@@ -11,13 +11,14 @@
 
 namespace {
 
-constexpr int SD_W = 700, SD_H = 640, SD_PAD = 32;
+constexpr int SD_W = 700, SD_H = 700, SD_PAD = 32;
 constexpr int SD_HEAD = 84, SD_SCOPE_H = 56, SD_ROW_H = 44, SD_FOOT = 58;
 
 // Rows: 0 is the scope, then one per order.
 constexpr const char* ORDER_KEYS[BankSort::ORDER_COUNT] = {
     StrKey::SortOrderDex, StrKey::SortOrderNational, StrKey::SortOrderName, StrKey::SortOrderShiny, StrKey::SortOrderLevel,
-    StrKey::SortOrderIvs, StrKey::SortOrderCompact, StrKey::SortOrderLiving,
+    StrKey::SortOrderIvs, StrKey::SortOrderCompact, StrKey::SortOrderLiving, StrKey::SortOrderLivingComplete,
+    StrKey::SortOrderLivingAll,
 };
 
 } // anonymous namespace
@@ -46,7 +47,11 @@ void UI::showSortDialog() {
     int order = 0;          // the order the cursor last rested on
     bool whole = false;
     const int rows = 1 + BankSort::ORDER_COUNT;
-    const int living = static_cast<int>(BankSort::Order::LivingDex);
+    const int complete = static_cast<int>(BankSort::Order::CompleteLivingDex);
+    const int allGenders = static_cast<int>(BankSort::Order::AllGendersLivingDex);
+    // The Living Dex orders with a slot per form and gender, not just per species.
+    auto isComplete = [&](int o) { return o == complete || o == allGenders; };
+    auto isLiving = [](int o) { return BankSort::isLivingDex(static_cast<BankSort::Order>(o)); };
     markDirty();
     updateStick(0, 0);
 
@@ -64,7 +69,7 @@ void UI::showSortDialog() {
         drawRect(x, y + SD_HEAD - 8, SD_W, 1, T().panelBorder);
 
         // Scope: two halves; a Living Dex is always the whole bank.
-        const bool forcedWhole = order == living;
+        const bool forcedWhole = isLiving(order);
         const bool isWhole = whole || forcedWhole;
         int ry = y + SD_HEAD + 4;
         {
@@ -99,7 +104,9 @@ void UI::showSortDialog() {
 
         // What to know about the choice.
         std::string note;
-        if (order == living)        note = i18n::get(StrKey::SortNoteLiving);
+        if (order == complete)      note = i18n::get(StrKey::SortNoteLivingComplete);
+        else if (order == allGenders) note = i18n::get(StrKey::SortNoteLivingAll);
+        else if (isLiving(order))   note = i18n::get(StrKey::SortNoteLiving);
         else if (isWhole && anyNamed) note = i18n::get(StrKey::SortNoteNames);
         if (!note.empty()) {
             TTF_Font* f = uiFont(14);
@@ -184,12 +191,12 @@ void UI::showSortDialog() {
 
     const BankSort::Order chosen = static_cast<BankSort::Order>(order);
     const BankSort::Result r = BankSort::sort(*bank, bank->gameType(), chosen,
-                                              (whole || order == living) ? -1 : box);
+                                              (whole || isLiving(order)) ? -1 : box);
     if (!r.done) {
         if (r.needed > r.capacity && r.capacity > 0) {
             const int gaps = r.species - r.placed;
             showMessageAndWait(i18n::get(StrKey::SortFullTitle),
-                               i18n::fmt(StrKey::SortFullBody,
+                               i18n::fmt(isComplete(order) ? StrKey::SortFullBodyComplete : StrKey::SortFullBody,
                                          {std::to_string(r.needed), std::to_string(r.pokemon),
                                           std::to_string(gaps), std::to_string(r.capacity),
                                           std::to_string(r.needed - r.capacity)}));
@@ -207,8 +214,8 @@ void UI::showSortDialog() {
     unsavedChanges_ = true;
 
     std::string body = i18n::fmt(StrKey::SortDoneBody, std::to_string(r.pokemon));
-    if (chosen == BankSort::Order::LivingDex)
-        body += "\n" + i18n::fmt(StrKey::SortDoneLiving, {std::to_string(r.placed), std::to_string(r.species),
+    if (BankSort::isLivingDex(chosen))
+        body += "\n" + i18n::fmt(isComplete(order) ? StrKey::SortDoneLivingComplete : StrKey::SortDoneLiving, {std::to_string(r.placed), std::to_string(r.species),
                                                            std::to_string(r.species - r.placed)});
     showMessageAndWait(i18n::get(StrKey::SortDoneTitle), body, DialogKind::Success);
 }

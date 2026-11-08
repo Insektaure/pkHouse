@@ -44,7 +44,8 @@ void writeBack(Bank& bank, int first, const std::vector<int>& target, const std:
 }
 
 // Each species' place in the game's Pokedex order, and how many each section
-// adds - the order both the Living Dex and the game-Pokedex sort use. The
+// adds - the order both the Living Dex and the game-Pokedex sort use: a
+// species' first entry (the next are its Complete Living Dex variants). The
 // generator already keeps a species to one section; counting here as well
 // keeps the layout within its vectors whatever the data.
 void gameOrder(const LivingDexData::Section* sections, int sectionCount,
@@ -53,11 +54,22 @@ void gameOrder(const LivingDexData::Section* sections, int sectionCount,
     sectionSize.assign(sectionCount, 0);
     for (int s = 0; s < sectionCount; s++)
         for (int k = 0; k < sections[s].count; k++)
-            if (order.emplace(sections[s].species[k], static_cast<int>(order.size())).second)
+            if (order.emplace(sections[s].entries[k].species, static_cast<int>(order.size())).second)
                 sectionSize[s]++;
 }
 
-BankSort::Result livingDex(Bank& bank, GameType game, std::vector<Item>& items) {
+// A Complete Living Dex slot: species, form, gender (or ANY_GENDER).
+uint32_t slotKey(uint16_t species, uint8_t form, uint8_t gender) {
+    return (static_cast<uint32_t>(species) << 16) | (static_cast<uint32_t>(form) << 8) | gender;
+}
+
+// What a Living Dex gives a slot to: each species; or each entry - species,
+// then its variants (genders, regional forms) - with the male / female split
+// only where they look different, or wherever a species can be both.
+enum class Slots { Species, GenderDifferences, AllGenders };
+
+BankSort::Result livingDex(Bank& bank, GameType game, std::vector<Item>& items, Slots mode) {
+    const bool complete = mode != Slots::Species;
     BankSort::Result r;
     r.pokemon = static_cast<int>(items.size());
     int sectionCount = 0;
@@ -68,38 +80,86 @@ BankSort::Result livingDex(Bank& bank, GameType game, std::vector<Item>& items) 
     std::unordered_map<uint16_t, int> order;
     std::vector<int> sectionSize;
     gameOrder(sections, sectionCount, order, sectionSize);
-    r.species = static_cast<int>(order.size());
+
+    // The layout indexes: the species' (order), or the entries' (slotIndex);
+    // `slotSize` is how many each section adds.
+    int slots = static_cast<int>(order.size());
+    std::vector<int> slotSize = sectionSize;
+    std::unordered_map<uint32_t, int> slotIndex;
+    if (complete) {
+        slots = 0;
+        for (int s = 0; s < sectionCount; s++) {
+            slotSize[s] = 0;
+            for (int k = 0; k < sections[s].count; k++) {
+                const LivingDexData::Entry& e = sections[s].entries[k];
+                // Genders that look alike: one slot for both (the female
+                // entry lands on the male's key), unless all are split.
+                const uint8_t g = (mode == Slots::AllGenders || e.visible) ? e.gender : LivingDexData::ANY_GENDER;
+                if (slotIndex.emplace(slotKey(e.species, e.form, g), slots).second) {
+                    slots++;
+                    slotSize[s]++;
+                }
+            }
+        }
+    }
+    r.species = slots;
+
+    // The layout index a Pokemon belongs to, or -1. Complete: its form and
+    // gender's slot, or its form's when the gender makes none; a form with no
+    // slot of its own (a cosmetic one: Vivillon, Alcremie...) takes the
+    // species' first form's.
+    auto slotFor = [&](const Pokemon& p) -> int {
+        if (!complete) {
+            auto it = order.find(p.species());
+            return it != order.end() ? it->second : -1;
+        }
+        const uint16_t sp = p.species();
+        const uint8_t gender = p.gender();
+        auto lookup = [&](uint8_t form, uint8_t g) {
+            auto it = slotIndex.find(slotKey(sp, form, g));
+            return it != slotIndex.end() ? it->second : -1;
+        };
+        auto formSlot = [&](uint8_t form) {
+            const int k = gender <= 1 ? lookup(form, gender) : -1;
+            return k >= 0 ? k : lookup(form, LivingDexData::ANY_GENDER);
+        };
+        const uint8_t form = p.form();
+        int k = formSlot(form);
+        if (k < 0 && form != 0 && lookup(form, 0) < 0 && lookup(form, 1) < 0)
+            k = formSlot(0);
+        return k;
+    };
 
     // The slot of each layout index: each Pokedex starting a new box
     // (aligned), or one after the other (packed). `end` is where the rest go:
     // on a new box too when aligned.
     auto layout = [&](bool aligned, std::vector<int>& slotOf, int& end) {
-        slotOf.assign(order.size(), 0);
+        slotOf.assign(slots, 0);
         int pos = 0, idx = 0;
         for (int s = 0; s < sectionCount; s++) {
             if (aligned && pos % per) pos += per - pos % per;
-            for (int k = 0; k < sectionSize[s]; k++) slotOf[idx++] = pos++;
+            for (int k = 0; k < slotSize[s]; k++) slotOf[idx++] = pos++;
         }
         if (aligned && pos % per) pos += per - pos % per;
         end = pos;
     };
 
-    // One Pokemon per species takes its slot - never an egg. One already in
-    // its slot of the aligned layout keeps it; otherwise the first found in
+    // One Pokemon per layout index takes its slot - never an egg. One already
+    // in its slot of the aligned layout keeps it; otherwise the first found in
     // bank order.
     std::vector<int> alignedSlot;
     int alignedEnd = 0;
     layout(true, alignedSlot, alignedEnd);
-    std::vector<int> holder(order.size(), -1);   // layout index -> item
+    std::vector<int> holder(slots, -1);   // layout index -> item
     std::vector<char> isHolder(items.size(), 0);
     for (int pass = 0; pass < 2; pass++) {
         for (size_t i = 0; i < items.size(); i++) {
             const Pokemon& p = items[i].pkm;
             if (p.isEgg() || isHolder[i]) continue;
-            auto it = order.find(p.species());
-            if (it == order.end() || holder[it->second] >= 0) continue;
-            if (pass == 0 && items[i].from != alignedSlot[it->second]) continue;
-            holder[it->second] = static_cast<int>(i);
+            const int k = slotFor(p);
+            if (k < 0 || holder[k] >= 0) continue;
+            if (pass == 0 && items[i].from != alignedSlot[k]) continue;
+            holder[k] = static_cast<int>(i);
             isHolder[i] = 1;
         }
     }
@@ -153,7 +213,7 @@ namespace BankSort {
 
 Result sort(Bank& bank, GameType game, Order order, int box) {
     const int per = bank.slotsPerBox(), total = bank.totalSlots();
-    const bool whole = box < 0 || order == Order::LivingDex;
+    const bool whole = box < 0 || isLivingDex(order);
     const int first = whole ? 0 : box * per;
     const int end = whole ? total : std::min(total, first + per);
 
@@ -162,8 +222,11 @@ Result sort(Bank& bank, GameType game, Order order, int box) {
         if (!bank.isSlotEmpty(s / per, s % per))
             items.push_back({bank.getSlot(s / per, s % per), s});
 
-    if (order == Order::LivingDex)
-        return livingDex(bank, game, items);
+    if (isLivingDex(order))
+        return livingDex(bank, game, items,
+                         order == Order::LivingDex         ? Slots::Species
+                         : order == Order::CompleteLivingDex ? Slots::GenderDifferences
+                                                             : Slots::AllGenders);
 
     Result r;
     r.pokemon = static_cast<int>(items.size());

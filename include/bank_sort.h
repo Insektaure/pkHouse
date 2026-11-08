@@ -20,13 +20,21 @@ enum class Order {
     Ivs,         // best IV total first
     Compact,     // the current order, gaps closed
     LivingDex,   // one slot per species of the game's Pokedex (whole bank)
+    CompleteLivingDex,   // a Living Dex, plus a slot for each female with a visible
+                         // gender difference and each regional form (whole bank)
+    AllGendersLivingDex, // a Living Dex, plus a slot for each regional form, and a
+                         // male and a female slot for each species that can be both
 };
-constexpr int ORDER_COUNT = 8;
+constexpr int ORDER_COUNT = 10;
+
+inline bool isLivingDex(Order o) {
+    return o == Order::LivingDex || o == Order::CompleteLivingDex || o == Order::AllGendersLivingDex;
+}
 
 struct Result {
     bool done = false;   // the bank was rearranged
     int  pokemon = 0;    // Pokemon in what was sorted
-    // Living Dex
+    // Living Dex (Complete / AllGenders: counting slots - species, genders, forms)
     int  species = 0;    // species in the game's Pokedex
     int  placed = 0;     // of those, how many have a Pokemon in their slot
     // Living Dex that does not fit (done == false, needed > capacity): the

@@ -1,3 +1,15 @@
+## Version 2.3.2 (2026-11-08)
+### Sort & tidy
+
+Two new Living Dex orders:
+
+- Forms & genders (differences only): adds a slot for each regional form and for each female that looks different
+- Forms & all genders: the same forms, and a male and a female slot for every species that can be both
+
+Only what the game has. Other forms (Vivillon, Unown...) share their species' slot.
+
+With all genders, Scarlet / Violet, Sword / Shield and FireRed / LeafGreen need more room than one bank has.
+
 ## Version 2.3.1 (2026-11-08)
 ### Changelog
 

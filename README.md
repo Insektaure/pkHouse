@@ -2,7 +2,7 @@
 
 A local bank system for Pokemon games on Nintendo Switch. Move Pokemon between your save files and local bank storage.
 
-[![Discord](https://img.shields.io/badge/Discord-join-5865F2?logo=discord&logoColor=white)](https://discord.gg/tRbuDZYWV)
+[![Discord](https://img.shields.io/badge/Discord-join-5865F2?logo=discord&logoColor=white)](https://discord.gg/w8jSEJzZzG)
 
 Questions, bug reports and feature ideas are welcome on the [Discord](https://discord.gg/tRbuDZYWV).
 

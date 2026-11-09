@@ -1,3 +1,14 @@
+## Version 2.3.3 (2026-11-09)
+### Sprites
+
+Pokemon in an alternate form no longer show the base sprite.
+
+- Added: Pikachu caps, Paldean Tauros Blaze / Aqua, Arceus and Silvally types, Oricorio, Lycanroc, Minior, Necrozma, Calyrex, Gen 9 forms (Bloodmoon Ursaluna, Ogerpon masks, Squawkabilly...) and more
+- Fixed: Galarian Darmanitan showed Zen Mode, West Sea Shellos / Gastrodon showed East Sea, Icy Snow Vivillon showed Meadow, Neutral Xerneas showed Active
+- Shiny sprites added for the forms that have one
+
+A form without a sprite of its own shows the species' usual sprite instead. That is expected, it has always worked that way.
+
 ## Version 2.3.2 (2026-11-08)
 ### Sort & tidy
 

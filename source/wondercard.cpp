@@ -1225,6 +1225,14 @@ Pokemon WC8::convertToPK8(const TrainerInfo& trainer) const {
     // MetLocation (0x122)
     pk.writeU16(0x122, metLocation());
 
+    // HOME Celebi (card 9036): OriginGame = FRX (56, FireRed VC), MetLocation = VirtualConsole3 (30007).
+    // PKHeX WC8.ConvertToPKM "temp workaround": a PK8 must be Version = SW, MetLocation = SWFR (59995),
+    // otherwise WC8.IsMatchExact rejects it.
+    if (originGame() == 56 /* FRX */) {
+        pk.data[0xDE] = 44;          // Version = SW
+        pk.writeU16(0x122, 59995);   // LocationsHOME.SWFR
+    }
+
     // Ball (0x124)
     uint8_t ballVal = ball() != 0 ? static_cast<uint8_t>(ball()) : 4;
 
@@ -1635,7 +1643,8 @@ Pokemon WA9::convertToPA9(const TrainerInfo& trainer) const {
             int entryIdx = PersonalZA::getEntryIndex(specNat, formVal);
             auto plusLearnset = PlusZA::parseLearnset(PlusZA::PLUS_ZA_PKL, PlusZA::PLUS_ZA_PKL_SIZE, entryIdx);
             for (const auto& ml : plusLearnset) {
-                if (curLevel < ml.level) break; // learnset is sorted by level
+                // continue, not break: Spewpa has irregular on-evo Plus move levels that set later indexes
+                if (curLevel < ml.level) continue;
                 int pmIdx = PlusZA::findPlusMoveIndex(ml.move);
                 if (pmIdx < 0) continue;
                 // Set bit: indices 0-263 → byte at 0xD6, indices 264-359 → byte at 0x94

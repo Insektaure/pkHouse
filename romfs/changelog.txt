@@ -1,3 +1,10 @@
+## Version 2.3.4 (2026-11-13)
+### Wondercards
+
+Added:
+
+- Legends: Z-A: 1613 Shiny Xerneas
+
 ## Version 2.3.3 (2026-11-09)
 ### Sprites
 

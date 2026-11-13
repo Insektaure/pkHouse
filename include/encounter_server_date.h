@@ -168,6 +168,8 @@ static constexpr WA9DateEntry WA9Gifts[] = {
     { 1615, 2026, 10, 28, 2026, 11, 19, 0}, // Spewpa
     {  105, 2026, 11,  1, 2028,  2,  1, 0}, // PokéCenter Audino Birthday Gift (Extension)
     { 1616, 2026, 11,  5, 2027,  2, 26, 0}, // Poké Ball Vivillon
+    { 1613, 2026, 11, 12, 2027,  1,  8, 0}, // Shiny Xerneas
+    //{  -1, 2026, 12, 10, 2027, 2, 4, 0}, // Shiny Yveltal
     {  603, 2026,  8, 28,    0,  0,  0, 0}, // WCS 2026 Greninja (still redeemable)
     { 9031, 2026,  4,  2,    0,  0,  0, 0}, // Alpha Chikorita
     { 9032, 2026,  4,  2,    0,  0,  0, 0}, // Alpha Tepig

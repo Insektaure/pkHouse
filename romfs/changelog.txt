@@ -5,6 +5,11 @@ Added:
 
 - Legends: Z-A: 1613 Shiny Xerneas
 
+Fixed:
+
+- Legends: Z-A: 1615 Spewpa could miss some of its Plus moves
+- Sword / Shield: 9036 HOME Celebi got the wrong met location
+
 ## Version 2.3.3 (2026-11-09)
 ### Sprites
 

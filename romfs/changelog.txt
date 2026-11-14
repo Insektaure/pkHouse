@@ -1,3 +1,14 @@
+## Version 2.3.5 (2026-11-14)
+### Wondercards
+
+Fixed:
+
+- Legends: Z-A: 1613 Shiny Xerneas is now a square shiny (like the real distribution)
+
+Also fixed in 2.3.4, but missing from its notes:
+
+- Legends: Z-A: 1607 Alpha Charizard could miss some of its Plus moves, like Spewpa
+
 ## Version 2.3.4 (2026-11-13)
 ### Wondercards
 

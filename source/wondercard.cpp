@@ -1406,15 +1406,12 @@ Pokemon WA9::convertToPA9(const TrainerInfo& trainer) const {
         uint8_t wcIVs[6] = { ivHp(), ivAtk(), ivDef(), ivSpe(), ivSpA(), ivSpD() };
         bool hasFixedIVs = (flawlessIVs == 0);
 
-        // Map PIDType to Shiny enum for RNG
-        // ShinyType8: 0=Never, 1=Random, 2=AlwaysStar, 3=AlwaysSquare, 4=FixedValue
+        // Map PIDType to Shiny for RNG:
+        // 0, 1 = Never, 2 = Always, 4 = FixedValue (3 is not a valid WA9 value in PKHeX)
+        // FixedValue falls into the Never branch; its PID is overridden afterwards.
         uint8_t pType = pidType();
-        // In PKHeX GetAdaptedPID: AlwaysStar/AlwaysSquare fall into the else (Never) branch
-        // because they are not Shiny.Random or Shiny.Always. PID is overridden post-RNG anyway.
-        // FixedValue(4): uses ShinyRandom in RNG, PID overridden afterwards.
-        enum { ShinyNever = 0, ShinyRandom = 1 };
-        int shinyMode = ShinyRandom;
-        if (pType == 0 || pType == 2 || pType == 3) shinyMode = ShinyNever;
+        enum { ShinyNever = 0, ShinyAlways = 1 };
+        int shinyMode = (pType == 2 || pType == 3) ? ShinyAlways : ShinyNever;
 
         // AbilityType → AbilityPermission
         // 0=OnlyFirst, 1=OnlySecond, 2=OnlyHidden, 3=Any12, 4+=Any12H
@@ -1449,11 +1446,17 @@ Pokemon WA9::convertToPA9(const TrainerInfo& trainer) const {
         // 2. PID — SkipTrainer: no fakeTID call, use pk.ID32 directly
         uint32_t pidVal = static_cast<uint32_t>(rand.nextInt(0xFFFFFFFF));
         // Single shiny roll (RollCount=1)
-        if (shinyMode == ShinyRandom) {
-            // ForceShinyState: adapt PID to match shiny determination against real ID32
-            // Since SkipTrainer means fakeTID == pkId32, ForceShinyState is a no-op
-            // (the PID is already evaluated against the same ID32)
-        } else { // ShinyNever (also used for Star/Square, PID overridden post-RNG)
+        if (shinyMode == ShinyAlways) {
+            // GetAdaptedPID (Shiny.Always): keep the RNG PID's low half and force it shiny
+            // with xor 0 (square). Second check against pk.ID32 is a no-op with SkipTrainer
+            // (fakeTID == pk.ID32), so an already-shiny roll is kept as is.
+            if (!isShiny(pidVal, pkId32)) {
+                uint16_t tid = static_cast<uint16_t>(pkId32 & 0xFFFF);
+                uint16_t sid = static_cast<uint16_t>(pkId32 >> 16);
+                uint16_t low = static_cast<uint16_t>(pidVal & 0xFFFF);
+                pidVal = (static_cast<uint32_t>(low ^ tid ^ sid) << 16) | low;
+            }
+        } else { // ShinyNever (also FixedValue, PID overridden below)
             // PKHeX does two anti-shiny checks (against fakeTID and pk.ID32)
             // With SkipTrainer both are the same ID, but we match PKHeX exactly
             if (isShiny(pidVal, pkId32))
@@ -1461,18 +1464,8 @@ Pokemon WA9::convertToPA9(const TrainerInfo& trainer) const {
             if (isShiny(pidVal, pkId32))
                 pidVal ^= 0x10000000;
         }
-        // Post-RNG PID override for Star/Square/Fixed
-        if (pType == 2) { // AlwaysStar
-            uint16_t tid = static_cast<uint16_t>(pkId32 & 0xFFFF);
-            uint16_t sid = static_cast<uint16_t>(pkId32 >> 16);
-            uint16_t low = static_cast<uint16_t>(pid() & 0xFFFF);
-            pidVal = (static_cast<uint32_t>(1u ^ low ^ tid ^ sid) << 16) | low;
-        } else if (pType == 3) { // AlwaysSquare
-            uint16_t tid = static_cast<uint16_t>(pkId32 & 0xFFFF);
-            uint16_t sid = static_cast<uint16_t>(pkId32 >> 16);
-            uint16_t low = static_cast<uint16_t>(pid() & 0xFFFF);
-            pidVal = (static_cast<uint32_t>(0u ^ low ^ tid ^ sid) << 16) | low;
-        } else if (pType == 4) { // FixedValue
+        // Post-RNG PID override for FixedValue
+        if (pType == 4) {
             pidVal = pid();
         }
         pk.writeU32(0x1C, pidVal);
